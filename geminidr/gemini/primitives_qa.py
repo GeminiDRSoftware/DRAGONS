@@ -788,7 +788,7 @@ class BGReport(QAReport):
         results = {}
         if t:
             weights = t['nsamples']
-            results = {'nsamples': weights.sum()}
+            results = {'nsamples': int(weights.sum())}
             for value_key, std_key in (('bg', 'bgerr'), ('mag', 'mag_std'),
                                        ('electrons', 'electrons_std')):
                 try:
@@ -1028,7 +1028,8 @@ class IQReport(QAReport):
         self.reqband = ad.requested_iq()
         self.instrument = ad.instrument()
         self.is_ao = ad.is_ao()
-        self.image_like = 'IMAGE' in ad.tags and not hasattr(ad, 'MDF')
+        self.image_like = ad.tags.intersection(
+            {'IMAGE', 'LS', 'XD', 'MOS'}) == {'IMAGE'}
         self.fitsdict_items.extend(["fwhm", "fwhm_std", "elip", "elip_std",
                                     "nsamples", "adaptive_optics", "ao_seeing",
                                     "strehl", "isofwhm", "isofwhm_std",
@@ -1246,7 +1247,7 @@ class IQReport(QAReport):
             body.append(('(Requested IQ could not be determined)', ''))
 
         # allow comparison if "elip" is None
-        if results.get("elip") or 0 > 0.1:
+        if (results.get("elip", 0) or 0) > 0.1:
             body.append(('', 'WARNING: high ellipticity'))
             self.comments.append('High ellipticity')
             if 'NON_SIDEREAL' in self.ad_tags:

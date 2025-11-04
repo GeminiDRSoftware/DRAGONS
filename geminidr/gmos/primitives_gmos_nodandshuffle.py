@@ -18,6 +18,7 @@ from gempy.library import astromodels as am, astrotools as at
 from gempy.library import transform
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr import CalibrationNotFoundError
 from .primitives_gmos import GMOS
 from . import parameters_gmos_nodandshuffle
 
@@ -63,13 +64,15 @@ class GMOSNodAndShuffle(GMOS):
             Maximum distance from the header offset, for the correlation
             method (arcsec). If the correlation computed offset is too
             different from the header offset, then the latter is used.
-        order: int
-            order of polynomial for resampling
+        interpolant: str
+            type of interpolant
         subsample: int
             output pixel subsampling when resampling
         dq_threshold : float
             The fraction of a pixel's contribution from a DQ-flagged pixel to
             be considered 'bad' and also flagged.
+        debug_plots: bool
+            Plot the cross-correlation results for each extension?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -78,9 +81,10 @@ class GMOSNodAndShuffle(GMOS):
         align_sources = params["align_sources"]
         region = params["region"]
         tolerance = params["tolerance"]
-        order = params["order"]
+        interpolant = params["interpolant"]
         subsample = params["subsample"]
         dq_threshold = params["dq_threshold"]
+        debug_plots = params["debug_plots"]
 
         for ad in adinputs:
             nod_arcsec = np.diff(ad.nod_offsets())[0]
@@ -114,7 +118,7 @@ class GMOSNodAndShuffle(GMOS):
 
                     ad2 = self.adjustWCSToReference(
                         [ad, ad2], method="sources_offsets", fallback="offsets",
-                        tolerance=tolerance, region=region)[1]
+                        tolerance=tolerance, region=region, debug_plots=debug_plots)[1]
                     beamshift = (models.Shift(0) &
                                  (am.get_named_submodel(ad2[0].wcs.forward_transform, 'SKY')[0]))
                     del ad2
@@ -137,8 +141,9 @@ class GMOSNodAndShuffle(GMOS):
                     ext.wcs.insert_frame(ext.wcs.input_frame, beamshift,
                                          aligned_frame)
                     ad_out = transform.resample_from_wcs(
-                        ext, 'nod_aligned', order=order, subsample=subsample,
-                        parallel=False, output_shape=ext.shape, origin=(0,0),
+                        ext, 'nod_aligned', interpolant=interpolant,
+                        subsample=subsample, parallel=False,
+                        output_shape=ext.shape, origin=(0,0),
                         threshold=dq_threshold)
                     ext.subtract(ad_out[0])
                     ext.wcs = orig_wcs
@@ -205,8 +210,8 @@ class GMOSNodAndShuffle(GMOS):
 
             if flat is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                   raise OSError("No processed flat listed for "
-                                 f"{ad.filename}")
+                   raise CalibrationNotFoundError("No processed flat listed "
+                                                  f"for {ad.filename}")
                 else:
                    log.warning(f"No changes will be made to {ad.filename}, "
                                "since no flatfield has been specified")

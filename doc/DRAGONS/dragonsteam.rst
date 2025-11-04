@@ -10,10 +10,10 @@ Current DRAGONS Team
 ====================
 (Alphabetical order)
 
-* Daniel Berke
+* Dan Avner
 * Paul Hirst
-* David Jones
 * Kathleen Labrie
+* Mark Rawlings
 * Chris Simpson
 * Olesja Smirnova
 * Monika Soraisam
@@ -25,10 +25,12 @@ Past DRAGONS Team Members
 (Alphabetical order)
 
 * Ken Anderson
+* Daniel Berke
 * Ricardo Cárdenes
 * Simon Conseil
 * Oliver Oberdorf
 * Bruno Quint
+* D.J. Teal
 * Joanna Thomas-Osip
 
 Special Thanks

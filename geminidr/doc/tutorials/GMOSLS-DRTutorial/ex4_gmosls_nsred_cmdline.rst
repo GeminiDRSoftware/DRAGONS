@@ -284,13 +284,13 @@ are contemporary to the darks (ie. from around 2008-10-26).
 
 Master Flat Field
 =================
-GMOS longslit flat field are normally obtained at night along with the
+GMOS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.  The
 matching flat nearest in time to the target observation is used to flat field
 the target.  The central wavelength, filter, grating, binning, gain, and
 read speed must match.
 
-Because of the flexure, GMOS longslit flat field are not stacked.  Each is
+Because of the flexure, GMOS longslit flat fields are not stacked.  Each is
 reduced and used individually.  The default recipe takes that into account.
 
 We can send all the flats, regardless of characteristics, to |reduce| and each
@@ -314,7 +314,7 @@ and will be reduced individually.
 
 The wavelength solution is automatically calculated and the algorithm has
 been found to be quite reliable.  There might be cases where it fails;
-inspect the ``*_mosaic.pdf`` plot and the RMS of
+inspect the ``*_wavelengthSolutionDetermined.pdf`` plot and the RMS of
 ``determineWavelengthSolution`` in the logs to confirm a good solution.
 
 ::
@@ -352,7 +352,7 @@ Here we will focus on two of them, the one for the trace and the one for the
 calculation of the sensitivity function.
 
 In both cases, we will adjust the *region* to use for the fits.  This is done
-by point the cursor on one edge of the region, typing "r", moving the cursor
+by pointing the cursor on one edge of the region, typing "r", moving the cursor
 to the other edge, and typing "r" again.   To adjust the edge of an existing
 region, use "e" and the cursor, and "e" again to confirm the adjustment.
 See the summary of keyboard shortcuts at the bottom right of the tool, in
@@ -513,7 +513,7 @@ That is shown in the plot on the right.
 Note the flaring bluer of 700nm.  This is because the spectrophotometric
 standard was observed with a central wavelength of 900nm and it is unable
 to constrain the sensitivity bluer of ~700nm.  This can be seen in the
-plots of the interactive ``calculateSensitivity``, the bluer point is at 690nm.
+plots of the interactive ``calculateSensitivity``, the bluest point is at 690nm.
 (:ref:`ex4_gmosls_nsred_cmdline_sensfunc`) We have a science spectrum bluer of 690nm because of the other two central
 wavelength settings of 890nm and 880nm.  Observing the standard with a
-central wavelength of 880nm would have help reduce, possible avoid entirely.
+central wavelength of 880nm would have help reduce, possible avoid it entirely.

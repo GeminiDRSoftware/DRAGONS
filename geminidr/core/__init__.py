@@ -8,7 +8,9 @@ from .primitives_preprocess import Preprocess
 from .primitives_spect import Spect
 from .primitives_stack import Stack
 from .primitives_standardize import Standardize
+from .primitives_telluric import Telluric
 from .primitives_visualize import Visualize
+from .primitives_stats import Stats
 
 # These are currently inherited by Image
 #from geminidr.core.primitives_register import Register

@@ -9,19 +9,23 @@ import re
 import numbers
 
 from copy import deepcopy
-from datetime import datetime
-from importlib import import_module
+from datetime import datetime, timezone
 from functools import wraps
 from collections import namedtuple
 
 import numpy as np
 
+from astropy.coordinates import SkyCoord
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.modeling import models, fitting
 from astropy.table import vstack, Table, Column
+from astropy import units as u
 
 from scipy.ndimage import distance_transform_edt
+from scipy.signal import medfilt
 from scipy.special import erf
+
+from gwcs import coordinate_frames as cf
 
 from ..library import astromodels, tracing, astrotools as at
 from ..library.nddops import NDStacker
@@ -194,6 +198,74 @@ def array_information(adinput=None):
         array_info_list.append(ArrayInfo(detshape, sorted_origins,
                                          array_shapes, arrays_list))
     return array_info_list
+
+
+def attach_rectification_model(target, source, log=None):
+    """
+    Copy a slit rectification model from source to target file.
+
+    Copies the transform step in an Astropy gWCS object corresponding to a
+    slit rectification model from the given source file to a given target
+    file. The source file must have either one extension, or the same
+    number of extensions as the target, in which case the model in each
+    extension in the source will be copied to the corresponding extension
+    in the target. This function will either add a rectification model if
+    one is not present in the target, or replaces an existing one. If no
+    rectification model is found in the source, logs a warning and returns
+    the target file unmodified.
+
+    Parameters
+    ----------
+    target : `Astrodata object`
+        The file to copy the rectification model to.
+    source : `Astrodata object`
+        The file to get the rectification model from.
+    log : logger instance
+        An optional logger instance to write log messages to.
+
+    Returns
+    -------
+    `Astrodata object`
+        The target file; either modified with the new rectification model
+        in each extenstion, or unmodified if no model was found in `source`.
+
+    """
+    if len(target) != len(source):
+        raise ValueError("Target image and source image have different "
+                         f"number of extensions, {len(target)} vs. "
+                         f"{len(source)}, {target.filename} not modified.")
+
+    for ext_t, ext_s in zip(target, source):
+        try:
+            rect_frame_index = ext_s.wcs.available_frames.index('rectified')
+        except ValueError:
+            # Silently no-op. If it's important to know if a model has been
+            # attached, run this same check on the output where this function
+            # is called, since the severity of it happening varies by context.
+            # (For longslit, it's not a big deal; for e.g. cross-dispersed it's
+            # a major problem.)
+            continue
+
+        new_transform = ext_s.wcs.get_transform(
+            ext_s.wcs.available_frames[rect_frame_index-1], 'rectified')
+        # If a 'rectified' frame exists, just replace the transform.
+        # Otherwise add a new frame with the transform.
+        try:
+            rect_frame_index = ext_t.wcs.available_frames.index('rectified')
+        except ValueError:
+            # Where to put this transform? On the basis of what we have so far
+            # (LS and XD), it seems like it should be after the last frame
+            # which has a regular 2D pixel frame, so find that.
+            last_pixel_frame = max([i for i, step in enumerate(ext_t.wcs.pipeline)
+                                    if set(step.frame.unit) == {u.pix}])
+            ext_t.wcs.insert_frame(ext_t.wcs.available_frames[last_pixel_frame],
+                                   new_transform, cf.Frame2D(name='rectified'))
+        else:
+            ext_t.wcs.set_transform(
+                ext_t.wcs.available_frames[rect_frame_index-1], 'rectified',
+                new_transform)
+
+    return target
 
 
 def check_inputs_match(adinput1=None, adinput2=None, check_filter=True,
@@ -496,364 +568,6 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
     return aux_output_list
 
-@handle_single_adinput
-def clip_auxiliary_data_old(adinput=None, aux=None, aux_type=None,
-                            return_dtype=None):
-    """
-    This function clips auxiliary data like calibration files or BPMs
-    to the size of the data section in the science. It will pad auxiliary
-    data if required to match un-overscan-trimmed data, but otherwise
-    requires that the auxiliary data contain the science data.
-
-    Parameters
-    ----------
-    adinput: list/AstroData
-        input science image(s)
-    aux: list/AstroData
-        auxiliary file(s) (e.g., BPM, flat) to be clipped
-    aux_type: str
-        type of auxiliary file
-    return_dtype: dtype
-        datatype of returned objects
-
-    Returns
-    -------
-    list/AD:
-        auxiliary file(s), appropriately clipped
-    """
-    log = logutils.get_logger(__name__)
-    aux_output_list = []
-
-    for ad, this_aux in zip(*make_lists(adinput, aux, force_ad=True)):
-        clipped_this_ad = False
-
-        # Make a new auxiliary file for appending to, starting with PHU
-        new_aux = astrodata.create(this_aux.phu)
-        new_aux.filename = this_aux.filename
-        new_aux.update_filename(suffix="_clipped", strip=False)
-
-        # Get the detector section, data section, array section and the
-        # binning of the x-axis and y-axis values for the science AstroData
-        # object using the appropriate descriptors
-        sci_detsec = ad.detector_section()
-        sci_datasec = ad.data_section()
-        sci_arraysec = ad.array_section()
-        sci_xbin = ad.detector_x_bin()
-        sci_ybin = ad.detector_y_bin()
-
-        # Get the detector section, data section and array section values
-        # for the auxiliary AstroData object using the appropriate
-        # descriptors
-        aux_detsec = this_aux.detector_section()
-        aux_datasec = this_aux.data_section()
-        aux_arraysec = this_aux.array_section()
-
-        for ext, detsec, datasec, arraysec in zip(ad, sci_detsec, sci_datasec,
-                                                  sci_arraysec):
-
-            # Array section is unbinned; to use as indices for
-            # extracting data, need to divide by the binning
-            arraysec = [arraysec[0] // sci_xbin, arraysec[1] // sci_xbin,
-                        arraysec[2] // sci_ybin, arraysec[3] // sci_ybin]
-
-            # Check whether science data has been overscan-trimmed
-            science_shape = ext.data.shape[-2:]
-            # Offsets give overscan regions on either side of data:
-            # [left offset, right offset, bottom offset, top offset]
-            science_offsets = [datasec[0], science_shape[1] - datasec[1],
-                               datasec[2], science_shape[0] - datasec[3]]
-            science_trimmed = all([off==0 for off in science_offsets])
-
-            found = False
-            for auxext, adetsec, adatasec, aarraysec in zip(this_aux,
-                                aux_detsec, aux_datasec, aux_arraysec):
-                if not (auxext.detector_x_bin() == sci_xbin and
-                        auxext.detector_y_bin() == sci_ybin):
-                    continue
-
-                # Array section is unbinned; to use as indices for
-                # extracting data, need to divide by the binning
-                aarraysec = [
-                    aarraysec[0] // sci_xbin, aarraysec[1] // sci_xbin,
-                    aarraysec[2] // sci_ybin, aarraysec[3] // sci_ybin]
-
-                # Check whether auxiliary detector section contains
-                # science detector section
-                if (adetsec[0] <= detsec[0] and adetsec[1] >= detsec[1] and
-                    adetsec[2] <= detsec[2] and adetsec[3] >= detsec[3]):
-                    found = True
-                else:
-                    continue
-
-                # Check whether auxiliary data has been overscan-trimmed
-                aux_shape = auxext.data.shape
-                aux_offsets = [adatasec[0], aux_shape[1] - adatasec[1],
-                               adatasec[2], aux_shape[0] - adatasec[3]]
-                aux_trimmed = all([off==0 for off in aux_offsets])
-
-                # Define data extraction region corresponding to science
-                # data section (not including overscan)
-                x_translation = (arraysec[0] - datasec[0] -
-                                 aarraysec[0] + adatasec[0])
-                y_translation = (arraysec[2] - datasec[2]
-                                 - aarraysec[2] + adatasec[2])
-                region = [datasec[2] + y_translation, datasec[3] + y_translation,
-                          datasec[0] + x_translation, datasec[1] + x_translation]
-
-                # Deepcopy auxiliary SCI/VAR/DQ planes, allowing the same
-                # aux extension to be used for a difference sci extension
-                ext_to_clip = deepcopy(auxext)
-
-                # Pull out specified data region:
-                if science_trimmed or aux_trimmed:
-                    # We're not actually clipping!
-                    if region != list(sum(zip([0,0], ext_to_clip[0].nddata.shape),())):
-                        clipped_this_ad = True
-                    clipped = ext_to_clip[0].nddata[region[0]:region[1],
-                                                region[2]:region[3]]
-
-                    # Where no overscan is needed, just use the data region:
-                    ext_to_clip[0].reset(clipped)
-
-                    # Pad trimmed aux arrays with zeros to match untrimmed
-                    # science data:
-                    if aux_trimmed and not science_trimmed:
-                        # Science decision: trimmed calibrations can't be
-                        # meaningfully matched to untrimmed science data
-                        if aux_type != 'bpm':
-                            raise OSError(
-                                "Auxiliary data {} is trimmed, but "
-                                "science data {} is untrimmed.".
-                                format(auxext.filename, ext.filename))
-
-                        # Use duplicate iterators over the reversed science_offsets
-                        # list to unpack its values in pairs and reverse them:
-                        padding = tuple((bef, aft) for aft, bef in \
-                                        zip(*[reversed(science_offsets)]*2))
-
-                        # Replace the array with one that's padded with the
-                        # appropriate number of zeros at each edge:
-                        ext_to_clip.operate(np.pad, padding, 'constant',
-                                          constant_values=0)
-
-                # If nothing is trimmed, just use the unmodified data
-                # after checking that the regions match (a condition
-                # preserved from r5564 without revisiting its logic):
-                elif not all(off1 == off2 for off1, off2 in
-                             zip(aux_offsets, science_offsets)):
-                    raise ValueError("Overscan regions do not match in {}, {}".
-                        format(auxext.filename, ext.filename))
-
-                # Convert the dtype if requested (only SCI and VAR)
-                if return_dtype is not None:
-                    #ext_to_clip.operate(np.ndarray.astype, return_dtype)
-                    ext_to_clip[0].data = ext_to_clip[0].data.astype(return_dtype)
-                    if ext_to_clip[0].variance is not None:
-                        ext_to_clip[0].variance = \
-                            ext_to_clip[0].variance.astype(return_dtype)
-
-                # Update keywords based on the science frame
-                for descriptor in ('data_section', 'detector_section',
-                                   'array_section'):
-                    try:
-                        kw = ext._keyword_for(descriptor)
-                        ext_to_clip.hdr[kw] = (ext.hdr[kw],
-                                               ext.hdr.comments[kw])
-                    except (AttributeError, KeyError):
-                        pass
-
-                # Append the data to the AD object
-                new_aux.append(ext_to_clip[0].nddata)
-
-            if not found:
-                raise OSError(
-                    f"No auxiliary data in {this_aux.filename} matches the "
-                    f"detector section {detsec} in {ad.filename} extension "
-                    f"{ext.id}"
-                )
-
-        if clipped_this_ad:
-            log.stdinfo("Clipping {} to match science data.".
-                        format(os.path.basename(this_aux.filename)))
-        aux_output_list.append(new_aux)
-
-    return aux_output_list
-
-@handle_single_adinput
-def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
-                        return_dtype=None):
-    """
-    This function clips auxiliary data like calibration files or BPMs
-    to the size of the data section in the science. It will pad auxiliary
-    data if required to match un-overscan-trimmed data, but otherwise
-    requires that the auxiliary data contain the science data.
-
-    This is a GSAOI-specific version that uses the FRAMEID keyword,
-    rather than DETSEC to match up extensions between the science and
-    auxiliary data.
-
-    Parameters
-    ----------
-    adinput: list/AstroData
-        input science image(s)
-    aux: list/AstroData
-        auxiliary file(s) (e.g., BPM, flat) to be clipped
-    aux_type: str
-        type of auxiliary file
-    return_dtype: dtype
-        datatype of returned objects
-
-    Returns
-    -------
-    list/AD:
-        auxiliary file(s), appropriately clipped
-    """
-    log = logutils.get_logger(__name__)
-
-    if not isinstance(aux, list):
-        aux = [aux]
-
-    aux_output_list = []
-
-    for ad, this_aux in zip(adinput, aux):
-        # Make a new auxiliary file for appending to, starting with PHU
-        new_aux = astrodata.create(this_aux.phu)
-
-        # Get the detector section, data section, array section and the
-        # binning of the x-axis and y-axis values for the science AstroData
-        # object using the appropriate descriptors
-        sci_detsec = ad.detector_section()
-        sci_datasec = ad.data_section()
-        sci_arraysec = ad.array_section()
-
-        # Get the detector section, data section and array section values
-        # for the auxiliary AstroData object using the appropriate
-        # descriptors
-        aux_datasec  = this_aux.data_section()
-        aux_arraysec = this_aux.array_section()
-
-        for ext, detsec, datasec, arraysec in zip(ad, sci_detsec,
-                                            sci_datasec, sci_arraysec):
-
-            frameid = ext.hdr['FRAMEID']
-
-            # Check whether science data has been overscan-trimmed
-            science_shape = ext.data.shape[-2:]
-            # Offsets give overscan regions on either side of data:
-            # [left offset, right offset, bottom offset, top offset]
-            science_offsets = [datasec[0], science_shape[1] - datasec[1],
-                               datasec[2], science_shape[0] - datasec[3]]
-            science_trimmed = all([off==0 for off in science_offsets])
-
-
-            found = False
-            for auxext, adatasec, aarraysec in zip(this_aux, aux_datasec,
-                                                   aux_arraysec):
-                # Retrieve the extension number for this extension
-                aux_frameid = auxext.hdr['FRAMEID']
-                aux_shape = auxext.data.shape
-
-                if (aux_frameid == frameid and
-                    aux_shape[0] >= science_shape[0] and
-                    aux_shape[1] >= science_shape[1]):
-
-                    # Auxiliary data is big enough as has right FRAMEID
-                    found = True
-                else:
-                    continue
-
-                # Check whether auxiliary data has been overscan-trimmed
-                aux_shape = auxext.data.shape
-                aux_offsets = [adatasec[0], aux_shape[1] - adatasec[1],
-                               adatasec[2], aux_shape[0] - adatasec[3]]
-                aux_trimmed = all([off==0 for off in aux_offsets])
-
-
-                # Define data extraction region corresponding to science
-                # data section (not including overscan)
-                x_translation = (arraysec[0] - datasec[0] -
-                                 aarraysec[0] + adatasec[0])
-                y_translation = (arraysec[2] - datasec[2]
-                                 - aarraysec[2] + adatasec[2])
-                region = [datasec[2] + y_translation, datasec[3] + y_translation,
-                          datasec[0] + x_translation, datasec[1] + x_translation]
-
-                # Deepcopy auxiliary SCI/VAR/DQ planes, allowing the same
-                # aux extension to be used for a difference sci extension
-                ext_to_clip = deepcopy(auxext)
-
-                # Pull out specified data region:
-                if science_trimmed or aux_trimmed:
-                    clipped = ext_to_clip[0].nddata[region[0]:region[1],
-                              region[2]:region[3]]
-
-                    # Where no overscan is needed, just use the data region:
-                    ext_to_clip[0].reset(clipped)
-
-                    # Pad trimmed aux arrays with zeros to match untrimmed
-                    # science data:
-                    if aux_trimmed and not science_trimmed:
-                        # Science decision: trimmed calibrations can't be
-                        # meaningfully matched to untrimmed science data
-                        if aux_type != 'bpm':
-                            raise OSError(
-                                "Auxiliary data {} is trimmed, but "
-                                "science data {} is untrimmed.".
-                                    format(auxext.filename, ext.filename))
-
-                        # Use duplicate iterators over the reversed science_offsets
-                        # list to unpack its values in pairs and reverse them:
-                        padding = tuple((bef, aft) for aft, bef in \
-                                        zip(*[reversed(science_offsets)] * 2))
-
-                        # Replace the array with one that's padded with the
-                        # appropriate number of zeros at each edge:
-                        ext_to_clip.operate(np.pad, padding, 'constant',
-                                                   constant_values=0)
-
-                # If nothing is trimmed, just use the unmodified data
-                # after checking that the regions match (a condition
-                # preserved from r5564 without revisiting its logic):
-                elif not all(off1 == off2 for off1, off2 in
-                             zip(aux_offsets, science_offsets)):
-                    raise ValueError(
-                        "Overscan regions do not match in {}, {}".
-                            format(auxext.filename, ext.filename))
-
-                # Convert the dtype if requested (only SCI and VAR)
-                if return_dtype is not None:
-                    #ext_to_clip.operate(np.ndarray.astype, return_dtype)
-                    ext_to_clip[0].data = ext_to_clip[0].data.astype(return_dtype)
-                    if ext_to_clip[0].variance is not None:
-                        ext_to_clip[0].variance = \
-                            ext_to_clip[0].variance.astype(return_dtype)
-
-                # Update keywords based on the science frame
-                for descriptor in ('data_section', 'detector_section',
-                                   'array_section'):
-                    try:
-                        kw = ext._keyword_for(descriptor)
-                        ext_to_clip.hdr[kw] = (ext.hdr[kw],
-                                               ext.hdr.comments[kw])
-                    except (AttributeError, KeyError):
-                        pass
-
-                # Append the data to the AD object
-                new_aux.append(ext_to_clip[0].nddata)
-
-            if not found:
-                raise OSError(
-                    f"No auxiliary data in {this_aux.filename} matches the "
-                    f"detector section {detsec} in {ad.filename} extension "
-                    f"{ext.id}"
-                )
-
-        log.stdinfo("Clipping {} to match science data.".
-                    format(os.path.basename(this_aux.filename)))
-        aux_output_list.append(new_aux)
-
-    return aux_output_list
-
 def clip_sources(ad):
     """
     This function takes the source data from the OBJCAT and returns the best
@@ -894,7 +608,7 @@ def clip_sources(ad):
 
     # Produce warning but return what is expected
     if not any([hasattr(ext, 'OBJCAT') for ext in ad_iterable]):
-        input = f"{ad.filename}:{ad.hdr['EXTVER']}" if single else ad.filename
+        input = f"{ad.filename} extension {ad.id}" if single else ad.filename
         log.warning(f"No OBJCAT(s) found on {input}. Has detectSources() been run?")
         return Table() if single else [Table()] * len(ad)
 
@@ -966,7 +680,7 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
         input image(s)
 
     caltype: str
-        type of calibration ('fringe', 'sky', 'flat' allowed)
+        type of calibration ('fringe', 'sky', 'flat', 'arc' allowed)
 
     keyword_comments: dict
         comments to add to the header of the output
@@ -1005,11 +719,30 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
             date_taken = datetime.today().date()
         release = date_taken.strftime("%Y-%m-%d")
 
-        # Fake ID is G(N/S)-CALYYYYMMDD-900-fileno
-        prefix = 'GN-CAL' if 'north' in ad.telescope().lower() else 'GS-CAL'
+        # Fake CAL ID
 
-        prgid = "{}{}".format(prefix, date_taken.strftime("%Y%m%d"))
-        obsid = "{}-900".format(prgid)
+        # Is it old style or new style (figure it out from the program ID
+        # rather than a cutoff date.
+        if re.match('G[NS]', ad.program_id()):
+            style = 'ocs'
+        else:  # G- format
+            style = 'gpp'
+
+        if style == 'ocs':
+            # Fake ID is G(N/S)-CALYYYYMMDD-900-fileno
+            prefix = 'GN-CAL' if 'north' in ad.telescope().lower() else 'GS-CAL'
+
+            prgid = "{}{}".format(prefix, date_taken.strftime("%Y%m%d"))
+            obsid = "{}-900".format(prgid)
+        elif style == 'gpp':
+            # Fake ID is G-YYYYS-CAL-INST-900-fileno
+            #  TODO:  This might need to be revised for SCORPIO
+            semester = re.search(r"G-(\d+[AB])",  new).group(1)
+            instrument = re.sub('-', '', ad.instrument())
+            prefix = 'G'
+
+            prgid = "{}-{}-CAL-{}".format(prefix, semester, instrument)
+            obsid = "{}-900".format(pgrid)
 
         m = fitsfilenamecre.match(ad.filename)
         if m:
@@ -1025,7 +758,12 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
         if fileno is None:
             import random
             fileno = random.randint(1,999)
-        datalabel = "{}-{:03d}".format(obsid, fileno)
+
+        # The gpp version might need to be revised when we get SCORPIO.
+        if style == 'ocs':
+            datalabel = "{}-{:03d}".format(obsid, fileno)
+        elif style == 'gpp':
+            datalabel = "{}-{:04d}".format(obsid, fileno)
 
         # Set class, type, object to generic defaults
         ad.phu.set("OBSCLASS", "partnerCal", keyword_comments["OBSCLASS"])
@@ -1095,6 +833,124 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
                     ext.hdr.set("OBJECT", "Flat Frame",
                                       keyword_comments["OBJECT"])
     return adinput
+
+@handle_single_adinput
+def cut_to_match_auxiliary_data(adinput=None, aux=None, aux_type=None,
+                        return_dtype=None):
+    """
+    This function cuts sections of the science frame into extensions to match
+    the auxiliary data like calibration files or BPMs based on the value of the
+    `detector_section()` keyword in the auxiliary data.
+
+    Parameters
+    ----------
+    adinput: list/AstroData
+        input science image(s)
+    aux: list/AstroData
+        auxiliary file(s) (e.g., BPM, flat) to be clipped
+    aux_type: str
+        type of auxiliary file
+    return_dtype: dtype
+        datatype of returned objects
+
+    Returns
+    -------
+    list/AD:
+        science frame file(s), appropriately cut into multiple extensions
+    """
+    raise RuntimeError("cut_to_match_auxiliary_data() should not be used")
+    log = logutils.get_logger(__name__)
+    ad_output_list = []
+
+    for ad, this_aux in zip(*make_lists(adinput, aux, force_ad=True)):
+        xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+
+        if this_aux.detector_x_bin() != xbin or this_aux.detector_y_bin() != ybin:
+            raise OSError("Auxiliary data {} has different binning to {}".
+                          format(os.path.basename(this_aux.filename), ad.filename))
+        cut_this_ad = False
+
+        # Since this is cutting a full frame, should be only one extension.
+        for ext in ad:
+            # Make a new science file for appending to, starting with PHU
+            new_ad = astrodata.create(ad.phu)
+            for auxext, detsec in zip(this_aux, this_aux.detector_section()):
+                new_ad.append(ext.nddata[detsec.asslice()])
+                new_ad[-1].SLITEDGE = auxext.SLITEDGE
+                new_ad[-1].hdr[ad._keyword_for('detector_section')] =\
+                    detsec.asIRAFsection(binning=(xbin, ybin))
+                new_ad[-1].hdr['SPECORDR'] = auxext.hdr['SPECORDR']
+
+                # By default, when a section is cut out of an array the WCS is
+                # updated with Shift models corresponding to the number of rows/
+                # columns that were removed, so that the WCS of the cut-out
+                # section remains the same. For this, however, we want to change
+                # the WCS so that in each slit the sky position points at the
+                # center of the slit.
+
+                # Get the forward and backward transforms from the input and
+                # auxiliary files so we can update the spatial shifts simultaneously
+                f_transform = new_ad[-1].wcs.get_transform('pixels', 'world')
+                aux_f_transform = auxext.wcs.get_transform('rectified', 'world')
+
+                b_transform = new_ad[-1].wcs.get_transform('world', 'pixels')
+                aux_b_transform = auxext.wcs.get_transform('world', 'rectified')
+
+                # In the first or last two submodels of the forward and backward
+                # (respectively) transforms will be one or more Shift models
+                # representing the amount of rows or columns that have been cut.
+                # Set these Shifts to 0. It's not part of the WAVE & SKY paradigm
+                # so they will be dropped later anyway, but it's good to be
+                # consistent at each step.
+                # TODO: This works assuming a single Shift in the spatial direction.
+                # If there's also a shift in the spectral direction (instead of
+                # an Identity, this will need updating.
+                for m in range(0, 2, 1):
+                    if isinstance(f_transform[m], models.Shift):
+                        f_transform[m].offset = 0
+                        break
+
+                for n in range(-2, 0, 1):
+                    if isinstance(b_transform[n], models.Shift):
+                        b_transform[n].offset = 0
+                        break
+
+                forward_shift, backward_shift = False, False
+                # Now find the offset that sets the middle of the slit to the WCS
+                # sky position from the auxiliary file and copy it over.
+                for j in range(f_transform.n_submodels):
+                    if (isinstance(f_transform[j], models.Shift) and
+                        isinstance(f_transform[j+1], models.Const1D)):
+
+                        f_transform[j].offset = aux_f_transform[j].offset
+                        forward_shift = True
+                        break
+
+                for k in range(b_transform.n_submodels):
+                    if (isinstance(b_transform[k], models.Shift) and
+                        isinstance(b_transform[k+1], models.Shift)):
+
+                        b_transform[k].offset = aux_b_transform[k].offset
+                        backward_shift = True
+                        break
+
+            if not (forward_shift or backward_shift):
+                raise RuntimeError("No forward or backward shift found in WCS")
+            cut_this_ad = True
+
+        if return_dtype:
+            for adext in new_ad:
+                if adext.data.dtype != return_dtype:
+                    adext.data = adext.data.astype(return_dtype)
+                if adext.variance is not None and adext.variance.dtype != return_dtype:
+                    adext.variance = adext.variance.astype(return_dtype)
+
+        ad_output_list.append(new_ad)
+        if cut_this_ad:
+            log.stdinfo(f"Cutting {os.path.basename(ad.filename)} to match "
+                        "auxiliary data")
+
+    return ad_output_list
 
 @handle_single_adinput
 def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,
@@ -1194,19 +1050,30 @@ def fit_continuum(ad):
 
         # Determine regions for collapsing into 1D spatial profiles
         if 'IMAGE' in tags:
-            # A through-slit image: extract a 2-arcsecond wide region about
-            # the center. This should be OK irrespective of the actual slit
-            # width and avoids having to work out the width from instrument-
-            # dependent header information.
-            centers = [dispersed_length // 2]
-            hwidth = int(1.0 / pixel_scale + 0.5)
+            # A through-slit image: extract a region about the slit location.
+            # If we can use the slit width, then that's great, otherwise 1.5
+            # arcseconds will have to do.
+            #
+            # Unfortunately, there's no information about where the slit is
+            # located in the dispersion direction, so we have to attempt to
+            # find a bright source...
+            data = ext.data.copy()
+            if ext.mask is not None:
+                data[ext.mask > 0] = -np.inf
+            peak = np.unravel_index(medfilt(data, kernel_size=3).argmax(),
+                                    data.shape)
+            centers = [peak[dispaxis]]
+            try:
+                hwidth = int(0.5 * ext.slit_width() / pixel_scale + 0.5)
+            except (TypeError, ValueError):
+                hwidth = int(0.75 / pixel_scale + 0.5)
         else:
             # This is a dispersed 2D spectral image, chop it into 512-pixel
             # (unbinned) sections. This is one GMOS amp, and most detectors
             # are a multiple of 512 pixels. We do this because the data are
             # unlikely to have gone through traceApertures() so we can't
             # account for curvature in the spectral trace.
-            hwidth = 512 // spectral_bin
+            hwidth = min(512 // spectral_bin, dispersed_length // 2)
             centers = [i*hwidth for i in range(1, dispersed_length // hwidth, 1)]
         spectral_slices = [slice(center-hwidth, center+hwidth) for center in centers]
 
@@ -1362,18 +1229,18 @@ def fit_continuum(ad):
                             weight_list.append(max(m_final.mean_1 - pixels.min(),
                                                    pixels.max() - m_final.mean_0))
 
-
         # Now do something with the list of measurements
         fwhm_pix = np.array(fwhm_list)
         fwhm_arcsec = pixel_scale * fwhm_pix
-
         table = Table([x_list, y_list, fwhm_pix, fwhm_arcsec, weight_list],
                     names=("x", "y", "fwhm", "fwhm_arcsec", "weight"))
 
         # Clip outliers in FWHM
         if len(table) >= 3:
-            table = table[~sigma_clip(table['fwhm_arcsec'], sigma=2,
-                                      maxiters=2).mask]
+            ret_value = at.weighted_sigma_clip(
+                table['fwhm_arcsec'].data, weights=table['weight'].data,
+                sigma_lower=2, sigma_upper=1.5, maxiters=3)
+            table = table[~ret_value.mask]
         good_sources.append(table)
 
     return good_sources[0] if single else good_sources
@@ -1645,7 +1512,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
         raise TypeError("argument 'keyword' required")
 
     # Get the current time to use for the time of last modification
-    tlm = datetime.utcnow().isoformat()
+    tlm = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
     # Construct the default comment
     if comment is None:
@@ -1665,7 +1532,7 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
 
 
 def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
-                          separate_ext=True, ignore_mask=False):
+                          separate_ext=True, ignore_mask=False, section=None):
     """
     Return background value, and its std deviation, as measured directly
     from pixels in the SCI image. DQ plane are used (if they exist)
@@ -1685,6 +1552,8 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         return information for each extension, rather than the whole AD?
     ignore_mask : bool
         if True, ignore the mask and OBJMASK
+    section: slice/None
+        region to use for statistics
 
     Returns
     -------
@@ -1693,6 +1562,8 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         or (bg, std, number of samples) tuple; otherwise returns a list of
         such things
     """
+    log = logutils.get_logger(__name__)
+
     # Handle NDData objects (or anything with .data and .mask attributes
     maxiter = 10
     try:
@@ -1706,47 +1577,60 @@ def measure_bg_from_image(ad, sampling=10, value_only=False, gaussfit=True,
         flags = None
         # Use DQ and OBJMASK to flag pixels
         if not single and not separate_ext:
-            bg_data = np.array([ext.data for ext in ad]).ravel()
+            bg_data = np.array([ext.data[section] for ext in ad]).ravel()
             if not ignore_mask:
                 flags = np.array([ext.mask | getattr(ext, 'OBJMASK', 0)
                                   if ext.mask is not None
-                    else getattr(ext, 'OBJMASK', np.empty_like(ext.data, dtype=bool))
-                                  for ext in ad]).ravel()
+                    else getattr(ext, 'OBJMASK', np.zeros_like(ext.data, dtype=bool))
+                                  for ext in ad])[section].ravel()
         else:
             if not ignore_mask:
-                flags = ext.mask | getattr(ext, 'OBJMASK', 0) if ext.mask is not None \
-                    else getattr(ext, 'OBJMASK', None)
-            bg_data = ext.data.ravel()
+                flags = ((ext.mask | getattr(ext, 'OBJMASK', 0))[section]
+                    if ext.mask is not None else
+                         ext.OBJMASK[section] if hasattr(ext, 'OBJMASK') else None)
+            bg_data = ext.data[section].ravel()
 
         if flags is None:
             bg_data = bg_data[::sampling]
         else:
             bg_data = bg_data[flags.ravel() == 0][::sampling]
 
+        do_gaussfit = gaussfit
+
         if len(bg_data) > 1:
-            if gaussfit:
+            if do_gaussfit:
                 lsigma, hsigma = 3, 1
                 bg, bg_std = sigma_clipped_stats(bg_data, sigma=5, maxiters=5)[1:]
                 niter = 0
                 while True:
                     iter_data = np.sort(bg_data[np.logical_and(bg-lsigma*bg_std < bg_data,
-                                                               bg+hsigma*bg_std > bg_data)][::sampling])
+                                                               bg+hsigma*bg_std >= bg_data)][::sampling])
                     oldbg, oldbg_std = bg, bg_std
                     g_init = Ogive(bg, bg_std, lsigma, hsigma)
                     g_init.lsigma.fixed = True
                     g_init.hsigma.fixed = True
                     fit_g = fitting.LevMarLSQFitter()
-                    g = fit_g(g_init, iter_data, np.linspace(0., 1., iter_data.size + 1)[1:])
+                    try:
+                        g = fit_g(g_init, iter_data, np.linspace(0., 1., iter_data.size + 1)[1:])
+                    except Exception as err:
+                        do_gaussfit = False
+                        log.warning(
+                            f"measure_bg_from_image: fitting failed; "
+                            f"falling back to gaussfit=False instead.\n"
+                            f"Error was: {err}"
+                        )
+                        break
                     bg, bg_std = g.mean.value, abs(g.stddev.value)
                     if abs(bg - oldbg) < 0.001 * bg_std or niter > maxiter:
                         break
                     niter += 1
-            else:
+            if not do_gaussfit:
                 # Sigma-clipping will screw up the stats of course!
                 bg_data = sigma_clip(bg_data[::sampling], sigma=2.0, maxiters=2)
                 bg_data = bg_data.data[~bg_data.mask]
                 bg = np.median(bg_data)
                 bg_std = np.std(bg_data)
+            bg, bg_std = float(bg), float(bg_std)  # allow weak type promotion
         else:
             bg, bg_std = None, None
 
@@ -1888,6 +1772,52 @@ def obsmode_del(ad):
             if keyword in ad.phu:
                 ad.phu.remove(keyword)
     return ad
+
+
+def offsets_relative_to_slit(ext1, ext2):
+    """
+    Determine the spatial offsets between the pointings of two AstroData
+    objects, expressed parallel and perpendicular to the slit axis.
+    The issue here is that the world_to_pixel transformation is insensitive
+    to coordinate movement perpendicular to the slit. The calculation is
+    performed by determining the pointing of one AD from its center of
+    projection and the pointing of the other from its WCS evaluated at the
+    same pixel location. The position angle of the slit is calculated from
+    the sky displacement when offsetting 500 pixels (arbitrary) along the
+    slit axis.
+
+    Parameters
+    ----------
+    ext1, ext2: single-slice AstroData instances
+        the two AD objects (assumed to be of the same subclass)
+
+    Returns
+    -------
+    dist_para: float
+        separation (in arcsec) parallel to the slit
+    dist_perp: float
+        separation (in arcsec) perpendicular to the slit
+    """
+    wcs1 = ext1.wcs
+    try:
+        ra1, dec1 = at.get_center_of_projection(wcs1)
+    except TypeError:
+        raise ValueError(f"Cannot get center of projection for {ext1.filename}")
+    dispaxis = 2 - ext1.dispersion_axis()  # python sense
+    cenwave, *_ = wcs1(*(0.5 * np.asarray(ext1.shape)[::-1]))
+    x, y = wcs1.invert(cenwave, ra1, dec1)
+
+    # Get PA of slit by finding coordinates along the slit
+    coord1 = SkyCoord(ra1, dec1, unit='deg')
+    ra2, dec2 = wcs1(x, y+500)[-2:] if dispaxis == 1 else wcs1(x+500, y)[-2:]
+    pa = coord1.position_angle(SkyCoord(ra2, dec2, unit='deg')).deg
+
+    # Calculate PA and angular distance between sky coords of the same pixel
+    # on the two input ADs
+    ra2, dec2 = ext2.wcs(x, y)[-2:]
+    coord2 = SkyCoord(ra2, dec2, unit='deg')
+    return at.spherical_offsets_by_pa(coord1, coord2, pa)
+
 
 def parse_sextractor_param(param_file):
     """
@@ -2222,7 +2152,7 @@ class ExposureGroup:
     # pass around nddata instances rather than lists or dictionaries but
     # that's not even well defined within AstroPy yet.
 
-    def __init__(self, adinputs, pkg=None, frac_FOV=1.0):
+    def __init__(self, adinputs, fields_overlap=None, frac_FOV=1.0):
         """
         Parameters
         ----------
@@ -2243,20 +2173,17 @@ class ExposureGroup:
         # Make sure the field scaling is valid:
         if not isinstance(frac_FOV, numbers.Number) or frac_FOV < 0.:
             raise ValueError('frac_FOV must be >= 0.')
+        if not callable(fields_overlap):
+            raise ValueError('fields_overlap must be callable')
 
         # Initialize members:
-        self.members = {}
+        self.members = []
         self._frac_FOV = frac_FOV
-        self.group_center = (0., 0.)
+        self.group_center = None
         self.add_members(adinputs)
-        try:
-            FOV = import_module('{}.FOV'.format(pkg))
-            self._pointing_in_field = FOV.pointing_in_field
-        except (ImportError, AttributeError):
-            raise NameError("FOV.pointing_in_field() function not found in {}".
-                            format(pkg))
+        self._fields_overlap = fields_overlap
 
-    def pointing_in_field(self, ad, fast=True):
+    def fields_overlap(self, ad):
         """
         Determine whether or not a new pointing falls within this group.
         The check can be done against either the group center, or against
@@ -2275,14 +2202,9 @@ class ExposureGroup:
         bool: whether or not the input point is within the field of view
             (adjusted by the frac_FOV specified when creating the group).
         """
-        if fast:
-            return self._pointing_in_field(ad, self.group_center,
-                                           frac_FOV=self._frac_FOV)
-        else:
-            for offset in self.members.values():
-                if self._pointing_in_field(ad, offset,
-                                           frac_FOV=self._frac_FOV):
-                    return True
+        for ad_in_group in self.members:
+            if self._fields_overlap(ad, ad_in_group, frac_FOV=self._frac_FOV):
+                return True
         return False
 
     def __len__(self):
@@ -2301,14 +2223,11 @@ class ExposureGroup:
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def list(self):
-        """
-        List the AstroData instances associated with this group.
+    def __contains__(self, item):
+        return item in self.members
 
-        :returns: Exposure list
-        :rtype: list of AstroData instances
-        """
-        return list(self.members.keys())
+    def list(self):
+        return self.members
 
     def add_members(self, adinputs):
         """
@@ -2321,28 +2240,21 @@ class ExposureGroup:
         if not isinstance(adinputs, list):
             adinputs = [adinputs]
         # How many points were there previously and will there be now?
-        ngroups = self.__len__()
-        ntot = ngroups + len(adinputs)
+        for ad in adinputs:
+            if ad not in self.members:
+                self.members.append(ad)
+                ad_coord = SkyCoord(ad.ra(), ad.dec(), unit='deg')
+                if self.group_center:
+                    separation = self.group_center.separation(ad_coord)
+                    pa = self.group_center.position_angle(ad_coord)
+                    # We move the group center fractionally towards the new
+                    # position
+                    self.group_center = self.group_center.directional_offset_by(
+                        pa, separation / len(self))
+                else:
+                    self.group_center = ad_coord
 
-        # Create dict for new members and complain if coords are invalid
-        new_dict = {ad: (ad.detector_x_offset(), ad.detector_y_offset())
-                    for ad in adinputs}
-        for ad, offsets in new_dict.items():
-            if not all(isinstance(offset, numbers.Number) for offset in offsets):
-                    raise ValueError("non-numeric coordinate {} from {}"
-                                     "".format(offsets, ad.filename))
-
-        # Add the new points to the group list:
-        self.members.update(new_dict)
-
-        # Update the group centroid to account for the new points
-        new_vals = list(new_dict.values())
-        newsum = [sum(axvals) for axvals in zip(*new_vals)]
-        self.group_center = [(cval * ngroups + nval) / ntot
-                             for cval, nval in zip(self.group_center, newsum)]
-
-
-def group_exposures(adinputs, pkg=None, frac_FOV=1.0):
+def group_exposures(adinputs, fields_overlap=None, frac_FOV=1.0):
     """
     Sort a list of AstroData instances into dither groups around common
     nod positions, according to their pointing offsets.
@@ -2360,6 +2272,10 @@ def group_exposures(adinputs, pkg=None, frac_FOV=1.0):
     IQ problems towards the edges of the field. OTOH intermediate offsets
     are generally difficult to achieve anyway due to guide probe limits
     when the instrumental FOV is comparable to that of the telescope.
+
+    The algorithm has been improved (but made slightly slower) to be
+    independent of the order in which files arrive. If a pointing overlaps
+    with two (or more) existing groups, it will unify these groups.
 
     Parameters
     ----------
@@ -2383,25 +2299,18 @@ def group_exposures(adinputs, pkg=None, frac_FOV=1.0):
     groups = []
 
     for ad in adinputs:
-        # Should this pointing be associated with an existing group?
-        # Check against field centers first.
-        found = False
-        for group in groups:
-            if group.pointing_in_field(ad, fast=True):
-                group.add_members(ad)
-                found = True
-                break
-
-        # If we haven't found a match, do a more rigorous (slower) check
-        # against all members of each group
-        if not found:
-            for group in groups:
-                if group.pointing_in_field(ad, fast=False):
+        found = None
+        for i, group in reversed(list(enumerate(groups))):
+            if group.fields_overlap(ad):
+                if found is None:
                     group.add_members(ad)
-                    found = True
-                    break
-            if not found:
-                groups.append(ExposureGroup(ad, pkg, frac_FOV=frac_FOV))
+                else:
+                    group.add_members(groups[found].list())
+                    del groups[found]
+                found = i
+        if found is None:
+            groups.append(ExposureGroup(ad, fields_overlap=fields_overlap,
+                                        frac_FOV=frac_FOV))
 
     # Here this simple algorithm could be made more robust for borderline
     # spacing (a bit smaller than the field size) by merging clusters that

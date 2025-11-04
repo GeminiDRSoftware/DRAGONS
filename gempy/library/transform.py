@@ -1,4 +1,4 @@
-# Copyright(c) 2018-2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2018-2025 Association of Universities for Research in Astronomy, Inc.
 #
 """
 transform.py
@@ -37,6 +37,7 @@ Functions:
 import numpy as np
 from copy import deepcopy
 from functools import reduce
+import warnings
 
 from astropy.modeling import models, Model
 from astropy.modeling.core import _model_oper, fix_inputs
@@ -48,6 +49,11 @@ from scipy import ndimage
 
 from gempy.library import astromodels as am, astrotools as at
 from gempy.gemini import gemini_tools as gt
+
+try:
+    from gempy.library.cython_utils import polyinterp
+except ImportError:  # pragma: no cover
+    raise ImportError("Run 'cythonize -i cython_utils.pyx' in gempy/library")
 
 import multiprocessing as multi
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -535,7 +541,7 @@ class Transform:
             i = self.index(index)
             # Avoids corrupting a Model (it will lose its name)
             if len(sequence) == 1:
-                self._models.insert(index, model.copy() if copy else model)
+                self._models.insert(index, deepcopy(model) if copy else model)
             else:
                 self._models[i:i] = sequence
         # Update affinity based on new model (leave existing stuff alone)
@@ -651,7 +657,8 @@ class Transform:
 
         Returns
         -------
-            AffineMatrices(array, array): affine matrix and offset
+        AffineMatrices(array, array): affine matrix and offset, in
+            standard python order
         """
         if shape is None:
             try:
@@ -674,7 +681,8 @@ class Transform:
             msg.append(repr(model))
         return new_line_indent.join(msg)
 
-    def apply(self, input_array, output_shape, order=1, cval=0, inverse=False):
+    def apply(self, input_array, output_shape, interpolant="linear",
+              cval=0, inverse=False):
         """
         Apply the transform to the pixels of the input array. Recall that the
         scipy.ndimage functions need to know where in the input_array to find
@@ -690,8 +698,8 @@ class Transform:
             the input "image"
         output_shape: sequence
             shape of the output array
-        order: int (0-5)
-            order of interpolation
+        interpolant: str
+            type of interpolant
         cval: float-like
             value to use where there's no pixel data
         inverse: bool
@@ -703,16 +711,81 @@ class Transform:
         """
         if self.is_affine:
             if inverse:
-                matrix, offset = self.affine_matrices(input_array.shape)
+                mapping = self.affine_matrices(input_array.shape)
             else:
-                matrix, offset = self.inverse.affine_matrices(input_array.shape)
-            output_array = ndimage.affine_transform(input_array, matrix, offset,
-                                        output_shape, order=order, cval=cval)
+                mapping = self.inverse.affine_matrices(input_array.shape)
         else:
             mapping = GeoMap(self, output_shape, inverse=inverse)
-            output_array = ndimage.map_coordinates(input_array, mapping.coords,
-                                        order=order, cval=cval)
-        return output_array
+
+        return self.transform_data(input_array, mapping, output_shape,
+                                   interpolant=interpolant, cval=cval)
+
+    @staticmethod
+    def transform_data(input_array, mapping, output_shape=None,
+                       interpolant="linear", cval=0):
+        """
+        Perform the transformation (a static method so it can be called
+        elsewhere). This is the single point where the resampling function
+        is called.
+
+        Parameters
+        ----------
+        input_array
+            the input "image"
+        mapping: AffineMatrices or GeoMap instance
+            describing the mapping from each output pixel to input coordinates
+        output_shape: tuple/None
+            output array shape (not needed for GeoMap)
+        interpolant: str
+            type of interpolant
+        cval: float
+            value for out-of-bounds pixels
+
+        Returns
+        -------
+        ndarray: output array "image"
+        """
+        if interpolant == "nearest":
+            interpolant = "spline0"
+        elif interpolant == "linear":
+            interpolant = "spline1"
+
+        if not (interpolant.startswith("spline") or
+                interpolant.startswith("poly")):
+            raise ValueError(f"Invalid interpolant string '{interpolant}'")
+        try:
+            order = int(interpolant[-1])
+        except ValueError:
+            raise ValueError(f"Invalid interpolant string '{interpolant}'")
+
+        if interpolant.startswith("spline"):
+            if isinstance(mapping, GeoMap):
+                return ndimage.map_coordinates(input_array, mapping.coords,
+                                               cval=cval, order=order)
+            return ndimage.affine_transform(
+                input_array, mapping.matrix, mapping.offset, output_shape,
+                cval=cval, order=order)
+
+        # Polynomial interpolation
+        if isinstance(mapping, GeoMap):
+            affinity = False
+            output_shape = mapping.coords[0].shape
+            geomap = np.asarray(mapping.coords).ravel().astype(np.float32,
+                                                               copy=False)
+        else:
+            affinity = True
+            geomap = np.concatenate([mapping.matrix,
+                                     mapping.offset[:, np.newaxis]],
+                                    axis=1).astype(np.float32).ravel()
+        out_array = np.empty(output_shape, dtype=np.float32)
+        polyinterp(input_array.astype(np.float32, copy=False).ravel(),
+                   np.asarray(input_array.shape, dtype=np.int32),
+                   len(input_array.shape),
+                   out_array.astype(np.float32, copy=False).ravel(),
+                   np.asarray(out_array.shape, dtype=np.int32),
+                   geomap, affinity, order, cval)
+
+        return out_array
 
     @classmethod
     def create2d(cls, translation=(0, 0), rotation=None, magnification=None,
@@ -806,7 +879,7 @@ class GeoMap:
         grids = np.meshgrid(*(np.arange(length) for length in self._shape), indexing='ij')
         offset_array = np.array(mapping.offset).reshape(len(grids), 1)
         affine_coords = (np.dot(mapping.matrix, np.array([grid.flatten() for grid in grids]))
-                         + offset_array).astype(np.float32).reshape(len(grids), *self._shape)
+                         + offset_array).astype(np.float32, copy=False).reshape(len(grids), *self._shape)
         offsets = np.sum(np.square(self.coords - affine_coords), axis=0)
         return np.sqrt(np.mean(offsets)), np.sqrt(np.max(offsets))
 
@@ -820,7 +893,7 @@ class DataGroup:
     """
     UnequalError = ValueError("Number of arrays and transforms must be equal")
 
-    def __init__(self, arrays=None, transforms=None):
+    def __init__(self, arrays=None, transforms=None, loglevel="stdinfo"):
         if transforms is None:
             self._arrays = arrays or []
             self._transforms = [Transform()] * len(self._arrays)
@@ -837,6 +910,7 @@ class DataGroup:
         self.output_shape = None
         self.origin = None
         self.log = logutils.get_logger(__name__)
+        self.logit = getattr(self.log, loglevel)
 
     def __getitem__(self, index):
         return (self._arrays[index], self._transforms[index])
@@ -936,7 +1010,7 @@ class DataGroup:
                             [models.Shift(-offset) for offset in self.origin[::-1]]))
         self.origin = None
 
-    def transform(self, attributes=['data'], order=1, subsample=1,
+    def transform(self, attributes=['data'], interpolant="linear", subsample=1,
                   threshold=0.01, conserve=False, parallel=False):
         """
         This method transforms and combines the arrays into a single output
@@ -951,8 +1025,8 @@ class DataGroup:
         ----------
         attributes: sequence
             attributes of the input objects to transform
-        order: int (0-5)
-            order of spline interpolation
+        interpolant: str
+            type of interpolant
         subsample: int
             subsampling of input/output arrays
         threshold: float
@@ -989,8 +1063,7 @@ class DataGroup:
             if self.origin is not None and any(x != 0 for x in self.origin):
                 transform.append(reduce(Model.__and__,
                                  [models.Shift(-offset) for offset in self.origin[::-1]]))
-            output_corners = self._prepare_for_output(input_array,
-                                                      transform, subsample)
+            output_corners = self._prepare_for_output(input_array, transform)
             output_array_shape = tuple(max_ - min_ for min_, max_ in output_corners)
 
             # This can happen if the origin and/or output_shape are modified
@@ -1005,7 +1078,8 @@ class DataGroup:
 
             integer_shift = (transform.is_affine
                 and np.array_equal(mapping.matrix, np.eye(mapping.matrix.ndim)) and
-                                 np.array_equal(mapping.offset, mapping.offset.astype(int)))
+                                   np.array_equal(mapping.offset,
+                                                  mapping.offset.astype(int)))
 
             if not integer_shift:
                 ndim = transform.ndim
@@ -1082,12 +1156,16 @@ class DataGroup:
                 # Set up the functions to call to transform this attribute
                 jobs = []
                 if np.issubdtype(arr.dtype, np.unsignedinteger):
-                    for j in range(0, 16):
-                        bit = 2**j
+                    nbits = arr.itemsize * 8
+                    for j in range(0, nbits):
+                        bit = 2 ** j
                         if bit == cval or np.sum(arr & bit) > 0:
                             key = ((attr,bit), output_corners)
-                            jobs.append((key, arr & bit, {'cval': bit & cval,
-                                                          'threshold': threshold*bit}))
+                            # Convert bit plane to float32 so the output
+                            # will be float32 and we can threshold
+                            jobs.append((key, (arr & bit).astype(np.float32),
+                                         {'cval': bit & cval,
+                                          'threshold': threshold * bit}))
                 else:
                     key = (attr, output_corners)
                     jobs.append((key, arr, {}))
@@ -1095,8 +1173,12 @@ class DataGroup:
                 # Perform the jobs (in parallel, if we can)
                 for (key, arr, kwargs) in jobs:
                     args = (arr, mapping, key, output_array_shape)
+                    # VAR can produce negative values near "walls" so use
+                    # a linear interpolant instead.
+                    this_interpolant = ("linear" if key == "variance"
+                                        else interpolant)
                     kwargs.update({'dtype': self.output_dict[attr].dtype,
-                                   'order': order,
+                                   'interpolant': this_interpolant,
                                    'subsample': subsample,
                                    'jfactor': jfactor})
                     if parallel:
@@ -1127,7 +1209,7 @@ class DataGroup:
         del self.output_arrays
         return self.output_dict
 
-    def _prepare_for_output(self, input_array, transform, subsample):
+    def _prepare_for_output(self, input_array, transform):
         """
         Determine the shape of the output array that this input will be
         transformed into, accounting for the overall output array. If
@@ -1156,8 +1238,8 @@ class DataGroup:
         self.corners.append(trans_corners[::-1])  # standard python order
         min_coords = [int(np.ceil(min(coords))) for coords in trans_corners]
         max_coords = [int(np.floor(max(coords)))+1 for coords in trans_corners]
-        self.log.stdinfo("Array maps to ["+",".join(["{}:{}".format(min_+1, max_)
-                                for min_, max_ in zip(min_coords, max_coords)])+"]")
+        self.logit("Array maps to ["+",".join(
+            [f"{min_+1}:{max_}" for min_, max_ in zip(min_coords, max_coords)])+"]")
         # If this maps to a region not starting in the bottom-left of the
         # output, shift the whole thing so we can efficiently transform it
         # into an array. Coords are still in reverse python order.
@@ -1194,18 +1276,18 @@ class DataGroup:
             # have the bit set (and-like), but the other bits combine or-like
             cval = self.no_data.get(attr[0], 0)
             if attr[1] != cval:
-                output_region |= (arr * attr[1]).astype(dtype)
+                output_region |= (arr * attr[1]).astype(dtype, copy=False)
             else:
                 self.output_dict[attr[0]][slice_] = ((output_region & (65535 ^ cval)) |
-                                                (output_region & (arr * attr[1]))).astype(dtype)
+                                                (output_region & (arr * attr[1]))).astype(dtype, copy=False)
         else:
             self.output_dict[attr][slice_] += arr
         del self.output_arrays[key]
 
     def _apply_geometric_transform(self, input_array, mapping, output_key,
                                    output_shape, cval=0., dtype=np.float32,
-                                   threshold=None, subsample=1, order=1,
-                                   jfactor=1):
+                                   threshold=None, subsample=1,
+                                   interpolant="linear", jfactor=1):
         """
         None-returning function to apply geometric transform, so it can be used
         by multiprocessing
@@ -1229,8 +1311,8 @@ class DataGroup:
             (if set, a bool array is returned, irrespective of dtype)
         subsample: int
             subsampling in output array for transformation
-        order: int (0-5)
-            order of spline interpolation
+        interpolant: str
+            type of interpolant
         jfactor: float/array
             Jacobian of transformation (basically the increase in pixel area)
         """
@@ -1243,20 +1325,16 @@ class DataGroup:
         isinf = np.isinf(input_array)
         if isnan.any() or isinf.any():
             log.warning(f"There are {isnan.sum()} NaN and {isinf.sum()} inf "
-                        f"values in the {output_key} array. Setting to zero.")
+                        f"values in the {output_key[0]} array. Setting to zero.")
             input_array[isnan | isinf] = 0
 
         # We want to transform any DQ bit arrays into floats so we can sample
         # the "ringing" from the interpolation and flag appropriately
         out_dtype = np.float32 if np.issubdtype(
             input_array.dtype, np.unsignedinteger) else input_array.dtype
-        if isinstance(mapping, GeoMap):
-            out_array = ndimage.map_coordinates(input_array, mapping.coords,
-                                                cval=cval, order=order, output=out_dtype)
-        else:
-            out_array = ndimage.affine_transform(input_array, mapping.matrix,
-                                                 mapping.offset, trans_output_shape,
-                                                 cval=cval, order=order, output=out_dtype)
+        out_array = Transform.transform_data(
+            input_array, mapping, trans_output_shape, interpolant=interpolant,
+            cval=cval)
 
         # We average to undo the subsampling. This retains the "threshold" and
         # conserves flux according to the Jacobian of input/output arrays.
@@ -1270,7 +1348,7 @@ class DataGroup:
             jfactor = 1  # Since we've done it
 
         if threshold is None:
-            self.output_arrays[output_key] = (out_array * jfactor).astype(dtype)
+            self.output_arrays[output_key] = (out_array * jfactor).astype(dtype, copy=False)
         else:
             self.output_arrays[output_key] = np.where(abs(out_array) > threshold,
                                                       True, False)
@@ -1414,7 +1492,7 @@ def add_mosaic_wcs(ad, geotable):
 
 
 @insert_descriptor_values()
-def add_longslit_wcs(ad, central_wavelength=None):
+def add_longslit_wcs(ad, central_wavelength=None, pointing=None):
     """
     Attach a gWCS object to all extensions of an AstroData objects,
     representing the approximate spectroscopic WCS, as returned by
@@ -1426,6 +1504,8 @@ def add_longslit_wcs(ad, central_wavelength=None):
         the AstroData instance requiring a WCS
     central_wavelength : float / None
         central wavelength in nm (None => use descriptor)
+    pointing: 2-tuple / None
+        RA and Dec of pointing center to reproject WCS
 
     Returns
     -------
@@ -1436,14 +1516,18 @@ def add_longslit_wcs(ad, central_wavelength=None):
 
     # TODO: This appears to be true for GMOS. Revisit for other multi-extension
     # spectrographs once they arrive and GMOS tests are written
-    crval1 = set(ad.hdr['CRVAL1'])
-    crval2 = set(ad.hdr['CRVAL2'])
-    if len(crval1) * len(crval2) != 1:
-        raise ValueError(f"Not all CRPIX1/CRPIX2 keywords are the same in {ad.filename}")
+    if pointing is None:
+        crval1 = set(ad.hdr['CRVAL1'])
+        crval2 = set(ad.hdr['CRVAL2'])
+        if len(crval1) * len(crval2) != 1:
+            raise ValueError(f"Not all CRVAL1/CRVAL2 keywords are the same in {ad.filename}")
+        pointing = (crval1.pop(), crval2.pop())
+
+    if ad.dispersion() is None:
+        raise ValueError(f"Unknown dispersion for {ad.filename}")
 
     for ext, dispaxis, dw in zip(ad, ad.dispersion_axis(), ad.dispersion(asNanometers=True)):
-        wcs = ext.wcs
-        if not isinstance(wcs.output_frame, cf.CelestialFrame):
+        if not isinstance(ext.wcs.output_frame, cf.CelestialFrame):
             raise TypeError(f"Output frame of {ad.filename} extension {ext.id}"
                             " is not a CelestialFrame instance")
 
@@ -1456,17 +1540,30 @@ def add_longslit_wcs(ad, central_wavelength=None):
                                           axes_names='AWAV')
         output_frame = cf.CompositeFrame([spectral_frame, sky_frame], name='world')
 
-        transform = ext.wcs.forward_transform
-        crpix = transform[f'crpix{dispaxis}'].offset.value
+        transform = adwcs.create_new_image_projection(ext.wcs.forward_transform, pointing)
+        crpix = transform.inverse(*pointing)
+        # Add back the 'crpixN' names, which would otherwise be lost at this
+        # point (they're used in the various test_adjust_wcs_with_correlation
+        # tests).
+        names = ['crpix1', 'crpix2']
+
         transform.name = None  # so we can reuse "SKY"
-        #sky_model = fix_inputs(ext.wcs.forward_transform, {dispaxis-1 :-crpix})
+        # Pop one of the crpix names (based on the dispersion axis) for the sky
+        # model...
         if dispaxis == 1:
-            sky_model = models.Mapping((0, 0)) | (models.Const1D(-crpix) & models.Identity(1)) | transform
+            sky_model = (models.Mapping((0, 0)) |
+                         (models.Const1D(0) &
+                          models.Shift(-crpix[1], name=names.pop(1))))
         else:
-            sky_model = models.Mapping((0, 0)) | (models.Identity(1) & models.Const1D(-crpix)) | transform
+            sky_model = (models.Mapping((0, 0)) |
+                         (models.Shift(-crpix[0], name=names.pop(0)) &
+                          models.Const1D(0)))
+        sky_model |= transform[2:]
+        sky_model[-1].lon, sky_model[-1].lat = pointing
         sky_model.name = 'SKY'
-        wave_model = (models.Shift(crpix) | models.Scale(dw) |
-                      models.Shift(central_wavelength))
+        # ...then we can use the remaining crpix name for the wave model.
+        wave_model = (models.Shift(-crpix[dispaxis-1], name=names[0]) |
+                      models.Scale(dw) | models.Shift(central_wavelength))
         wave_model.name = 'WAVE'
 
         if dispaxis == 1:
@@ -1477,15 +1574,15 @@ def add_longslit_wcs(ad, central_wavelength=None):
                                  models.Mapping((0,), n_inputs=2))
             transform = models.Mapping((1, 0)) | wave_model & sky_model
 
-        new_wcs = gWCS([(wcs.input_frame, transform),
+        new_wcs = gWCS([(ext.wcs.input_frame, transform),
                         (output_frame, None)])
         ext.wcs = new_wcs
 
     return ad
 
 
-def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
-                      threshold=0.001, conserve=False, parallel=False,
+def resample_from_wcs(ad, frame_name, attributes=None, interpolant="linear",
+                      subsample=1, threshold=0.001, conserve=False, parallel=False,
                       process_objcat=False, output_shape=None, origin=None):
     """
     This takes a single AstroData object with WCS objects attached to the
@@ -1503,8 +1600,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
         name of the frame to resample to
     attributes : list/None
         list of attributes to resample (None => all standard ones that exist)
-    order : int
-        order of interpolation
+    interpolant : str
+        type of interpolant
     subsample : int
         if >1, will transform onto finer pixel grid and block-average down
     threshold : float
@@ -1547,6 +1644,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     # Create the blocks (individual physical detectors)
     if is_single:
         blocks = [Block(ad)]
+    elif len(ad) == 1:
+        blocks = [Block(ad[0])]
     else:
         array_info = gt.array_information(ad)
         blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
@@ -1584,7 +1683,7 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
         attributes += ['data']
     log.fullinfo("Processing the following array attributes: "
                  "{}".format(', '.join(attributes)))
-    dg.transform(attributes=attributes, order=order, subsample=subsample,
+    dg.transform(attributes=attributes, interpolant=interpolant, subsample=subsample,
                  threshold=threshold, conserve=conserve, parallel=parallel)
 
     ad_out = astrodata.create(ad.phu)
@@ -1594,9 +1693,11 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
     ref_ext = ad if is_single else ad[ref_index]
 
     ad_out.append(dg.output_dict['data'], header=ref_ext.hdr.copy())
-    for key, value in dg.output_dict.items():
-        if key != 'data':  # already done this
-            setattr(ad_out[0], key, value)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=RuntimeWarning)
+        for key, value in dg.output_dict.items():
+            if key != 'data':  # already done this
+                setattr(ad_out[0], key, value)
 
     # Store this information so the calling primitive can access it
     ad_out[0].nddata.meta['transform'] = {'origin': dg.origin,
@@ -1650,13 +1751,14 @@ def resample_from_wcs(ad, frame_name, attributes=None, order=1, subsample=1,
 
         # array_section only has meaning now if the inputs were from a
         # single physical array
-        if len(blocks) == 1:
-            all_arrsec = np.array([ext.array_section() for ext in ad]).T
-            ad_out.hdr[keywords['array']] = \
-                '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
-                               for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
-        else:
-            del ad_out.hdr[keywords['array']]
+        if keywords['array'] in ad_out.hdr:
+            if len(blocks) == 1:
+                all_arrsec = np.array([ext.array_section() for ext in ad]).T
+                ad_out.hdr[keywords['array']] = \
+                    '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
+                                   for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
+            else:
+                del ad_out.hdr[keywords['array']]
 
     # Try to assign an array name for this based on commonality
     if not is_single:

@@ -22,8 +22,6 @@ Starting with DRAGONS v3.1, the static bad pixel masks (BPMs) are now handled as
 calibrations. They are downloadable from the archive instead of being packaged
 with the software.  There are various ways to get the BPMs.
 
-Note that at this time there no static BPMs for Flamingos-2 data.
-
 .. _manualBPM:
 
 Manual search
@@ -63,41 +61,38 @@ show up with the green background.
 
 |verticalpadding|
 
-This will be the case for new data (from late March 2023).  For old data,
-until we fix an issue recently discovered, they will not show up as
-associated calibration and you will have to find them manual as explained
-in the previous section, :ref:`manualBPM`.  We understand the issue and are
-working on a fix.
+If a BPM does not show up, see if you find one using the manual search
+explained in the previous section, :ref:`manualBPM`.
 
 
-Calibration service
--------------------
-The calibration service in DRAGONS 3.1 adds several new features.  One of them
-is the ability to search multiple databases in a serial way, including online
-database, like the Gemini archive.
+.. Calibration service
+.. -------------------
+.. The calibration service in DRAGONS 3.1 adds several new features.  One of them
+.. is the ability to search multiple databases in a serial way, including online
+.. database, like the Gemini archive.
+..
+.. The system will look first in your local database for processed calibration
+.. and BPMs.  If it does not find anything that matches, it will look in the
+.. next database.  To activate this feature, in ``~/.dragons/``, create or edit
+.. the configuration file ``dragonsrc`` as follows:
 
-The system will look first in your local database for processed calibration
-and BPMs.  If it does not find anything that matches, it will look in the
-next database.  To activate this feature, in ``~/.dragons/``, create or edit
-the configuration file ``dragonsrc`` as follows:
+.. .. code-block:: none
 
-.. code-block:: none
+.. ..     [calibs]
+..     databases = ${path_to_my_data}/niriimg_tutorial/playground/cal_manager.db get store
+..                 https://archive.gemini.edu get
 
-    [calibs]
-    databases = ${path_to_my_data}/niriimg_tutorial/playground/cal_manager.db get store
-                https://archive.gemini.edu get
+.. If you know that you will be connected to the internet when you reduce the data,
+.. you do not need to pre-download the BPM, DRAGONS will find it for you in the
+.. archive.
 
-If you know that you will be connected to the internet when you reduce the data,
-you do not need to pre-download the BPM, DRAGONS will find it for you in the
-archive.
+.. If you want to pre-download the BPM without having to search for it, like in the
+.. previous two sections, you can let DRAGONS find it and download it for you:
 
-If you want to pre-download the BPM without having to search for it, like in the
-previous two sections, you can let DRAGONS find it and download it for you:
+.. .. code-block:: none
 
-.. code-block:: none
-
-    $ reduce -r getBPM <file_for_which_you_need_bpm>
-    $ caldb add calibrations/processed_bpm/<the_bpm>
+..     $ reduce -r getBPM <file_for_which_you_need_bpm>
+..     $ caldb add calibrations/processed_bpm/<the_bpm>
 
 
 

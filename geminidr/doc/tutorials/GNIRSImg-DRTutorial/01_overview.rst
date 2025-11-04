@@ -17,7 +17,7 @@ of the reduction is somewhat unpredictable.  The quality of the reduction
 critically depends on the quality and the availability of the calibration
 frames, the flat fields in particular.
 
-In here are tutorials that you, the reader, can run and experiment with.  This
+Here is a tutorial that you, the reader, can run and experiment with.  This
 document comes with a downloadable data package that contains all the data
 you need to run the examples presented.  Instructions on where to get that
 package and how to set things up are given in :ref:`datasetup`.

@@ -16,6 +16,7 @@ import gc
 import pickle
 import warnings
 import weakref
+import re
 
 from copy import deepcopy
 from inspect import isclass, currentframe
@@ -39,8 +40,6 @@ from .gemini.lookups.source_detection import sextractor_dict
 from recipe_system.cal_service import init_calibration_databases
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.config import load_config
-
-import atexit
 # ------------------------------ caches ---------------------------------------
 # Formerly in cal_service/caches.py
 #
@@ -132,11 +131,6 @@ class dormantViewer:
 # ------------------------------------------------------------------------------
 
 
-def cleanup(process):
-    # Function for the atexit registry to kill the ETISubprocess
-    process.terminate()
-
-
 @parameter_override
 @capture_provenance
 class PrimitivesBASE:
@@ -179,6 +173,7 @@ class PrimitivesBASE:
         # Most logic is separated into initialize() so subclasses can do custom initialization
         # while leaving any final logic to this base class.  This avoids having to repeat
         # this validate call across all subclass definitions
+        self._initialize_params()
         self._validate_user_parms()
 
         self._in_init = False
@@ -195,7 +190,15 @@ class PrimitivesBASE:
         self.params           = {}
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
-        self.user_params      = dict(uparms) if uparms else {}
+        self.user_params      = uparms if isinstance(uparms, dict) else dict(uparms) if uparms else {}
+
+        # remove quotes from string values.  This happens when quotes are used
+        # in the @-file.  The shell removes the quotes automatically.
+        quote_pattern = "^[\"\'](.+)[\"\']$"
+        for key, value in self.user_params.items():
+            if isinstance(value, str):
+                self.user_params[key] = re.sub(quote_pattern, r"\1", value)
+
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_dict          = sextractor_dict.sx_dict.copy()
@@ -224,10 +227,13 @@ class PrimitivesBASE:
         # previously.
         gc.collect()
         self.eti_subprocess = ETISubprocess()
-        atexit.register(cleanup, self.eti_subprocess)
 
         # Instantiate a dormantViewer(). Only ds9 for now.
         self.viewer = dormantViewer(self, 'ds9')
+
+    @property
+    def adinputs(self):
+        return self.streams['main']
 
     def _validate_user_parms(self):
         """
@@ -275,7 +281,10 @@ class PrimitivesBASE:
             if primitive:
                 alternative_primitives = find_similar_names(primitive, self.params.keys())
                 if alternative_primitives is None:  # it's valid
-                    alternative_parameters = find_similar_names(parameter, self.params[primitive])
+                    if parameter in ('skip_primitive', 'write_outputs'):
+                        alternative_parameters = None
+                    else:
+                        alternative_parameters = find_similar_names(parameter, self.params[primitive])
             else:
                 alternative_parameters = find_similar_names(
                     parameter, chain(*[v.keys() for v in self.params.values()]))
@@ -300,8 +309,8 @@ class PrimitivesBASE:
         return
 
     def _param_update(self, module):
-        """Create/update an entry in the primitivesClass's params dict
-        using Config classes in the module provided"""
+        """Create/update an entry in the primitivesClass's params dict;
+        this will be initialized later"""
         for attr in dir(module):
             obj = getattr(module, attr)
             if isclass(obj) and issubclass(obj, config.Config):
@@ -311,9 +320,15 @@ class PrimitivesBASE:
                     primname = attr.replace("Config", "")
                     self.params[primname] = obj()
 
-        # Play a bit fast and loose with python's inheritance. We need to check
-        # if we're redefining a Config that has already been inherited by
-        # another Config and, if so, update the child Config
+    def _initialize_params(self):
+        """
+        Instantiate all the Config instances that store the parameters for
+        each of the primitives. We do this once after all the modules have
+        been loaded.
+        """
+        # Play a bit fast and loose with python's inheritance. A Config that
+        # inherits from a parent might not want that parent, but the
+        # identically-named parent associated with this primitivesClass.
         # Do this in the correct inheritance order
         for k, v in sorted(self.params.items(),
                            key=lambda x: len(x[1].__class__.__bases__)):
@@ -322,9 +337,6 @@ class PrimitivesBASE:
             for cls in reversed((v.__class__,) + v.__class__.__bases__):
                 cls_name = cls.__name__
                 if cls_name.find('Config') > 0:
-                    # We may not have yet imported a Config from which we inherit.
-                    # In fact, we may never do so, in which case what's already
-                    # there from standard inheritance is fine and we move on.
                     cls_name = cls_name.replace("Config", "")
                     try:
                         new_cls = self.params[cls_name].__class__
@@ -337,12 +349,10 @@ class PrimitivesBASE:
                             if field in self.params[k]:
                                 self.params[k]._history[field] = []
                             self.params[k]._fields[field] = deepcopy(new_cls._fields[field])
-                        # Call inherited setDefaults from configs with the same name
-                        # but simply copy parameter values from others
-                        #if cls.__name__ == k+'Config':
-                        #    cls.setDefaults.__func__(self.params[k])
-                        #else:
-                        #    new_cls.setDefaults.__func__(self.params[k])
+                        # Call inherited setDefaults from configs with the
+                        # same name but simply copy parameter values from
+                        # others, since inherited Configs with other names
+                        # will have already have had setDefaults() run
                         if cls_name == k:
                             cls.setDefaults(self.params[k])
                         else:
@@ -367,3 +377,6 @@ class PrimitivesBASE:
         return {k: v for k, v in params.items()
                 if k in list(self.params[primname]) and
                 not (k == "suffix" and not pass_suffix)}
+
+class CalibrationNotFoundError(RuntimeError):
+    pass

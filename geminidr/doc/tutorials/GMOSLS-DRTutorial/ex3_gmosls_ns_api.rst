@@ -259,7 +259,7 @@ First, let's have a look at the list of objects.
         ad = astrodata.open(sci)
         print(sci, '  ', ad.object())
 
-On line 37, remember that the second argument contains the tags to **include**
+On line 31, remember that the second argument contains the tags to **include**
 (``tags``) and the third argument is the list of tags to **exclude**
 (``xtags``).
 
@@ -359,7 +359,7 @@ matching flat nearest in time to the target observation is used to flat field
 the target.  The central wavelength, filter, grating, binning, gain, and
 read speed must match.
 
-Because of the flexure, GMOS longslit flat field are not stacked.  Each is
+Because of the flexure, GMOS longslit flat fields are not stacked.  Each is
 reduced and used individually.  The default recipe takes that into account.
 
 We can send all the flats, regardless of characteristics, to ``Reduce`` and each
@@ -387,7 +387,7 @@ be reduced individually.
 
 The wavelength solution is automatically calculated and the algorithm has
 been found to be quite reliable.  There might be cases where it fails; inspect
-the ``*_mosaic.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
+the ``*_wavelengthSolutionDetermined.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
 logs to confirm a good solution.
 
 .. code-block:: python
@@ -435,7 +435,7 @@ configuration file.
 
         ad = astrodata.open(reduce_std.output_filenames[0])
         plt.ioff()
-        plotting.dgsplot_matplotlib(ad, 1)
+        plotting.dgsplot_matplotlib(ad, 1, kwargs={})
         plt.ion()
 
     To learn how to plot a 1-D spectrum with matplotlib using the WCS from a
@@ -517,7 +517,7 @@ This is what the 1-D flux-calibrated spectrum of our sole target looks like.
 
     ad = astrodata.open(reduce_science.output_filenames[0])
     plt.ioff()
-    plotting.dgsplot_matplotlib(ad, 1)
+    plotting.dgsplot_matplotlib(ad, 1, kwargs={})
     plt.ion()
 
 
@@ -556,5 +556,5 @@ To use a different format, set the ``format`` parameters.
     writeascii = Reduce()
     writeascii.files = ['N20190926S0130_1D.fits']
     writeascii.recipename = 'write1DSpectra'
-    writeascii.uparms = [('format', 'ascii.ecsv'), ('extension', 'ecsv')]
+    writeascii.uparms = dict([('format', 'ascii.ecsv'), ('extension', 'ecsv')])
     writeascii.runr()

@@ -14,7 +14,6 @@ from .baseMapper import Mapper
 
 from ..utils.mapper_utils import dotpath
 from ..utils.errors import PrimitivesNotFound
-from ..utils.rs_utilities import log_traceback
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
@@ -77,7 +76,7 @@ class PrimitiveMapper(Mapper):
         try:
             loaded_pkg = import_module(self.dotpackage)
         except ModuleNotFoundError:
-            log_traceback(log)
+            log.error("Uncaught exception", exc_info=True)
             yield None
             return
         for pkgpath, pkg in self._generate_primitive_modules(loaded_pkg):
@@ -92,9 +91,14 @@ class PrimitiveMapper(Mapper):
 
     def _generate_primitive_modules(self, pkg):
         ppath = pkg.__path__[0]
-        pkg_importer = pkgutil.ImpImporter(ppath)
-        for pkgname, ispkg in pkg_importer.iter_modules():
-            if ispkg:
+        #pkg_importer = pkgutil.ImpImporter(ppath)
+        #for pkgname, ispkg in pkg_importer.iter_modules():
+            # if ispkg:
+            #     continue
+            # else:
+            #     yield (pkg_importer.path, pkgname)
+        for modinfo in pkgutil.iter_modules([ppath]):
+            if modinfo.ispkg:
                 continue
             else:
-                yield (pkg_importer.path, pkgname)
+                yield (modinfo.module_finder.path, modinfo.name)

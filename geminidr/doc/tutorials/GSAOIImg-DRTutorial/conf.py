@@ -30,20 +30,20 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial - GSAOI Data Reduction'
-copyright = '2023, Association of Universities for Research in Astronomy'
+copyright = '2025, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The short X.Y version
 #version = astrodata.version(short=True)
-version = '3.1'
+version = '4.2_dev'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-release = '3.1.0'
-rtdurl = 'v'+release
-#release = '3.1.x'
+#release = '4.1.0'
+#rtdurl = 'v'+release
+#release = '4.1.x'
 #rtdurl = 'release-'+release
-#rtdurl = 'latest'
+rtdurl = 'latest'
 
 # -- General configuration ---------------------------------------------------
 
@@ -86,7 +86,7 @@ language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'April 2023'
+today = 'October 2025'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
@@ -132,7 +132,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'DRAGONSTutorial-GSAOItut'
+htmlhelp_basename = 'TutorialSeries-GSAOIDRDRAGONS'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -159,7 +159,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'DRAGONSTutorial-GSAOItut.tex', 'DRAGONS Tutorial - GSAOI Data Reduction',
+    (master_doc, 'TutorialSeries-GSAOIDRDRAGONS.tex', 'Tutorial Series - GSAOI Data Reduction with DRAGONS',
      'DRAGONS Team', 'manual'),
 ]
 
@@ -169,7 +169,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'dragonstutorial-gsaoi', 'DRAGONS Tutorial - GSAOI Data Reduction',
+    (master_doc, 'tutorialseries-gsaoidrdragons', 'Tutorial Series - GSAOI Data Reduction with DRAGONS',
      [author], 1)
 ]
 

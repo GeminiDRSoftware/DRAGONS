@@ -1,9 +1,10 @@
 # this is only for RTD because it uses setup.py install instead of pip
 Cython
 #docutils<0.18
-numpy
+numpy>=1.17,<2.0.0
 astropy
 asdf
 gwcs
 python-dateutil
-sqlalchemy>=1.3,<2.0.0a0
+sqlalchemy>=2.0.0
+sphinx-rtd-theme

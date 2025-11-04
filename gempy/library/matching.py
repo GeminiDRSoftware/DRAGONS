@@ -1,4 +1,4 @@
-# Copyright(c) 2017-2023 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2017-2025 Association of Universities for Research in Astronomy, Inc.
 
 import numpy as np
 from datetime import datetime
@@ -162,11 +162,11 @@ class BruteLandscapeFitter(Fitter):
             if scale:
                 self.grid_model = reduce(Model.__and__, [models.Shift(-_min) |
                                                          models.Scale(scale) for _min in mins])
-                landshape = tuple(int((_max - _min) * scale)
-                                  for _min, _max in zip(mins, maxs))[::-1]
             else:
                 scale = 1
-                landshape = tuple(int(_max) for _max in maxs)[::-1]
+                self.grid_model = reduce(Model.__and__, [models.Shift(-_min) for _min in mins])
+            landshape = tuple(max(int((_max - _min) * scale), 1)
+                              for _min, _max in zip(mins, maxs))[::-1]
 
         # We need to fiddle around a bit here to ensure a 1D output gets
         # returned in a way that can be unpacked (like higher-D outputs)
@@ -282,7 +282,6 @@ class KDTreeFitter(Fitter):
         self.maxsep = self.sigma * maxsig
         self.k = k
         self.proximity_function = partial(proximity_function, sigma=self.sigma)
-
         try:
             opt_method = getattr(optimize, method)
             self._method = None
@@ -349,7 +348,7 @@ class KDTreeFitter(Fitter):
             for p in model_copy.param_names:
                 pval = getattr(model_copy, p).value
                 ### EDITED THIS LINE SO TAKE A LOOK IF 2D MATCHING GOES WRONG!!
-                if abs(pval) < 20 * xatol and not model_copy.fixed[p]:  # and 'offset' in p
+                if abs(pval).all() < 20 * xatol and not model_copy.fixed[p]:  # and 'offset' in p
                     getattr(model_copy, p).value = 20 * xatol if pval == 0 \
                         else (np.sign(pval) * 20 * xatol)
 
@@ -372,22 +371,32 @@ class KDTreeFitter(Fitter):
         farg = (model_copy, in_coords, tree)
         p0, *_ = model_to_fit_params(model_copy)
 
-        arg_names = inspect.getfullargspec(self._opt_method).args
+        def bounds_for_unfixed_parameters(m):
+            return tuple(m.bounds[p] for p in m.param_names if not m.fixed[p])
+
+        opt_method_params = inspect.signature(self._opt_method).parameters
+        arg_names = list(k for k, v in opt_method_params.items()
+                         if v.default == inspect.Parameter.empty)
+        kwarg_names = list(k for k, v in opt_method_params.items()
+                           if v.default != inspect.Parameter.empty)
         args = [self.objective_function]
         if arg_names[1] == 'x0':
             args.append(p0)
         elif arg_names[1] == 'bounds':
-            args.append(tuple(model_copy.bounds[p] for p in model_copy.param_names))
+            args.append(bounds_for_unfixed_parameters(model_copy))
         else:
             raise ValueError("Don't understand argument {}".format(arg_names[1]))
 
-        if 'args' in arg_names:
+        # Just in case as a result of scipy change
+        if 'bounds' in kwarg_names:
+            kwargs['bounds'] = bounds_for_unfixed_parameters(model_copy)
+        if 'args' in arg_names or 'args' in kwarg_names:
             kwargs['args'] = farg
 
-        if 'method' in arg_names:
+        if self._method is not None:
             kwargs['method'] = self._method
 
-        if 'minimizer_kwargs' in arg_names:
+        if 'minimizer_kwargs' in kwarg_names:
             kwargs['minimizer_kwargs'] = {'args': farg,
                                           'method': 'Nelder-Mead'}
 
@@ -396,7 +405,9 @@ class KDTreeFitter(Fitter):
         fitted_params = result['x']
         fitter_to_model_params(model_copy, fitted_params)
         self.statistic = result['fun']
-        self.niter = result['nit']
+        self.niter = result['nit']  # Number of iterations
+        self.message = result['message']  # Message about why it terminated
+        self.status = result['success']  # Numeric return status (0 for 'good')
         return model_copy
 
     @staticmethod
@@ -583,6 +594,9 @@ def match_sources(incoords, refcoords, radius=2.0):
     int array of length N:
         index of matched sources in the reference list (-1 means no match)
     """
+    if np.asarray(incoords).size == 0:
+        return np.array([], dtype=int)
+
     try:
         iter(incoords[0])
     except TypeError:

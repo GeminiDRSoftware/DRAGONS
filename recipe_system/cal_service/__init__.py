@@ -87,14 +87,16 @@ def init_calibration_databases(inst_lookups=None, procmode=None,
     try:
         masks = import_module('.maskdb', inst_lookups)
         mdf_dict = getattr(masks, 'mdf_dict')
+        mdf_key = getattr(masks, 'mdf_key')
     except (ImportError, TypeError, AttributeError):
         mdf_dict = None
+        mdf_key = None
     else:
         for k, v in mdf_dict.items():
             mdf_dict[k] = path.join(path.dirname(masks.__file__),
                                     'MDF', v)
     caldb = UserDB(name="manual calibrations", mdf_dict=mdf_dict,
-                   user_cals=ucals)
+                   mdf_key=mdf_key, user_cals=ucals)
 
     upload_calibs = upload is not None and "calibs" in upload
     upload_science = upload is not None and "science" in upload

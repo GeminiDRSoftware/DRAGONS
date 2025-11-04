@@ -17,7 +17,7 @@ def makeProcessedBias(p):
         A primitive set matching the recipe_tags.
     """
 
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
@@ -25,6 +25,39 @@ def makeProcessedBias(p):
     p.getList(purpose="forStack")
     p.stackBiases()
     p.storeProcessedBias()
+    return
+
+def checkBiasOSCO(p):
+    """
+    This recipe checks bias frames by processing them as regular bias frames
+    (notably including overscan correction), then recording some pixel
+    statistics.
+    :param p:
+    :return:
+    """
+    p.prepare(require_wcs=False)
+    p.addDQ(add_illum_mask=False)
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.recordPixelStats(prefix='OSCO')
+    p.writeOutputs(strip=True, suffix='_checkBiasOSCO')
+    return
+
+def checkBiasBICO(p):
+    """
+    This recipe checks bias frames by processing them as regular bias frames
+    (notably including overscan correction), then subtracting a processed bias
+    and recording some pixel statistics.
+    :param p:
+    :return:
+    """
+    p.prepare(require_wcs=False)
+    p.addDQ(add_illum_mask=False)
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect(do_cal="force")
+    p.recordPixelStats(prefix="BICO")
+    p.writeOutputs(strip=True, suffix='_checkBiasBICO')
     return
 
 _default = makeProcessedBias

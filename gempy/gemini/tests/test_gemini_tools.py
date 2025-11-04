@@ -15,6 +15,8 @@ test_data = [
     ('N20180118S0344.fits', 1.32),
 ]
 
+# For making a fake test image, and testing it.
+datavalue = 10000
 
 caltype_data = [
     ('arc', 'Arc spectrum'),
@@ -24,6 +26,16 @@ caltype_data = [
     ('sky', 'Sky Frame'),
     ('flat', 'Flat Frame'),
 ]
+
+@pytest.fixture
+def fake_image(astrofaker):
+    np.random.seed(4) # A number that works with all the later tests
+    ad = astrofaker.create('NIRI', ['IMAGE'])
+    ad.init_default_extensions()
+    ad[0].data += datavalue
+    ad.add_poisson_noise()
+
+    return ad
 
 
 @pytest.mark.dragons_remote_data
@@ -74,13 +86,25 @@ def test_fit_continuum_slit_image(fname, fwhm, change_working_dir):
 
 
 @pytest.mark.parametrize("gaussfit", [True, False])
-def test_measure_bg_from_image_fake(gaussfit, astrofaker):
-    datavalue = 10000
-    ad = astrofaker.create('NIRI', ['IMAGE'])
-    ad.init_default_extensions()
-    ad[0].data += datavalue
-    ad.add_poisson_noise()
+def test_measure_bg_from_image_fake(gaussfit, fake_image):
+
+    ad = fake_image
     mean, stddev, nsamples = gt.measure_bg_from_image(ad[0], gaussfit=gaussfit)
+    assert abs(mean - datavalue) < 1
+    if gaussfit:  # stddev unreliable for non-Gaussfit
+        assert abs(stddev - np.sqrt(datavalue / ad[0].gain())) < 0.5
+
+
+@pytest.mark.parametrize("section", [(slice(0, -1), slice(0, -1)),
+                                     (slice(None, 512), slice(512, None)),
+                                     (slice(None, None), slice(None, None)),
+                                     (slice(-512, None), slice(None, -512))])
+@pytest.mark.parametrize("gaussfit", [True, False])
+def test_measure_bg_from_image_fake_sections(section, gaussfit, fake_image):
+
+    ad = fake_image
+    mean, stddev, nsamples = gt.measure_bg_from_image(ad[0], gaussfit=gaussfit,
+                                                      section=section)
     assert abs(mean - datavalue) < 1
     if gaussfit:  # stddev unreliable for non-Gaussfit
         assert abs(stddev - np.sqrt(datavalue / ad[0].gain())) < 0.5

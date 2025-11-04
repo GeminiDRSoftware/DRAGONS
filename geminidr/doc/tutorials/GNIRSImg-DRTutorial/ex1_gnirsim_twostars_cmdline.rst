@@ -190,6 +190,8 @@ This can be seen by using "|showpars|"::
    :scale: 100%
    :align: center
 
+|verticalpadding|
+
 The BPM, the master dark and the master flat are in our local calibration
 database.  For any other Gemini facility instrument, they would both be
 retrieved automatically by the calibration manager.  However, GNIRS not being

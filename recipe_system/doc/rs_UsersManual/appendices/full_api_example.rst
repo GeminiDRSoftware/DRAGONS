@@ -102,7 +102,7 @@ beginning to end.
 
     >>> reduce_target = Reduce()
     >>> reduce_target.files.extend(target)
-    >>> reduce_target.uparms.append(('skyCorrect:scale', False))
+    >>> reduce_target.uparms['skyCorrect:scale'] = False
     >>> reduce_target.runr()
 
 

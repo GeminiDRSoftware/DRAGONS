@@ -5,7 +5,22 @@ Tests for the astrotools module.
 import numpy as np
 import pytest
 from gempy.library import astrotools as at
+from astropy.coordinates import SkyCoord
 from astropy import units as u
+
+from astrodata.nddata import NDAstroData
+
+
+@pytest.fixture(scope='module')
+def flat_images():
+    # Produce 6 NDAstroData objects with different mean values and some noise.
+    rng = np.random.default_rng(42)
+    images = []
+    for i in range(6):
+        img = NDAstroData(data=rng.normal(loc=50*(i+1), scale=20, size=(100, 100)).astype(np.float32),
+                          mask=(np.random.rand(100, 100) > 0.99).astype(np.uint16))
+        images.append(img)
+    return images
 
 
 def test_array_from_list():
@@ -15,6 +30,26 @@ def test_array_from_list():
     result = at.array_from_list(x)
     assert result.unit is unit
     np.testing.assert_array_equal(result.value, values)
+
+
+def test_boxcar_logical_or():
+    x = np.zeros((100,), dtype=bool)
+    x[45:55] = True
+    y = at.boxcar(x, size=2, operation=np.logical_or)
+    assert y.sum() == 14
+
+
+def test_boxcar_median():
+    x = np.zeros((100,))
+    x[45:55] = 1
+    y = at.boxcar(x, size=2)
+    np.testing.assert_allclose(x, y)
+
+
+def test_calculate_pixel_edges():
+    x = np.arange(100)
+    edges = at.calculate_pixel_edges(x)
+    np.testing.assert_allclose(edges, np.arange(-0.5, 100.4))
 
 
 def test_calculate_scaling_without_outlier_removal():
@@ -88,12 +123,25 @@ def test_fit_spline_to_data():
     np.testing.assert_allclose(spline(x), y, atol=3)
 
 
+# test both old and new behavior, the values are slightly different
+@pytest.mark.parametrize("subtract,limit", ([False, 0.02], [True, 0.2]))
 @pytest.mark.parametrize("separation", [1,2,3,4,5])
-def test_std_from_pixel_variations(separation):
+def test_std_from_pixel_variations(separation, subtract, limit):
     # Test passes with ths seed and number of samples
     rng = np.random.default_rng(1)
     data = rng.normal(size=10000)
-    assert abs(at.std_from_pixel_variations(data, separation=separation) - 1) < 0.02
+    assert abs(at.std_from_pixel_variations(
+        data, separation=separation, subtract_linear_fits=subtract) - 1) < limit
+
+
+@pytest.mark.parametrize("data,reference",
+                         [([15.2, 15.6, 14.9, 25.4], np.array([False, False, False, True])),
+                          ([0, 17, 0, 0], np.array([False, True, False, False])),
+                          ([0, 0, 0, 0], np.array([False, False, False, False])),
+                          ([1, 1.1, 1.1, 1], np.array([False, False, False, False]))])
+def test_find_outliers(data, reference):
+    # Test that it works correctly when some values are repeated.
+    assert np.allclose(at.find_outliers(data), reference)
 
 
 def test_get_corners_2d():
@@ -149,3 +197,96 @@ def test_cartesian_regions_to_slices():
 
     with pytest.raises(TypeError):
         cart(12)
+
+
+@pytest.mark.parametrize("return_scaling", (True, False))
+def test_optimal_normalization(flat_images, return_scaling):
+    """
+    Quick test to check image scaling/offsetting. This doesn't test the
+    memory-mapping part of the function.
+    """
+    retval = at.optimal_normalization(flat_images, return_scaling=return_scaling)
+
+    if return_scaling:
+        np.testing.assert_allclose(retval, 1. / (np.arange(len(flat_images)) + 1), rtol=0.01)
+    else:
+        np.testing.assert_allclose(retval, -np.arange(len(flat_images)) * 50, atol=1.0)
+
+
+@pytest.mark.parametrize("separate_ext", (True, False))
+def test_optimal_normalization_multiple_extensions(flat_images, separate_ext):
+    """
+    Confirm that the function works with multiple extensions, either computing
+    the offsets separately or together.
+    """
+    # Pass the list as 2 images with 3 extensions each
+    retval = at.optimal_normalization(flat_images, return_scaling=True,
+                                      num_ext=3, separate_ext=separate_ext)
+
+    if separate_ext:
+        assert retval.shape == (3, 2)  # 3 extensions, 2 images
+        np.testing.assert_allclose(retval, [[1., 0.25], [1., 0.4], [1., 0.5]], rtol=0.01)
+    else:
+        # Because the data *don't* have a common scaling, the result here
+        # depends on how one decides to calculate the average scaling.
+        # The extensions in image 1 have signals (50, 100, 150), and in
+        # image 2 (200, 250, 300), so the divided image will have 1/3 pixels
+        # ~0.25, 1/3 being ~0.4, and 1/3 being ~0.5; hence median is 0.4
+        np.testing.assert_allclose(retval, [1, 0.4], rtol=0.01)
+
+
+def test_spherical_offsets_by_pa():
+    c1 = SkyCoord(ra=120, dec=0, unit='deg')
+    c2 = SkyCoord(ra=120.01, dec=0.05, unit='deg')
+    assert np.allclose(at.spherical_offsets_by_pa(c1, c2, position_angle=0),
+                       (180, 36), atol=1e-5)
+    assert np.allclose(at.spherical_offsets_by_pa(c1, c2, position_angle=90),
+                       (36, -180), atol=1e-5)
+    assert np.allclose(at.spherical_offsets_by_pa(c1, c2, position_angle=-90),
+                       (-36, 180), atol=1e-5)
+
+
+def test_weighted_sigma_clip():
+    from astropy.stats import sigma_clipped_stats
+    x = np.arange(20) ** 2
+    mean_astropy = sigma_clipped_stats(x, sigma=2, cenfunc='mean')[0]
+    mean_astrotools = at.weighted_sigma_clip(x, sigma=2).mean()
+    assert mean_astropy == pytest.approx(mean_astrotools)
+
+
+def test_magnitude_wavelengths():
+    """
+    Confirm behaviour that a Quantity is returned without units, and
+    a float if units are provided
+    """
+    m = at.Magnitude("J=10")
+    assert isinstance(m.wavelength(), u.Quantity)
+    assert m.wavelength().to(u.um).value == pytest.approx(1.25, abs=0.01)
+    assert m.wavelength(units="um") == pytest.approx(1.25, abs=0.01)
+
+
+@pytest.mark.parametrize("filter_name", [k for k in at.Magnitude.VEGA_INFO])
+def test_magnitude_flux_densities_ab(filter_name):
+    """
+    Check that we get the same flux density for all things with ABmag=0
+    """
+    m = at.Magnitude(f"{filter_name}=0", abmag=True)
+    assert isinstance(m.flux_density(), u.Quantity)
+    assert m.flux_density().to("Jy").value == pytest.approx(3630, rel=0.001)
+    assert m.flux_density(units="Jy") == pytest.approx(3630, rel=0.001)
+
+
+@pytest.mark.parametrize("num_values", [1, 2, 3, 4, 5])
+def test_weighted_median_equal_weights(num_values):
+    x = np.arange(num_values)
+    w = np.ones_like(x)
+    assert at.weighted_median(x, w) == pytest.approx(at.weighted_median(x), abs=0.001)
+
+
+def test_weighted_median_unequal_weights():
+    x = np.arange(10)
+    w = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2])
+    assert at.weighted_median(x, w) == pytest.approx(6, abs=0.001)
+    x = np.arange(9)
+    w = np.array([1, 1, 1, 1, 1, 1, 2, 2, 2])
+    assert at.weighted_median(x, w) == pytest.approx(5.5, abs=0.001)

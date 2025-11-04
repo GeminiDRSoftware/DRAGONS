@@ -13,8 +13,6 @@ from astrodata.testing import download_from_archive
 # I need these when I'm debugging as a standalone pytest
 # from astrodata.testing import change_working_dir, path_to_outputs, path_to_refs, path_to_inputs, path_to_test_data
 from gempy.utils import logutils
-from recipe_system.cal_service import UserDB
-from recipe_system.cal_service.caldb import CalReturn
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
@@ -56,7 +54,7 @@ def test_processed_flat_has_median_around_one(processed_flat):
     """
     for ext in processed_flat:
         data = np.ma.masked_array(ext.data, mask=ext.mask)
-        np.testing.assert_almost_equal(np.median(data.ravel()), 1.0, decimal=3)
+        np.testing.assert_almost_equal(np.ma.median(data.ravel()), 1.0, decimal=3)
 
 
 @pytest.mark.dragons_remote_data
@@ -124,61 +122,6 @@ def processed_flat(change_working_dir, path_to_inputs, request):
     """
     np.random.seed(0)
 
-    # TODO map actual bpms and update reference files as needed
-    # just getting to a baseline passing test first
-    def patch(clazz, name, replacement):
-        def wrap_original(orig):
-            # when called with the original function, a new function will be returned
-            # this new function, the wrapper, replaces the original function in the class
-            # and when called it will call the provided replacement function with the
-            # original function as first argument and the remaining arguments filled in by Python
-
-            def wrapper(*args, **kwargs):
-                return replacement(orig, *args, **kwargs)
-
-            return wrapper
-
-        orig = getattr(clazz, name)
-        setattr(clazz, name, wrap_original(orig))
-
-    # TODO patching caldb lookup to get existing bpms - look to migrate to new bpms once tests are passing
-    def mock_get_processed_bpm(orig, self, adinputs, caltype, *args, **kwargs):
-        if caltype != 'processed_bpm':
-            return orig(self, adinputs, caltype, *args, **kwargs)
-        bpmfiles = []
-        for ad in adinputs:
-            inst = ad.instrument()  # Could be GMOS-N or GMOS-S
-            xbin = ad.detector_x_bin()
-            ybin = ad.detector_y_bin()
-            det = ad.detector_name(pretty=True)[:3]
-            amps = '{}amp'.format(3 * ad.phu['NAMPS'])
-            mos = '_mosaic' if (ad.phu.get(geminidr.gemini.lookups.timestamp_keywords.timestamp_keys['mosaicDetectors'])
-                                or ad.phu.get(
-                        geminidr.gemini.lookups.timestamp_keywords.timestamp_keys['tileArrays'])) else ''
-            mode_key = '{}_{}_{}{}_{}'.format(inst, det, xbin, ybin, amps)
-
-            db_matches = sorted((k, v) for k, v in geminidr.gmos.lookups.maskdb.bpm_dict.items() \
-                                if k.startswith(mode_key) and k.endswith(mos))
-
-            # If BPM(s) matched, use the one with the latest version number suffix:
-            if db_matches:
-                bpm = db_matches[-1][1]
-            else:
-                bpm = None
-
-            if bpm is None:
-                bpmfiles.append(bpm)
-            else:
-                # Prepend standard path if the filename doesn't start with '/'
-                bpm_dir = os.path.join(os.path.dirname(geminidr.gmos.lookups.maskdb.__file__), 'BPM')
-                bpmfiles.append(bpm if bpm.startswith(os.path.sep) else os.path.join(bpm_dir, bpm))
-
-        return CalReturn(bpmfiles, [None] * len(bpmfiles))
-
-    # I can't get monkeypatch to do the right thing, we don't have a UserDB instance yet...
-    # TODO remove all of this mocking and drive the test off of bpm cal matching with new bpms and new refs
-    patch(UserDB, "_get_calibrations", mock_get_processed_bpm)
-
     flat_filename = request.param
     flat_path = download_from_archive(flat_filename)
     flat_raw = astrodata.open(flat_path)
@@ -191,10 +134,16 @@ def processed_flat(change_working_dir, path_to_inputs, request):
         logutils.config(
             file_name='log_flat_{}.txt'.format(flat_raw.data_label()))
 
+        # Allow retrieval of BPM from archive
+        with open("test.cfg", "w") as f:
+            f.write("[calibs]\n")
+            f.write("databases = https://archive.gemini.edu get\n")
+
         reduce = Reduce()
         reduce.files.extend([flat_path])
         reduce.mode = 'ql'
         reduce.ucals = normalize_ucals(calibration_files)
+        reduce.config_file = 'test.cfg'
         reduce.runr()
 
         # Clean up duplicated files

@@ -25,6 +25,7 @@ def input_ad(request):
     return ad
 
 
+@pytest.mark.f2
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("input_ad", test_files, indirect=True)
 def test_select_from_inputs(change_working_dir, input_ad):
@@ -33,7 +34,7 @@ def test_select_from_inputs(change_working_dir, input_ad):
         with open("recursion.log", 'w') as _log:
 
             p = F2Image([input_ad])
-            p.prepare()
+            p.prepare(bad_wcs="ignore")
             p.addVAR(read_noise=True)
 
             try:

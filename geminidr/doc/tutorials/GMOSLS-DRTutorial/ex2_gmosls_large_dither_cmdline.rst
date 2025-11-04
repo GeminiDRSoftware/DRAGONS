@@ -294,7 +294,7 @@ matching flat nearest in time to the target observation is used to flat field
 the target.  The central wavelength, filter, grating, binning, gain, and
 read speed must match.
 
-Because of the flexure, GMOS longslit flat field are not stacked.  Each is
+Because of the flexure, GMOS longslit flat fields are not stacked.  Each is
 reduced and used individually.  The default recipe takes that into account.
 
 We can send all the flats, regardless of characteristics, to |reduce| and each
@@ -413,6 +413,9 @@ we update as follows
 
     reduce @std_795nm.lis -p calculateSensitivity:interactive=True calculateSensitivity:resampling=15.0
 
+The resulting curve is shown on the right plot (click the panel to enlarge).
+**Notice that we have manually masked three data points**.
+
 .. image:: _graphics/LS_ldred_sens_before.png
    :width: 325
    :alt: Sensitivity function before optimization
@@ -422,8 +425,6 @@ we update as follows
    :width: 325
    :alt: Sensitivity function after optimization
 
-The resulting curve is shown on the right plot (click the panel to enlarge). Notice that we have also tuned other parameters in the 
-interactive tool and have manually masked four data points.  
 
 .. note:: If you wish to inspect the spectra::
 
@@ -470,7 +471,7 @@ science observations and extract the 1-D spectrum.
 
 Here we use a different science reduction recipe ``reduceWithMultipleStandards`` 
 than the default. The 
-latter performs flux calibration *after* stacking the extracted spectra 
+default recipe performs flux calibration **after** stacking the extracted spectra
 as described :ref:`here <Science Observations>`, which is not suitable 
 for these observations with a large wavelength dither. The recipe 
 ``reduceWithMultipleStandards`` will run flux calibration for each 
@@ -484,7 +485,10 @@ by DRAGONS barring the two most prominent ones (see the left plot; click
 to enlarge). You simply hover over the unwanted peak and press D. Furthermore, 
 we have selected sigma-clipping while tracing the apertures (right plot; 
 click to enlarge). Notice that there is an additional tab for Aperture 2
-in the upper part of the right plot. 
+in the upper part of the right plot.
+
+The plots below are from the second ``findApertures`` call, the one done on
+the stacked image and after the ``skySubtractFromSlit`` primitive.
 
 .. image:: _graphics/LS_ldred_findAp_sci.png
    :width: 325
@@ -524,6 +528,9 @@ respectively.
 
 The 1-D flux-calibrated spectra of the two apertures are shown below.
 
+.. note:: The drop beyond 960nm is related to the lack of coverage in the
+    sensitivity function.
+
 ::
 
     dgsplot --bokeh S20220611S0716_1D.fits 1
@@ -539,9 +546,12 @@ The 1-D flux-calibrated spectra of the two apertures are shown below.
 
 Since there are only two images, several bad columns, and artifacts remain
 in the data.  Many are flagged in the mask, the DQ plane of the output FITS
-files. Flagged pixels are not used in the calculations.  They do show up in the
-data when plotted though.  Correcting for them is a cosmetic step left to the
-user as the only purpose is to improve the look of the spectra, not the
+files. Flagged pixels are not used in the calculations.  ``dgsplot``
+automatically ignore those bad pixels.
+
+If you are using your own tools and they cannot use the DQ plane or mask, you
+might want to interpolate over the bad values. This is a cosmetic step left to
+the user as the only purpose is to improve the look of the spectra, not the
 scientific result.
 
 If you decide to apply a cosmetic correction, you could use the primitive

@@ -6,7 +6,6 @@ recipe_tags = {'GMOS', 'IMAGE', 'CAL', 'FLAT'}
 
 from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
 
-
 def makeProcessedFlat(p):
     """
     This recipe performs the standardization and corrections needed to
@@ -29,7 +28,6 @@ def makeProcessedFlat(p):
     p.addVAR(poisson_noise=True)
     p.stackFlats()
     p.normalizeFlat()
-    p.makeIRAFCompatible()
     p.storeProcessedFlat()
     return
 

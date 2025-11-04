@@ -33,24 +33,49 @@ class InteractiveConfig:
         self.bokeh_template_css = 'template_default.css'
         self.browser = None
 
+        # Default port number for Bokeh server
+        self.port_number = 5006
+
         try:
             cfg = globalConf['interactive']
+
             try:
-                if cfg["theme"] in ['caliber', 'dark_minimal', 'light_minimal', 'night_sky', 'contrast']:
+                themes = [
+                    'caliber',
+                    'dark_minimal',
+                    'light_minimal',
+                    'night_sky',
+                    'contrast'
+                ]
+
+                if cfg["theme"] in themes:
                     self.bokeh_theme = cfg["theme"]
+
                     if self.bokeh_theme == 'dark_minimal':
                         self.bokeh_template_css = 'template_dark_minimal.css'
                         self.bokeh_data_color = 'white'
+
             except KeyError:
                 pass
+
             try:
                 self.bokeh_data_color = cfg["line_color"]
+
             except KeyError:
                 pass
+
             try:
                 self.browser = cfg["browser"]
+
             except KeyError:
                 pass
+
+            try:
+                self.port_number = int(cfg["port_number"])
+
+            except KeyError:
+                pass
+
         except KeyError:
             # ok, no config section for us, use defaults
             pass

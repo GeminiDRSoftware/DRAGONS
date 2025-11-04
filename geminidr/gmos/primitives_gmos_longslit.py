@@ -20,10 +20,11 @@ from astropy import visualization as vis
 from astropy.modeling import models, fitting
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr import CalibrationNotFoundError
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.fitting import fit_1D
-from gempy.library import astromodels, tracing, transform
+from gempy.library import astromodels, peak_finding, transform
 from gempy.library import astrotools as at
 
 from gwcs import coordinate_frames
@@ -38,6 +39,7 @@ from recipe_system.utils.md5 import md5sum
 
 from .primitives_gmos_spect import GMOSSpect
 from .primitives_gmos_nodandshuffle import GMOSNodAndShuffle
+from ..core.primitives_longslit import Longslit
 from . import parameters_gmos_longslit
 
 
@@ -66,7 +68,7 @@ class GMOSLongslit():
 
 @parameter_override
 @capture_provenance
-class GMOSClassicLongslit(GMOSSpect):
+class GMOSClassicLongslit(GMOSSpect, Longslit):
     """
     This is the class containing all of the preprocessing primitives
     for the GMOSLongslit level of the type hierarchy tree. It inherits all
@@ -210,7 +212,7 @@ class GMOSClassicLongslit(GMOSSpect):
                 row_medians = at.boxcar(row_medians, size=2)
                 #print(row_medians.min(), row_medians.max())
 
-                if debug_plot:
+                if debug_plot:  # pragma: no cover
                     plt.ioff()
                     fig, ax = plt.subplots()
                     ax.plot(row_medians / row_medians.max(), 'b-')
@@ -227,12 +229,12 @@ class GMOSClassicLongslit(GMOSSpect):
 
                     # Only keep maxima if the fitted peak value is close to
                     # the actual peak (should remove single-pixel peaks)
-                    extrema = tracing.get_extrema(xcorr, remove_edge_maxima=False)
-                    if debug_plot:
+                    extrema = peak_finding.get_extrema(xcorr, remove_edge_maxima=False)
+                    if debug_plot:  # pragma: no cover
                         print(extrema)
                     maxima = [int(x[0] + 0.5) for x in extrema if x[2]]
 
-                    if debug_plot:
+                    if debug_plot:  # pragma: no cover
                         xpixels = row_medians.size // 2 - mshift + np.arange(xcorr.size)
                         ax.plot(xpixels, xcorr / xcorr.max(), 'r-')
                         ax.plot([row_medians.size // 2] * 2, [0, 1], 'r:')
@@ -354,7 +356,8 @@ class GMOSClassicLongslit(GMOSSpect):
 
                 log.info("Temporarily mosaicking multi-extension file")
                 mosaicked_ad = transform.resample_from_wcs(
-                    ad, "mosaic", attributes=None, order=1, process_objcat=False)
+                    ad, "mosaic", attributes=None, interpolant="linear",
+                    process_objcat=False)
 
             else:
 
@@ -419,7 +422,7 @@ class GMOSClassicLongslit(GMOSSpect):
             bin_center = np.array(0.5 * (bin_bot + bin_top), dtype=int)
             cols_fit, rows_fit = np.meshgrid(np.arange(width), bin_center)
 
-            fitter = fitting.SLSQPLSQFitter()
+            fitter = fitting.LinearLSQFitter()
             model_2d_init = models.Chebyshev2D(
                 x_degree=cheb2d_x_order, x_domain=(0, width),
                 y_degree=cheb2d_y_order, y_domain=(0, height))
@@ -433,9 +436,9 @@ class GMOSClassicLongslit(GMOSSpect):
             rows_val, cols_val = \
                 np.mgrid[-border:height+border, -border:width+border]
 
-            slit_response_data = model_2d_data(cols_val, rows_val)
+            slit_response_data = model_2d_data(cols_val, rows_val).astype(np.float32)
             slit_response_mask = np.pad(mask, border, mode='edge')  # ToDo: any update to the mask?
-            slit_response_std = model_2d_std(cols_val, rows_val)
+            slit_response_std = model_2d_std(cols_val, rows_val).astype(np.float32)
             slit_response_var = slit_response_std ** 2
 
             del cols_fit, cols_val, rows_fit, rows_val
@@ -475,7 +478,7 @@ class GMOSClassicLongslit(GMOSSpect):
             ad_outputs.append(slit_response_ad)
 
             # Plotting ------
-            if debug_plot:
+            if debug_plot:  # pragma: no cover
 
                 log.info("Creating plots")
                 palette = copy(plt.cm.cividis)
@@ -793,7 +796,7 @@ class GMOSClassicLongslit(GMOSSpect):
                 extras = {"row": RangeField("Row of data to operate on", int, int(nrows/2), min=1, max=nrows)}
                 uiparams = UIParameters(config, reinit_params=reinit_params, extras=extras)
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points, all_fp_init,
-                                                   tab_name_fmt="CCD {}",
+                                                   tab_name_fmt=lambda i: f"CCD {i+1}",
                                                    xlabel='x (pixels)', ylabel='counts',
                                                    domains=all_domains,
                                                    title="Normalize Flat",
@@ -910,9 +913,9 @@ class GMOSClassicLongslit(GMOSSpect):
 
             if slit_illum_ad is None:
                 if self.mode in ['sq'] or do_cal == 'force':
-                    raise OSError(
-                        "No processed slit illumination listed for {}".format(
-                            ad.filename))
+                    raise CalibrationNotFoundError(
+                        "No processed slit illumination listed for "
+                        f"{ad.filename}")
                 else:
                     log.warning(
                         "No changes will be made to {}, since no slit "
@@ -1064,7 +1067,7 @@ def _split_mosaic_into_extensions(ref_ad, mos_ad, border_size=0):
 
 @parameter_override
 @capture_provenance
-class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle):
+class GMOSNSLongslit(GMOSClassicLongslit, GMOSNodAndShuffle, Longslit):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos_longslit)

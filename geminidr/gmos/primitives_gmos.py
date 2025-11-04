@@ -12,9 +12,9 @@ from datetime import datetime
 from gemini_instruments.gmos.pixel_functions import get_bias_level
 from geminidr.core import CCD
 # from gempy.scripts.gmoss_fix_headers import correct_headers
-
 # from gempy.gemini.eti import gmosaiceti
 from gempy.gemini import gemini_tools as gt
+from gemini_instruments.gmos import lookup as adlookup
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 
 from ..gemini.primitives_gemini import Gemini
@@ -34,6 +34,7 @@ class GMOS(Gemini, CCD):
 
     def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.gmos.lookups'
+        self.inst_adlookup = adlookup
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_gmos)
 
@@ -220,6 +221,11 @@ class GMOS(Gemini, CCD):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
+    def standardizeWCS(self, adinputs=None, **params):
+        """Override Gemini-level standardizeWCS as GMOS does not require
+        a bad_wcs check"""
+        return adinputs
+
     def subtractOverscan(self, adinputs=None, **params):
         """
         This primitive subtracts the overscan level from the image. The
@@ -294,41 +300,6 @@ class GMOS(Gemini, CCD):
     def _has_valid_extensions(ad):
         """Check the AD has a valid number of extensions"""
         return len(ad) in [1, 2, 3, 4, 6, 12]
-
-    def _get_bpm_filename(self, ad):
-        """
-        Gets bad pixel mask for input GMOS science frame.
-
-        Returns
-        -------
-        str/None: Filename of the appropriate bpms
-        """
-        log = self.log
-        bpm_dir = os.path.join(os.path.dirname(maskdb.__file__), 'BPM')
-
-        inst = ad.instrument()  # Could be GMOS-N or GMOS-S
-        xbin = ad.detector_x_bin()
-        ybin = ad.detector_y_bin()
-        det = ad.detector_name(pretty=True)[:3]
-        amps = '{}amp'.format(3 * ad.phu['NAMPS'])
-        mos = '_mosaic' if (ad.phu.get(self.timestamp_keys['mosaicDetectors'])
-                            or ad.phu.get(
-                    self.timestamp_keys['tileArrays'])) else ''
-        mode_key = '{}_{}_{}{}_{}'.format(inst, det, xbin, ybin, amps)
-
-        db_matches = sorted((k, v) for k, v in maskdb.bpm_dict.items() \
-                            if k.startswith(mode_key) and k.endswith(mos))
-
-        # If BPM(s) matched, use the one with the latest version number suffix:
-        if db_matches:
-            bpm = db_matches[-1][1]
-        else:
-            log.warning('No BPM found for {}'.format(ad.filename))
-            return None
-
-        # Prepend standard path if the filename doesn't start with '/'
-        return bpm if bpm.startswith(os.path.sep) else os.path.join(bpm_dir,
-                                                                    bpm)
 
     def _get_illum_mask_filename(self, ad):
         """

@@ -47,8 +47,8 @@ class Resample(PrimitivesBASE):
         shifts: str
             either: (a) list of colon-separated xshift,yshift pairs, or
                     (b) filename containing shifts, one set per image
-        order: int (0-5)
-            order of interpolation (0=nearest, 1=linear, etc.)
+        interpolant : str
+            type of interpolant
         trim_data: bool
             trim image to size of reference image?
         clean_data: bool
@@ -68,7 +68,7 @@ class Resample(PrimitivesBASE):
 
         # TODO: Maybe remove this requirement
         if not all(len(ad) == 1 for ad in adinputs):
-            raise OSError("All input images must have only one extension.")
+            raise ValueError("All input images must have only one extension.")
 
         # Ill-defined behaviour for this situation so
         if len(adinputs) == 1 and not trim_data:
@@ -129,7 +129,7 @@ class Resample(PrimitivesBASE):
 
         return adoutputs
 
-    def _resample_to_new_frame(self, adinputs=None, frame=None, order=3,
+    def _resample_to_new_frame(self, adinputs=None, frame=None, interpolant="poly3",
                                conserve=True, output_shape=None, origin=None,
                                clean_data=False, process_objcat=False,
                                dq_threshold=0.001):
@@ -144,8 +144,8 @@ class Resample(PrimitivesBASE):
         ----------
         frame: str
             name of CoordinateFrame to be resampled to
-        order: int (0-5)
-            order of interpolation (0=nearest, 1=linear, etc.)
+        interpolant : str
+            type of interpolant
         output_shape : tuple/None
             shape of output image (if None, calculate and use shape that
             contains all resampled inputs)
@@ -185,7 +185,7 @@ class Resample(PrimitivesBASE):
                 frame, ext.wcs.input_frame)).affine_matrices().matrix)) for ext in ad) + 0.5)
             log.debug(f"{ad.filename}: Subsampling factor of {subsample}")
             ad_out = transform.resample_from_wcs(
-                ad, frame, order=order, conserve=conserve,
+                ad, frame, interpolant=interpolant, conserve=conserve,
                 output_shape=output_shape, origin=origin,
                 process_objcat=process_objcat, subsample=subsample,
                 threshold=dq_threshold)

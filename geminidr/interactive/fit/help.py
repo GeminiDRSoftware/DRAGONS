@@ -66,10 +66,10 @@ PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT = """
 """
 </div></div>
 Data points in the upper plot may be selected in order to mask or
-unmask them from consideration.  To select, choose the <i>Box Select</i>, 
-<i>Point Select</i>, or <i>Free-Select</i> tool to the right of the figure.  
-Selections may be additive if you hold down the shift key.  Once you have a 
-selection, you may <b>mask</b> or <b>unmask</b> the selection by hitting 
+unmask them from consideration.  To select, choose the <i>Box Select</i>,
+<i>Point Select</i>, or <i>Free-Select</i> tool to the right of the figure. 
+Selections may be additive if you hold down the shift key.  Once you have a
+selection, you may <b>mask</b> or <b>unmask</b> the selection by hitting
 the <b>M</b> or <b>U</b> key respectively.
 </p>
 <dl>""" + \
@@ -105,7 +105,7 @@ one edge of the region and hit <b>R</b>.  Then move to the other end of the
 desired region and hit <b>R</b> again.  To edit an existing region, hit <b>E</b>
 while the mouse is near the edge you wish to adjust.  To delete a region, hit
 <b>D</b> while close to the region you want removed.  The <i>Regions</i>
-text entry will also update with these changes and you may fine tune the 
+text entry will also update with these changes and you may fine tune the
 results there as well.
 </p>
 """
@@ -253,56 +253,56 @@ to your liking and click the <b>Accept</b> button to continue.</p>
 TRACE_APERTURES = """
 <h2>Help</h2>
 
-<p> Traces the spectrum in 2D spectral images for each aperture center 
-    stored in the APERTURE on each extension. The tracing starts at the 
-    brightest region, instead of one of the edges of the detector. This 
-    allows overcoming issues with sources with (almost) no flux in the 
-    blue/red extremes. </p> 
+<p> Traces the spectrum in 2D spectral images for each aperture center
+    stored in the APERTURE on each extension. The tracing starts at the
+    brightest region, instead of one of the edges of the detector. This
+    allows overcoming issues with sources with (almost) no flux in the
+    blue/red extremes. </p>
 
-<p> The leftmost panel, named Tracing Parameters, in the Web User Interface 
-    contains parameters used to perform the tracing, i.e., to follow how the 
-    position in the spatial direction of our target changes along the 
-    spectral direction. The Tracing Parameters are applied to all 
+<p> The leftmost panel, named Tracing Parameters, in the Web User Interface
+    contains parameters used to perform the tracing, i.e., to follow how the
+    position in the spatial direction of our target changes along the
+    spectral direction. The Tracing Parameters are applied to all
     appertures. </p>
 
-<p> You can find the traced data in the top plot where X represents the 
-    pixels in the spectral direction and Y the pixels in the spatial 
+<p> You can find the traced data in the top plot where X represents the
+    pixels in the spectral direction and Y the pixels in the spatial
     direction. Each traced data is represented by a black circle. </p>
 
-<p> You can perform a new tracing by changing the Tracing Parameters and 
-    by clicking on the Trace Apertures button. Tracing can take a few 
-    seconds deppending on your input parameters. If tracing fails, your will 
-    receive an error message and the Web UI will return to the previous 
+<p> You can perform a new tracing by changing the Tracing Parameters and
+    by clicking on the Trace Apertures button. Tracing can take a few
+    seconds deppending on your input parameters. If tracing fails, your will
+    receive an error message and the Web UI will return to the previous
     working state. </p>
 
-<p> The red line in the top plot shows the function that better represents 
-    how our target's spatial position varies continuously along the 
-    dispersion direction, following the traced data using a Chebyshev 
-    function. <p>  
+<p> The red line in the top plot shows the function that better represents
+    how our target's spatial position varies continuously along the
+    dispersion direction, following the traced data using a Chebyshev
+    function. <p> 
 
-<p> You can change the parameters in the rightmost column within each tab, 
-    which contains the Fitting Parameters for each APERTURE. If you change 
-    a parameter, this primitive will fit again using the most recent parameters 
+<p> You can change the parameters in the rightmost column within each tab,
+    which contains the Fitting Parameters for each APERTURE. If you change
+    a parameter, this primitive will fit again using the most recent parameters
     and update the line in the plot area. </p>
 
-<p> For both Tracing Parameters and Fitting Parameters, you will find a 
-    reset button. Each reset button only resets the parameters in the same 
-    column it belongs. </p>        
+<p> For both Tracing Parameters and Fitting Parameters, you will find a
+    reset button. Each reset button only resets the parameters in the same
+    column it belongs. </p>       
 
-<p> Once you are satisfied with the tracing and the fit, press the Accept 
-    button at the top right to continue your data reduction using the 
+<p> Once you are satisfied with the tracing and the fit, press the Accept
+    button at the top right to continue your data reduction using the
     parameters on screen. </p>
 
 <h3> Tracing Parameters </h3>
 <dl>
     <dt> Max Missed </dt>
-    <dd> Maximum number of steps to miss before a line is lost. </dd> 
+    <dd> Maximum number of steps to miss before a line is lost. </dd>
 
     <dt> Max Shifted </dt>
     <dd> Maximum shift per pixel in line position. </dd>
 
     <dt> Number of Lines to Sum </dt>
-    <dd> Number of lines to sum. </dd> 
+    <dd> Number of lines to sum. </dd>
 
     <dt> Tracing Step </dt>
     <dd> Step in rows/columns for tracing. </dd>
@@ -334,10 +334,19 @@ SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
     increasing the number of masked pixels.
 </p>
 <p>
-    When you are happy with the quality of the fit, click &quot;Accept&quot;
+    When you are happy with the quality of the fit, click &quot;<b>Accept</b>&quot;
     and the fitting parameters will be applied to every line of the data.
     This can be slow for large images, especially if a cubic spline function
     is used.
+</p>
+<p>
+    For near-infrared spectroscopy, there may be negative beams in the
+    spatial profile, which will be identified by cross-correlation with the
+    positive profile and masked using the same avoidance zone as the apertures.
+    In such data, the fit to the sky may be poorly constrained (especially for
+    a short slit) but should be close to zero, and there will be an additional
+    &quot;<b>Skip</b>&quot; button to allow an exit without performing any sky
+    subtraction
 </p>
 <h3>Fitting parameters</h3>
 <dl>""" + FIT1D_PARAMETERS_HELP_WITH_GROW + """
@@ -350,3 +359,89 @@ SKY_CORRECT_FROM_SLIT_HELP_TEXT = """
 </dd>
 </dl>
 """ + PLOT_TOOLS_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT
+
+
+FIT_TELLURIC_HELP_TEXT = """
+<h2>Help</h2>
+<p>
+    This primitive calculates the sensitivity of the instrument and the
+    transmission of the atmosphere by fitting a combination of a smooth
+    sensitivity curve and a telluric absorption model (constructed from
+    PCA components convolved with a model line spread function) to the
+    data. For cross-dispersed data with multiple orders, the sensitivity
+    curves are calculated independently, but a single absorption model
+    applies to all the data.
+</p>
+<p>
+    In the top plot, the red line is the fit to the data, while the blue line
+    shows what the counts would be in the absence of any telluric absorption
+    or, equivalently, the intrinsic stellar spectrum convolved with the
+    calculated sensitivity function. Regions of strong stellar absorption will
+    be initially masked due to prevent the fit being affected by mismatches
+    between the model A0V spectrum and the spectrum of the observed star, but
+    can be unmasked.
+</p>
+<p>    
+    The third plot shows the calculated telluric absorption. The green line
+    (labeled "model") shows the sum of the fitted PCA components, while the
+    blue line (labeled "data") shows the difference between the data and the
+    blue line in the top plot. Either of these absorption spectra can be
+    applied by the telluricCorrect primitive. Differences between these two
+    lines can indicated regions where the continuum is not being well-fit.
+</p>
+<p>    
+    The final plot shows the model instrinsic spectrum of the star in flux
+    density units (blue line) and the self-corrected data using the calculated
+    sensitivity function and PCA absorption model (red line).
+</p>
+<p>
+    The instrinsic stellar spectrum used in this primitive is an A0V model
+    stellar atmosphere from France Allard, modified by the ratio between
+    Planck functions for the chosen blackbody temperature and 9650K. Changes
+    to the blackbody temperature will result in an immediate re-fit, which
+    is fairly quick. Changes to the magnitude (including between Vega and
+    AB-based magnitudes) will only be visible in the flux scale of the bottom
+    plot.
+</p>
+<p>
+    Additional sliders such as "LSF scaling" that lie below the Magnitude
+    checkbox apply modifications to the
+    model line spread function to improve the fit. This parameter is set to
+    the best-fit value when the original fit is performed (or when the "Reset"
+    button is activated) but not when the fit is modified by changes to the
+    blackbody temperature or the fitting parameters in the rightmost panel. It
+    should be modified with care.
+</p>
+<h3>Fitting parameters</h3>
+<dl>""" + FIT1D_PARAMETERS_HELP_WITH_GROW + """
+<dt>Regions</dt>
+<dd>
+    Comma-separated list of colon-separated wavelength (not pixel) pairs
+    indicating the region(s) over which the input data should be
+    used. The first and last values can be blank, indicating to
+    continue to the end of the data.
+</dd>
+</dl>
+""" + PLOT_TOOLS_WITH_SELECT_HELP_SUBTEXT + REGION_EDITING_HELP_SUBTEXT
+
+
+TELLURIC_CORRECT_HELP_TEXT = """
+<h2>Help</h2>
+<p>
+    This GUI does not perform any fitting, but presents the result from
+    applying a telluric correction to the object spectrum.
+</p>
+<p>
+    The absorption spectrum can be shifted using the slider, text box, or
+    nudge buttons, and the airmasses of the target and telluric can be
+    modified from the values in their respective headers to improve the
+    correction.
+</p>
+<p>
+    One of two absorption spectra can be used to correct the object spectrum,
+    corresponding to the blue and green lines in the panel of the fitTelluric
+    GUI. Depending on the quality of the fit and the accuracy of the model
+    line spread function, either the synthetic absorption from the PCA model
+    or the empirical data-derived absorption may provide a better result.
+</p>
+"""

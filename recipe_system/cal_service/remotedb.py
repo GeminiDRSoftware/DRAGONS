@@ -1,34 +1,23 @@
 # Defines the RemoteDB class for calibration returns. This is a high-level
 # interface to FITSstore. It may be subclassed in future
-
+import datetime
 from os import path, makedirs
 from io import BytesIO
-from pprint  import pformat
-from xml.dom import minidom
+import json
 
 import urllib.request
 import urllib.parse
 import urllib.error
 
+import numpy
+
 from .caldb import CalDB, CalReturn
-from .calrequestlib import get_cal_requests, generate_md5_digest, get_request
-from .calrequestlib import GetterError
+from .calrequestlib import get_cal_requests, generate_md5_digest
+from .file_getter import GetterError, get_request
 
-UPLOADCOOKIE = "qap_upload_processed_cal_ok"
+UPLOADCOOKIE = None
 
-RESPONSESTR = """########## Request Data BEGIN ##########
-%(sequence)s
-########## Request Data END ##########
-
-########## Calibration Server Response BEGIN ##########
-%(response)s
-########## Calibration Server Response END ##########
-
-########## Nones Report (descriptors that returned None):
-%(nones)s
-########## Note: all descriptors shown above, scroll up.
-        """
-
+from recipe_system import version
 
 class RemoteDB(CalDB):
     """
@@ -61,7 +50,7 @@ class RemoteDB(CalDB):
         if not server.startswith("http"):  # allow https://
             server = f"http://{server}"
         self.server = server
-        self._calmgr = f"{self.server}/calmgr"
+        self._calmgr = f"{self.server}/jsoncalmgr"
         self._proccal_url = f"{self.server}/upload_processed_cal"
         self._science_url = f"{self.server}/upload_file"
         self._upload_cookie = upload_cookie or UPLOADCOOKIE
@@ -106,7 +95,7 @@ class RemoteDB(CalDB):
                 if not path.exists(caldir):
                     makedirs(caldir)
                 try:
-                    get_request(calurl, cachefile)
+                    get_request(calurl, cachefile, calmd5)
                 except GetterError as err:
                     for message in err.messages:
                         log.error(message)
@@ -163,27 +152,51 @@ class RemoteDB(CalDB):
             raise
 
 
+def make_dict_json_encodable(desc_dict):
+    for d in desc_dict:
+        if isinstance(desc_dict[d],
+                      (datetime.datetime, datetime.date, datetime.time)):
+            desc_dict[d] = desc_dict[d].isoformat()
+        if isinstance(desc_dict[d], numpy.float32):
+            desc_dict[d] = float(desc_dict[d])
+    return desc_dict
+
+
 def retrieve_calibration(rqurl, rq, howmany=1):
-    sequence = [("descriptors", rq.descriptors), ("types", rq.tags)]
-    postdata = urllib.parse.urlencode(sequence).encode('utf-8')
+    postdata = json.dumps({'tags': list(rq.tags),
+                           'descriptors': make_dict_json_encodable(rq.descriptors)})
     try:
         calrq = urllib.request.Request(rqurl)
-        u = urllib.request.urlopen(calrq, postdata)
+        calrq.add_header('User-Agent', 'GeminiDRAGONS ' + version())
+        u = urllib.request.urlopen(calrq, postdata.encode('utf-8'))
         response = u.read()
     except (urllib.error.HTTPError, urllib.error.URLError) as err:
         return None, str(err)
 
     desc_nones = [k for k, v in rq.descriptors.items() if v is None]
-    preerr = RESPONSESTR % {"sequence": pformat(sequence),
-                            "response": response.strip(),
-                            "nones"   : ", ".join(desc_nones) \
-                            if len(desc_nones) > 0 else "No Nones Sent"}
+    preerr = f"{postdata=}\n{response=}\n{desc_nones=}\n"
+
     try:
-        dom = minidom.parseString(response)
-        calurlel = [d.childNodes[0].data
-                    for d in dom.getElementsByTagName('url')[:howmany]]
-        calurlmd5 = [d.childNodes[0].data
-                     for d in dom.getElementsByTagName('md5')[:howmany]]
+        results = json.loads(response)
+        if len(results) == 0:
+            return None, 'Remote Cal manager returned results for zero files'
+        if len(results) != 1:
+            return None, 'Remote Cal manager returned results for multiple files'
+        cal_info = results[0].get('cal_info')
+        if cal_info is None:
+            return None, 'Remote Cal manager result contained no cal_info item'
+        if len(cal_info) == 0:
+            return None, 'Remote Cal manager result cal_info list empty'
+        if len(cal_info) != 1:
+            return None, 'Remote Cal manager result cal_info list contained multiple entries'
+        cals = results[0]['cal_info'][0].get('cals')
+        if cals is None:
+            return None, 'Remote Cal manager result cals list missing'
+        if len(cals) == 0:
+            return None, 'Remote Cal manager result cals list empty'
+        calurlel = [d['url'] for d in cals]
+        calurlmd5 = [d['md5'] for d in cals]
+
     except IndexError:
         return None, preerr
 

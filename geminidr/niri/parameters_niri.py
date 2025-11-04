@@ -23,6 +23,6 @@ class detectSourcesConfig(parameters_photometry.detectSourcesConfig):
 class makeBPMConfig(parameters_nearIR.makeBPMConfig):
     def setDefaults(self):
         self.dark_lo_thresh = -20.
-        self.dark_hi_thresh = 100.
+        self.dark_hi_thresh = 1300.
         self.flat_lo_thresh = 0.8
         self.flat_hi_thresh = 1.25

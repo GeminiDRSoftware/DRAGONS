@@ -404,7 +404,7 @@ matching flat nearest in time to the target observation is used to flat field
 the target.  The central wavelength, filter, grating, binning, gain, and
 read speed must match.
 
-Because of the flexure, GMOS longslit flat field are not stacked.  Each is
+Because of the flexure, GMOS longslit flat fields are not stacked.  Each is
 reduced and used individually.  The default recipe takes that into account.
 
 We can send all the flats, regardless of characteristics, to ``Reduce`` and each
@@ -429,7 +429,7 @@ To activate the interactive mode:
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
-    reduce_flats.uparms = [('interactive', True)]
+    reduce_flats.uparms = dict([('interactive', True)])
     reduce_flats.runr()
 
 The interactive tools are introduced in section :ref:`interactive`.
@@ -474,7 +474,7 @@ interactive mode. To activate the interactive mode:
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
-    reduce_arcs.uparms = [('interactive', True)]
+    reduce_arcs.uparms = dict([('interactive', True)])
     reduce_arcs.runr()
 
 The interactive tools are introduced in section :ref:`interactive`.
@@ -523,7 +523,7 @@ mode for all four:
 
     reduce_std_705nm = Reduce()
     reduce_std_705nm.files.extend(stdstar_705nm)
-    reduce_std_705nm.uparms = [('interactive', True)]
+    reduce_std_705nm.uparms = dict([('interactive', True)])
     reduce_std_705nm.runr()
 
 Since the standard star spectrum is bright and strong, and the exposure short,
@@ -540,7 +540,7 @@ sensitivity function:
 
     reduce_std_705nm = Reduce()
     reduce_std_705nm.files.extend(stdstar_705nm)
-    reduce_std_705nm.uparms = [('calculateSensitivity:interactive', True)]
+    reduce_std_705nm.uparms = dict([('calculateSensitivity:interactive', True)])
     reduce_std_705nm.runr()
 
 The interactive tools are introduced in section :ref:`interactive`.
@@ -565,10 +565,13 @@ we update as follows
 
     reduce_std_795nm = Reduce()
     reduce_std_795nm.files.extend(stdstar_795nm)
-    reduce_std_795nm.uparms = [('calculateSensitivity:interactive', True),
+    reduce_std_795nm.uparms = dict([('calculateSensitivity:interactive', True),
         ('calculateSensitivity:resampling', 15.0)
-    ]
+    ])
     reduce_std_795nm.runr()
+
+The resulting curve is shown on the right plot (click the panel to enlarge).
+**Notice that we have manually masked three data points**.
 
 .. image:: _graphics/LS_ldred_sens_before.png
    :width: 325
@@ -579,8 +582,6 @@ we update as follows
    :width: 325
    :alt: Sensitivity function after optimization
 
-The resulting curve is shown on the right plot (click the panel to enlarge). Notice that we have also tuned other parameters in the 
-interactive tool and have manually masked four data points.  
 
 .. note:: If you wish to inspect the spectrum in aperture 1:
 
@@ -631,7 +632,7 @@ science observations and extract the 1-D spectrum.
     reduce_science = Reduce()
     reduce_science.files.extend(scitarget)
     reduce_science.recipename = 'reduceWithMultipleStandards'
-    reduce_science.uparms = [('interactive', True)]
+    reduce_science.uparms = dict([('interactive', True)])
     reduce_science.runr()
     
 Here we use a different science reduction recipe ``reduceWithMultipleStandards`` (line 97) 
@@ -681,12 +682,12 @@ respective variance and data quality (or mask) arrays.
 
         Pixels Extensions
         Index  Content                  Type              Dimensions     Format
-        [ 0]   science                  NDAstroData       (3723,)        float32
-                  .variance             ADVarianceUncerta (3723,)        float32
-                  .mask                 ndarray           (3723,)        uint16
-        [ 1]   science                  NDAstroData       (3723,)        float32
-                  .variance             ADVarianceUncerta (3723,)        float32
-                  .mask                 ndarray           (3723,)        uint16
+        [ 0]   science                  NDAstroData       (3743,)        float32
+                  .variance             ADVarianceUncerta (3743,)        float32
+                  .mask                 ndarray           (3743,)        uint16
+        [ 1]   science                  NDAstroData       (3743,)        float32
+                  .variance             ADVarianceUncerta (3743,)        float32
+                  .mask                 ndarray           (3743,)        uint16
 
         Other Extensions
                        Type        Dimensions
@@ -772,5 +773,5 @@ To use a different format, set the ``format`` parameters.
     writeascii = Reduce()
     writeascii.files = ['S20220611S0716_1D.fits']
     writeascii.recipename = 'write1DSpectra'
-    writeascii.uparms = [('format', 'ascii.ecsv'), ('extension', 'ecsv')]
+    writeascii.uparms = dict([('format', 'ascii.ecsv'), ('extension', 'ecsv')])
     writeascii.runr()

@@ -266,18 +266,31 @@ class Section(tuple):
     @staticmethod
     def from_string(value):
         """The inverse of __str__, produce a Section object from a string"""
+        # if we were sent None, return None
+        if value is None:
+            return None
         return Section(*[y for x in value.strip("[]").split(",")
                          for start, end in [x.split(":")]
                          for y in (None if start == '' else int(start)-1,
                                    None if end == '' else int(end))])
 
-    def asIRAFsection(self):
+    def asIRAFsection(self, binning=None):
         """Produce string of style '[x1:x2,y1:y2]' that is 1-indexed
-        and end-inclusive"""
+        and end-inclusive
+
+        Parameters
+        ----------
+        binning : iterable
+            A length-2 iterable of (x_binning, y_binning). Binning is assumed
+            to be 1 for all axes if not given.
+        """
+        if binning is None:
+            binning = [1] * len(self._axis_names)
         return ("[" +
-                ",".join([":".join([str(self.__dict__[axis]+1),
-                                    str(self.__dict__[axis.replace("1", "2")])])
-                          for axis in self._axis_names[::2]]) + "]")
+                ",".join([":".join([str(bin_*self.__dict__[axis]+1),
+                                    str(bin_*self.__dict__[axis.replace("1", "2")])])
+                          for axis, bin_ in zip(self._axis_names[::2], binning)])
+                + "]")
 
     def asslice(self, add_dims=0):
         """Return the Section object as a slice/list of slices.

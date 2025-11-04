@@ -20,6 +20,7 @@ from astrodata import wcs as adwcs
 from gempy.gemini import gemini_tools as gt
 from gempy.library import transform
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr import CalibrationNotFoundError
 from recipe_system.utils.md5 import md5sum
 
 from .primitives_preprocess import Preprocess
@@ -136,8 +137,8 @@ class Image(Preprocess, Register, Resample):
             # so we'd better have a fringe frame!
             if fringe is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed fringe listed for "
-                                  f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed fringe listed "
+                                                   f"for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no fringe was specified")
@@ -338,7 +339,8 @@ class Image(Preprocess, Register, Resample):
         # separate_ext is irrelevant unless (scale or zero) but let's be explicit
         adinputs = self.stackSkyFrames(adinputs, mask_objects=True, separate_ext=False,
                                        scale=False, zero=False,
-                    **self._inherit_params(params, "stackSkyFrames", pass_suffix=True))
+                      **self._inherit_params(params, "stackSkyFrames",
+                                             pass_suffix=True))
         if len(adinputs) > 1:
             raise ValueError("Problem with stacking fringe frames")
 
@@ -372,8 +374,8 @@ class Image(Preprocess, Register, Resample):
         ----------
         suffix : str
             suffix to be added to output files
-        order : int (0-5)
-            order of interpolation (0=nearest, 1=linear, etc.)
+        interpolant : str
+            type of interpolant
         trim_data : bool
             trim image to size of reference image?
         clean_data : bool
@@ -408,7 +410,7 @@ class Image(Preprocess, Register, Resample):
         # before doing this? That would mean we only do one interpolation,
         # not two, and that's definitely better!
         if not all(len(ad) == 1 or ad.instrument() == "GSAOI" for ad in adinputs):
-            raise OSError("All input images must have only one extension.")
+            raise ValueError("All input images must have only one extension.")
 
         if isinstance(reference, str):
             reference = astrodata.open(reference)
@@ -451,7 +453,8 @@ class Image(Preprocess, Register, Resample):
                                 "reference image.")
                     trim_data = True
             if len(reference) != 1:
-                raise OSError("Reference image must have only one extension.")
+                raise ValueError("Reference image must have only one "
+                                 "extension.")
             ref_wcs = reference[0].wcs
 
         if trim_data:
@@ -601,9 +604,9 @@ class Image(Preprocess, Register, Resample):
             suffix to be added to output files
         source: str
             name of stream containing single stacked image
-        order: int (0-5)
-            order of interpolation
-        threshold: float
+        interpolant : str
+            type of interpolation
+        dq_threshold: float
             threshold above which an interpolated pixel should be flagged
         dilation: float
             amount by which to dilate the OBJMASK after transference
@@ -611,8 +614,8 @@ class Image(Preprocess, Register, Resample):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         source = params["source"]
-        order = params["order"]
-        threshold = params["threshold"]
+        interpolant = params["interpolant"]
+        dq_threshold = params["dq_threshold"]
         dilation = params["dilation"]
         sfx = params["suffix"]
 
@@ -644,21 +647,36 @@ class Image(Preprocess, Register, Resample):
                     log.warning(f"{ad.filename}:{ext.id} already has an "
                                 "OBJMASK that will be overwritten")
                 ext.OBJMASK = None
+
+                # affine_transform take the inverse of the transformation,
+                # whereas Transform.apply() takes the forward transformation
                 for source_ext in ad_source:
                     t_align = source_ext.wcs.forward_transform | ext.wcs.backward_transform
-                    # This line is needed until gWCS PR#405 is merged
-                    t_align.inverse = ext.wcs.forward_transform | source_ext.wcs.backward_transform
-                    if force_affine:
+                    if force_affine and len(ext.shape) != 2:
                         affine = adwcs.calculate_affine_matrices(t_align.inverse, ad[0].shape)
+                        try:
+                            order = int(interpolant[-1])
+                        except ValueError:
+                            if interpolant == "nearest":
+                                order = 0
+                            elif interpolant == "linear":
+                                order = 1
+                        if interpolant.startswith("poly"):
+                            log.warning("Polynomial interpolation replaced with"
+                                        " spline interpolation")
                         objmask = affine_transform(source_ext.OBJMASK.astype(np.float32),
                                                    affine.matrix, affine.offset,
                                                    output_shape=ext.shape, order=order,
                                                    cval=0)
                     else:
+                        if force_affine:
+                            affine = adwcs.calculate_affine_matrices(t_align, ad[0].shape)
+                            t_align = models.AffineTransformation2D(
+                                affine.matrix[::-1, ::-1], affine.offset[::-1])
                         objmask = transform.Transform(t_align).apply(
                             source_ext.OBJMASK.astype(np.float32),
-                            output_shape=ext.shape, order=order, cval=0)
-                    objmask = binary_dilation(np.where(abs(objmask) > threshold, 1, 0).
+                            output_shape=ext.shape, interpolant=interpolant, cval=0)
+                    objmask = binary_dilation(np.where(abs(objmask) > dq_threshold, 1, 0).
                                               astype(np.uint8), structure).astype(np.uint8)
                     if ext.OBJMASK is None:
                         ext.OBJMASK = objmask
@@ -843,3 +861,33 @@ class Image(Preprocess, Register, Resample):
             ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
+
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
+        """
+        Checks whether the fields of view of two AD objects overlap
+        sufficiently to be considerd part of a single ExposureGroup.
+        This method, implemented at the Image level, assumes that both
+        AD objects have a single extension and a rectangular FOV.
+        Instruments which do not fulfil these criteria should have
+        their own methods implemented.
+
+        Parameters
+        ----------
+        ad1: AstroData
+            one of the input AD objects
+        ad2: AstroData
+            the other input AD object
+        frac_FOV: float (0 < frac_FOV <= 1)
+            fraction of the field of view for an overlap to be considered. If
+            frac_FOV=1, *any* overlap is considered to be OK
+
+        Returns
+        -------
+        bool: do the fields overlap sufficiently?
+        """
+        # Note that this is not symmetric in ad1 and ad2 if they have different
+        # shapes, but that is not expected to happen.
+        pos1 = [0.5 * (length - 1) for length in ad1[0].shape[::-1]]
+        pos2 = ad2[0].wcs.invert(*ad1[0].wcs(*pos1))
+        return all(abs(p1 - p2) < frac_FOV * length
+                   for p1, p2, length in zip(pos1, pos2, ad1[0].shape[::-1]))

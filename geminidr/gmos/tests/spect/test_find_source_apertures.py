@@ -13,6 +13,7 @@ import astrodata
 import gemini_instruments
 
 from astropy.modeling.models import Gaussian1D
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr.gmos.primitives_gmos_spect import GMOSSpect
 
 test_data = [
@@ -56,7 +57,7 @@ extra_test_data.extend([
 
 # Some iterations are known to be failure cases
 # we mark them accordingly so we can see if they start passing
-_xfail_indices = (0, 1, 5, 9, 12, 13, 17, 20, 24, 25, 29)
+_xfail_indices = (0, 4, 13, 20, 21, 25, 29)
 for idx in _xfail_indices:
     args = extra_test_data[idx]
     extra_test_data[idx] = pytest.param(args, marks=pytest.mark.xfail)
@@ -68,7 +69,6 @@ for idx in _xfail_indices:
 seeing_pars = [0.5, 1.0, 1.25]
 position_pars = [500]
 value_pars = [50, 100, 500]
-
 
 @pytest.mark.gmosls
 @pytest.mark.parametrize("peak_position", position_pars)
@@ -82,10 +82,12 @@ def test_find_apertures_with_fake_data(peak_position, peak_value, seeing, astrof
     """
     np.random.seed(42)
 
-    gmos_fake_noise = 4  # adu
+    gmos_fake_noise = 4 # adu
+    gmos_fake_noise *= peak_value / 25 # need to scale to avoid creating
+                                       # unrealistically low peak-SNR data
     gmos_plate_scale = 0.0807  # arcsec . px-1
     fwhm_to_stddev = 2 * np.sqrt(2 * np.log(2))
-    
+
     ad = astrofaker.create('GMOS-S', mode='SPECT')
     ad.init_default_extensions()
 
@@ -96,13 +98,13 @@ def test_find_apertures_with_fake_data(peak_position, peak_value, seeing, astrof
     rows, cols = np.mgrid[:ad.shape[0][0], :ad.shape[0][1]]
 
     for ext in ad:
-        ext.data = model(rows)
+        ext.data = model(rows).astype(np.float32)
         ext.data += np.random.poisson(ext.data)
         ext.data += np.random.normal(scale=gmos_fake_noise, size=ext.shape)
-        ext.mask = np.zeros_like(ext.data, dtype=np.uint)
+        ext.mask = np.zeros_like(ext.data, dtype=DQ.datatype)
 
     p = GMOSSpect([ad])
-    _ad = p.findApertures(max_apertures=1)[0]
+    _ad = p.findApertures(max_apertures=1, min_snr=3)[0]
 
     for _ext in _ad:
         # ToDo - Could we improve the primitive to have atol=0.50 or less?
@@ -126,7 +128,6 @@ def test_find_apertures_using_standard_star(ad_and_center):
     np.testing.assert_allclose(ad[0].APERTURE['c0'], expected_center, 3)
 
 
-@pytest.mark.skip("MUST WORK; temporary skip")
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad_center_tolerance_snr", extra_test_data, indirect=True)
@@ -352,8 +353,8 @@ def create_inputs_automated_recipe():
         sn_std = 0.42466 * sn_fwhm
         model = (Gaussian1D(amplitude=peak, mean=yc, stddev=gal_std) +
                  Gaussian1D(amplitude=peak * contrast, mean=yc + sep, stddev=sn_std))
-        profile = model(np.arange(SHAPE[0]))
-        data = np.zeros(SHAPE) + profile[:, np.newaxis]
+        profile = model(np.arange(SHAPE[0])).astype(np.float32)
+        data = np.zeros(SHAPE, dtype=np.float32) + profile[:, np.newaxis]
         data += np.random.normal(scale=RDNOISE, size=data.size).reshape(data.shape)
 
         hdulist = pf.HDUList([pf.PrimaryHDU(header=pf.Header(phu_dict)),

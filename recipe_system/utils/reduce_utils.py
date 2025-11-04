@@ -9,7 +9,7 @@ from argparse import RawDescriptionHelpFormatter
 import astrodata
 import gemini_instruments
 
-from .reduceActions import PosArgAction
+from .reduceActions import PosArgAction, UploadArgumentAction
 from .reduceActions import BooleanAction
 from .reduceActions import ParameterAction
 from .reduceActions import CalibrationAction
@@ -82,24 +82,24 @@ def buildParser(version):
                         help="fitsfile [fitsfile ...] ")
 
     parser.add_argument("--adpkg", dest='adpkg', default=None,
-                        nargs="*", action=UnitaryArgumentAction,
+                        nargs=1, action=UnitaryArgumentAction,
                         help="Specify an external astrodata definitions package. "
                         "This is only passed for non-Gemini instruments."
                         "The package must be importable. E.g., "
                         "--adpkg soar_instruments ")
 
     parser.add_argument("--drpkg", dest='drpkg', default='geminidr',
-                        nargs="*", action=UnitaryArgumentAction,
+                        nargs=1, action=UnitaryArgumentAction,
                         help="Specify another data reduction (dr) package. "
                         "The package must be importable. Recipe system default is "
                         "'geminidr'. E.g., --drpkg ghostdr ")
 
     parser.add_argument("--logfile", dest="logfile", default="reduce.log",
-                        nargs="*", action=UnitaryArgumentAction,
+                        nargs=1, action=UnitaryArgumentAction,
                         help="name of log (default is 'reduce.log')")
 
     parser.add_argument("--logmode", dest="logmode", default="standard",
-                        nargs="*", action=UnitaryArgumentAction,
+                        nargs=1, action=UnitaryArgumentAction,
                         help="Set log mode: 'standard', 'quiet', 'debug'. "
                         "Default is 'standard'. 'quiet' writes only to log file.")
 
@@ -122,7 +122,7 @@ def buildParser(version):
                         "Default is to use 'sq' recipes.")
 
     parser.add_argument("-r", "--recipe", dest="recipename", default=None,
-                        nargs="*", action=UnitaryArgumentAction,
+                        nargs=1, action=UnitaryArgumentAction,
                         help="Specify a recipe by name. Users can request "
                         "non-default system recipe functions by their simple "
                         "names, e.g., -r qaStack, OR may specify their own "
@@ -142,12 +142,12 @@ def buildParser(version):
                         "is a python module named,  'recipefile.py' ")
 
     parser.add_argument("--suffix", dest='suffix', default=None,
-                        nargs="*", action=UnitaryArgumentAction,
+                        nargs=1, action=UnitaryArgumentAction,
                         help="Add 'suffix' to filenames at end of reduction; "
                         "strip all other suffixes marked by '_'; ")
 
     parser.add_argument("--upload", dest='upload', default=None,
-                        action=UnitaryArgumentAction, nargs="*",
+                        action=UploadArgumentAction, nargs="*",
                         help="Send these pipeline products to fitsstore."
                         "Default is None."
                         "Eg., --upload metrics calibs science")
@@ -159,7 +159,7 @@ def buildParser(version):
                         "Eg., --user_cal processed_arc:gsTest_arc.fits")
 
     parser.add_argument("-c", "--config", dest='config', default=None,
-                        nargs="*", action=UnitaryArgumentAction,
+                        nargs=1, action=UnitaryArgumentAction,
                         help="Load a specific config file, overriding the "
                              "~/.dragons/dragonsrc file and the $DRAGONSRC "
                              "environment variable.")
@@ -246,7 +246,7 @@ def set_btypes(userparams):
     upars = []
     if userparams:
         for upar in userparams:
-            tmp = upar.split("=")
+            tmp = upar.split("=", 1)
             spec, val = tmp[0].strip(), tmp[1].strip()
             if val == 'None':
                 val = None

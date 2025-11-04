@@ -16,30 +16,32 @@ inactive state.
 """
 from abc import ABC, abstractmethod
 
-from bokeh.events import PointEvent, SelectionGeometry, Tap, MouseEnter, MouseLeave
+from bokeh.events import (
+    PointEvent,
+    MouseEnter,
+    MouseLeave,
+)
 
-__all__ = ["controller", "Controller", "Handler"]
+__all__ = ["CONTROLLER", "Controller", "Handler"]
 
 from bokeh.models import CustomJS
 
-""" This is the active controller.  It is activated when it's attached figure sees the mouse enter it's view.
+# This is the active controller.  It is activated when it's attached figure
+# sees the mouse enter it's view.
 
-Controller instances will set this to listen to key presses.  The bokeh server will use this to send keys
-it recieves from the clients.  Everyone else should leave it alone!
-"""
-controller = None
+# Controller instances will set this to listen to key presses.  The bokeh
+# server will use this to send keys it recieves from the clients.  Everyone
+# else should leave it alone!
+CONTROLLER = None
 
 
-# This is used to track if we already have a pending
-# action to update the mouse position.  This is used
-# to effect throttling.  When there is a mouse move,
-# an action to respond to the mouse position is triggered
-# in the future and this is set True.  Subsequent mouse
-# moves will see we already have the action pending and
-# do nothing.  Then when the action triggers it takes
-# the current (future) mouse position and sets this back
-# to False.
-_pending_handle_mouse = False
+# This is used to track if we already have a pending action to update the mouse
+# position.  This is used to effect throttling.  When there is a mouse move, an
+# action to respond to the mouse position is triggered in the future and this
+# is set True.  Subsequent mouse moves will see we already have the action
+# pending and do nothing.  Then when the action triggers it takes the current
+# (future) mouse position and sets this back to False.
+_PENDING_HANDLE_MOUSE = False
 
 
 class Controller(object):
@@ -61,8 +63,18 @@ class Controller(object):
     :class:`~Controller`.  The :class:`~Tasks` are also able to update the help
     text to give contextual help.
     """
-    def __init__(self, fig, aperture_model, region_model, help_text, mask_handlers=None,
-                 domain=None, handlers=None, helpintrotext=None):
+
+    def __init__(
+        self,
+        fig,
+        aperture_model,
+        region_model,
+        help_text,
+        mask_handlers=None,
+        domain=None,
+        handlers=None,
+        helpintrotext=None,
+    ):
         """
         Create a controller to manage the given aperture and region models on
         the given GIFigure.
@@ -70,78 +82,123 @@ class Controller(object):
         Parameters
         ----------
         fig : :class:`~Figure`
-            plot to attach controls to
+            plot to attach controls to.
         aperture_model : :class:`GIApertureModel`
-            model for apertures for this plot/dataset, or None
+            model for apertures for this plot/dataset, or None.
         region_model : :class:`GIRegionModel`
-            model for regions for this plot/dataset, or None
+            model for regions for this plot/dataset, or None.
         help_text : :class:`Div`
-            div to update text in to provide help to the user
+            div to update text in to provide help to the user.
         mask_handlers : None or tuple of {2,3} functions
-            The first two functions handle mask/unmask commands, the third (optional)
-            function handles 'P' point mask requests.
+            The first two functions handle mask/unmask commands, the third
+            (optional) function handles 'P' point mask requests.
         domain : tuple of 2 numbers, or None
-            The domain of the data being handled, used for region editing to constrain the values
+            The domain of the data being handled, used for region editing to
+            constrain the values.
         handlers : list of `~geminidr.interactive.controls.Handler`
-            List of handlers for key presses that are always active, not tied to a task
+            List of handlers for key presses that are always active, not tied
+            to a task.
         helpintrotext : str
-            HTML to show at the top of the controller help (gray text block), or None for a default message.
+            HTML to show at the top of the controller help (gray text block),
+            or None for a default message.
         """
 
-        fig.js_on_event(MouseEnter, CustomJS(code='window.controller_keys_enabled = true;'))
-        fig.js_on_event(MouseLeave, CustomJS(code='window.controller_keys_enabled = false;'))
+        fig.js_on_event(
+            MouseEnter, CustomJS(code="window.controller_keys_enabled = true;")
+        )
+        fig.js_on_event(
+            MouseLeave,
+            CustomJS(code="window.controller_keys_enabled = false;"),
+        )
 
         # set the class for the help_text div so we can have a common style
-        help_text.css_classes.append('controller_div')
+        help_text.css_classes.append("controller_div")
 
         self.aperture_model = aperture_model
 
-        self.helpmaskingtext = ''
+        self.helpmaskingtext = ""
 
         if helpintrotext is not None:
             self.helpintrotext = f"{helpintrotext}<br/><br/>\n"
-        else:
-            self.helpintrotext = "While the mouse is over the plot, choose from the following commands:<br/><br/>\n"
 
-        self.helptooltext = ''
+        else:
+            self.helpintrotext = (
+                "While the mouse is over the plot, choose from the "
+                "following commands:<br/><br/>\n"
+            )
+
+        self.helptooltext = ""
         self.helptext = help_text
         self.enable_user_masking = True if mask_handlers else False
 
         self.handlers = dict()
         if mask_handlers:
             if len(mask_handlers) != 2:
-                raise ValueError("Must pass tuple (mask_fn, unmask_fn) to mask_handlers argument of Controller")
-            self.register_handler(Handler('m', 'Mask selected/closest',
-                                          lambda key, x, y:
-                                          mask_handlers[0](x, y, ((self.fig.x_range.end - self.fig.x_range.start)
-                                                                  /float(self.fig.inner_width)) /
-                                                           ((self.fig.y_range.end - self.fig.y_range.start)/
-                                                            float(self.fig.inner_height)))))
-            self.register_handler(Handler('u', 'Unmask selected/closest',
-                                          lambda key, x, y:
-                                          mask_handlers[1](x, y, ((self.fig.x_range.end - self.fig.x_range.start)
-                                                                  /float(self.fig.inner_width)) /
-                                                           ((self.fig.y_range.end - self.fig.y_range.start)
-                                                            /float(self.fig.inner_height)))))
+                raise ValueError(
+                    "Must pass tuple (mask_fn, unmask_fn) to mask_handlers "
+                    "argument of Controller"
+                )
+
+            # pylint: disable=unused-argument
+            def _mask(key, x, y):
+                handler = mask_handlers[0]
+                dx = (
+                    (self.fig.x_range.end - self.fig.x_range.start)
+                    / float(self.fig.inner_width)
+                )
+
+                dy = (
+                    (self.fig.y_range.end - self.fig.y_range.start)
+                    / float(self.fig.inner_height)
+                )
+
+                return handler(x, y, dx / dy)
+
+            self.register_handler(
+                Handler("m", "Mask selected/closest", _mask)
+            )
+
+            # pylint: disable=unused-argument
+            def _unmask(key, x, y):
+                handler = mask_handlers[1]
+                dx = (
+                    (self.fig.x_range.end - self.fig.x_range.start)
+                    / float(self.fig.inner_width)
+                )
+
+                dy = (
+                    (self.fig.y_range.end - self.fig.y_range.start)
+                    / float(self.fig.inner_height)
+                )
+
+                return handler(x, y, dx / dy)
+
+            self.register_handler(
+                Handler("u", "Unmask selected/closest", _unmask)
+            )
+
         if handlers:
             for handler in handlers:
                 self.register_handler(handler)
+
         self.update_helpmaskingtext()
 
         self.tasks = dict()
         if aperture_model:
-            self.tasks['a'] = ApertureTask(aperture_model, help_text, fig)
+            self.tasks["a"] = ApertureTask(aperture_model, help_text, fig)
         if region_model:
-            self.tasks['r'] = RegionTask(region_model, help_text, domain=domain)
+            self.tasks["r"] = RegionTask(
+                region_model, help_text, domain=domain
+            )
         self.task = None
         self.x = None
         self.y = None
         # we need to always know where the mouse is in case someone
         # starts an Aperture or Band
         if aperture_model or region_model or mask_handlers or handlers:
-            fig.on_event('mousemove', self.on_mouse_move)
-            fig.on_event('mouseenter', self.on_mouse_enter)
-            fig.on_event('mouseleave', self.on_mouse_leave)
+            fig.on_event("mousemove", self.on_mouse_move)
+            fig.on_event("mouseenter", self.on_mouse_enter)
+            fig.on_event("mouseleave", self.on_mouse_leave)
         self.fig = fig
         self.set_help_text(None)
 
@@ -160,8 +217,9 @@ class Controller(object):
         handler : :class:`~geminidr.interactive.controls.Handler`
             Handler to add to the controller
         """
-        if handler.key in self.handlers.keys():
-            raise ValueError(f'Key {handler.key} already registered')
+        if handler.key in self.handlers:
+            raise ValueError(f"Key {handler.key} already registered")
+
         self.handlers[handler.key] = handler
 
     def update_helpmaskingtext(self):
@@ -169,24 +227,31 @@ class Controller(object):
         Update the help preamble text for keys that are
         always available, starting with the masking.
         """
-        if 'm' in self.handlers.keys():
+        if "m" in self.handlers:
             self.helpmaskingtext = (
                 "<b>Masking</b> <br/> "
-                "To mark or unmark one point at a time, select \"Tap\" on the toolbar on "
-                "the right side of the plot.  To mark/unmark a group of point, activate "
-                "\"Box Select\" on the toolbar.<br/>"
+                'To mark or unmark one point at a time, select "Tap" on the '
+                "toolbar on the right side of the plot.  To mark/unmark a "
+                'group of point, activate "Box Select" on the toolbar.<br/>'
                 "<b>M</b> - Mask selected/closest<br/>"
-                "<b>U</b> - Unmask selected/closest<br/></br>")
+                "<b>U</b> - Unmask selected/closest<br/></br>"
+            )
 
-        if self.handlers.keys() - ['m', 'u']:
-            if 'm' in self.handlers.keys():
-                self.helpmaskingtext += '<b>Other Commands</b><br/>'
+        # Check for other handlers.
+        if self.handlers.keys() - ["m", "u"]:
+            if "m" in self.handlers:
+                self.helpmaskingtext += "<b>Other Commands</b><br/>"
+
             else:
-                self.helpmaskingtext += '<b>Commands</b><br/>'
-            for k, v in self.handlers.items():
-                if k not in ['u', 'm']:
-                    self.helpmaskingtext += f"<b>{k.upper()}</b> - {v.description}<br/>"
-            self.helpmaskingtext += '<br/>'
+                self.helpmaskingtext += "<b>Commands</b><br/>"
+
+            for key, value in self.handlers.items():
+                if key not in ["u", "m"]:
+                    self.helpmaskingtext += (
+                        f"<b>{key.upper()}</b> - {value.description}<br/>"
+                    )
+
+            self.helpmaskingtext += "<br/>"
 
     def set_help_text(self, text=None):
         """
@@ -202,47 +267,61 @@ class Controller(object):
             html to display in the div
         """
         if text is not None:
-            ht = self.helpintrotext + self.helpmaskingtext + text
+            helptext = self.helpintrotext + self.helpmaskingtext + text
+
         else:
             if self.tasks or self.handlers or self.enable_user_masking:
-                # TODO somewhat editor-inheritance vs on enter function below, refactor accordingly
-                ht = self.helpintrotext + self.helpmaskingtext
+                # TODO somewhat editor-inheritance vs on enter function below,
+                # refactor accordingly
+                helptext = self.helpintrotext + self.helpmaskingtext
+
                 if len(self.tasks) == 1:
                     task = next(iter(self.tasks.values()))
-                    ht = ht + task.helptext()
+                    helptext = helptext + task.helptext()
+
                 else:
                     for key, task in sorted(self.tasks.items()):
-                        ht = ht + "<b>%s</b> - %s<br/>\n" % (key, task.description())
-            else:
-                ht = ""
+                        description = task.description()
 
-        # This has to be done via a callback.  During the key press, we are outside the context of
-        # the widget's bokeh document
+                        helptext += f"<b>{key}</b> - {description}<br/>\n"
+            else:
+                helptext = ""
+
+        # This has to be done via a callback.  During the key press, we are
+        # outside the context of the widget's bokeh document
         if self.helptext.document:
-            # we now have an associated document, need to do this inside that context
-            self.helptext.document.add_next_tick_callback(lambda: self.helptext.update(text=ht))
+            # we now have an associated document, need to do this inside that
+            # context
+            self.helptext.document.add_next_tick_callback(
+                lambda: self.helptext.update(text=helptext)
+            )
+
         else:
             # no document, we can update directly
-            self.helptext.update(text=ht)
+            self.helptext.update(text=helptext)
 
+    # pylint: disable=unused-argument
     def on_mouse_enter(self, event):
         """
-        Handle the mouse entering our related figure by activating this controller.
+        Handle the mouse entering our related figure by activating this
+        controller.
 
         Parameters
         ----------
         event
             the mouse event from bokeh, unused
         """
-        global controller
-        controller = self
+        global CONTROLLER
+        CONTROLLER = self
+
         if len(self.tasks) == 1:
             # for k, v in self.tasks.items():
             #     self.task = v
             self.task = next(iter(self.tasks.values()))
-            ht = self.task.helptext()
-            self.set_help_text(ht)
+            helptext = self.task.helptext()
+            self.set_help_text(helptext)
             self.task.start(self.x, self.y)
+
         else:
             # show selection of available tasks
             self.set_help_text(None)
@@ -260,13 +339,13 @@ class Controller(object):
         event
             the mouse event from bokeh, unused
         """
-        global controller
-        if self == controller:
+        global CONTROLLER
+        if self == CONTROLLER:
             self.set_help_text(None)
             if self.task:
                 self.task.stop()
                 self.task = None
-            controller = None
+            CONTROLLER = None
 
     def on_mouse_move(self, event: PointEvent):
         """
@@ -299,14 +378,16 @@ class Controller(object):
         key : char
             Key that was pressed, such as 'a'
         """
+
         def _ui_loop_handle_key(_key):
-            if _key in self.handlers.keys():
+            if _key in self.handlers:
                 self.handlers[_key].handle(_key, self.x, self.y)
 
             elif self.task:
                 if self.task.handle_key(_key):
                     if len(self.tasks) > 1:
-                        # only if we have multiple tasks, otherwise no point in offering 1 task option
+                        # only if we have multiple tasks, otherwise no point in
+                        # offering 1 task option
                         self.task = None
                         self.set_help_text()
 
@@ -316,9 +397,11 @@ class Controller(object):
                 self.task.start(self.x, self.y)
 
         if self.fig.document:
-            # we now have an associated document, need to do this inside that context
+            # we now have an associated document, need to do this inside that
+            # context
             self.fig.document.add_next_tick_callback(
-                lambda: _ui_loop_handle_key(_key=key))
+                lambda: _ui_loop_handle_key(_key=key)
+            )
 
     def handle_mouse(self, x, y):
         """
@@ -339,17 +422,21 @@ class Controller(object):
         """
         self.x = x
         self.y = y
-        global _pending_handle_mouse
-        if not _pending_handle_mouse:
-            _pending_handle_mouse = True
+        global _PENDING_HANDLE_MOUSE
+        if not _PENDING_HANDLE_MOUSE:
+            _PENDING_HANDLE_MOUSE = True
             if self.fig.document is not None:
-                self.fig.document.add_timeout_callback(self.handle_mouse_callback, 100)
+                self.fig.document.add_timeout_callback(
+                    self.handle_mouse_callback, 100
+                )
             else:
                 self.handle_mouse_callback()
 
     def handle_mouse_callback(self):
-        global _pending_handle_mouse
-        _pending_handle_mouse = False
+        """Use mouse location to display help text."""
+        global _PENDING_HANDLE_MOUSE
+        _PENDING_HANDLE_MOUSE = False
+
         if self.task:
             if self.task.handle_mouse(self.x, self.y):
                 self.task = None
@@ -357,8 +444,7 @@ class Controller(object):
 
 
 class Task(ABC):
-    """
-    A Task is a general concept of some interactive behavior where we
+    """A Task is a general concept of some interactive behavior where we
     also want keyboard support.
 
     A task may be connected to a top-level Controller by a key command.
@@ -368,17 +454,14 @@ class Task(ABC):
     For simple single-key actions that you want to always have active,
     see `~geminidr.interactive.controls.Handler`
     """
+
     @abstractmethod
     def handle_key(self, key):
-        """
-        Called when the task is active and we have a key press.
-        """
-        pass
+        """Called when the task is active and we have a key press."""
 
     @abstractmethod
     def handle_mouse(self, x, y):
-        """
-        Called when we have a mouse move and the task is active.
+        """Called when we have a mouse move and the task is active.
 
         Parameters
         ----------
@@ -388,11 +471,10 @@ class Task(ABC):
             y coordinate of mouse in data space
 
         """
-        pass
 
     def helptext(self):
-        """
-        Override to provide HTML help text to display when this task is active.
+        """Override to provide HTML help text to display when this task is
+        active.
 
         Returns
         -------
@@ -405,6 +487,7 @@ class ApertureTask(Task):
     """
     Task for controlling apertures.
     """
+
     def __init__(self, aperture_model, helptext, fig):
         """
         Create aperture task for the given model.
@@ -429,10 +512,10 @@ class ApertureTask(Task):
         """
         Start defining an aperture from the given coordinate.
 
-        This method starts an aperture definition with the current coordinates.  The x
-        value will define the center of the aperture.  After that, as the mouse is moved,
-        it will define the edge of the aperture with an equally wide edge on the other
-        side.
+        This method starts an aperture definition with the current coordinates.
+        The x value will define the center of the aperture.  After that, as the
+        mouse is moved, it will define the edge of the aperture with an equally
+        wide edge on the other side.
 
         Parameters
         ----------
@@ -452,6 +535,7 @@ class ApertureTask(Task):
         """
         self.stop_aperture()
 
+    # pylint: disable=unused-argument
     def start_aperture(self, x, y):
         """
         Create a new aperture at this x coordinate.
@@ -491,13 +575,14 @@ class ApertureTask(Task):
             True if the task is finished and the controller should take over,
             False if we are not done with the Task
         """
-        keymodes = {'[': 'left', ']': 'right', 'l': 'location'}
+        keymodes = {"[": "left", "]": "right", "l": "location"}
 
         def _handle_key():
-            if self.aperture_id is None or self.mode == '':
+            if self.aperture_id is None or self.mode == "":
                 # get closest one
                 self.aperture_id = self.aperture_model.find_closest(
-                    self.last_x, self.fig.x_range.start, self.fig.x_range.end)
+                    self.last_x, self.fig.x_range.start, self.fig.x_range.end
+                )
                 if self.aperture_id is None:
                     return False
                 self.mode = keymodes[key]
@@ -506,33 +591,38 @@ class ApertureTask(Task):
                 self.stop_aperture()
                 return True
 
-        if key in '[l]':
+        if key in "[l]":
             return _handle_key()
-        elif key == 's':
+        elif key == "s":
             self.aperture_id = self.aperture_model.find_closest(
-                self.last_x, self.fig.x_range.start, self.fig.x_range.end, prefer_selected=False)
+                self.last_x,
+                self.fig.x_range.start,
+                self.fig.x_range.end,
+                prefer_selected=False,
+            )
             self.aperture_model.select_aperture(self.aperture_id)
             return False
-        elif key == 'c':
+        elif key == "c":
             self.aperture_id = None
             self.aperture_model.select_aperture(None)
             return False
-        elif key == 'a':
+        elif key == "a":
             if self.aperture_id is None:
                 self.start_aperture(self.last_x, self.last_y)
                 return False
             else:
                 self.stop_aperture()
                 return True
-        elif key == 'f':
+        elif key == "f":
             if self.aperture_id is None:
                 self.aperture_model.find_peak(self.last_x)
                 return True
-        elif key == 'd':
+        elif key == "d":
             if self.aperture_id is None:
                 # get closest one
                 self.aperture_id = self.aperture_model.find_closest(
-                    self.last_x, self.fig.x_range.start, self.fig.x_range.end)
+                    self.last_x, self.fig.x_range.start, self.fig.x_range.end
+                )
                 if self.aperture_id is None:
                     return False
             self.aperture_model.delete_aperture(self.aperture_id)
@@ -553,26 +643,32 @@ class ApertureTask(Task):
         """
         # we are in aperture mode
         if self.aperture_id:
-            if self.aperture_id not in self.aperture_model.aperture_models.keys():
+            if (
+                self.aperture_id
+                not in self.aperture_model.aperture_models.keys()
+            ):
                 pass
             model = self.aperture_model.aperture_models[self.aperture_id]
-            location = model.source.data['location'][0]
+            location = model.source.data["location"][0]
 
-            if self.mode == 'width':
+            if self.mode == "width":
                 width = abs(location - x)
-                model.update_values(start=location - width,
-                                    end=location + width)
-            elif self.mode == 'left':
+                model.update_values(
+                    start=location - width, end=location + width
+                )
+            elif self.mode == "left":
                 if x < location:
                     model.update_values(start=x)
-            elif self.mode == 'right':
+            elif self.mode == "right":
                 if x > location:
                     model.update_values(end=x)
-            elif self.mode == 'location':
+            elif self.mode == "location":
                 diff = x - location
-                model.update_values(location=x,
-                                    start=model.source.data['start'][0] + diff,
-                                    end=model.source.data['end'][0] + diff)
+                model.update_values(
+                    location=x,
+                    start=model.source.data["start"][0] + diff,
+                    end=model.source.data["end"][0] + diff,
+                )
 
         self.last_x = x
         self.last_y = y
@@ -614,6 +710,7 @@ class RegionTask(Task):
     """
     Task for operating on the regions.
     """
+
     def __init__(self, region_model, helptext, domain=None):
         """
         Create a region task for the given :class:`GIRegionModel`
@@ -662,15 +759,22 @@ class RegionTask(Task):
         This starts a region with one edge at the current x coordinate.
         """
         x = self.last_x
-        y = self.last_y
+
         (region_id, start, end) = self.region_model.find_region(x)
+
         if region_id is not None:
             self.region_id = region_id
-            if (x-start) < (end-x):
+
+            if (x - start) < (end - x):
                 self.region_edge = end
+
             else:
                 self.region_edge = start
-            self.region_model.adjust_region(self.region_id, x, self.region_edge)
+
+            self.region_model.adjust_region(
+                self.region_id, x, self.region_edge
+            )
+
         else:
             self.region_edge = x
             self.region_id = self.region_model.region_id
@@ -702,42 +806,64 @@ class RegionTask(Task):
             key that was pressed by the user.
 
         """
-        if key == 'b' or key == 'r':
+        if key == "b" or key == "r":
             if self.region_id is None:
                 self.start_region()
                 self.update_help()
+
                 return False
+
             else:
                 self.stop_region()
                 self.update_help()
+
                 return True
-        if key == 'e':
+
+        if key == "e":
             if self.region_edge is None:
-                self.region_id, self.region_edge = self.region_model.closest_region(self.last_x)
+                _id, _edge = self.region_model.closest_region(self.last_x)
+                self.region_id, self.region_edge = _id, _edge
+
             else:
                 self.stop_region()
+
             self.update_help()
+
             return False
-        if key == 'd':
+
+        if key == "d":
             if self.region_id is not None:
                 self.region_model.delete_region(self.region_id)
                 self.stop()
                 self.update_help()
+
                 return True
+
             else:
-                region_id, region_edge = self.region_model.closest_region(self.last_x)
+                _id, _edge = self.region_model.closest_region(self.last_x)
+                region_id, _ = _id, _edge
+
                 if region_id is not None:
                     self.region_model.delete_region(region_id)
+
                 self.update_help()
+
                 return True
-        if key == '*':
+
+        if key == "*":
             if self.region_id is not None and self.region_edge is not None:
                 if self.last_x < self.region_edge:
                     # we're left of the anchor, so we want [None, region_edge]
-                    self.region_model.adjust_region(self.region_id, None, self.region_edge)
+                    self.region_model.adjust_region(
+                        self.region_id, None, self.region_edge
+                    )
+
                 else:
                     # we're right of the anchor, so we want [region_edge, None]
-                    self.region_model.adjust_region(self.region_id, self.region_edge, None)
+                    self.region_model.adjust_region(
+                        self.region_id, self.region_edge, None
+                    )
+
                 self.stop_region()
                 self.update_help()
 
@@ -761,20 +887,25 @@ class RegionTask(Task):
         """
         self.last_x = x
         self.last_y = y
+
         if self.min_x is not None:
             self.last_x = max(self.last_x, self.min_x)
+
         if self.max_x is not None:
             self.last_x = min(self.last_x, self.max_x)
+
         # we are in region mode
         if self.region_id is not None:
             start = self.last_x
             end = self.region_edge
             self.region_model.adjust_region(self.region_id, start, end)
+
         return False
 
     def description(self):
         """
-        Returns the description to use when offering this task from the top-level controller.
+        Returns the description to use when offering this task from the
+        top-level controller.
 
         Returns
         -------
@@ -788,17 +919,22 @@ class RegionTask(Task):
         or not.
         """
         if self.region_id is not None:
-            controller.set_help_text("""Drag to desired region width.<br/>\n
+            CONTROLLER.set_help_text(
+                """Drag to desired region width.<br/>\n
                   <b>R</b> to set the region<br/>\n
                   <b>D</b> to delete/cancel the current region<br/>
                   <b>*</b> to extend to maximum on this side
-                  """)
+                  """
+            )
+
         else:
-            controller.set_help_text("""<b> Edit Regions: </b><br/>\n
+            CONTROLLER.set_help_text(
+                """<b> Edit Regions: </b><br/>\n
                   <b>R</b> to start a new region<br/>\n
                   <b>E</b> to edit nearest region<br/>\n
                   <b>D</b> to delete the nearest region
-                  """)
+                  """
+            )
 
     def helptext(self):
         """
@@ -808,11 +944,15 @@ class RegionTask(Task):
         -------
             str HTML help text for the task
         """
-        return """<b> Edit Regions </b> <br/>\n
-                  <b>R</b> to start a new region or set the edge if editing<br/>\n
-                  <b>E</b> to edit nearest region<br/>\n
-                  <b>D</b> to delete/cancel the current/nearest region
-                  """
+        help_string = (
+            """<b> Edit Regions </b> <br/>\n
+            <b>R</b> to start a new region or set the edge if editing<br/>\n
+            <b>E</b> to edit nearest region<br/>\n
+            <b>D</b> to delete/cancel the current/nearest region
+            """
+        )
+
+        return help_string
 
 
 class Handler:
@@ -833,10 +973,33 @@ class Handler:
     fn : callable
         Function to call with the key
     """
-    def __init__(self, key, description, fn):
+
+    def __init__(self, key, description, function):
+        """Iitializes the handler with the given key, description and function.
+
+        Parameters
+        ----------
+        key : str
+            Key this handler listens for
+
+        description : str
+            Description of handler effect for the help text
+
+        function : callable
+            Function to call with the key.
+
+        Notes
+        -----
+        The function should take three positional arguments: the key, and the x
+        and y coordinates of the mouse cursor.
+
+        These are only passed positionally, and not as keyword arguments, so
+        the order matters here.
+        """
         self.key = key.lower()
         self.description = description
-        self.fn = fn
+        self.function = function
 
     def handle(self, key, x, y):
-        self.fn(key, x, y)
+        """Call the function with the given key and x/y coordinates."""
+        self.function(key, x, y)

@@ -25,6 +25,8 @@ def main(args=None):
                         version=f"v{__version__}")
     parser.add_argument('filename', help="filename")
     parser.add_argument('primitive', help="primitive name")
+    parser.add_argument("-a", "--all", action="store_true",
+                        help="show all parameters, including debug-level ones")
     parser.add_argument("-d", "--doc", action="store_true",
                         help="show the full docstring")
     parser.add_argument('--adpkg', help='Name of the astrodata instrument '
@@ -33,7 +35,7 @@ def main(args=None):
                         'package to use if not geminidr')
     args = parser.parse_args(args)
     pobj, tags = get_pars(args.filename, adpkg=args.adpkg, drpkg=args.drpkg)
-    return showpars(pobj, args.primitive, tags, args.doc)
+    return showpars(pobj, args.primitive, tags, args.doc, args.all)
 
 
 def get_pars(filename, adpkg=None, drpkg=None):
@@ -53,15 +55,19 @@ def get_pars(filename, adpkg=None, drpkg=None):
     return pobj, dtags
 
 
-def showpars(pobj, primname, tags, show_docstring):
-    print(f"Dataset tagged as {tags}")
-    print(f"\nSettable parameters on '{primname}':")
+def showpars(pobj, primname, tags, show_docstring, show_all):
+    print(f"Dataset tagged as {tags}\n")
+    if primname not in pobj.params:
+        raise KeyError(f"{primname} doesn't exist for "
+                       "this data type.")
+
+    print(f"Settable parameters on '{primname}':")
     print("=" * 40)
     print(f"{'Name':20s} {'Current setting':20s} Description\n")
 
     params = pobj.params[primname]
     for k, v in params.items():
-        if not k.startswith("debug"):
+        if show_all or not k.startswith("debug"):
             print(f"{k:20s} {v!r:20s} {params.doc(k)}")
 
     if show_docstring:

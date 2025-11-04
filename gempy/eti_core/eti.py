@@ -1,8 +1,8 @@
 from multiprocessing import Process, Queue
-from subprocess import check_output, STDOUT, CalledProcessError
+from subprocess import STDOUT, CalledProcessError, check_output
+import atexit
 
 from ..utils import logutils
-
 
 log = logutils.get_logger(__name__)
 
@@ -14,13 +14,20 @@ def loop_process(in_queue, out_queue):
     Parameters
     ----------
     in_queue : multiprocessing.Queue
-        (add docstring)
+        A queue from which commands are received for execution.
     out_queue : multiprocessing.Queue
-        (add docstring)
+        A queue to return the results of the executed commands.
+
+    Notes
+    -----
+    - If `None` is received, it breaks out of the loop and exits cleanly.
     """
     while True:
         try:
             cmd = in_queue.get()
+            # Offer way to cleanly break out of while loop.
+            if cmd is None:
+                break
             try:
                 result = check_output(cmd, stderr=STDOUT)
             except CalledProcessError as e:
@@ -29,7 +36,7 @@ def loop_process(in_queue, out_queue):
                 result = ex
             out_queue.put(result)
         except KeyboardInterrupt:
-            continue
+            break
 
 
 class ETISubprocess:
@@ -45,14 +52,51 @@ class ETISubprocess:
                                    args=(self.inQueue, self.outQueue))
             self.process.start()
 
-        def terminate(self):
-            self.process.terminate()
+        def terminate(self, timeout=2.0):
+            """
+            Terminate the subprocess gracefully (if possible), or force-kill
+            if needed. If the graceful attempt fails because the queue is
+            already closed (which shouldn't ever happen), this exception is
+            raised after the force-kill.
+
+            Parameters
+            ----------
+            timeout : float
+                Number of seconds to wait before forcing termination.
+            """
+            exc = None
+            # Send quit message to loop.
+            try:
+                self.inQueue.put(None)
+            except ValueError as exc:  # inQueue is closed
+                pass
+            self.process.join(timeout=timeout)
+
+            # If still alive, force-terminate.
+            if self.process.is_alive():
+                self.process.terminate()
+                self.process.join()
+
+            self.process.close()
+
+            # Close queues.
+            try:
+                self.inQueue.close()
+                self.inQueue.join_thread()
+                self.outQueue.close()
+                self.outQueue.join_thread()
+            except Exception:
+                pass
+
+            if exc:
+                raise exc
 
     instance = None
 
     def __new__(cls):
         if not ETISubprocess.instance:
             ETISubprocess.instance = ETISubprocess.__ETISubprocess()
+            atexit.register(ETISubprocess.instance.terminate)
         return ETISubprocess.instance
 
     def __getattr__(self, name):

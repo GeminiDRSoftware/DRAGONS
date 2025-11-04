@@ -13,7 +13,6 @@ from .caldb import CalDB, CalReturn
 class UserDB(CalDB):
     """
     The class handling the User-defined database, which can contain:
-
     (a) a filename for each caltype that should be returned whenever that
         caltype is requested, irrespective of the AD "making" the request
     (b) a filename to be returned for a given caltype for a specific AD
@@ -31,18 +30,22 @@ class UserDB(CalDB):
         This is cached to disk as a pickle.
     mdf_dict : dict
         A dict of {mdf_key: filename} for the standard focal plane masks
-
+    mdf_key : tuple
+        A tuple of strings representing the attributes of the astrodata object
+        to concatenate to form the keys of mdf_dict.
     """
-
-    def __init__(self, name=None, get_cal=True, mdf_dict=None,
+    def __init__(self, name=None, get_cal=True, mdf_dict=None, mdf_key=None,
                  user_cals=None, valid_caltypes=None, log=None):
         super().__init__(name=name, get_cal=get_cal, store_cal=True,
                          log=log, valid_caltypes=valid_caltypes,
                          procmode=None)
         self.cachefile = os.path.join(self.caldir, "calindex.pkl")
         self.mdf_dict = mdf_dict
+        self.mdf_key = mdf_key
         if self.mdf_dict:
             self.log.debug(f"Read {len(mdf_dict)} standard MDFs.")
+            if not self.mdf_key:
+                raise RuntimeError("No mdf_key supplied for mdf_dict.")
 
         self.user_cals = {}
         if user_cals:
@@ -82,7 +85,10 @@ class UserDB(CalDB):
         cals = []
         if caltype == "mask" and self.mdf_dict is not None:
             for ad in adinputs:
-                key = '{}_{}'.format(ad.instrument(), ad.focal_plane_mask())
+                # The data necessary to distinguish which MDF to use is
+                # different for different instruments, so mdf_key is defined
+                # for each one and the key generated from it here.
+                key = "_".join(getattr(ad, desc)() for desc in self.mdf_key)
                 try:
                     mdf_file = self.mdf_dict[key]
                 except KeyError:

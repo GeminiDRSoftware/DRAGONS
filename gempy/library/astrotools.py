@@ -1,17 +1,115 @@
-# Copyright(c) 2006,2016-2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2006,2016-2025 Association of Universities for Research in Astronomy, Inc.
 
 """
 The astroTools module contains astronomy specific utility functions
 """
 
+from copy import deepcopy
 import os
-import re
 import numpy as np
 from scipy import interpolate, optimize
 
 from astropy import units as u
 from astropy import stats
+from astropy.coordinates import Angle
 from astropy.modeling import models, fitting
+
+from astrodata.fits import windowedOp
+from astrodata.nddata import NDAstroData
+
+from gempy.library.cython_utils import masked_median
+from gempy.utils import logutils
+
+log = logutils.get_logger(__name__)
+
+
+class Magnitude:
+    # Wavelength (nm) and AB-Vega offsets
+    # Optical data from Bessell et al. (1998; A&A 333, 231)
+    # MK Filter set info from Tokunaga & Vacca (2005; PASP 117, 421)
+    # except Y from Hewett et al. (2006; MNRAS 367, 454)
+    VEGA_INFO = {
+        "U": (366., 0.768),
+        "B": (438., -0.122),
+        "V": (545., 0.),
+        "R": (641., 0.184),
+        "I": (798., 0.442),
+        "Y": (1030.5, 0.634),
+        "J": (1250., 0.943),
+        "H": (1644., 1.38),
+        "K'": (2121., 1.84),
+        "Kp": (2121., 1.84),
+        "Ks": (2149., 1.96),
+        "K": (2198., 1.90),
+        "L'": (3754., 2.94),
+        "Lp": (3754., 2.94),
+        "M'": (4702., 3.40),
+        "Mp": (4702., 3.40),
+    }
+
+    def __init__(self, valuestr, abmag=False):
+        """
+        Create a magnitude object from a string
+
+        Parameters
+        ----------
+        valuestr: str
+            the string representation of the magnitude
+        """
+        try:
+            self._filter, value = valuestr.split("=")
+            self._value = float(value)
+        except (IndexError, ValueError):
+            raise ValueError("Magnitude string must be of the form 'filter=value'")
+        if self._filter not in self.VEGA_INFO:
+            raise ValueError(f"Filter {self._filter} not recognized")
+        self.abmag = abmag
+
+    def __str__(self):
+        return f"{self._filter}={self._value}"
+
+    def wavelength(self, units=None):
+        """
+        Return the wavelength of the filter. This is a Quantity if no units
+        are specified, otherwise a float.
+
+        Parameters
+        ----------
+        units: astropy.units.Unit/None
+            units of the wavelength
+
+        Returns
+        -------
+        astropy.units.Quantity/float: the wavelength
+        """
+        w = self.VEGA_INFO[self._filter][0] * u.nm
+        if units is None:
+            return w
+        return w.to(units).value
+
+    def flux_density(self, units=None):
+        """
+        Return the flux density of the filter. This is a Quantity if no units
+        are specified, otherwise a float.
+
+        Parameters
+        ----------
+        units: astropy.units.Unit/None
+            units of the flux density
+
+        Returns
+        -------
+        astropy.units.Quantity/float: the flux density
+        """
+        mag = self._value + (0 if self.abmag else self.VEGA_INFO[self._filter][1])
+        fluxden = 3630 * u.Jy / 10 ** (0.4 * mag)
+        if units is None:
+            return fluxden
+        return fluxden.to(units, equivalencies=u.spectral_density(self.wavelength())).value
+
+    def properties(self, wave_units=None, fluxden_units=None):
+        """Convenience method to return wavelength and flux density"""
+        return self.wavelength(units=wave_units), self.flux_density(units=fluxden_units)
 
 
 def array_from_list(list_of_quantities, unit=None):
@@ -63,10 +161,31 @@ def boxcar(data, operation=np.ma.median, size=1):
     return boxarray
 
 
+def calculate_pixel_edges(centers):
+    """
+    Calculate the world coordinates of the edges of pixels in a 1D array,
+    given their centers. This is achieved by fitting a cubic spline to the
+    centers and evaluating it at half-pixel locations.
+
+    Parameters
+    ----------
+    centers: array-like, shape (N,)
+        locations of centers of pixels
+
+    Returns
+    -------
+    edges: array, shape (N+1,)
+        locations of edges of pixels
+    """
+    spline = interpolate.CubicSpline(np.arange(len(centers)), centers)
+    return spline(np.arange(len(centers)+1) - 0.5)
+
+
 def calculate_scaling(x, y, sigma_x=None, sigma_y=None, sigma=3, niter=2):
     """
     Determine the optimum value by which to scale inputs so that they match
-    a set of reference values
+    a set of reference values. This works on a pixel-by-pixel basis so can
+    only be used for relatively small arrays.
 
     Parameters
     ----------
@@ -117,7 +236,7 @@ def calculate_scaling(x, y, sigma_x=None, sigma_y=None, sigma=3, niter=2):
         fitting.LinearLSQFitter(), outlier_func=stats.sigma_clip, niter=niter,
         sigma=sigma)
     m_final, _ = fit_it(m_init, x, y, weights=weights)
-    return m_final.factor.value
+    return float(m_final.factor.value)  # don't force upcasting in N2 arith.
 
 
 def divide0(numerator, denominator):
@@ -190,7 +309,7 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
     """
     if variance is None:
         y = np.ma.masked_array(data, mask=mask)
-        sigma1 = std_from_pixel_variations(y)
+        sigma1 = std_from_pixel_variations(y, subtract_linear_fits=True)
         diff = np.diff(y)
         # 0.1 is a fudge factor that seems to work well
         #sigma2 = 0.1 * (np.r_[diff, [0]] + np.r_[[0], diff])
@@ -205,23 +324,203 @@ def fit_spline_to_data(data, mask=None, variance=None, k=3):
         w = divide0(1.0, np.sqrt(variance))
 
     # TODO: Consider outlier removal
+    iterations = 0
+    sigma_limit = 10 # spline residuals within this limit don't trigger refitting
+    change = 0.90
+    iters_number = 50
     if mask is None:
-        spline = interpolate.UnivariateSpline(np.arange(data.size), data, w=w, k=k)
-        #spline = am.UnivariateSplineWithOutlierRemoval(np.arange(data.size), data, w=w, k=k)
+        x = np.arange(data.size)
+        interp_x = (x[:-1] + x[1:]) / 2 # get values between data point locations
+        interp_data = (data[:-1] + data[1:]) / 2
+        interp_w = (w[:-1] + w[1:]) / 2
+        while iterations < iters_number:
+            spline = interpolate.UnivariateSpline(x, data,  w=w, k=k)
+            residuals = spline(interp_x) - interp_data
+            if not ((residuals - ((1 / interp_w) * sigma_limit)).max() > 0).any():
+                break
+            else:
+                interp_w *= change
+                iterations += 1
     else:
-        spline = interpolate.UnivariateSpline(np.arange(data.size)[mask == 0],
-                                              data[mask == 0], w=w[mask == 0], k=k)
-        #spline = am.UnivariateSplineWithOutlierRemoval(np.arange(data.size)[mask == 0],
-        #                                      data[mask == 0], w=w[mask == 0], k=k)
+        x = np.arange(data.size)[mask == 0]
+        interp_x = (x[:-1] + x[1:]) / 2
+        interp_data = (data[mask == 0][:-1] + data[mask == 0][1:]) / 2
+        interp_w = (w[mask == 0][:-1] + w[mask == 0][1:]) / 2
+        while iterations < iters_number:
+            spline = interpolate.UnivariateSpline(x, data[mask == 0],
+                                                  w=w[mask == 0], k=k)
+            residuals = spline(interp_x) - interp_data
+            if not ((residuals - ((1 / interp_w) * sigma_limit)).max() > 0).any():
+                break
+            else:
+                interp_w *= change
+                iterations += 1
+
     return spline
 
 
-def std_from_pixel_variations(array, separation=5, **kwargs):
+def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
+                          statsec=None, return_scaling=False, maxiter=1000000):
+    """
+    Compute a set of normalization offsets/scale factors to give a list
+    of NDAstroData objects the same overall value. This is done by
+    comparing the differences/ratios of all the unmasked pixels that
+    overlap between each pair of images, and then computing the optimum
+    values.
+
+    The function can cope with multi-detector instruments by only comparing
+    the same detector in each image; in such a case, separate normalization
+    factors can be calculated for each detector, or a single overall
+    normalization can be calculated. The `nddata_list` should be ordered
+    with all `num_ext` detectors from the first image, then from the second
+    image, and so on.
+
+    NB. All the NDAstroData objects must have the same dimensionality!
+
+    This is designed to work on arbitrarily large arrays in a memory-efficient
+    manner by repeatedly using the same memory to place the intermediate
+    results.
+
+    Parameters
+    ----------
+    nddata_list: list
+        list of NDAstroData objects, all the same shape
+    num_ext: int
+        number of independent fields to compute normalization for
+    separate_ext: bool
+        compute normalization for each set of extensions separately?
+    statsec: tuple of slices/None
+        section of each image to use for the normalization (None => full image)
+    return_scaling: bool
+        return scaling factors rather than additive offsets?
+    maxiter: int
+        maximum number of iterations for the minimization
+
+    Returns
+    -------
+    ndarray: additive offsets or scaling factors to scale the second and
+        subsequent NDAstroData objects to match the first one
+    """
+    if statsec is not None:
+        ext_sizes = [np.prod([s.stop - s.start for s in statsec])] * num_ext
+    else:
+        ext_sizes = [ndd.size for ndd in nddata_list[:num_ext]]
+    result_size = max(ext_sizes) if separate_ext else sum(ext_sizes)
+
+    # Prepare all the arrays we need
+    nimg = len(nddata_list) // num_ext
+    offset_matrix = np.zeros((nimg, nimg))
+    weight_matrix = np.zeros_like(offset_matrix)
+
+    # We're only offsetting images [1:N] (N-1 images)
+    x = np.zeros((nimg - 1,))
+
+    separate_ext = separate_ext and (num_ext > 1)
+    results = np.empty((num_ext, nimg) if separate_ext else (nimg,),
+                       dtype=np.float64)
+
+    tmp_data = np.empty((2, result_size), dtype=np.float32)
+    tmp_mask = np.empty((2, result_size), dtype=np.uint16)
+
+    def load_data(ndd_list, data_out, mask_out):
+        start = 0
+        for ndd in ndd_list:
+            size = ndd.size if statsec is None else ext_sizes[0]  # all the same
+            data_out[start:start+size] = (ndd.window[:] if statsec is None
+                                          else ndd.window[statsec]).data.ravel()
+            try:
+                mask_out[start:start+size] = (ndd.window[:] if statsec is None
+                                              else ndd.window[statsec]).mask.ravel()
+            except AttributeError:  # mask is None
+                mask_out[start:start+size] = 0
+            start += size
+
+    for n in range(num_ext if separate_ext else 1):
+        for i in range(nimg):
+            if separate_ext:
+                load_data([nddata_list[i*num_ext + n]],
+                          tmp_data[0], tmp_mask[0])
+                result_size = ext_sizes[n]
+            else:
+                load_data(nddata_list[i*num_ext:(i+1)*num_ext],
+                          tmp_data[0], tmp_mask[0])
+            if return_scaling:
+                tmp_mask[0] |= tmp_data[0] <= 0  # avoid log(0) or log(negative)
+
+            for j in range(i+1, nimg):
+                if separate_ext:
+                    load_data([nddata_list[j*num_ext + n]],
+                              tmp_data[1], tmp_mask[1])
+                else:
+                    load_data(nddata_list[j*num_ext:(j+1) * num_ext],
+                              tmp_data[1], tmp_mask[1])
+                if return_scaling:
+                    tmp_mask[1] |= tmp_data[1] <= 0  # avoid log(0) or log(negative)
+
+                tmp_mask[1] |= tmp_mask[0]  # combine masks
+
+                weight_matrix[i, j] = np.sum(tmp_mask[1, :result_size] == 0)
+
+                if return_scaling:
+                    with np.errstate(all="ignore"):
+                        tmp_data[1] /= tmp_data[0]
+                else:
+                    tmp_data[1] -= tmp_data[0]
+
+                med = masked_median(tmp_data[1], tmp_mask[1], result_size)
+                offset_matrix[i, j] = -(np.log(med) if return_scaling else med)
+                if weight_matrix[i, j] == 0:
+                    msg = ("No overlapping unmasked pixels found between "
+                           f"input frames {i} and {j}")
+                    if separate_ext:
+                        msg += f" for extension {n}"
+                    msg += " - they will not be normalized with respect to each other."
+                    log.warning(msg)
+
+        # Scale the offsets so they're O(1) since minimization can fail if
+        # the value to be optimized is too large. See:
+        # https://stackoverflow.com/questions/24767191/scipy-is-not-optimizing-and-returns-desired-error-not-necessarily-achieved-due
+        # This won't be a problem if we're scaling because the logs of all
+        # scaling factors will be O(1)
+        result_scaling = 1 if return_scaling else np.max(abs(offset_matrix))
+        offset_matrix /= result_scaling
+
+        def minfunc(x):
+            offsets = np.r_[[0], x]  # the first image is untouched
+            val = np.sum(weight_matrix * (offset_matrix + offsets[:, np.newaxis] -
+                                          offsets) ** 2)
+            return val
+
+        res = optimize.minimize(minfunc, x, options={'maxiter': maxiter})
+        # Include the zero offset for the first image
+        factors = np.r_[0.0, res.x]
+        if not res.success:
+            log.warning("Normalization failed: {}".format(res.message))
+
+        if separate_ext:
+            # Reset the offset matrix for the next extension
+            offset_matrix.fill(0)
+            weight_matrix.fill(0)
+            results[n] = factors * result_scaling
+        else:
+            results[:] = factors * result_scaling
+
+    return np.exp(results) if return_scaling else results
+
+
+def std_from_pixel_variations(array, separation=5, subtract_linear_fits=True,
+                              **kwargs):
     """
     Estimate the standard deviation of pixels in an array by measuring the
     pixel-to-pixel variations. Since the values might be correlated over small
     scales (e.g., if the data have been smoothed), pixels are compared not
     with their immediate neighbors but with pixels a few locations away.
+
+    Subtracting a linear fit from subgroups of pixels helps recover the standard
+    deviation from pixel arrays that are dominated by signal, where the large-
+    scale correlations would otherwise overwhelm the pixel-to-pixel variation.
+    For arrays without much signal, the differences between both options are
+    generally minor.
 
     Parameters
     ----------
@@ -229,6 +528,8 @@ def std_from_pixel_variations(array, separation=5, **kwargs):
         the data from which the standard deviation is to be estimated
     separation: int
         separation between pixels being compared
+    subtract_linear_fits: bool
+        subtract linear fit from each sub-group of separation+3 pixels
     kwargs: dict
         kwargs to be passed directly to astropy.stats.sigma_clipped_stats
 
@@ -237,7 +538,18 @@ def std_from_pixel_variations(array, separation=5, **kwargs):
     float: the estimated standard deviation
     """
     _array = np.asarray(array).ravel()
-    diffs = _array[separation:] - _array[:-separation]
+    if subtract_linear_fits:
+        # Make mini-arrays of groups of separation+3 pixels
+        data = np.vstack([_array[i:i+separation+3]
+                         for i in range(_array.size-separation-2)]).T
+        # Fit and subtract a least-squares linear function to each mini-array
+        xrange = np.arange(separation+3)
+        A = np.vstack([xrange, np.ones(xrange.size)]).T
+        m, c = np.linalg.lstsq(A, data, rcond=None)[0]
+        corr_data = data - (m * xrange[:, np.newaxis] + c)
+        diffs = (corr_data[1] - corr_data[-2])
+    else:
+        diffs = _array[separation:] - _array[:-separation]
     ok = ~(np.isnan(diffs) | np.isinf(diffs))  # Stops AstropyUserWarning
     return stats.sigma_clipped_stats(diffs[ok], **kwargs)[2] / np.sqrt(2)
 
@@ -362,6 +674,58 @@ def create_mask_from_regions(points, regions=None):
     return mask
 
 
+def get_center_of_projection(wcs):
+    """
+    Determines the location of the center of projection from a gWCS object
+
+    Parameters
+    ----------
+    wcs: gWCS object
+
+    Returns
+    -------
+    ra, dec: location of pole
+    """
+    for m in wcs.forward_transform:
+        if isinstance(m, models.RotateNative2Celestial):
+            return (m.lon.value, m.lat.value)
+
+
+def find_outliers(data, sigma=3, cenfunc=np.median):
+    """
+    Examine a list for individual outlying points and flag them.
+    This operates better than sigma-clip for small lists as it sequentially
+    removes a single point from the list and determined whether it is an
+    outlier based on the statistics of the remaining points.
+
+    Parameters
+    ----------
+    data: array-like
+        array to be searched for outliers
+    sigma: float
+        number of standard deviations for rejection
+    cenfunc: callable (np.median/np.mean usually)
+        function for deriving average
+
+    Returns
+    -------
+    mask: bool array
+        outlying points are flagged
+    """
+    mask = np.zeros_like(data, dtype=bool)
+    if mask.size < 3:  # doesn't work with 1 or 2 elements
+        return mask
+
+    for i in range(mask.size):
+        omitted_data = list(deepcopy(data))
+        omitted_data.pop(i) # Remove one point
+        average = cenfunc(omitted_data)
+        stddev = np.std(omitted_data)
+        if abs(data[i] - average) > sigma * stddev:
+            mask[i] = True
+    return mask
+
+
 def get_corners(shape):
     """
     This is a recursive function to calculate the corner indices
@@ -425,6 +789,34 @@ def get_spline3_extrema(spline):
     return np.array(minima), np.array(maxima)
 
 
+def spherical_offsets_by_pa(coord1, coord2, position_angle=0):
+    """
+    Calculates the spherical offsets between two sky coordinates relative to
+    a specific position angle.
+
+    Parameters
+    ----------
+    coord1: astropy.coordinates.SkyCoord object
+        initial position
+    coord2: astropy.coordinates.SkyCoord object
+        offset position
+    position_angle: float
+        position angle (in degrees) of slit
+
+    Returns
+    -------
+    dist_para, dist_perp: floats
+        the offsets (in arcseconds) parallel and perpendicular to the slit
+        between the two coordinates
+    """
+    frame = coord1.skyoffset_frame(rotation=Angle(position_angle, unit='deg'))
+    offset_coord = coord2.transform_to(frame)
+    # coord1 is (0, 0) in the new frame of course
+    dist_para = offset_coord.lat.deg * 3600
+    dist_perp = offset_coord.lon.deg * 3600
+    return dist_para, dist_perp
+
+
 def transpose_if_needed(*args, transpose=False, section=slice(None)):
     """
     This function takes a list of arrays and returns them (or a section of them),
@@ -446,6 +838,93 @@ def transpose_if_needed(*args, transpose=False, section=slice(None)):
     """
     return list(None if arg is None
                 else arg.T[section] if transpose else arg[section] for arg in args)
+
+
+def weighted_median(data, weights=None):
+    """
+    Calculate the weighted median of a dataset.
+
+    Parameters
+    ----------
+    data: array-like
+        the data to calculate the median of
+    weights: array-like/None
+        relative weights of the data (None => equal weights)
+
+    Returns
+    -------
+    float: the weighted median value
+    """
+    if weights is None:
+        return np.ma.median(data)
+
+    sorted_indices = np.argsort(data)
+    sorted_data = data[sorted_indices]
+    sorted_weights = weights[sorted_indices]
+
+    cumulative_weights = np.cumsum(sorted_weights)
+    total_weight = cumulative_weights[-1]
+    half_weight = 0.5 * total_weight
+
+    median_index = np.searchsorted(cumulative_weights, half_weight)
+    if cumulative_weights[median_index] == half_weight:
+        return 0.5 * (sorted_data[median_index] + sorted_data[median_index + 1])
+
+    return sorted_data[median_index]
+
+
+def weighted_sigma_clip(data, weights=None, sigma=3, sigma_lower=None,
+                        sigma_upper=None, maxiters=5):
+    """
+    Perform sigma-clipping on a dataset, accounting for different relative
+    weights of the data.
+
+    Parameters
+    ----------
+    data: array/masked_array
+        the data
+    weights: array/None
+        relative weights of the data
+    sigma: float/None
+        number of standard deviations to clip if clipping symmetrically
+    sigma_lower: float/None
+        number of standard deviations for lower clip (non-symmetric)
+    sigma_upper: float/None
+        number of standard deviations for upper clip (non-symmetric)
+    maxiters: int
+        maximum number of iterations to perform
+
+    Returns
+    -------
+    np.ma.masked_array: data with mask indicating clipped points
+    """
+    if sigma_lower is None or sigma_upper is None:
+        sigma_lower = sigma_upper = sigma
+    if weights is None:
+        weights = np.ones_like(data)
+
+    if isinstance(data, np.ma.masked_array):
+        good = ~data.mask
+        data = data.data
+    else:
+        good = np.ones_like(data, dtype=bool)
+
+    niter = 0
+    while True:
+        avg = (np.average(data[good], weights=weights[good]) if niter > 0
+               else np.median(data[good]))
+        ngood = good.sum()
+        if ngood <= 1 or niter == maxiters:
+            break
+        std = np.sqrt(np.sum(weights[good] * (data[good] - avg) ** 2) /
+                      np.sum(weights[good]))
+        good[np.logical_or(data < avg - sigma_lower * std,
+                           data > avg + sigma_upper * std)] = False
+        if good.sum() == ngood:
+            break
+        niter += 1
+
+    return np.ma.masked_array(data, mask=~good)
 
 
 def clipped_mean(data):

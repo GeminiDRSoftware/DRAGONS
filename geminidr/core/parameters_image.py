@@ -31,7 +31,14 @@ class makeFringeForQAConfig(makeFringeFrameConfig):
 
 class resampleToCommonFrameConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_align", optional=True)
-    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
+    interpolant = config.ChoiceField("Type of interpolant", str,
+                                     allowed={"nearest": "Nearest neighbour",
+                                              "linear": "Linear interpolation",
+                                              "poly3": "Cubic polynomial interpolation",
+                                              "poly5": "Quintic polynomial interpolation",
+                                              "spline3": "Cubic spline interpolation",
+                                              "spline5": "Quintic spline interpolation"},
+                                     default="poly3", optional=False)
     trim_data = config.Field("Trim to field of view of reference image?", bool, False)
     clean_data = config.Field("Clean bad pixels before interpolation?", bool, False)
     conserve = config.Field("Conserve image flux?", bool, True)
@@ -45,17 +52,24 @@ class scaleByIntensityConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_scaled", optional=True)
     section = config.Field("Statistics section", str, None, optional=True)
     scaling = config.ChoiceField("Statistic for scaling", str,
-                                 allowed = {"mean": "Scale by mean",
+                                 allowed={"mean": "Scale by mean",
                                             "median": "Scale by median"},
-                                 default = "mean")
+                                 default="mean")
     separate_ext = config.Field("Scale extensions separately?", bool, False)
 
 
 class transferObjectMaskConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_objmaskTransferred", optional=True)
     source = config.Field("Filename of/Stream containing stacked image", str, None)
-    order = config.RangeField("Order of interpolation", int, 1, min=0, max=5, inclusiveMax=True)
-    threshold = config.RangeField("Threshold for flagging pixels", float, 0.01, min=0., max=1.)
+    interpolant = config.ChoiceField("Type of interpolant", str,
+                                     allowed={"nearest": "Nearest neighbour",
+                                              "linear": "Linear interpolation",
+                                              "poly3": "Cubic polynomial interpolation",
+                                              "poly5": "Quintic polynomial interpolation",
+                                              "spline3": "Cubic spline interpolation",
+                                              "spline5": "Quintic spline interpolation"},
+                                     default="poly3", optional=False)
+    dq_threshold = config.RangeField("Threshold for flagging pixels", float, 0.01, min=0., max=1.)
     dilation = config.RangeField("Dilation radius (pixels)", float, 1.5, min=0)
 
 

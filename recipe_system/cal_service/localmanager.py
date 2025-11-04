@@ -8,21 +8,20 @@ import os
 from os.path import abspath, basename, dirname
 
 import warnings
-from importlib import reload
 from collections import namedtuple
 
 from sqlalchemy.exc import SAWarning, OperationalError
 
-from gemini_calmgr import orm
-from gemini_calmgr.orm import file
-from gemini_calmgr.orm import diskfile
-from gemini_calmgr.orm import preview
-from gemini_calmgr.cal import get_cal_object
-from gemini_calmgr.orm import createtables
-from gemini_calmgr.utils import dbtools
-
-from gemini_calmgr import fits_storage_config as fsc
-from gemini_calmgr import gemini_metadata_utils as gmu
+from fits_storage import gemini_metadata_utils as fsgmu
+from fits_storage.config import get_config
+from fits_storage import db
+from fits_storage.db.selection import Selection
+from fits_storage.db.list_headers import list_headers
+from fits_storage.db.createtables import create_tables
+from fits_storage.db.remove_file import remove_file
+from fits_storage.core.ingester import Ingester
+from fits_storage.queues.orm.ingestqueueentry import IngestQueueEntry
+from fits_storage.cal.calibration import get_cal_object
 
 from gempy.utils import logutils
 
@@ -57,8 +56,10 @@ args_for_cals = {
     'processed_bias': ('bias', {'processed': True}),
     'processed_dark': ('dark', {'processed': True}),
     'processed_flat': ('flat', {'processed': True}),
+    'processed_pinhole': ('pinhole', {'processed': True}),
     'processed_standard': ('standard', {'processed': True}),
     'processed_slitillum': ('slitillum', {'processed': True}),
+    'processed_telluric': ('telluric', {'processed': True}),
     'processed_bpm': ('bpm', {'processed': True})
 }
 
@@ -73,16 +74,17 @@ FileData = namedtuple('FileData', 'name path')
 
 class LocalManagerError(Exception):
     def __init__(self, error_type, message, *args, **kw):
-        super().__init__(message, *args, **kw)
+        super().__init__(message, *args)
         self.message = message
         self.error_type = error_type
 
 
 def ensure_db_file(func):
     """
-    Decorator for functions in :class:`~recipe_system.cal_service.localmanager.LocalManager`
-    that we want to require the database file exist for.  If we don't check, SQLAlchemy
-    will just silently create the DB file.
+    Decorator for functions in
+    :class:`~recipe_system.cal_service.localmanager.LocalManager`
+    that we want to require the database file exist for.  If we don't check,
+    SQLAlchemy will just silently create the DB file.
 
     Parameters
     ----------
@@ -93,6 +95,7 @@ def ensure_db_file(func):
     -------
     function : decorator call
     """
+
     def wrapper_ensure_db_file(self, *args, **kwargs):
         if self.path != ":memory:":
             if not os.path.exists(self.path):
@@ -108,7 +111,9 @@ def ensure_db_file(func):
 class LocalManager:
     def __init__(self, db_path):
         self._db_path = db_path
-        self.session = None
+        self.fsc = None  # FitsStorage config object
+        self.session = None  # FitsStorage database session
+        self.ingester = None  # FitsStorage file ingester. Lazy instantiated
         self._reset()
 
     @property
@@ -116,39 +121,27 @@ class LocalManager:
         return self._db_path
 
     def _reset(self):
-        """Modifies the gemini_calmgr setup and reloads some modules that
-        are affected by the change. Then it sets a new database session object
-        for this instance.
         """
-        fsc.storage_root = abspath(dirname(self._db_path))
-        fsc.fits_dbname = basename(self._db_path)
-        fsc.db_path = self._db_path
-        fsc.fits_database = 'sqlite:///' + fsc.db_path
+        Configures fits_storage to run within DRAGONS, then sets a new database
+        session object for this instance.
+        """
 
-        try:
-            from gemini_obs_db import db_config as dbc
+        configstring = f"""
+        [DEFAULT]
+        fits_server_name: DRAGONS embedded local calibration manager
+        storage_root: {abspath(dirname(self._db_path))}  
+        database_url: {'sqlite:///' + self._db_path}      
+        """
 
-            dbc.storage_root = abspath(dirname(self._db_path))
-            dbc.fits_dbname = basename(self._db_path)
-            dbc.db_path = self._db_path
-            dbc.database_url = 'sqlite:///' + fsc.db_path
-        except:
-            # handle older versions of GeminiCalMgr, which don't have or need dbc settings
-            # The reloading is kludgy, but Fits Storage was not designed to change
-            # databases on the fly, and we're reusing its infrastructure.
-            #
-            # This will have to do for the time being
-            reload(orm)
-            reload(file)
-            reload(preview)
-            reload(diskfile)
-            reload(createtables)
-            reload(dbtools)
+        self.fsc = get_config(configstring=configstring, builtinonly=True,
+                              reload=True)
 
-        self.session = orm.sessionfactory()
+        log.debug(f"FitsStorage config database_url: {self.fsc.database_url}")
+        self.session = db.sessionfactory(reload=True)
 
     def init_database(self, wipe=True):
-        """Initializes a SQLite database with the tables required for the
+        """
+        Initializes a SQLite database with the tables required for the
         calibration manager.
 
         Parameters
@@ -162,26 +155,49 @@ class LocalManager:
         ------
         IOError
             If the file exists and there a system error when trying to
-            remove it (eg. lack of permissions).
+            remove it (e.g. lack of permissions).
 
         LocalManagerError
             If the file exists and `wipe` was `False`
         """
 
-        if os.path.exists(fsc.db_path):
+        if self.fsc is None:
+            raise LocalManagerError(ERROR_CANT_CREATE,
+                                    "FitsStorage has not been configured")
+
+        # Trim the 'sqlite:///' from the start of the database_url.
+        # The 4th / if present is the start of the path
+        if self.fsc.database_url.startswith('sqlite:///'):
+            db_path = self.fsc.database_url[10:]
+        else:
+            raise LocalManagerError(ERROR_CANT_CREATE,
+                                    "Non SQLite database URL. This is not "
+                                    "currently supported within DRAGONS")
+
+        if os.path.exists(db_path):
             if wipe:
-                os.remove(fsc.db_path)
+                try:
+                    os.remove(db_path)
+                except Exception as err:
+                    raise LocalManagerError(
+                        ERROR_CANT_WIPE,
+                        "Failed to remove {db_path}") from err
             else:
-                errmsg = "{!r} exists and won't be wiped".format(fsc.db_path)
-                raise LocalManagerError(ERROR_CANT_WIPE, errmsg)
+                # DB File exists and wipe==False. There's no technical reason not to allow this,
+                # but DRAGONS policy is not to.
+                raise LocalManagerError(
+                    ERROR_CANT_CREATE,
+                    "Database file exists and wipe=True was not specified")
 
         try:
-            createtables.create_tables(self.session)
+            self.session = db.sessionfactory(reload=True)
+            log.debug(f"Creating Tables with dburl: {self.fsc.database_url}")
+            create_tables(self.session)
             self.session.commit()
-        except OperationalError:
-            message = f"There was an error when trying to create the database {fsc.db_path}. "
-            message += "Please, check your path and permissions."
-            raise LocalManagerError(ERROR_CANT_CREATE, message)
+        except OperationalError as err:
+            message = (f"There was an error when trying to create the database "
+                       f"{db_path}. Please check your path and permissions.")
+            raise LocalManagerError(ERROR_CANT_CREATE, message) from err
 
     @ensure_db_file
     def remove_file(self, path):
@@ -195,22 +211,39 @@ class LocalManager:
         path: string
             Path to the file. It can be either absolute or relative
         """
-        dbtools.remove_file(self.session, path)
+        remove_file(path, self.session)
 
     @ensure_db_file
     def ingest_file(self, path):
-        """Registers a file into the database
+        """
+        Registers a file into the database
 
         Parameters
         ----------
-        path: string
+        path: str
             Path to the file. It can be either absolute or relative
         """
         directory = abspath(dirname(path))
         filename = basename(path)
 
+        if self.ingester is None:
+            # We pass the DRAGONS logger here in place of a fits storage logger
+            self.ingester = Ingester(self.session, log,
+                                     override_engineering=True)
+
         try:
-            dbtools.ingest_file(self.session, filename, directory)
+            # Make an IngestQueueEntry for the file to ingest. We could just
+            # make a mock-up dictionary instead, but there are some defaults and
+            # path manipulations in the IQE class that are convenient to have.
+            # We never add this object to the database session; ingester
+            # updates it and commits the session, that will basically be a noop
+            # because the iqe isn't part of the session.
+            iqe = IngestQueueEntry(filename, directory)
+            self.ingester.ingest_file(iqe)
+
+            if iqe.failed:
+                log.warning(f"Ingest failed for file {iqe.filename}: {iqe.error}")
+
         except Exception as err:
             self.session.rollback()
             self.remove_file(path)
@@ -243,7 +276,7 @@ class LocalManager:
                     log("Ingested {}/{}".format(root, fname))
 
     @ensure_db_file
-    def calibration_search(self, rq, howmany=1, fullResult=False):
+    def calibration_search(self, rq, howmany=1):
         """
         Performs a search in the database using the requested criteria.
 
@@ -254,10 +287,6 @@ class LocalManager:
 
         howmany: <int>
             Maximum number of calibrations to return
-
-        fullResult: <bool>
-            This is here just for API compatibility. It's not used anywhere
-            in the code, anyway, and should probably be removed altogether.
 
 
         Returns
@@ -283,14 +312,13 @@ class LocalManager:
         for (type_, desc) in list(extra_descript.items()):
             descripts[desc] = type_ in types
 
-        nones = [desc for (desc, value) in list(descripts.items()) if value is None]
-
         # Obtain a calibration manager object instantiated according to the
         # instrument.
         cal_obj = get_cal_object(self.session, filename=None, header=None,
-                                 descriptors=descripts, types=types, procmode=rq.procmode)
+                                 descriptors=descripts, types=types,
+                                 procmode=rq.procmode)
 
-        caltypes = gmu.cal_types if caltype == '' else [caltype]
+        caltypes = fsgmu.cal_types if caltype == '' else [caltype]
 
         # The function that downloads an XML returns only the first result,
         # so we won't bother iterating over the whole thing in case that
@@ -304,9 +332,8 @@ class LocalManager:
         ret_value = []
         for cal in cals:
             if cal.diskfile.present and len(ret_value) < howmany:
-                path = os.path.join(fsc.storage_root, cal.diskfile.path,
-                                    cal.diskfile.file.name)
-                ret_value.append(('file://{}'.format(path), cal.diskfile.data_md5))
+                ret_value.append(('file://{}'.format(cal.diskfile.fullpath),
+                                  cal.diskfile.data_md5))
 
         if ret_value:
             # Turn from list of tuples into two lists
@@ -316,16 +343,14 @@ class LocalManager:
 
     @ensure_db_file
     def list_files(self):
-        File, DiskFile = file.File, diskfile.DiskFile
+        selection = Selection({'canonical': True})
+        orderby = 'filename'
 
         try:
-            query = self.session.query(File.name, DiskFile.path).join(DiskFile).filter(DiskFile.canonical)
-            for res in query.order_by(File.name):
-                yield FileData(res[0], res[1])
-        except OperationalError:
+            headers = list_headers(selection, orderby, self.session)
+        except OperationalError as err:
             message = "There was an error when trying to read from the database."
-            raise LocalManagerError(ERROR_CANT_READ, message)
+            raise LocalManagerError(ERROR_CANT_READ, message) from err
 
-
-def handle_returns(dv):
-    return dv
+        for header in headers:
+            yield FileData(header.diskfile.filename, header.diskfile.path)

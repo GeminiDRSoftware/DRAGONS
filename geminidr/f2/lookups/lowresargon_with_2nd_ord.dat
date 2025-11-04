@@ -1,0 +1,213 @@
+# Argon low resolution emission line wavelengths, 8115 - 25132 Ang.
+# units Angstroms
+# wavelengths in IN VACUUM
+#
+# Text following wavelength, and intensity when present, indicates source.
+# KH = Hinkle et al, 2001 PASP 113, 548 (2nd number = relative intensity)
+# NOAO lines with lambda<9537A from vacidhenear.dat
+#
+# This line list is for XD low resolution gratings and is a modified
+# version of argon.dat
+#
+# Created by P. Ingraham Apr 06/2005
+#
+# The 2nd order lines were derived by multiplying the 1st order line wavelengths
+# by an empirical coefficient = 1.953
+#
+8115.3110
+8264.5230
+8424.6480
+8521.4420
+8667.9440
+9125.4697	#	NOAO
+9227.0293	#	NOAO
+9294.1299	#	NOAO
+9356.7852	#	NOAO
+9660.4300	#	500	#	NIRSPEC
+9787.1840	#	200	#	NIRSPEC
+10472.9000	#	200	#	UKIRT
+10676.5000	#	100	#	UKIRT
+10883.9200	#	1551	#	KH
+10888.8700	#	10	#	KH
+10895.3500	#	230	#	KH
+11081.9000	#	10	#	NOAO
+11109.5000	#	3	#	NOAO
+11396.8000	#	8	#	NOAO
+11445.0000	#	12	#	NOAO
+11470.7000	#	6	#	NOAO
+11491.2000	#	120	#	NOAO
+11583.5000	#	1	#	NOAO
+11671.9000	#	200	#	NOAO
+11722.7000	#	10	#	NOAO
+11736.4000	#	9	#	NOAO
+11887.7000	#	4	#	NOAO
+11899.9000	#	1	#	NOAO
+11946.6000	#	12	#	NOAO
+11947.1000	#	B	NOAO
+12029.9000	#	2	#	NOAO
+12115.6000	#	150	#	NOAO
+12143.0000	#	30	#	NOAO
+12346.8000	#	30	#	NOAO
+12359.7000	#	10	#	NOAO
+12406.2000	#	100	#	NOAO
+12442.7000	#	300	#	NOAO
+12459.5000	#	100	#	NOAO
+12491.1000	#	200	#	NOAO
+12557.7000	#	2	#	NOAO
+12625.1000	#	2	#	NOAO
+12705.7600	#	18317	#	KH
+12735.8800	#	23	#	KH
+12736.9000	#	2995	#	KH
+12769.4500	#	38	#	KH
+12806.2400	#	486	#	KH
+12936.7000	#	40	#	NOAO
+12960.2000	#	500	#	NOAO
+13011.8000	#	200	#	NOAO
+13217.6000	#	200	#	NOAO
+13276.3000	#	500	#	NOAO
+13316.8000	#	800	#	NOAO
+13370.8000	#	1000	#	NOAO
+13410.2000	#	100	#	NOAO
+13503.1000	#	30	#	NOAO
+13507.9000	#	1000	#	NOAO
+13547.9000	#	8	#	NOAO
+13577.3000	#	12	#	NOAO
+13603.0000	#	40	#	NOAO
+13626.4000	#	400	#	NOAO
+13682.3000	#	200	#	NOAO
+13722.3000	#	1000	#	NOAO
+13829.5000	#	B	NOAO
+13911.3000	#	8	#	NOAO
+13914.4000	#	50	#	NOAO
+14097.5000	#	150	#	NOAO
+14260.8000	#	13	#	NOAO
+14599.7000	#	11	#	NOAO
+14600.5000	#	B	NOAO
+14638.4000	#	30	#	NOAO
+14654.3000	#	30	#	NOAO
+14697.4000	#	4	#	NOAO
+14743.2000	#	5	#	NOAO
+15050.6000	#	100	#	NOAO
+15176.8000	#	25	#	NOAO
+15306.1000	#	40	#	NOAO
+15333.5000	#	9	#	NOAO
+15406.8500	#	566	#	KH
+15904.0000	#	10	#	NOAO
+15993.9000	#	25	#	NOAO
+16127.1000	#	1	#	NOAO
+16184.4000	#	4	#	NOAO
+16441.0600	#	1468	#	KH
+16524.3800	#	1666	#	KH
+16553.7800	#	775	#	KH
+16744.6000	#	9	#	NOAO
+16945.2000	#	500	#	NOAO
+17449.7000	#	11	#	NOAO
+17828.9000	#	5	#	NOAO
+17919.6000	#	40	#	NOAO
+18432.8000	#	10	#	NOAO
+18433.4000	#	B	NOAO
+18434.5000	#	B	NOAO
+19822.9000	#	5	#	NOAO
+19971.2000	#	4	#	NOAO
+20322.6000	#	2	#	NOAO
+20621.9000	#	50	#	NOAO
+20652.8000	#	2	#	NOAO
+20816.7100	#	140	#	KH
+20991.8300	#	1763	#	KH
+21338.7000	#	153	#	KH
+21540.0800	#	832	#	KH
+22045.5700	#	259	#	KH
+22083.2100	#	1321	#	KH
+23139.5100	#	412	#	KH
+23851.5400	#	1769	#	KH
+23973.0500	#	766	#	KH
+25132.1000	#	25	#	NOAO
+16140.6	#	2nd ord
+16453.3	#	2nd ord
+16642.4	#	2nd ord
+16928.5	#	2nd ord
+17822.0	#	2nd ord
+18020.4	#	2nd ord
+18151.4	#	2nd ord
+18273.8	#	2nd ord
+18866.8	#	2nd ord
+19114.4	#	2nd ord
+20453.6	#	2nd ord
+20851.2	#	2nd ord
+21256.3	#	2nd ord
+21266.0	#	2nd ord
+21278.6	#	2nd ord
+21643.0	#	2nd ord
+21696.9	#	2nd ord
+22258.0	#	2nd ord
+22352.1	#	2nd ord
+22402.3	#	2nd ord
+22442.3	#	2nd ord
+22622.6	#	2nd ord
+22795.2	#	2nd ord
+22894.4	#	2nd ord
+22921.2	#	2nd ord
+23216.7	#	2nd ord
+23240.5	#	2nd ord
+23331.7	#	2nd ord
+23332.7	#	2nd ord
+23494.4	#	2nd ord
+23661.8	#	2nd ord
+23715.3	#	2nd ord
+24113.3	#	2nd ord
+24138.5	#	2nd ord
+24229.3	#	2nd ord
+24300.6	#	2nd ord
+24333.4	#	2nd ord
+24395.1	#	2nd ord
+24525.2	#	2nd ord
+24656.8	#	2nd ord
+24814.3	#	2nd ord
+24873.2	#	2nd ord
+24875.2	#	2nd ord
+24938.7	#	2nd ord
+25010.6	#	2nd ord
+25265.4	#	2nd ord
+25311.3	#	2nd ord
+25412.0	#	2nd ord
+25814.0	#	2nd ord
+25928.6	#	2nd ord
+26007.7	#	2nd ord
+26113.2	#	2nd ord
+26190.1	#	2nd ord
+26371.6	#	2nd ord
+26380.9	#	2nd ord
+26459.0	#	2nd ord
+26516.5	#	2nd ord
+26566.7	#	2nd ord
+26612.4	#	2nd ord
+26721.5	#	2nd ord
+26799.7	#	2nd ord
+27009.0	#	2nd ord
+27168.8	#	2nd ord
+27174.8	#	2nd ord
+27532.4	#	2nd ord
+27851.3	#	2nd ord
+28513.2	#	2nd ord
+28514.8	#	2nd ord
+28588.8	#	2nd ord
+28619.8	#	2nd ord
+28704.0	#	2nd ord
+28793.5	#	2nd ord
+29393.8	#	2nd ord
+29640.3	#	2nd ord
+29892.8	#	2nd ord
+29946.3	#	2nd ord
+30089.6	#	2nd ord
+31060.5	#	2nd ord
+31236.1	#	2nd ord
+31496.2	#	2nd ord
+31608.1	#	2nd ord
+32109.4	#	2nd ord
+32272.1	#	2nd ord
+32329.5	#	2nd ord
+32702.2	#	2nd ord
+33094.0	#	2nd ord
+34079.3	#	2nd ord
+34819.8	#	2nd ord
+34997.0	#	2nd ord

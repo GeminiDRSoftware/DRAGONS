@@ -5,6 +5,9 @@ import astrodata.testing
 import gemini_instruments
 from gemini_instruments.gnirs import AstroDataGnirs
 
+import numpy as np
+
+
 test_files = [
     "N20190206S0279.fits",
     "N20190214S0058.fits",
@@ -247,7 +250,6 @@ def test_grating_string():
         ad = AstroDataGnirs()
         ad.phu['GRATING'] = d['position']
         assert ad._grating() == d['value']
-
 
 if __name__ == "__main__":
     pytest.main()

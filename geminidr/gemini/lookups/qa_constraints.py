@@ -54,3 +54,9 @@ iqBands = {
 
 'AO': {20:0.45, 70:0.80, 85:1.20}  # from view_wfs.py (telops ~/bin)
 }
+
+# Gives WV band constraints (in mm of precipitable H2O at zenith) for Mauna Kea and Cerro Pachon.
+wvBands = {
+    'Gemini-North': {"20": 1.0, "50": 1.6, "80": 3.0},
+    'Gemini-South': {"20": 2.3, "50": 4.3, "80": 7.6}
+}

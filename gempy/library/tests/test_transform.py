@@ -45,7 +45,7 @@ def test_inverse_transform_gmos(astrofaker, binning):
 def test_1d_affine_transform():
     """Test a simple 1D transform with and without flux conservation"""
     size = 100
-    x = np.arange(size, dtype=float)
+    x = np.arange(size, dtype=np.float32)
     # The 0.5-pixel shifts ensure that each input pixel has a footprint
     # that precisely covers output pixels
     # We still lose the pixels at either end, resulting in a 198-pixel array
@@ -65,7 +65,7 @@ def test_1d_affine_transform():
 def test_2d_affine_transform():
     """Test a simple 2D transform with and without flux conservation"""
     size = 10
-    x = np.arange(size * size, dtype=float).reshape(size, size)
+    x = np.arange(size * size, dtype=np.float32).reshape(size, size)
     # We still lose the pixels at either end, resulting in a 18x18-pixel array
     m = models.Shift(0.5) | models.Scale(2) | models.Shift(-0.5)
 
@@ -86,7 +86,7 @@ def test_1d_nonaffine_transform():
     triangle.inverse = InverseQuadratic1D(c0=0, c1=0.5, c2=0.5)
 
     size = 100
-    x = np.arange(size, dtype=float)
+    x = np.arange(size, dtype=np.float32)
     m = models.Shift(0.5) | triangle | models.Shift(-0.5)
 
     dg = transform.DataGroup([x], [transform.Transform(m)])
@@ -112,7 +112,7 @@ def test_2d_nonaffine_transform():
     triangle.inverse = InverseQuadratic1D(c0=0, c1=0.5, c2=0.5)
 
     size = 10
-    x = np.arange(size * size, dtype=float).reshape(size, size)
+    x = np.arange(size * size, dtype=np.float32).reshape(size, size)
     m = models.Shift(0.5) | triangle | models.Shift(-0.5)
 
     dg = transform.DataGroup([x], [transform.Transform(m & m)])

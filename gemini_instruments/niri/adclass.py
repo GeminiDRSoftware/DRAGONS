@@ -1,6 +1,7 @@
 from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
 import math
+import re
 
 from . import lookup
 from .. import gmu
@@ -77,46 +78,28 @@ class AstroDataNiri(AstroDataGemini):
         return build_ir_section(self, pretty)
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units()
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or the specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength in nm
 
         Returns
         -------
         float
-            The central wavelength setting
+            The central wavelength setting in nm
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
+        # Use the lookup dict, keyed on camera, focal_plane_mask and grism
+        camera = self.camera()
+        try:
+            disperser = self.disperser(stripID=True)[0:6]
+        except TypeError:
+            disperser = None
+        fpmask = self.focal_plane_mask(stripID=True)
 
-        # Use the lookup dict, keyed on focal_plane_mask and grism
-        wave_in_angstroms = lookup.spec_wavelengths.get((self.focal_plane_mask(),
-                                                   self.disperser(stripID=True)))
-        return gmu.convert_units('angstroms', wave_in_angstroms,
-                             output_units)
+        try:
+            return lookup.spec_wavelengths[camera, fpmask, disperser].cenwave
+        except KeyError:
+            return None
 
     @astro_data_descriptor
     def data_section(self, pretty=False):
@@ -268,6 +251,40 @@ class AstroDataNiri(AstroDataGemini):
             return 'MIRROR'
 
     @astro_data_descriptor
+    @gmu.return_requested_units()
+    def dispersion(self):
+        """
+        Returns the dispersion in nm per pixel as a list (one value per
+        extension) or a float if used on a single-extension slice. It is
+        possible to control the units of wavelength using the input arguments.
+
+        Returns
+        -------
+        list/float
+            The dispersion(s)
+        """
+        camera = self.camera()
+        try:
+            disperser = self.disperser(stripID=True)[0:6]
+        except TypeError:
+            disperser = None
+
+        try:
+            dispersion = lookup.dispersion_by_config[camera, disperser]
+        except KeyError:
+            dispersion = None
+
+        if dispersion is not None and not self.is_single:
+                dispersion = [dispersion] * len(self)
+
+        return dispersion
+
+    @returns_list
+    @astro_data_descriptor
+    def dispersion_axis(self):
+        return 1
+
+    @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
         #TODO: Complete rewrite here so serious testing required
         """
@@ -385,26 +402,6 @@ class AstroDataNiri(AstroDataGemini):
             return [zpt - (2.5 * math.log10(g) if in_adu else 0) if zpt and g
                     else None for g in gain]
 
-    @astro_data_descriptor
-    def nonlinearity_coeffs(self):
-        """
-        Returns a namedtuple containing the necessary information to perform
-        a nonlinearity correction.
-
-        Returns
-        -------
-        namedtuple/list
-            nonlinearity info (max counts, exptime correction, gamma, eta)
-        """
-        read_mode = self.read_mode()
-        well_depth = self.well_depth_setting()
-        naxis2 = self.hdr.get('NAXIS2')
-        if self.is_single:
-            return lookup.nonlin_coeffs.get((read_mode, naxis2, well_depth))
-        else:
-            return [lookup.nonlin_coeffs.get((read_mode, size, well_depth))
-                    for size in naxis2]
-
     @use_keyword_if_prepared
     @astro_data_descriptor
     def non_linear_level(self):
@@ -516,6 +513,22 @@ class AstroDataNiri(AstroDataGemini):
             return [int(well * coadds / g) if g and well else None for g in gain]
 
     @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float/None
+            the slit width in arcseconds
+        """
+        fpmask = self.focal_plane_mask(pretty=True)
+        if 'pix' in fpmask:
+            m = re.match('f(.*)-(.*)pix', fpmask)
+            return int(m.group(2)) * 0.7 / int(m.group(1))
+        return None
+
+    @astro_data_descriptor
     def well_depth_setting(self):
         """
         Returns a string describing the well-depth setting of the instrument.
@@ -536,3 +549,16 @@ class AstroDataNiri(AstroDataGemini):
         except KeyError:
             pass
         return 'Unknown'
+
+    @gmu.return_requested_units(input_units="nm")
+    def actual_central_wavelength(self):
+        camera = self.camera()
+        try:
+            disperser = self.disperser(stripID=True)[0:6]
+        except TypeError:
+            disperser = None
+        fpmask = self.focal_plane_mask(stripID=True)
+        try:
+            return lookup.spec_wavelengths[camera, fpmask, disperser].cenpixwave
+        except KeyError:
+            return None

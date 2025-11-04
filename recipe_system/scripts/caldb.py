@@ -137,18 +137,23 @@ class Dispatcher:
                     log(e.message, sys.stderr)
 
     def _action_init(self, args):
-        msg = "Can't initialize an existing database. If "
-        msg += "you're sure about this, either\nremove the file "
-        msg += "first, or pass the -w option to confirm that you "
-        msg += "want\nto wipe the contents."
         try:
+            if not args.wipe and os.path.exists(self.db.dbfile):
+                msg = ("You are initializing a database in a pre-existing file "
+                       "without wiping it first. \nThis will ensure the "
+                       "database tables exist and are properly configured \nbut"
+                       " will not erase database contents. If you mean to "
+                       "start-over, re-run \nwith the -w flag to wipe the "
+                       "existing database.")
+                print(msg)
             self._log("Initializing {}...".format(self.db.dbfile))
             self.db.init(wipe=args.wipe)
         except LocalManagerError as e:
             if e.error_type == ERROR_CANT_WIPE:
-                self.usage(message=msg)
+                print(f"Error wiping existing database file "
+                          f"{self.db.dbfile}")
             elif e.error_type == ERROR_CANT_CREATE:
-                log(e.message, sys.stderr, bold=True)
+                print(f"Error creating database file {self.db.dbfile}")
             return -1
 
         return 0

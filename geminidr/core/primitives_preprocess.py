@@ -14,12 +14,14 @@ import astrodata
 import gemini_instruments  # noqa
 import matplotlib.pyplot as plt
 import numpy as np
-from astrodata import NDAstroData
 from astrodata.provenance import add_provenance
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
-from geminidr import PrimitivesBASE
+from scipy.interpolate import interp1d
+from scipy.ndimage import binary_dilation
+
+from geminidr import PrimitivesBASE, CalibrationNotFoundError
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am, astrotools as at
@@ -27,8 +29,6 @@ from gempy.library import tracing
 from gempy.library.filtering import ring_median_filter
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
-from scipy.interpolate import interp1d
-from scipy.ndimage import binary_dilation
 
 from gempy.utils.errors import ConvergenceError
 
@@ -118,7 +118,7 @@ class Preprocess(PrimitivesBASE):
                                 "Continuing.")
                     continue
                 gain = gt.array_from_descriptor_value(ext, "gain")
-                ext.multiply(gain)
+                ext.multiply(np.float32(gain))  # avoid casting int to float64
 
                 # Update saturation and nonlinear levels with new value. We
                 # allowed these to return lists before this point but now a
@@ -128,11 +128,12 @@ class Preprocess(PrimitivesBASE):
                         kw = ad._keyword_for(desc)
                     except AttributeError:
                         continue
-                    new_value = np.mean(
-                        gain * gt.array_from_descriptor_value(ext, desc))
-                    # Make sure we update the comment too!
-                    new_comment = ext.hdr.comments[kw].replace('ADU', 'electron')
-                    ext.hdr[kw] = (new_value, new_comment)
+                    if kw in ext.hdr:
+                        new_value = np.mean(
+                            gain * gt.array_from_descriptor_value(ext, desc))
+                        # Make sure we update the comment too!
+                        new_comment = ext.hdr.comments[kw].replace('ADU', 'electron')
+                        ext.hdr[kw] = (new_value, new_comment)
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
@@ -245,15 +246,20 @@ class Preprocess(PrimitivesBASE):
         time: float
             number of seconds
         use_all: bool
-            use everything in the "sky" stream?
+            use all input frames as skies (unless they are too close on the sky)?
         """
+        def sky_coord(ad):
+            """Return (RA, dec) at center of first extension"""
+            return SkyCoord(*ad[0].wcs(*[x // 2 - 0.5
+                                         for x in ad[0].shape[::-1]])[-2:], unit='deg')
+
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         min_skies = params["min_skies"]
         max_skies = params["max_skies"]
-        min_distsq = params.get("distance", 0) ** 2
+        min_dist = params.get("distance", 0)
 
         # Create a timedelta object using the value of the "time" parameter
         seconds = datetime.timedelta(seconds=params["time"])
@@ -278,42 +284,53 @@ class Preprocess(PrimitivesBASE):
                         "science AstroData object and one sky AstroData "
                         "object are required for associateSky")
         else:
-            # Create a dict with the observation times to aid in association
-            # Allows us to select suitable skies and propagate their datetimes
-            sky_times = dict(zip(ad_skies,
-                                 [ad.ut_datetime() for ad in ad_skies]))
+            # Get the observation times and coordinates of all skies to aid
+            # with association. We calculate the coordinates at the center of
+            # the first extension, which should cope with different ROIs (but
+            # there is a matching_inst_config() call later)
+            sky_times = [ad.ut_datetime() for ad in ad_skies]
+            sky_coords = {ad: sky_coord(ad) for ad in set(adinputs + ad_skies)}
 
             for i, ad in enumerate(adinputs):
-                # If use_all is True, use all of the sky AstroData objects for
-                # each science AstroData object
+                coord = sky_coord(ad)
+                # If use_all is True, use all of the AstroData objects (sky
+                # or object) for each science AstroData object (as long as
+                # the separation is sufficient)
                 if params["use_all"]:
-                    log.stdinfo("Associating all available sky AstroData "
-                                 "objects with {}" .format(ad.filename))
-                    sky_list = ad_skies
+                    log.stdinfo("Associating all displaced sky AstroData "
+                                f"objects with {ad.filename}")
+                    sky_list = [ad_other for ad_other in set(adinputs + ad_skies)
+                                if coord.separation(sky_coords[ad_other]).arcsec > min_dist]
                 else:
                     sci_time = ad.ut_datetime()
-                    xoffset = ad.telescope_x_offset()
-                    yoffset = ad.telescope_y_offset()
 
                     # First, select only skies with matching configurations
                     # and within the specified time and with sufficiently
                     # large separation. Keep dict format
-                    sky_dict = {k: v for k, v in sky_times.items() if
-                                gt.matching_inst_config(ad1=ad, ad2=k,
+                    sky_dict = {ad_sky: t for (ad_sky, t) in zip(ad_skies, sky_times) if
+                                gt.matching_inst_config(ad1=ad, ad2=ad_sky,
                                                         check_exposure=True)
-                                and ((k.telescope_x_offset() - xoffset)**2 +
-                                     (k.telescope_y_offset() - yoffset)**2
-                                     > min_distsq)}
+                                and coord.separation(sky_coords[ad_sky]).arcsec > min_dist}
 
                     # Sort sky list by time difference and determine how many
                     # skies will be matched by the default conditions
                     sky_list = sorted(sky_dict, key=lambda x:
-                                      abs(sky_dict[x]-sci_time))[:max_skies]
+                                      abs(sky_dict[x] - sci_time))[:max_skies]
                     num_matching_skies = len([k for k in sky_dict
-                                              if abs(sky_dict[k]-sci_time)
-                                                 <= seconds])
+                                              if abs(sky_dict[k] - sci_time) <= seconds])
 
                     # Now create a sky list of the appropriate length
+                    if num_matching_skies < min_skies <= len(sky_dict):
+                        log.warning(f"Found fewer skies ({num_matching_skies}) "
+                                    "matching the time criterion than requested\n"
+                                    f"by 'min_skies' ({min_skies}). "
+                                    "Ignoring the time parameter.\n"
+                                    "Enforcing min_skies.")
+                        log.warning("To enforce the time parameter, set min_skies to 0.")
+                    elif num_matching_skies < min_skies:
+                        log.warning(f"Found fewer skies ({num_matching_skies}) "
+                                    f"than requested by 'min_skies' ({min_skies}).\n"
+                                    "Using as many skies as possible.")
                     num_skies = min(max_skies or len(sky_list),
                                     max(min_skies or 0, num_matching_skies))
                     sky_list = sky_list[:num_skies]
@@ -324,15 +341,15 @@ class Preprocess(PrimitivesBASE):
 
                 if sky_list:
                     sky_table = Table(names=('SKYNAME',),
-                                    data=[[sky.filename for sky in sky_list]])
-                    log.stdinfo("The sky frames associated with {} are:".
-                                 format(ad.filename))
+                                      data=[[sky.filename for sky in sky_list]])
+                    log.stdinfo(f"The sky frames associated with {ad.filename} are:")
                     for sky in sky_list:
-                        log.stdinfo("  {}".format(sky.filename))
+                        log.stdinfo(f"  {sky.filename}")
                     ad.SKYTABLE = sky_table
                     has_skytable[i] = True
+                    log.stdinfo("")
                 else:
-                    log.warning("No sky frames available for {}".format(ad.filename))
+                    log.warning(f"No sky frames available for {ad.filename}")
 
         # Need to update sky stream in case it came from the "sky" parameter
         self.streams['sky'] = ad_skies
@@ -341,7 +358,7 @@ class Preprocess(PrimitivesBASE):
         # if only some frames did not have sky corrected, move them out of main and
         # to the "no_skytable" stream.
         if not any(has_skytable):  # "all false", none have been sky corrected
-            log.warning('Sky frames could not be associated to any input frames.'
+            log.warning('Sky frames could not be associated to any input frames. '
                         'Sky subtraction will not be possible.')
         elif not all(has_skytable):  # "some false", some frames were NOT sky corrected
             log.stdinfo('')  # for readablity
@@ -384,8 +401,8 @@ class Preprocess(PrimitivesBASE):
                         "correctBackgroundToReference")
         # Check that all images have the same number of extensions
         elif not all(len(ad)==len(adinputs[0]) for ad in adinputs):
-            raise OSError("Number of science extensions in input "
-                                    "images do not match")
+            raise ValueError("Number of science extensions in input images do "
+                             "not match")
         else:
             # Loop over input files
             ref_bg_list = None
@@ -477,8 +494,8 @@ class Preprocess(PrimitivesBASE):
 
             if dark is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed dark listed for "
-                                  f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed dark listed "
+                                                   f"for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no dark was specified")
@@ -749,8 +766,7 @@ class Preprocess(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-
-    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=True):
+    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=None):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,
@@ -768,7 +784,7 @@ class Preprocess(PrimitivesBASE):
             suffix to be added to output files
         flat: str
             name of flatfield to use
-        do_flat: bool
+        do_cal: str [procmode|force|skip]
             perform flatfield correction?
         """
         log = self.log
@@ -795,8 +811,8 @@ class Preprocess(PrimitivesBASE):
 
             if flat is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                   raise OSError("No processed flat listed for "
-                                 f"{ad.filename}")
+                   raise CalibrationNotFoundError("No processed flat listed "
+                                                  f"for {ad.filename}")
                 else:
                    log.warning(f"No changes will be made to {ad.filename}, "
                                "since no flatfield has been specified")
@@ -819,6 +835,10 @@ class Preprocess(PrimitivesBASE):
             log.stdinfo(f"{ad.filename}: dividing by the flat "
                          f"{flat.filename}{origin_str}")
             ad.divide(flat)
+
+            # Try to get a slit rectification model from the flat, and, if one
+            # exists, insert it before the pixels-to-world transform.
+            ad = gt.attach_rectification_model(ad, flat, log=self.log)
 
             # Update the header and filename, copying QECORR keyword from flat
             ad.phu.set("FLATIM", flat.filename, self.keyword_comments["FLATIM"])
@@ -874,7 +894,7 @@ class Preprocess(PrimitivesBASE):
 
             # Get the correction coefficients
             try:
-                nonlin_coeffs = ad.nonlinearity_coeffs()
+                nonlin_coeffs = self._nonlinearity_coeffs(ad)
             except:
                 log.warning("Unable to obtain nonlinearity coefficients for "
                             f"{ad.filename}")
@@ -1061,7 +1081,7 @@ class Preprocess(PrimitivesBASE):
         all_image = all('IMAGE' in ad.tags for ad in adinputs)
         all_spect = all('SPECT' in ad.tags for ad in adinputs)
         if not (all_image ^ all_spect):
-            raise TypeError("All inputs must be either IMAGE or SPECT")
+            raise ValueError("All inputs must be either IMAGE or SPECT")
 
         if all_image:
             mkcat = mkcat_image
@@ -1071,7 +1091,7 @@ class Preprocess(PrimitivesBASE):
             all_spect2d = all(len(ad) == 1 and len(ad[0].shape) == 2
                               for ad in adinputs)
             if not (all_spect1d ^ all_spect2d):
-                raise TypeError("All inputs must either be single-extension "
+                raise ValueError("All inputs must either be single-extension "
                                 "2D spectra or multi-extension 1D spectra")
             # Spectral extraction in this primitive does not subtract the sky
             if (all_spect2d and tolerance > 0 and not
@@ -1244,6 +1264,7 @@ class Preprocess(PrimitivesBASE):
         # gt.group_exposures(). If we want to check this parameter value up
         # front I'm assuming the infrastructure will do that at some point.
         frac_FOV = params["frac_FOV"]
+        max_perp_offset = params.get("debug_allowable_perpendicular_offset")
 
         # Primitive will construct sets of object and sky frames. First look
         # for pre-assigned header keywords (user can set them as a guide)
@@ -1287,7 +1308,13 @@ class Preprocess(PrimitivesBASE):
 
         # Analyze the spatial clustering of exposures and attempt to sort them
         # into dither groups around common nod positions.
-        groups = gt.group_exposures(adinputs, self.inst_lookups, frac_FOV=frac_FOV)
+        if 'SPECT' in adinputs[0].tags:
+            overlap_func = partial(self._fields_overlap,
+                                   max_perpendicular_offset=max_perp_offset)
+        else:
+            overlap_func = self._fields_overlap
+        groups = gt.group_exposures(adinputs, fields_overlap=overlap_func,
+                                    frac_FOV=frac_FOV)
         ngroups = len(groups)
         log.stdinfo(f"Identified {ngroups} group(s) of exposures")
 
@@ -1349,21 +1376,26 @@ class Preprocess(PrimitivesBASE):
                 objects = set(adinputs)
                 skies = set(adinputs)
             else:
-                distsq = [sum([x * x for x in g.group_center]) for g in groups]
+                # Not all ADs necessarily have the same target coords, but
+                # we have to pick a single target location, so use the first
+                target = SkyCoord(adinputs[0].target_ra(),
+                                  adinputs[0].target_dec(), unit=u.deg)
+                dist = [target.separation(group.group_center).arcsec
+                        for group in groups]
                 if ngroups == 2:
                     log.stdinfo("Treating 1 group as object and 1 as sky, "
                                 "based on target proximity")
-                    closest = np.argmin(distsq)
-                    objects = set(groups[closest].list())
+                    closest = np.argmin(dist)
+                    objects = set(groups[closest].members)
                     skies = set(adinputs) - objects
                 else:  # More than 2 groups
                     # Add groups by proximity until at least half the inputs
                     # are classified as objects
                     log.stdinfo("Classifying groups based on target "
                                 "proximity and observation efficiency")
-                    for group in [groups[i] for i in np.argsort(distsq)]:
-                        objects.update(group.list())
-                        if len(objects) >= len(adinputs) // 2:
+                    for group in [groups[i] for i in np.argsort(dist)]:
+                        objects.update(group.members)
+                        if len(objects) >= len(adinputs) / 2:
                             break
                     # We might have everything become an object here, in
                     # which case, make them all skies too (better ideas?)
@@ -1442,13 +1474,19 @@ class Preprocess(PrimitivesBASE):
             number of high pixels to reject (for "minmax")
         memory: float/None
             available memory (in GB) for stacking calculations
+        scale: bool
+            scale the sky frames before stacking them?
+        zero: bool
+            apply offets to the sky frames before stacking them?
         reset_sky: bool
             maintain the sky level by adding a constant to the science
             frame after subtracting the sky?
         scale_sky: bool
-            scale each extension of each sky frame to match the science frame?
+            scale each extension of each stacked sky frame to match the
+            science frame?
         offset_sky: bool
-            apply offset to each extension of each sky frame to match science?
+            apply offset to each extension of each stacked sky frame to match
+            the science frame?
         sky: str/AD/list
             sky frame(s) to subtract
         """
@@ -1457,9 +1495,13 @@ class Preprocess(PrimitivesBASE):
 
         save_sky = params["save_sky"]
         reset_sky = params["reset_sky"]
-        scale_sky = params["scale_sky"]
-        offset_sky = params["offset_sky"]
+        scale_sky = params.get("scale_sky", False)
+        offset_sky = params.get("offset_sky", False)
         suffix = params["suffix"]
+        if "zero" not in params.keys():
+            params["zero"] = False
+        if "scale" not in params.keys():
+            params["scale"] = False
         if params["scale"] and params["zero"]:
             log.warning("Both the scale and zero parameters are set. "
                         "Setting zero=False.")
@@ -1798,7 +1840,7 @@ class Preprocess(PrimitivesBASE):
             ad.update_filename(suffix=sfx, strip=True)
         return adinputs
 
-
+# -----------------------------------------------------------------------------
 # Helper functions for scaleCountsToReference() follow
 def mkcat_image(ad):
     """Produce a catalog of sources from a single-extension AstroData IMAGE"""

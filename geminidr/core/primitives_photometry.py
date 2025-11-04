@@ -137,9 +137,9 @@ class Photometry(PrimitivesBASE):
             else:
                 log.fullinfo(f"Querying {source} for reference catalog, "
                              f"ra={ra:.6f}, dec={dec:.6f}, radius={radius}")
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    refcat = get_fits_table(source, ra, dec, radius)
+                #with warnings.catch_warnings():
+                #    warnings.simplefilter("ignore")
+                refcat = get_fits_table(source, ra, dec, radius)
 
             if refcat is None:
                 log.stdinfo("No reference catalog sources found for {}".
@@ -476,7 +476,7 @@ def _estimate_seeing(objcat):
                                   objcat['ELLIPTICITY'] < 0.5,
                                   objcat['CLASS_STAR'] > 0.8,
                                   objcat['FLUX_AUTO'] > 25*objcat['FLUXERR_AUTO'],
-                                  objcat['FLAGS'] & 65528 == 0,
+                                  objcat['FLAGS'] & ~7 == 0,
                                   objcat['FWHM_WORLD'] > 0,
                                   badpix < 0.2*objcat['ISOAREA_IMAGE']])
 

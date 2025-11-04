@@ -57,6 +57,7 @@ datasets = {
 
 
 #@pytest.mark.skip("Can't run in Jenkins - Need more investigation")
+@pytest.mark.gmosimage
 @pytest.mark.integration_test
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("test_case", list(datasets.keys())[:1])

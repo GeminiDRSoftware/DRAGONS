@@ -1,134 +1,48 @@
 # gmos/maskdb.py
 #
-# This file contains the bad pixel mask (BPMs), illumination mask,
+# This file contains the illumination masks
 # and mask definition file (MDF) lookup tables for GMOS
 
-
-bpm_dict = {
-    # GMOS North EEV
-    # - 11, 22 are empty full frames plus bad pixels from old imaging BPMs
-    # - 44 and mixed binning are not available.
-    "GMOS-N_EEV_11_3amp_v1": "gmos-n_bpm_EEV_11_full_3amp_v1.fits",
-    "GMOS-N_EEV_22_3amp_v1": "gmos-n_bpm_EEV_22_full_3amp_v1.fits",
-
-    # GMOS North e2V
-    # - 11, 22 are empty full frames plus bad pixels from old imaging BPMs
-    # - 44 and mixed binning are not available.
-    "GMOS-N_e2v_11_6amp_v1": "gmos-n_bpm_e2v_11_full_6amp_v1.fits",
-    "GMOS-N_e2v_22_6amp_v1": "gmos-n_bpm_e2v_22_full_6amp_v1.fits",
-
-    # GMOS North Hamamatsu
-    # - 11, 22, 44 are bad columns plus bad pixels from old imaging BPMs
-    # - Mixed binning are bad columns only.
-    "GMOS-N_Ham_11_12amp_v1": "gmos-n_bpm_HAM_11_full_12amp_v1.fits",
-    "GMOS-N_Ham_22_12amp_v1": "gmos-n_bpm_HAM_22_full_12amp_v1.fits",
-    "GMOS-N_Ham_44_12amp_v1": "gmos-n_bpm_HAM_44_full_12amp_v1.fits",
-    "GMOS-N_Ham_12_12amp_v1": "gmos-n_bpm_HAM_12_full_12amp_v1.fits",
-    "GMOS-N_Ham_21_12amp_v1": "gmos-n_bpm_HAM_21_full_12amp_v1.fits",
-    "GMOS-N_Ham_14_12amp_v1": "gmos-n_bpm_HAM_14_full_12amp_v1.fits",
-    "GMOS-N_Ham_24_12amp_v1": "gmos-n_bpm_HAM_24_full_12amp_v1.fits",
-    "GMOS-N_Ham_42_12amp_v1": "gmos-n_bpm_HAM_42_full_12amp_v1.fits",
-    "GMOS-N_Ham_41_12amp_v1": "gmos-n_bpm_HAM_41_full_12amp_v1.fits",
-
-    # ---
-
-    # GMOS South EEV
-    # - 11, 22 are bad columns plus bad pixels from old imaging BPMs
-    # - 44 and mixed binning are bad columns only.
-    "GMOS-S_EEV_11_3amp_v1": "gmos-s_bpm_EEV_11_full_3amp_v1.fits",
-    "GMOS-S_EEV_22_3amp_v1": "gmos-s_bpm_EEV_22_full_3amp_v1.fits",
-    "GMOS-S_EEV_44_3amp_v1": "gmos-s_bpm_EEV_44_full_3amp_v1.fits",
-    "GMOS-S_EEV_12_3amp_v1": "gmos-s_bpm_EEV_12_full_3amp_v1.fits",
-    "GMOS-S_EEV_21_3amp_v1": "gmos-s_bpm_EEV_21_full_3amp_v1.fits",
-    "GMOS-S_EEV_14_3amp_v1": "gmos-s_bpm_EEV_14_full_3amp_v1.fits",
-    "GMOS-S_EEV_24_3amp_v1": "gmos-s_bpm_EEV_24_full_3amp_v1.fits",
-    "GMOS-S_EEV_42_3amp_v1": "gmos-s_bpm_EEV_42_full_3amp_v1.fits",
-    "GMOS-S_EEV_41_3amp_v1": "gmos-s_bpm_EEV_41_full_3amp_v1.fits",
-
-    # GMOS South Hamamatsu
-    # - 11, 22, 44 are bad columns plus bad pixels from old imaging BPMs
-    # - Mixed binning are bad columns only.
-    "GMOS-S_Ham_11_12amp_v1": "gmos-s_bpm_HAM_11_full_12amp_v1.fits",
-    "GMOS-S_Ham_22_12amp_v1": "gmos-s_bpm_HAM_22_full_12amp_v1.fits",
-    "GMOS-S_Ham_44_12amp_v1": "gmos-s_bpm_HAM_44_full_12amp_v1.fits",
-    "GMOS-S_Ham_12_12amp_v1": "gmos-s_bpm_HAM_12_full_12amp_v1.fits",
-    "GMOS-S_Ham_21_12amp_v1": "gmos-s_bpm_HAM_21_full_12amp_v1.fits",
-    "GMOS-S_Ham_14_12amp_v1": "gmos-s_bpm_HAM_14_full_12amp_v1.fits",
-    "GMOS-S_Ham_24_12amp_v1": "gmos-s_bpm_HAM_24_full_12amp_v1.fits",
-    "GMOS-S_Ham_42_12amp_v1": "gmos-s_bpm_HAM_42_full_12amp_v1.fits",
-    "GMOS-S_Ham_41_12amp_v1": "gmos-s_bpm_HAM_41_full_12amp_v1.fits",
-
-
-}
 
 illumMask_dict = {
     # GMOS North EEV
     # - From old imaging BPMs.  Cleaned illumination window and removed
     #   bad pixels.
-    "GMOS-N_EEV_11_3amp_v1":  "gmos-n_illum_EEV_11_3amp_v1.fits",
-    "GMOS-N_EEV_22_3amp_v1":  "gmos-n_illum_EEV_22_3amp_v1.fits",
+    "GMOS-N_EEV_11_3amp_v1":  "gmos-n_illum_EEV_11_3amp_v1.fits.bz2",
+    "GMOS-N_EEV_22_3amp_v1":  "gmos-n_illum_EEV_22_3amp_v1.fits.bz2",
 
     # GMOS North e2V
     # - From old imaging BPMs.  Cleaned illumination window and removed
     #   bad pixels.
-    "GMOS-N_e2v_11_6amp_v1": "gmos-n_illum_e2v_11_6amp_v1.fits",
-    "GMOS-N_e2v_22_6amp_v1": "gmos-n_illum_e2v_22_6amp_v1.fits",
+    "GMOS-N_e2v_11_6amp_v1": "gmos-n_illum_e2v_11_6amp_v1.fits.bz2",
+    "GMOS-N_e2v_22_6amp_v1": "gmos-n_illum_e2v_22_6amp_v1.fits.bz2",
 
     # GMOS North Hamamatsu
     # - From old imaging BPMs.  Cleaned illumination window and removed
     #   bad pixels.
-    "GMOS-N_Ham_11_12amp_v1": "gmos-n_illum_HAM_11_12amp_v1.fits",
-    "GMOS-N_Ham_22_12amp_v1": "gmos-n_illum_HAM_22_12amp_v1.fits",
-    "GMOS-N_Ham_44_12amp_v1": "gmos-n_illum_HAM_44_12amp_v1.fits",
+    "GMOS-N_Ham_11_12amp_v1": "gmos-n_illum_HAM_11_12amp_v1.fits.bz2",
+    "GMOS-N_Ham_22_12amp_v1": "gmos-n_illum_HAM_22_12amp_v1.fits.bz2",
+    "GMOS-N_Ham_44_12amp_v1": "gmos-n_illum_HAM_44_12amp_v1.fits.bz2",
 
     # ----
 
     # GMOS South EEV
     # - From old imaging BPMs.  Cleaned illumination window and removed
     #   bad pixels.
-    "GMOS-S_EEV_11_3amp_v1": "gmos-s_illum_EEV_11_3amp_v1.fits",
-    "GMOS-S_EEV_22_3amp_v1": "gmos-s_illum_EEV_22_3amp_v1.fits",
+    "GMOS-S_EEV_11_3amp_v1": "gmos-s_illum_EEV_11_3amp_v1.fits.bz2",
+    "GMOS-S_EEV_22_3amp_v1": "gmos-s_illum_EEV_22_3amp_v1.fits.bz2",
 
     # GMOS South Hamamatsu
     # - From old imaging BPMs.  Cleaned illumination window and removed
     #   bad pixels.
-    "GMOS-S_Ham_11_12amp_v1": "gmos-s_illum_HAM_11_12amp_v1.fits",
-    "GMOS-S_Ham_22_12amp_v1": "gmos-s_illum_HAM_22_12amp_v1.fits",
-    "GMOS-S_Ham_44_12amp_v1": "gmos-s_illum_HAM_44_12amp_v2.fits",
+    "GMOS-S_Ham_11_12amp_v1": "gmos-s_illum_HAM_11_12amp_v1.fits.bz2",
+    "GMOS-S_Ham_22_12amp_v1": "gmos-s_illum_HAM_22_12amp_v1.fits.bz2",
+    "GMOS-S_Ham_44_12amp_v1": "gmos-s_illum_HAM_44_12amp_v2.fits.bz2",
 
 }
 
-# bpm_dict = {
-#     #"GMOS-N_EEV_11_3amp_v1": "gmos-n_bpm_EEV_11_full_3amp_v1.fits",
-#     #"GMOS-N_EEV_22_3amp_v1": "gmos-n_bpm_EEV_22_full_3amp_v1.fits",
-#     #"GMOS-N_e2v_11_6amp_v1": "gmos-n_bpm_e2v_11_full_6amp_v1.fits",
-#     #"GMOS-N_e2v_22_6amp_v1": "gmos-n_bpm_e2v_22_full_6amp_v1.fits",
-#     "GMOS-N_Ham_11_12amp_v1": "gmos-n_bpm_HAM_11_full_12amp_v1.fits",
-#     "GMOS-N_Ham_22_12amp_v1": "gmos-n_bpm_HAM_22_full_12amp_v1.fits",
-#     "GMOS-N_Ham_44_12amp_v1": "gmos-n_bpm_HAM_44_full_12amp_v1.fits",
-#     "GMOS-S_EEV_11_3amp_v1":  "gmos-s_bpm_EEV_11_full_3amp_v1.fits",
-#     "GMOS-S_EEV_22_3amp_v1":  "gmos-s_bpm_EEV_22_full_3amp_v1.fits",
-#     "GMOS-S_Ham_11_12amp_v1": "gmos-s_bpm_HAM_11_full_12amp_v1.fits",
-#     "GMOS-S_Ham_22_12amp_v1": "gmos-s_bpm_HAM_22_full_12amp_v1.fits",
-#     "GMOS-S_Ham_44_12amp_v1": "gmos-s_bpm_HAM_44_full_12amp_v1.fits",
-#     #"GMOS-S_Ham_11_12amp_v2": "gmos-s_bpm_HAM_11_12amp_v2.fits",
-#     #"GMOS-S_Ham_22_12amp_v2": "gmos-s_bpm_HAM_22_12amp_v2.fits",
-#     #"GMOS-S_Ham_44_12amp_v2": "gmos-s_bpm_HAM_44_12amp_v2.fits",
-# }
-#
-# illumMask_dict = {
-#     "GMOS-N_Ham_11_12amp_v1": "gmos-n_illum_HAM_11_12amp_v1.fits",
-#     "GMOS-N_Ham_22_12amp_v1": "gmos-n_illum_HAM_22_12amp_v1.fits",
-#     "GMOS-N_Ham_44_12amp_v1": "gmos-n_illum_HAM_44_12amp_v1.fits",
-#     "GMOS-N_e2v_11_6amp_v1" : "gmos-n_illum_e2v_11_6amp_v1.fits",
-#     "GMOS-N_e2v_22_6amp_v1" : "gmos-n_illum_e2v_22_6amp_v1.fits",
-#     "GMOS-N_EEV_11_3amp_v1":  "gmos-n_illum_EEV_11_3amp_v1.fits",
-#     "GMOS-N_EEV_22_3amp_v1":  "gmos-n_illum_EEV_22_3amp_v1.fits",
-#     "GMOS-S_Ham_11_12amp_v1": "gmos-s_illum_HAM_11_12amp_v1.fits",
-#     "GMOS-S_Ham_22_12amp_v1": "gmos-s_illum_HAM_22_12amp_v1.fits",
-#     "GMOS-S_Ham_44_12amp_v1": "gmos-s_illum_HAM_44_12amp_v1.fits",
-#     }
 
+mdf_key = ("instrument", "focal_plane_mask")
 
 mdf_dict = {
     # Dictionary key is the instrument and the value of MASKNAME keyword

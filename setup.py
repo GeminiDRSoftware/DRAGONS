@@ -25,7 +25,7 @@ except ImportError:
 else:
     use_cython = True
 
-VERSION = '3.1.0-dev'
+VERSION = '4.2_dev'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages()
@@ -47,7 +47,8 @@ SCRIPTS += [
 suffix = 'pyx' if use_cython else 'c'
 EXTENSIONS = [
     Extension("gempy.library.cython_utils",
-              [os.path.join('gempy', 'library', 'cython_utils.' + suffix)])
+              [os.path.join('gempy', 'library', 'cython_utils.' + suffix)],
+              extra_compile_args=["-std=c99"])
 ]
 if use_cython:
     EXTENSIONS = cythonize(EXTENSIONS)
@@ -66,7 +67,7 @@ setup(name='dragons',
       scripts=SCRIPTS,
       ext_modules=EXTENSIONS,
       classifiers=[
-          'Development Status :: 5 - Production/Stable',
+          'Development Status :: 4 - Beta',
           'Intended Audience :: Gemini Ops',
           'Intended Audience :: Science/Research',
           'License :: OSI Approved :: BSD License',
@@ -79,43 +80,40 @@ setup(name='dragons',
           'Topic :: Scientific/Engineering :: Astronomy',
       ],
       install_requires=[
-          'asdf>=2.7,!=2.10.0',
-          'astropy>=4.3',
+          'asdf>=2.15',
+          'astropy>=6.0,!=6.1.5,!=6.1.6',
           'astroquery>=0.4',
           'astroscrappy>=1.1',
-          'bokeh>=2.3',
+          'bokeh>=3.0',
           'bottleneck>=1.2',
+        # 'fits_storage>=3.4.0',  # this would need uploading to PyPI first
           'future>=0.17',
-        # 'gemini_calmgr>=1.1',  # these need uploading to PyPI first
-        # 'gemini_obs_db>=1.0',
-          'gwcs>=0.15',
-          'holoviews>=1.14',
+          'gwcs>=0.19,<=0.22.1',
+          'holoviews>=1.20',
           'jinja2>=3.0',
           'jsonschema>=3.0',
-          'matplotlib>=3.1',
-          'numpy>=1.17',
+          'matplotlib>=3.7',
+          'numpy>=1.24',
+          'pandas>=2.0',
           'psutil>=5.6',
           'pyerfa>=1.7',
-          'python-dateutil>=2.5.3',
+          'python-dateutil>=2.8',
           'requests>=2.22',
-          'scipy>=1.3',
-          'specutils>=1.1',
-          'sqlalchemy>=1.3,<2.0.0a0',
-          'tornado>=5.1',
+          'scikit-image>=0.21',
+          'scipy>=1.15',
+          'specutils>=1.10',
+          'sqlalchemy>=2.0.0',
+          'tornado>=6.3',
       ],
       extras_require={
-          'all': ['ginga', 'imexam>=0.8'],
-          'docs': ['docutils>=0.15', 'sphinx>=1.2.2',
-                   'sphinx_rtd_theme>=0.3.0'],
-          'test': [
-              'pytest>=5.2', 'pytest_dragons>=1.0.0', 'coverage',
-              'objgraph>=3.5', 'cycler>=0.10', # 'astrofaker', # needs dragons
-          ],
+          'all': ['ginga', 'imexam'],
+          'docs': ['sphinx', 'sphinx_rtd_theme'],
+          'test': ['pytest', 'pytest_dragons>=1.0.0', 'coverage', 'objgraph'],
       },
       project_urls={
           'Issue Tracker': 'https://github.com/GeminiDRSoftware/DRAGONS',
           'Documentation': 'https://dragons.readthedocs.io/',
       },
       # keywords=['astronomy', 'astrophysics', 'science', 'gemini'],
-      python_requires='>=3.7',
+      python_requires='>=3.12',
       )

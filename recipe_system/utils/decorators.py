@@ -47,7 +47,7 @@ import json
 import traceback
 from contextlib import suppress
 from copy import copy, deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 
 import geminidr
@@ -222,7 +222,7 @@ def _capture_provenance(provenance_inputs, ret_value, timestamp_start, fn, args)
     none
     """
     try:
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc).replace(tzinfo=None)
         for ad in ret_value:
             if ad.data_label() in provenance_inputs:
                 # output corresponds to an input, we only need to copy from there
@@ -261,7 +261,7 @@ def capture_provenance(fn):
         # Determine if this is a top-level primitive, by checking if the
         # calling function contains a self that is also a primitive
         toplevel = _top_level_primitive()
-        timestamp_start = datetime.utcnow()
+        timestamp_start = datetime.now(timezone.utc).replace(tzinfo=None)
 
         if toplevel:
             provenance_inputs = _get_provenance_inputs(kwargs["adinputs"])
@@ -288,6 +288,14 @@ def parameter_override(fn):
         # calling function contains a self that is also a primitive
         toplevel = _top_level_primitive()
 
+        # The first thing on the stack is the decorator, so check the name
+        # of the function calling that... don't indent or log if it's the
+        # same as this primitive.
+        try:
+            caller = inspect.stack()[1].function
+        except (AttributeError, IndexError):
+            caller = None
+
         # Start with the config file to get list of parameters
         # Copy to avoid permanent changes; shallow copy is OK
         if pname not in pobj.params:
@@ -300,7 +308,8 @@ def parameter_override(fn):
 
         # Find user parameter overrides
         params = userpar_override(pname, list(config), pobj.user_params)
-        set_logging(pname)
+        if caller != pname:
+            set_logging(pname)
 
         if toplevel:
             for k, v in kwargs.items():
@@ -317,45 +326,94 @@ def parameter_override(fn):
         instream = params.get('instream', stream)
         outstream = params.get('outstream', stream)
         adinputs = params.get('adinputs')
-        for k in ('adinputs', 'stream', 'instream', 'outstream'):
-            if k not in config:
-                with suppress(KeyError):
-                    del params[k]
-        # Can update config now it only has parameters it knows about
-        config.update(**params)
-        config.validate()
+        skip = params.get('skip_primitive', False)
+        write_after = params.get('write_outputs', False) and toplevel
 
-        if len(args) == 0 and adinputs is None:
-            # Use appropriate stream input/output
-            # Many primitives operate on AD instances in situ, so need to
-            # copy inputs if they're going to a new output stream
+        if skip and toplevel:
+            log.stdinfo(f"Parameter skip_primitive has been set so {pname} "
+                        "will not be run")
             if instream != outstream:
-                adinputs = [deepcopy(ad) for ad in pobj.streams.get(instream, [])]
-            else:
-                # Allow a non-existent stream to be passed
-                adinputs = pobj.streams.get(instream, [])
-
-            try:
-                fnargs = dict(config.items())
-                ret_value = fn(pobj, adinputs=adinputs, **fnargs)
-            except Exception:
-                zeroset()
-                raise
-            # And place the outputs in the appropriate stream
-            pobj.streams[outstream] = ret_value
+                log.warning("The input and output streams differ so skipping "
+                            "this primitive may have unintended consequences")
+            ret_value = pobj.streams[instream]
         else:
-            if args:  # if not, adinputs has already been assigned from params
-                adinputs = args[0]
+            for k in ('adinputs', 'stream', 'instream', 'outstream',
+                      'skip_primitive', 'write_outputs'):
+                if k not in config:
+                    with suppress(KeyError):
+                        del params[k]
+            # Can update config now it only has parameters it knows about
+            config.update(**params)
+            config.validate()
 
-            try:
-                if isinstance(adinputs, AstroData):
-                    raise TypeError("Single AstroData instance passed to "
-                                    "primitive, should be a list")
-                ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
-            except Exception:
-                zeroset()
-                raise
-        unset_logging()
+            if len(args) == 0 and adinputs is None:
+                # Use appropriate stream input/output
+                # Many primitives operate on AD instances in situ, so need to
+                # copy inputs if they're going to a new output stream
+                if instream != outstream:
+                    adinputs = [deepcopy(ad) for ad in pobj.streams.get(instream, [])]
+                else:
+                    # Allow a non-existent stream to be passed
+                    adinputs = pobj.streams.get(instream, [])
+
+                try:
+                    fnargs = dict(config.items())
+                    ret_value = fn(pobj, adinputs=adinputs, **fnargs)
+                    assert_expected_dtypes(ret_value)
+                except Exception:
+                    zeroset()
+                    raise
+                # And place the outputs in the appropriate stream
+                pobj.streams[outstream] = ret_value
+            else:
+                if args:  # if not, adinputs has already been assigned from params
+                    adinputs = args[0]
+
+                try:
+                    if isinstance(adinputs, AstroData):
+                        raise TypeError("Single AstroData instance passed to "
+                                        "primitive, should be a list")
+                    ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+                    assert_expected_dtypes(ret_value)
+                except Exception:
+                    zeroset()
+                    raise
+
+        if write_after:
+            pobj.writeOutputs(stream=outstream)
+        if caller != pname:
+            unset_logging()
         gc.collect()
         return ret_value
     return gn
+
+
+# Enforce the expected dtypes between primitives, to catch NumPy 2 issues:
+def assert_expected_dtypes(adinputs):
+    msg = ""
+    for ad in adinputs:
+        for n, ext in enumerate(ad):
+            emsg = f'  File {ad.filename}, AstroData ext {n}:\n'
+            initlen = len(emsg)
+            ndd = ext.nddata.window[(slice(0, 1),) * len(ext.shape)]
+            if ndd.data.dtype.itemsize > 4:  # int/float with max 32 bits
+                emsg += f'    data:        {ndd.data.dtype}\n'
+            if ndd.uncertainty is not None and (
+                ndd.uncertainty.array.dtype.kind != 'f' or
+                ndd.uncertainty.array.dtype.itemsize != 4  # expect float32
+            ):
+                emsg += f'    uncertainty: {ndd.uncertainty.array.dtype}\n'
+            if ndd.mask is not None and (
+                ndd.mask.dtype.kind != 'u' or
+                ndd.mask.dtype.itemsize > 2  # uint16 for Gemini data; OK?
+            ):
+                emsg += f'    mask:        {ndd.mask.dtype}\n'
+            # The other attribute that gets to >1MB in practice is OBJMASK:
+            if hasattr(ext, 'OBJMASK') and ext.OBJMASK.dtype.itemsize > 1:
+                mesg += f'    OBJMASK:     {ext.OBJMASK.dtype}\n'
+            if len(emsg) > initlen:
+                msg += emsg
+    if msg:
+        raise AssertionError(
+            f'Produced unexpected output data type(s):\n\n{msg}'
+        )

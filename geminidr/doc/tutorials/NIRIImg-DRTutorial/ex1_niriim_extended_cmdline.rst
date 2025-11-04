@@ -1,5 +1,10 @@
 .. ex1_niriim_extended_cmdline.rst
 
+.. role:: raw-html(raw)
+   :format: html
+
+.. |verticalpadding| replace:: :raw-html:`<br>`
+
 .. _extended_cmdline:
 
 *********************************************************************************
@@ -153,20 +158,20 @@ we will print the object name too.
 
     showd ../playdata/example1/*.fits -d observation_class,object
 
-    -----------------------------------------------------------------------
-    filename                                   observation_class     object
-    -----------------------------------------------------------------------
-    ../playdata/example1/N20160102S0270.fits             science    SN2014J
+    ----------------------------------------------------------------------------------------
+    filename                                                    observation_class     object
+    ----------------------------------------------------------------------------------------
+    ../playdata/example1/N20160102S0270.fits                              science    SN2014J
     ...
-    ../playdata/example1/N20160102S0295.fits          partnerCal      FS 17
-    ../playdata/example1/N20160102S0296.fits          partnerCal      FS 17
-    ../playdata/example1/N20160102S0297.fits          partnerCal      FS 17
-    ../playdata/example1/N20160102S0298.fits          partnerCal      FS 17
-    ../playdata/example1/N20160102S0299.fits          partnerCal      FS 17
-    ../playdata/example1/N20160102S0363.fits              dayCal   GCALflat
+    ../playdata/example1/N20160102S0295.fits                           partnerCal      FS 17
+    ../playdata/example1/N20160102S0296.fits                           partnerCal      FS 17
+    ../playdata/example1/N20160102S0297.fits                           partnerCal      FS 17
+    ../playdata/example1/N20160102S0298.fits                           partnerCal      FS 17
+    ../playdata/example1/N20160102S0299.fits                           partnerCal      FS 17
+    ../playdata/example1/N20160102S0363.fits                               dayCal   GCALflat
     ...
-    ../playdata/example1/N20160103S0472.fits              dayCal       Dark
-
+    ../playdata/example1/N20160103S0472.fits                               dayCal       Dark
+    ../playdata/example1/bpm_20010317_niri_niri_11_full_1amp.fits          dayCal        BPM
 The list is abridged for presentation.
 
 Our standard star is a "partnerCal" named "FS 17".  Since it is unique, we
@@ -300,6 +305,8 @@ be run because the defaults are adjusted to match the input data.
    :align: center
 
 
+|verticalpadding|
+
 
 Standard Star
 =============
@@ -335,7 +342,6 @@ The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science
 signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
-
 
 ::
 

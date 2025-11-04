@@ -13,13 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10']
+        python-version: ['3.12']
 
     steps:
       - uses: actions/checkout@v2
 
       - name: Cache conda packages and test files
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         env:
           # Increase this value to reset cache
           CACHE_NUMBER: 0
@@ -29,12 +29,11 @@ jobs:
             ~/dragons_tests
           key: ${{ runner.os }}-${{ env.CACHE_NUMBER }}
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
           channels: conda-forge
           python-version: ${{ matrix.python-version }}
-          use-only-tar-bz2: true
 
       - name: Conda info
         shell: bash -l {0}
@@ -53,4 +52,4 @@ jobs:
       - name: Run Tox
         shell: bash -l {0}
         run: |
-          tox -e py310-unit -v
+          tox -r -e py312-unit -v

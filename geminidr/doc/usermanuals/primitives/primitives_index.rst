@@ -9,5 +9,6 @@ Primitives Reference
 .. toctree::
    :maxdepth: 1
 
+.. primitive_determineSlitEdges
 .. primitive_subtractOverscan
 

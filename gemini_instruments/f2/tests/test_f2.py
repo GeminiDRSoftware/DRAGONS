@@ -6,6 +6,9 @@ import astrodata.testing
 import gemini_instruments
 from gemini_instruments.f2 import AstroDataF2
 
+import numpy as np
+
+
 test_files = [
     "S20131121S0094.fits",
     "S20131126S1111.fits",
@@ -18,7 +21,6 @@ test_files = [
 F2_DESCRIPTORS_TYPES = [
     ('detector_x_offset', float),
     ('detector_y_offset', float),
-    ('nonlinearity_coeffs', list),
     ('pixel_scale', float),
 ]
 

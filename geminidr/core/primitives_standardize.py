@@ -7,15 +7,19 @@ import os
 
 import numpy as np
 from importlib import import_module
-from scipy.ndimage import measurements
+from scipy import ndimage
+from copy import deepcopy
 
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
+from gempy.adlibrary.manipulate_ad import rebin_data
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
 from recipe_system.utils.md5 import md5sum
 from recipe_system.utils.decorators import parameter_override, capture_provenance
+from recipe_system import __version__ as rs_version
+
 
 from . import parameters_standardize
 
@@ -51,7 +55,7 @@ class Standardize(PrimitivesBASE):
         user_bpm: str
             Name of the bad pixel mask created by the user from flats and
             darks.  It is an optional BPM that can be added to the static one.
-        illum_mask: bool
+        add_illum_mask: bool
             add illumination mask?
         """
         log = self.log
@@ -83,6 +87,9 @@ class Standardize(PrimitivesBASE):
                 final_static = [None] * len(ad)
             else:
                 log.stdinfo("Using {} as static BPM\n".format(static.filename))
+                if static.binning() != ad.binning():
+                    static = rebin_data(deepcopy(static), xbin=ad.detector_x_bin(),
+                                        ybin=ad.detector_y_bin())
                 final_static = gt.clip_auxiliary_data(ad, aux=static,
                                                       aux_type='bpm',
                                                       return_dtype=DQ.datatype)
@@ -91,6 +98,9 @@ class Standardize(PrimitivesBASE):
                 final_user = [None] * len(ad)
             else:
                 log.stdinfo("Using {} as user BPM".format(user.filename))
+                if user.binning() != ad.binning():
+                    user = rebin_data(deepcopy(user), xbin=ad.detector_x_bin(),
+                                      ybin=ad.detector_y_bin())
                 final_user = gt.clip_auxiliary_data(ad, aux=user,
                                                     aux_type='bpm',
                                                     return_dtype=DQ.datatype)
@@ -135,13 +145,13 @@ class Standardize(PrimitivesBASE):
                             # saturation level. Flag those. Assume we have an
                             # IR detector here because both non-linear and
                             # saturation levels are defined and nonlin<sat
-                            regions, nregions = measurements.label(
+                            regions, nregions = ndimage.label(
                                                 ext.data < non_linear_level)
                             # In all my tests, region 1 has been the majority
                             # of the image; however, I cannot guarantee that
                             # this is always the case and therefore we should
                             # check the size of each region
-                            region_sizes = measurements.labeled_comprehension(
+                            region_sizes = ndimage.labeled_comprehension(
                                 ext.data, regions, np.arange(1, nregions+1),
                                 len, int, 0)
                             # First, assume all regions are saturated, and
@@ -294,7 +304,8 @@ class Standardize(PrimitivesBASE):
     def makeIRAFCompatible(self, adinputs=None):
         """
         Add keywords to make the pipeline-processed file compatible
-        with the tasks in the Gemini IRAF package.
+        with the tasks in the Gemini IRAF package. For Hamamatsu data, also
+        trim off the 48/binning rows and 1 column that IRAF trims off.
         """
         log = self.log
         log.debug(gt.log_message('primitive', self.myself(), 'starting'))
@@ -333,12 +344,8 @@ class Standardize(PrimitivesBASE):
         sfx = params["suffix"]
         for primitive in ('validateData', 'standardizeStructure',
                           'standardizeHeaders', 'standardizeWCS'):
-            # No need to call standardizeWCS if all adinputs are single-extension
-            # images (tags should be the same for all adinputs)
-            if ('WCS' not in primitive or 'SPECT' in adinputs[0].tags or
-                    any(len(ad) > 1 for ad in adinputs)):
-                passed_params = self._inherit_params(params, primitive)
-                adinputs = getattr(self, primitive)(adinputs, **passed_params)
+            passed_params = self._inherit_params(params, primitive)
+            adinputs = getattr(self, primitive)(adinputs, **passed_params)
 
         for ad in adinputs:
             gt.mark_history(ad, self.myself(), timestamp_key)
@@ -351,8 +358,9 @@ class Standardize(PrimitivesBASE):
     def standardizeHeaders(self, adinputs=None, **params):
         """
         This primitive is used to standardize the headers of data. It adds
-        the ORIGNAME keyword and then calls the standardizeObservatoryHeaders
-        and standardizeInstrumentHeaders primitives.
+        the ORIGNAME, PROCSOFT, PROCSVER and PROCMODE keywords and then calls
+        the standardizeObservatoryHeaders and standardizeInstrumentHeaders
+        primitives.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -361,6 +369,12 @@ class Standardize(PrimitivesBASE):
             if 'ORIGNAME' not in ad.phu:
                 ad.phu.set('ORIGNAME', ad.orig_filename,
                            'Original filename prior to processing')
+
+            # These are used by FitsStorage / GOA when handling reduced data.
+            # Deliberately overwrite any existing values
+            ad.phu.set('PROCSOFT', 'DRAGONS', 'Data Processing Software used')
+            ad.phu.set('PROCSVER', rs_version, 'DRAGONS software version')
+            ad.phu.set('PROCMODE', self.mode, 'Processing Mode [sq|ql|qa]')
 
         adinputs = self.standardizeObservatoryHeaders(adinputs,
                     **self._inherit_params(params, "standardizeObservatoryHeaders"))
@@ -381,7 +395,7 @@ class Standardize(PrimitivesBASE):
     def standardizeWCS(self, adinputs=None, **params):
         return adinputs
 
-    def validateData(self, adinputs=None, suffix=None):
+    def validateData(self, adinputs=None, suffix=None, require_wcs=True):
         """
         This is the data validation primitive. It checks that the instrument
         matches the primitivesClass and that there are the correct number
@@ -391,6 +405,8 @@ class Standardize(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
+        require_wcs: bool
+            do all extensions have to have a defined WCS?
         """
         log = self.log
         timestamp_key = self.timestamp_keys[self.myself()]
@@ -400,9 +416,8 @@ class Standardize(PrimitivesBASE):
 
         for ad in adinputs:
             if ad.phu.get(timestamp_key):
-                log.warning("No changes will be made to {}, since it has "
-                            "already been processed by validateData".
-                            format(ad.filename))
+                log.warning(f"No changes will be made to {ad.filename}, since"
+                            " it has already been processed by validateData")
                 continue
 
             # Check that the input is appropriate for this primitivesClass
@@ -410,28 +425,29 @@ class Standardize(PrimitivesBASE):
             inst_name = ad.instrument(generic=True)
             if not inst_name in self.tagset:
                 prim_class_name = self.__class__.__name__
-                raise OSError("Input file {} is {} data and not suitable for "
-                    "{} class".format(ad.filename, inst_name, prim_class_name))
+                raise ValueError(f"Input file {ad.filename} is {inst_name} data"
+                                 f" and not suitable for {prim_class_name} "
+                                 "class")
 
             # Report if this is an image without square binned pixels
             if 'IMAGE' in ad.tags:
                 xbin = ad.detector_x_bin()
                 ybin = ad.detector_y_bin()
                 if xbin != ybin:
-                    log.warning("Image {} is {} x {} binned data".
-                                format(ad.filename, xbin, ybin))
+                    log.warning(f"Image {ad.filename} is {xbin} x {ybin} "
+                                "binned data")
 
             if self._has_valid_extensions(ad):
-                log.fullinfo("The input file has been validated: {} contains "
-                             "{} extension(s)".format(ad.filename, len(ad)))
+                log.fullinfo(f"The input file has been validated: {ad.filename}"
+                             f" contains {len(ad)} extension(s)")
             else:
-                raise OSError("The {} extension(s) in {} does not match the "
-                              "number of extensions expected in raw {} "
-                              "data.".format(len(ad), ad.filename, inst_name))
+                raise ValueError(f"The {len(ad)} extension(s) in {ad.filename} "
+                                 "does not match the number of extensions "
+                                 f"expected in raw {inst_name} data.")
 
-            # Check for WCS
-            missing_wcs_list.extend([f"{ad.filename}:{ext.id}"
-                                     for ext in ad if ext.wcs is None])
+            if require_wcs:
+                missing_wcs_list.extend([f"{ad.filename}:{ext.id}"
+                                         for ext in ad if ext.wcs is None])
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -533,43 +549,6 @@ class Standardize(PrimitivesBASE):
                             self.keyword_comments['VARNOISE'])
             else:
                 ext.hdr['VARNOISE'] += ', read'
-
-    # TODO remove this if we truly migrate off of LUT based BPM lookups and rely on the calibration matching
-    def _get_bpm_filename(self, ad):
-        """
-        Gets the BPM filename for an input science frame. Takes bpm_dict from
-        geminidr.<instrument>.lookups.maskdb.py and looks for a key
-        <INSTRUMENT>_<XBIN><YBIN>. As a backup, uses the file in
-        geminidr/<instrument>/lookups/BPM/ if there's only one file. This
-        will be sent to clip_auxiliary_data for a subframe ROI.
-
-        Returns
-        -------
-        str/None: Filename of the appropriate bpm
-        """
-        log = self.log
-        inst = ad.instrument()
-        xbin = ad.detector_x_bin()
-        ybin = ad.detector_y_bin()
-        bpm = None
-
-        try:
-            masks = import_module('.maskdb', self.inst_lookups)
-            bpm_dir = os.path.join(os.path.dirname(masks.__file__), 'BPM')
-            bpm_dict = getattr(masks, 'bpm_dict')
-            key = '{}_{}{}'.format(inst, xbin, ybin)
-            try:
-                bpm = bpm_dict[key]
-            except KeyError:
-                log.warning('No static BPM found for {}'.format(ad.filename))
-        except:
-            log.warning('No static BPMs defined')
-
-        if bpm is not None:
-            # Prepend standard path if the filename doesn't start with '/'
-            return bpm if bpm.startswith(os.path.sep) else \
-                os.path.join(bpm_dir, bpm)
-        return None
 
     def _get_illum_mask_filename(self, ad):
         """

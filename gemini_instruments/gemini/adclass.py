@@ -9,6 +9,7 @@ import re
 import math
 import datetime
 import dateutil.parser
+from itertools import chain, combinations
 
 import numpy as np
 
@@ -86,6 +87,7 @@ gemini_keyword_names = dict(
     oiwfs = 'OIWFS_ST',
     overscan_section = 'OVERSEC',
     pixel_scale = 'PIXSCALE',
+    position_angle = 'PA',
     prism = 'PRISM',
     pupil_mask = 'PUPILMSK',
     pwfs1 = 'PWFS1_ST',
@@ -138,6 +140,12 @@ def get_specphot_name(ad):
     corresponding to the filename containing the specphot data in
     geminidr.gemini.lookups.spectrophotometric_standards
 
+    We match to within 2" regardless of name, or a 5' (sic) match if the
+    name matches. We have found cases where the PMRA/PMDEC keywords in the
+    header (which are used by the target_ra/dec descriptors) are wrong or
+    zero and so there is a larger positional disagreement than you might
+    have thought.
+
     Parameters
     ----------
     ad: AstroData object which might be a specphot standard
@@ -169,7 +177,7 @@ def get_specphot_name(ad):
                  distance=10*u.pc)
     separations = target.separation(c.apply_space_motion(dt=dt)).arcsec
     i = separations.argmin()
-    if separations[i] < 2 or separations[i] < 10 and all_names[i] == target_name:
+    if separations[i] < 2 or separations[i] < 300 and all_names[i] == target_name:
         return all_names[i]
 
 
@@ -225,12 +233,15 @@ class AstroDataGemini(AstroData):
             return
 
         gcallamp = self.phu.get('GCALLAMP')
-        if gcallamp == 'IRhigh' or (gcallamp is not None and gcallamp.startswith('QH')):
+        if gcallamp in ('IRhigh', 'IRlow') or (gcallamp is not None and gcallamp.startswith('QH')):
             shut = self.phu.get('GCALSHUT')
             if shut == 'OPEN':
                 return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
             elif shut == 'CLOSED':
-                return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED'])
+                # GNIRS PINHOLE files have the QH lamp on, but this isn't really
+                # a useful thing to indicate in tags. DB 20230906
+                return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED',
+                                                                      'PINHOLE'])
         elif self.phu.get('GCALLAMP') == 'No Value' and \
              self.phu.get('GCALSHUT') == 'CLOSED':
             return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED'])
@@ -313,7 +324,8 @@ class AstroDataGemini(AstroData):
     @astro_data_tag
     def _status_processed_cals(self):
         kwords = {'PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
-                      'GIFLAT', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG', 'PROCSTND', 'PROCILLM'}
+                  'GIFLAT', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG',
+                  'PROCPNHL', 'PROCSTND', 'PROCILLM'}
 
         if set(self.phu.keys()) & kwords:
             return TagSet(['PROCESSED'])
@@ -386,17 +398,23 @@ class AstroDataGemini(AstroData):
 
     def _parse_section(self, keyword, pretty):
         try:
-            value_filter = (str if pretty else Section.from_string)
+            value_filter = lambda x: (x.asIRAFsection() if pretty else x)
             process_fn = lambda x: (None if x is None else value_filter(x))
             # Dummy keyword FULLFRAME returns shape of full data array
             if keyword == 'FULLFRAME':
+                def _encode_shape(shape):
+                    if not shape:
+                        return None
+                    return Section(*chain.from_iterable([(0, npix) for npix in shape[::-1]]))
                 if self.is_single:
-                    sections = '[1:{1},1:{0}]'.format(*self.shape)
+                    sections = _encode_shape(self.shape)
                 else:
-                    sections = ['[1:{1},1:{0}]'.format(*ext.shape)
-                                for ext in self]
+                    sections = [_encode_shape(ext.shape) for ext in self]
             else:
-                sections = self.hdr.get(keyword)
+                if self.is_single:
+                    sections = Section.from_string(self.hdr.get(keyword))
+                else:
+                    sections = [Section.from_string(sec) if sec is not None else None for sec in self.hdr.get(keyword)]
             if self.is_single:
                 return process_fn(sections)
             else:
@@ -421,8 +439,13 @@ class AstroDataGemini(AstroData):
             Airmass value.
         """
         am = self.phu.get(self._keyword_for('airmass'), -1)
-        if isinstance(am, str) and gmu.isBlank(am):
-            return None
+        if isinstance(am, str):
+            if gmu.isBlank(am):
+                return None
+            try:
+                am = float(am)
+            except ValueError:
+                return None
         return am if am >= 1 else None
 
     @astro_data_descriptor
@@ -522,6 +545,13 @@ class AstroDataGemini(AstroData):
         return self.phu.get(self._keyword_for('azimuth'))
 
     @astro_data_descriptor
+    def binning(self):
+        """
+        Returns an "MxN"-style string because CJS is fed up with not having this!
+        """
+        return f"{self.detector_x_bin()}x{self.detector_y_bin()}"
+
+    @astro_data_descriptor
     def calibration_key(self):
         """
         Returns an object to be used as a key in the Calibrations dict.
@@ -580,50 +610,23 @@ class AstroDataGemini(AstroData):
         return crpa if abs(crpa) <= 360 else None
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units(input_units="um")
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or the specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength
 
         Returns
         -------
         float
             The central wavelength setting
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
         # We assume that the central_wavelength keyword is in microns
         keyword = self._keyword_for('central_wavelength')
-        wave_in_microns = self.phu.get(keyword, -1)
-        # Convert to float if they saved it as a string
-        wave_in_microns = float(wave_in_microns) if isinstance(wave_in_microns, str) else wave_in_microns
+        wave_in_microns = float(self.phu.get(keyword, -1))
+
         if wave_in_microns < 0:
             return None
-        return gmu.convert_units('micrometers', wave_in_microns,
-                             output_units)
+        return wave_in_microns
 
     @astro_data_descriptor
     def coadds(self):
@@ -867,57 +870,27 @@ class AstroDataGemini(AstroData):
                                           stripID, pretty)
 
     @astro_data_descriptor
-    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    @gmu.return_requested_units(input_units="m")
+    def dispersion(self):
         """
-        Returns the dispersion in meters per pixel as a list (one value per
+        Returns the dispersion in nm per pixel as a list (one value per
         extension) or a float if used on a single-extension slice.  It is
         possible to control the units of wavelength using the input arguments.
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
 
         Returns
         -------
         list/float
-            The dispersion(s)
+            The dispersion(s) in nm
         """
-        if self._keyword_for('dispersion') in self.hdr:
-            dispersion = self.hdr[self._keyword_for('dispersion')]
-
+        keyword = self._keyword_for('dispersion')
+        if keyword in self.hdr:
+            dispersion = self.hdr[keyword]
         elif self._keyword_for('dispersion') in self.phu:
-            dispersion = self.phu[self._keyword_for('dispersion')]
-
-        else:
-            dispersion = None
-
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
-        if dispersion is not None:
-
-            dispersion = gmu.convert_units('meters', dispersion, output_units)
-
+            dispersion = self.phu[keyword]
             if not self.is_single:
                 dispersion = [dispersion] * len(self)
+        else:
+            return None
 
         return dispersion
 
@@ -1010,7 +983,7 @@ class AstroDataGemini(AstroData):
             return exposure_time
 
     @astro_data_descriptor
-    def filter_name(self, stripID=False, pretty=False):
+    def filter_name(self, stripID=False, pretty=False, keepID=False):
         """
         Returns the name of the filter(s) used.  The component ID can be
         removed with either 'stripID' or 'pretty'.  If a combination of filters
@@ -1037,8 +1010,16 @@ class AstroDataGemini(AstroData):
         if f1 is None or f2 is None:
             return None
 
-        if pretty:
+        if pretty or keepID:
             filter_comps = []
+            if keepID:
+                def filter_with_id(fltname, fltid):
+                    return fltname if fltid is None else (fltname + "_" + fltid)
+
+                f1 = filter_with_id(gmu.removeComponentID(f1),
+                                              gmu.getComponentID(f1))
+                f2 = filter_with_id(gmu.removeComponentID(f2),
+                                              gmu.getComponentID(f2))
             for fn in (f1, f2):
                 # Not interested in clear or neutral density filters
                 if not ("open" in fn.lower() or "Clear" in fn or
@@ -1050,6 +1031,7 @@ class AstroDataGemini(AstroData):
             for cal, fn in cals:
                 if cal in f1 or cal in f2:
                     filter_comps.append(fn)
+
         else:
             filter_comps = [f1, f2]
 
@@ -1391,6 +1373,18 @@ class AstroDataGemini(AstroData):
         return self._get_wcs_pixel_scale(mean=True)
 
     @astro_data_descriptor
+    def position_angle(self):
+        """
+        Returns the position angle of the instruement
+
+        Returns
+        -------
+        float
+            the position angle (East of North) of the +ve y-direction
+        """
+        return self.phu[self._keyword_for('position_angle')]
+
+    @astro_data_descriptor
     def program_id(self):
         """
         Returns the ID of the program the observation was taken for
@@ -1635,6 +1629,20 @@ class AstroDataGemini(AstroData):
             the slit name
         """
         return self.phu.get(self._keyword_for('slit'))
+
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float
+            the slit width in arcseconds
+        """
+        if 'SPECT' in self.tags:
+            raise NotImplementedError("A slit width is not defined for this instrument")
+        return None
 
     @astro_data_descriptor
     def target_ra(self, offset=False, pm=True, icrs=False):
@@ -2111,13 +2119,21 @@ class AstroDataGemini(AstroData):
             if ext.wcs is None:
                 return None
             yc, xc = [0.5 * l for l in ext.shape]
-            ra, dec = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc])[-2:]
-            cosdec = math.cos(dec[0] * np.pi / 180)
-            a = (ra[2] - ra[0]) * cosdec
-            b = (ra[1] - ra[0]) * cosdec
-            c = dec[2] - dec[0]
-            d = dec[1] - dec[0]
-            return 3600 * np.sqrt(abs(a * d - b * c))
+            coords = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc], with_units=True)
+            if isinstance(coords, SkyCoord):  # pure image
+                return np.median([i.separation(j).arcsec
+                                  for i, j in combinations(coords, 2)])
+            for coo in coords:
+                if isinstance(coo, SkyCoord):
+                    # for spectra the dispersion axis won't change the skycoord
+                    return np.median([i.separation(j).arcsec
+                                      for i, j in combinations(coo, 2)])
+                elif coo.unit.is_equivalent(u.rad):
+                    # ARC spectrum with linear axis in arcsec
+                    return np.median([abs((i - j).to(u.arcsec)).value
+                                      for i, j in combinations(coo, 2)])
+            return None
+
 
         if self.is_single:
             try:
@@ -2127,9 +2143,11 @@ class AstroDataGemini(AstroData):
 
         pixel_scale_list = []
         for ext in self:
+            if len(ext.shape) < 2:
+                return None
             try:
                 pixel_scale_list.append(3600 * np.sqrt(abs(np.linalg.det(ext.wcs.forward_transform['cd_matrix'].matrix))))
-            except (IndexError, AttributeError):
+            except (IndexError, AttributeError) as iae:
                 scale = empirical_pixel_scale(ext)
                 if scale is not None:
                     pixel_scale_list.append(scale)
@@ -2180,7 +2198,6 @@ class AstroDataGemini(AstroData):
         """
         return self.phu.get(self._keyword_for('prism'))
 
-
     def _raw_to_percentile(self, descriptor, raw_value):
         """
         Parses the Gemini constraint bands, and returns the percentile
@@ -2201,3 +2218,15 @@ class AstroDataGemini(AstroData):
         """
         val = gmu.parse_percentile(raw_value)
         return val
+
+    def actual_central_wavelength(self, *args, **kwargs):
+        """
+        Return the true central wavelength (in the middle of the detector),
+        to avoid messing the descriptor around. We probably want to revisit
+        what "central wavelength" means, but we don't want to upset the
+        archive.
+
+        This is not a descriptor. The args/kwargs accept whatever unit
+        information central_wavelength() can handle.
+        """
+        return self.central_wavelength(*args, **kwargs)

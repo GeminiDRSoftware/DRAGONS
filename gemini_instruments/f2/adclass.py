@@ -1,10 +1,12 @@
 import re
 import math
 
+import numpy as np
+
 from astrodata import (astro_data_tag, TagSet, astro_data_descriptor,
                        returns_list, Section)
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
-from .lookup import array_properties, nominal_zeropoints
+from .lookup import array_properties, nominal_zeropoints, dispersion_offset_mask
 
 from ..common import build_group_id
 from .. import gmu
@@ -13,8 +15,6 @@ from .. import gmu
 class AstroDataF2(AstroDataGemini):
     __keyword_dict = dict(central_wavelength='WAVELENG',
                           disperser='GRISM',
-                          dispersion='DISPERSI',
-                          focal_plane_mask='MOSPOS',
                           lyot_stop='LYOT',
                           )
 
@@ -146,11 +146,16 @@ class AstroDataF2(AstroDataGemini):
         # [2022-02-22] The LYOT keyword is now being used to store filters as
         # well as LYOT mask.  Therefore, that keyword cannot be reliably used
         # to return the camera string.
-
-        if self.pixel_scale() > 0.10 and self.pixel_scale() < 0.20:
-            camera = "f/16_G5830"
-        else:
-            camera = self.lyot_stop()
+        camera = self.lyot_stop()
+        if camera is None or not camera.startswith("f/"):
+            focus = self.phu.get("FOCUS", "")
+            if not re.match('^f/\\d+$', focus):
+                # Use original pixel scale
+                pixscale = (self.phu["PIXSCALE"] if 'PREPARED' in self.tags
+                            else self.pixel_scale())
+                focus = "f/16" if pixscale > 0.1 else "f/32"
+            # Make up component number (for now) should f/32 happen
+            camera = focus + ("_G5830" if focus == "f/16" else "_G9999")
 
         if camera:
             if stripID or pretty:
@@ -160,53 +165,33 @@ class AstroDataF2(AstroDataGemini):
 
         return self._may_remove_component(camera, stripID, pretty)
 
-    # TODO: sort out the unit-handling here
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units()
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or the specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength in nm
 
         Returns
         -------
         float
             The central wavelength setting
-
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
+        central_wavelength = float(self.phu['WAVELENG']) * 0.1
 
-        central_wavelength = float(self.phu['GRWLEN'])
-        if self.phu['FILTER1'] == 'K-long-G0812':
-            central_wavelength = 2.2
+        filter = self.filter_name(keepID=True)
+        # Header value for this filter in early data is incorrect:
+        if filter == 'K-long_G0812':
+            central_wavelength = 2200.0
+        # The new JH_G0816 and HK_G0817 filters were installed in 2022, but their
+        #  WAVELENG header keywords weren't simultaneously updated, thus the correction.
+        if filter == "JH_G0816":
+                central_wavelength = 1338.5
+        if filter == "HK_G0817":
+                central_wavelength = 1900.0
 
         if central_wavelength < 0.0:
             return None
-        else:
-            return gmu.convert_units('micrometers', central_wavelength,
-                                     output_units)
+        return central_wavelength
 
     @astro_data_descriptor
     def data_section(self, pretty=False):
@@ -319,44 +304,31 @@ class AstroDataF2(AstroDataGemini):
         return -offset if self.phu.get('INPORT') == 1 else offset
 
     @astro_data_descriptor
-    def dispersion(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
+    @gmu.return_requested_units()
+    def dispersion(self):
         """
-        Returns the dispersion in meters per pixel as a list (one value per
+        Returns the dispersion in nm per pixel as a list (one value per
         extension) or a float if used on a single-extension slice. It is
         possible to control the units of wavelength using the input arguments.
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
 
         Returns
         -------
         list/float
             The dispersion(s)
         """
-        # F2 header keyword value is in Angstroms, not meters
-        dispersion = super().dispersion(
-            asMicrometers=asMicrometers,
-            asNanometers=asNanometers,
-            asAngstroms=asAngstroms)
+        config = (self.disperser(pretty=True), self.filter_name(keepID=True))
+        if config not in dispersion_offset_mask:
+            return None
+        mask = dispersion_offset_mask.get(config, None)
+        dispersion = float(mask.dispersion if mask else None)
 
-        # Convert dispersion from Angstroms to Meters
-        if isinstance(dispersion, list):
-            dispersion = [disp * 1e-10 for disp in dispersion]
-        elif isinstance(dispersion, (int, float)):
-            dispersion = dispersion * 1e-10
-        else:
-            dispersion = None
+        if dispersion is not None and not self.is_single:
+                dispersion = [dispersion] * len(self)
 
         return dispersion
 
     @astro_data_descriptor
-    def filter_name(self, stripID=False, pretty=False):
+    def filter_name(self, stripID=False, pretty=False, keepID=False):
         """
         Returns the name of the filter(s) used.  The component ID can be
         removed with either 'stripID' or 'pretty'.  If a combination of filters
@@ -373,6 +345,8 @@ class AstroDataF2(AstroDataGemini):
         pretty : bool
             Parses the combination of filters to return a single string value
             wi the "effective" filter.
+        keepID: bool
+            Same as pretty but with the component ID
 
         Returns
         -------
@@ -403,15 +377,26 @@ class AstroDataF2(AstroDataGemini):
             filter3 = None
 
         if stripID or pretty:
-            filter1 = gmu.removeComponentID(filter1)
-            filter2 = gmu.removeComponentID(filter2)
+                filter1 = gmu.removeComponentID(filter1)
+                filter2 = gmu.removeComponentID(filter2)
+                if filter3:
+                    filter3 = gmu.removeComponentID(filter3)
+        if keepID:
+            def filter_with_id(fltname, fltid):
+                return fltname if fltid is None else (fltname + "_" + fltid)
+
+            filter1 = filter_with_id(gmu.removeComponentID(filter1),
+                                          gmu.getComponentID(filter1))
+            filter2 = filter_with_id(gmu.removeComponentID(filter2),
+                                          gmu.getComponentID(filter2))
             if filter3:
-                filter3 = gmu.removeComponentID(filter3)
+                filter3 = filter_with_id(gmu.removeComponentID(filter3),
+                                          gmu.getComponentID(filter3))
 
         filter = [filter1, filter2]
         if filter3:
             filter.append(filter3)
-        if pretty:
+        if pretty or keepID:
             # Remove filters with the name 'open'
             if 'open' in filter2 or 'Open' in filter2:
                 del filter[1]
@@ -521,19 +506,38 @@ class AstroDataF2(AstroDataGemini):
     @astro_data_descriptor
     def lyot_stop(self):
         """
-        Returns the LYOT filter used for the observation.  This works around
+        Returns the LYOT stop used for the observation.  This works around
         inconsistencies in the header keywords.
 
         Returns
         -------
         str
-            LYOT filter name, or None
+            LYOT stop name, or None
+        """
+        lyot = self.phu.get('LYOT', self.phu.get('LYOTPOS', None))
+        if lyot == "Undefined":
+            lyot = None
+        return lyot
+
+    @astro_data_descriptor
+    def focal_plane_mask(self, stripID=False, pretty=False):
+        """
+        Returns the focal plane mask used for the observation. This is generally
+        the MASKNAME header. For imaging data, MASKNAME sometimes has strange
+        values, so we check MOSPOS and if MOSPOS is 'Open' we return that
+        for consistency.
+
+        The stripID and pretty arguments are ignored.
+
+        Returns
+        -------
+        str
+            focal plane mask name, or None
 
         """
-        lyot = self.phu.get('LYOT', None)
-        if lyot:
-            return lyot
-        return self.phu.get('LYOTPOS', None)
+        mospos = self.phu.get('MOSPOS', None)
+        maskname = self.phu.get('MASKNAME', None)
+        return mospos if mospos == 'Open' else maskname
 
     @returns_list
     @astro_data_descriptor
@@ -563,11 +567,6 @@ class AstroDataF2(AstroDataGemini):
         else:
             return [(zpt - (2.5 * math.log10(g) if in_adu else 0) if zpt and g
                      else None) for g in gain]
-
-    @returns_list
-    @astro_data_descriptor
-    def nonlinearity_coeffs(self):
-        return getattr(array_properties.get(self.read_mode()), 'coeffs', None)
 
     @returns_list
     @use_keyword_if_prepared
@@ -612,19 +611,20 @@ class AstroDataF2(AstroDataGemini):
 
     @astro_data_descriptor
     def pixel_scale(self):
+        pix_scale = super().pixel_scale()
+        return pix_scale or self.phu['PIXSCALE']
+
+    @astro_data_descriptor
+    def position_angle(self):
         """
-        Returns the image scale in arcseconds per pixel
+        Returns the position angle of the instruement
 
         Returns
         -------
         float
-            pixel scale
+            the position angle (East of North) of the +ve y-direction
         """
-        # Try to use the Gemini-level helper method
-        if 'PREPARED' in self.tags:
-            return self._get_wcs_pixel_scale() or self.phu.get('PIXSCALE')
-        else:
-            return self.phu.get('PIXSCALE')
+        return (self.phu[self._keyword_for('position_angle')] + 90) % 360
 
     @astro_data_descriptor
     def read_mode(self):
@@ -678,6 +678,21 @@ class AstroDataF2(AstroDataGemini):
             saturation_adu = [int(well_depth / g) if well_depth and g else None
                               for g in gain]
         return saturation_adu
+
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Returns the width of the slit in arcseconds
+
+        Returns
+        -------
+        float/None
+            the slit width in arcseconds
+        """
+        fpmask = self.focal_plane_mask(pretty=True)
+        if 'pix-slit' in fpmask:
+            return int(fpmask.replace('pix-slit', '')) * self.pixel_scale()
+        return None
 
     # TODO: document why these are reversed
     # Ruben Diaz thinks it has to do with the fact that the F2 long slit,
@@ -737,3 +752,13 @@ class AstroDataF2(AstroDataGemini):
     #         ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
     #
     #     return {'lon': ra, 'lat': dec}
+
+    @gmu.return_requested_units(input_units="nm")
+    def actual_central_wavelength(self):
+        index = (self.disperser(pretty=True), self.filter_name(keepID=True))
+        mask = dispersion_offset_mask[index]
+        disp = (self.dispersion(asNanometers=True) if self.is_single else
+                self.dispersion(asNanometers=True)[0])
+        actual_cenwave = (self.central_wavelength(asNanometers=True) -
+                          disp * mask.cenwaveoffset)
+        return np.float32(actual_cenwave)

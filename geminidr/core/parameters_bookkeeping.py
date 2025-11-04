@@ -15,6 +15,12 @@ class clearAllStreamsConfig(config.Config):
 class clearStreamConfig(config.Config):
     stream = config.Field("Name of stream to clear", str, "main")
 
+class combineSlicesConfig(config.Config):
+    from_stream = config.Field("Name of stream to take extensions from", str,
+                               None, optional=False)
+    ids = config.Field("List of (1-indexed IDs of extensions to combine)", str,
+                       None)
+
 class copyInputsConfig(config.Config):
     pass
 

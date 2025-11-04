@@ -1,5 +1,7 @@
 import math
+import os
 import pytest
+import numpy as np
 from numpy.testing import assert_allclose
 
 from astropy.modeling import models
@@ -8,6 +10,7 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 from astropy.io.fits import Header
 from gwcs import coordinate_frames as cf
+from gwcs.wcs import WCS as gWCS
 
 import astrodata
 from astrodata import wcs as adwcs
@@ -144,7 +147,7 @@ def test_remove_unused_world_axis(F2_IMAGE):
     assert_allclose(new_result, result)
     adwcs.remove_unused_world_axis(ad[0])
     new_result = ad[0].wcs(900, 800)
-    assert_allclose(new_result, result[:2])
+    assert_allclose(new_result, result[-2:])
     for frame in ad[0].wcs.available_frames:
         assert getattr(ad[0].wcs, frame).naxes == 2
 
@@ -198,3 +201,67 @@ def test_adding_longslit_wcs(GMOS_LONGSLIT):
     gwcs_coords = new_gwcs(0, crpix2)
     new_gwcs_sky = SkyCoord(*gwcs_coords[1:], unit=u.deg, frame=frame_name)
     assert gwcs_sky.separation(new_gwcs_sky) < 0.01 * u.arcsec
+
+# Coordinates of projection center and new projection center
+@pytest.mark.parametrize("coords", ([(0, 0), (0.1, -0.1)],
+                                    [(120, -50), (119.5, -49.5)],
+                                    [(270, 89.9), (0, 89)]))
+@pytest.mark.parametrize("flip", (True, False))
+def test_create_new_image_projection(flip, coords):
+    shifts = (100, 200)
+    shifts = models.Shift(shifts[0]) & models.Shift(shifts[1])
+    pixscale = 1.0
+    angle = 0
+    matrix = np.asarray(models.Rotation2D(angle)(*(np.identity(2) * pixscale / 3600)))
+    if not flip:
+        matrix[0] *= -1
+    lon, lat = coords[0]
+    projection = (models.AffineTransformation2D(matrix=matrix) |
+                  models.Pix2Sky_Gnomonic() |
+                  models.RotateNative2Celestial(lon=lon, lat=lat, lon_pole=180))
+    transform = shifts | projection
+    new_transform = adwcs.create_new_image_projection(transform, coords[1])
+    for x in (0, 1000):
+        for y in (0, 1000):
+            c1 = SkyCoord(*transform(x, y), unit='deg')
+            c2 = SkyCoord(*new_transform(x, y), unit='deg')
+            assert c1.separation(c2).arcsec < 0.5
+
+
+@pytest.mark.dragons_remote_data
+def test_loglinear_axis(NIRI_IMAGE):
+    """Test that we can add a log-linear axis and write and read it"""
+    ad = astrodata.open(NIRI_IMAGE)
+    coords = ad[0].wcs(200, 300)
+    ad[0].data = np.repeat(ad[0].data[:, :, np.newaxis], 5, axis=2)
+    new_input_frame = adwcs.pixel_frame(3)
+    loglinear_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm,
+                                 axes_names=("AWAV",), name="Wavelength in air")
+    celestial_frame = ad[0].wcs.output_frame
+    celestial_frame._axes_order = (1, 2)
+    new_output_frame = cf.CompositeFrame([loglinear_frame, celestial_frame],
+                                         name="world")
+    new_wcs = models.Exponential1D(amplitude=1, tau=2) & ad[0].wcs.forward_transform
+    ad[0].wcs = gWCS([(new_input_frame, new_wcs),
+                      (new_output_frame, None)])
+    new_coords = ad[0].wcs(2, 200, 300)
+    assert_allclose(coords, new_coords[1:])
+
+    #with change_working_dir():
+    ad.write("test.fits", overwrite=True)
+    ad2 = astrodata.open("test.fits")
+    assert_allclose(ad2[0].wcs(2, 200, 300), new_coords)
+
+
+@pytest.mark.preprocessed_data
+def test_tabular1D_axis(path_to_inputs, change_working_dir):
+    """Check a FITS file with a tabular 1D axis is read correctly and
+    then rewritten to disk and read back in"""
+    ad = astrodata.open(os.path.join(path_to_inputs, "tab1dtest.fits"))
+    assert ad[0].wcs(0) == pytest.approx(3017.51065254)
+    assert ad[0].wcs(1021) == pytest.approx(4012.89510727)
+    with change_working_dir():
+        ad.write("test.fits", overwrite=True)
+        ad2 = astrodata.open("test.fits")
+        assert ad2[0].wcs(0) == pytest.approx(3017.51065254)
+        assert ad2[0].wcs(1021) == pytest.approx(4012.89510727)

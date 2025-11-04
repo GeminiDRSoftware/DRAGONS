@@ -4,6 +4,9 @@ import astrodata
 import astrodata.testing
 import gemini_instruments
 
+import numpy as np
+
+
 GMOS_DESCRIPTORS_TYPES = [
     ('detector_x_offset', float),
     ('detector_y_offset', float),

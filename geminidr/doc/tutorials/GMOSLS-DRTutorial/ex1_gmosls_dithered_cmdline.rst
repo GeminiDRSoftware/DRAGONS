@@ -270,13 +270,13 @@ the |atfile| documentation.
 
 Master Flat Field
 =================
-GMOS longslit flat field are normally obtained at night along with the
+GMOS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.  The
 matching flat nearest in time to the target observation is used to flat field
 the target.  The central wavelength, filter, grating, binning, gain, and
 read speed must match.
 
-Because of the flexure, GMOS longslit flat field are not stacked.  Each is
+Because of the flexure, GMOS longslit flat fields are not stacked.  Each is
 reduced and used individually.  The default recipe takes that into account.
 
 We can send all the flats, regardless of characteristics, to |reduce| and each
@@ -309,7 +309,7 @@ be reduced individually.
 
 The wavelength solution is automatically calculated and has been found to be
 quite reliable.  There might be cases where it fails; inspect the
-``*_mosaic.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
+``*_wavelengthSolutionDetermined.pdf`` plot and the RMS of ``determineWavelengthSolution`` in the
 logs to confirm a good solution.
 
 ::
@@ -457,6 +457,8 @@ are also available in the header of each extracted spectrum: ``XTRACTED``,
 respectively.
 
 This is what the 1-D flux-calibrated spectrum of our sole target looks like.
+Note that any pixels flagged in the data quality array (DQ in the FITS file, or
+``ad.mask`` in Python) are not plotted by default. To over-ride that behavior,
 
 ::
 

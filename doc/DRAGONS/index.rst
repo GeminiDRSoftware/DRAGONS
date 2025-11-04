@@ -34,9 +34,12 @@ Tutorials - Reducing data with DRAGONS
 * |GSAOIImgTut|
 * |GNIRSImgTut|
 
-**Longslit Spectroscopy**
+**Spectroscopy**
 
+* |GHOSTTut|
 * |GMOSLSTut|
+* |GNIRSLSTut|
+* |GNIRSXDTut|
 
 DRAGONS Manuals
 ---------------
@@ -46,7 +49,6 @@ DRAGONS Manuals
 * |ADProg|     :small:`(Document ID: PIPE-USER-104_AstrodataProgManual)`
 * |RSProg|     :small:`(Document ID: PIPE-USER-108_RSProgManual)`
 * |RSUser|     :small:`(Document ID: PIPE-USER-109_RSUserManual)`
-
 
 Workshops
 ---------
@@ -70,14 +72,17 @@ Releases
 
 
 
-.. Developer Notes
-.. ---------------
+Developer Documentation
+-----------------------
 
-.. .. toctree::
-..    :maxdepth: 1
+.. admonition:: Is this what you're looking for?
 
-..   contributing.rst
-..   testing.rst
+   This documentation is for people contributing to DRAGONS. If you are trying
+   to reduce data or use software from DRAGONS as a dependency, see our other
+   documentation.
 
-.. todolist::
+.. toctree::
+   :maxdepth: 1
 
+   development/contributing.rst
+   development/code_of_conduct.rst

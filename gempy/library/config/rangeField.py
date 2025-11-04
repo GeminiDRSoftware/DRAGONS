@@ -38,7 +38,41 @@ class RangeField(Field):
     supportedTypes = set((int, float))
 
     def __init__(self, doc, dtype, default=None, optional=False,
-                 min=None, max=None, inclusiveMin=True, inclusiveMax=False):
+                 min=None, max=None, inclusiveMin=True, inclusiveMax=False,
+                 *, fix_start_to_min=False, fix_end_to_max=False):
+        """Initialize a RangeField object.
+
+        Parameters
+        ----------
+        doc : str
+            The documentation string for the RangeField object.
+        dtype : type
+            The data type of the RangeField.
+        default : optional
+            The default value for the RangeField (default: None).
+        optional : bool
+            Whether the RangeField is optional (default: False).
+        min : optional
+            The minimum value of the RangeField (default: None).
+        max : optional
+            The maximum value of the RangeField (default: None).
+        inclusiveMin : bool
+            Whether the minimum value is inclusive (default: True).
+        inclusiveMax : bool
+            Whether the maximum value is inclusive (default: False).
+        fix_start_to_min : bool
+            Whether to fix the start value to the minimum value (default: False).
+        fix_end_to_max : bool
+            Whether to fix the end value to the maximum value (default: False).
+
+        Raises
+        ------
+        ValueError
+            If the dtype is not supported or if both min and max are None.
+        ValueError
+            If min is greater than max or if min equals max and both are not inclusive.
+
+        """
         if dtype not in self.supportedTypes:
             raise ValueError("Unsupported RangeField dtype %s" % (_typeStr(dtype)))
         source = getStackFrame()
@@ -53,6 +87,8 @@ class RangeField(Field):
 
         self.min = min
         self.max = max
+        self.fix_start_to_min = fix_start_to_min
+        self.fix_end_to_max = fix_end_to_max
 
         self.rangeString = "%s%s,%s%s" % \
             (("[" if inclusiveMin else "("),

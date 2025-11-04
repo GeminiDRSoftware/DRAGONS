@@ -133,7 +133,7 @@ class GMOSImage(GMOS, Image, Photometry):
             else:
                 x -= datasec_list[ampsorder[amp_index]].x1
 
-            dilator = ndimage.morphology.generate_binary_structure(2, 1)
+            dilator = ndimage.generate_binary_structure(2, 1)
             for index in ampsorder[amp_index:]:
                 datasec = datasec_list[index]
                 sky, skysig, _ = gt.measure_bg_from_image(ad[index])
@@ -174,17 +174,16 @@ class GMOSImage(GMOS, Image, Photometry):
                 # Flood-fill region around guide-star with all pixels fainter
                 # than this boundary value
                 boundary = sky - contrast * (sky-wfs_sky)
-                regions, nregions = ndimage.measurements.label(
+                regions, nregions = ndimage.label(
                     np.logical_and(data_region < boundary, mask_region==0))
                 wfs_region = regions[newy, int(x+0.5)]
-                blocked = ndimage.morphology.binary_fill_holes(np.where(regions==wfs_region,
-                                                                        True, False))
+                blocked = ndimage.binary_fill_holes(np.where(regions==wfs_region,
+                                                             True, False))
                 this_mean_sky = wfs_sky
                 condition_met = False
                 while not condition_met:
                     last_mean_sky = this_mean_sky
-                    new_blocked = ndimage.morphology.binary_dilation(blocked,
-                                                                     structure=dilator)
+                    new_blocked = ndimage.binary_dilation(blocked, structure=dilator)
                     this_mean_sky = np.median(data_region[new_blocked ^ blocked])
                     blocked = new_blocked
                     if index <= gs_index or ad[index].array_section().x1 == 0:
@@ -401,8 +400,13 @@ class GMOSImage(GMOS, Image, Photometry):
 
         for ad in adinputs:
             # If this input hasn't been tiled at all, tile it
-            ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
-                if len(ad)>3 else ad
+            if 'Central Stamp' == ad.detector_roi_setting():
+                ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0]
+                mintrim = 2
+            else:
+                ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
+                    if len(ad)>3 else ad
+                mintrim = 20
 
             # Use CCD2, or the entire mosaic if we can't find a second extn
             try:
@@ -411,8 +415,8 @@ class GMOSImage(GMOS, Image, Photometry):
                 ext = ad_for_stats[0]
 
             # Take off 5% of the width as a border
-            xborder = max(int(0.05 * ext.data.shape[1]), 20)
-            yborder = max(int(0.05 * ext.data.shape[0]), 20)
+            xborder = max(int(0.05 * ext.data.shape[1]), mintrim)
+            yborder = max(int(0.05 * ext.data.shape[0]), mintrim)
             log.fullinfo("Using data section [{}:{},{}:{}] from CCD2 for "
                          "statistics".format(xborder,ext.data.shape[1]-xborder,
                           yborder,ext.data.shape[0]-yborder))
@@ -523,7 +527,8 @@ class GMOSImage(GMOS, Image, Photometry):
 
             if calc_scaling:
                 # weight by number of samples in each slice
-                bg_measurements = [np.asarray(m) for m in bg_measurements]
+                bg_measurements = [np.asarray(m, dtype=np.float32)
+                                   for m in bg_measurements]
                 bg_levels = [np.average(m[:, 0], weights=m[:, 1])
                              for m in bg_measurements]
                 log.debug("{} background levels: {:.3f}, {:.3f}, {:.3f}".
@@ -554,7 +559,9 @@ class GMOSImage(GMOS, Image, Photometry):
         # factors for all inputs, calculate and apply that now
         if calc_scaling and common and ads_to_correct:
             scale_factors = 1 / np.average(
-                np.asarray(scalings), weights=np.asarray(scaling_samples), axis=0)
+                np.asarray(scalings), weights=np.asarray(scaling_samples),
+                axis=0
+            ).astype(np.float32)
             log.stdinfo("Calculated scale factors of {:.3f}, {:.3f} for all "
                         "inputs".format(*scale_factors))
             for ad in ads_to_correct:
@@ -597,8 +604,13 @@ class GMOSImage(GMOS, Image, Photometry):
         ref_data_region = None
         for ad in adinputs:
             # If this input hasn't been tiled at all, tile it
-            ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
-                if len(ad)>3 else ad
+            if 'Central Stamp' == ad.detector_roi_setting():
+                ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0]
+                mintrim = 2
+            else:
+                ad_for_stats = self.tileArrays([deepcopy(ad)], tile_all=False)[0] \
+                    if len(ad)>3 else ad
+                mintrim = 20
 
             # Use CCD2, or the entire mosaic if we can't find a second extn
             try:
@@ -612,8 +624,8 @@ class GMOSImage(GMOS, Image, Photometry):
 
             # Take off 5% of the width as a border
             if ref_data_region is None:
-                xborder = max(int(0.05 * data.shape[1]), 20)
-                yborder = max(int(0.05 * data.shape[0]), 20)
+                xborder = max(int(0.05 * data.shape[1]), mintrim)
+                yborder = max(int(0.05 * data.shape[0]), mintrim)
                 log.fullinfo(
                     f"Using data section [{xborder+1}:{data.shape[1]-xborder}"
                     f",{yborder+1}:{data.shape[0]-yborder}] from {stat_provider}"
@@ -709,6 +721,9 @@ class GMOSImage(GMOS, Image, Photometry):
             adinputs = self.scaleFlats(adinputs)
             adinputs = self.stackFrames(adinputs, **stack_params)
         return adinputs
+
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
+        raise NotImplementedError("GMOSImage has no _fields_overlap() method")
 
     def _needs_fringe_correction(self, ad):
         """

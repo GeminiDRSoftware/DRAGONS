@@ -78,6 +78,32 @@ class UnitaryArgumentAction(Action):
         return
 
 
+class UploadArgumentAction(UnitaryArgumentAction):
+    def __call__(self, parser, namespace, values, option_string=None):
+        valid = ["metrics", "calibs", "science"]
+
+        # 'values' is a list, which may have accumulated pos args
+        _pos_args = []
+        _par_args = []
+        _extant_pos_args = getattr(namespace, 'files')
+        _extant_par_args = getattr(namespace, self.dest)
+
+        for value in values:
+            if value in valid:
+                _par_args.extend([value])
+            else:
+                _pos_args.extend([value])
+
+        # set new pos args
+        if _pos_args:
+            setattr(namespace, 'files', _pos_args)
+
+        # Received (new) unitary argument types
+        # override any previous namespace self.dest
+        setattr(namespace, self.dest, _par_args)
+        return
+
+
 class ParameterAction(Action):
     def __call__(self, parser, namespace, values, option_string=None):
         # 'values' is a list, which may have accumulated pos args

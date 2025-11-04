@@ -67,48 +67,25 @@ class AstroDataGsaoi(AstroDataGemini):
             return self.phu.get('DETECTOR')
 
     @astro_data_descriptor
-    def central_wavelength(self, asMicrometers=False, asNanometers=False,
-                           asAngstroms=False):
+    @gmu.return_requested_units(input_units="AA")
+    def central_wavelength(self):
         """
-        Returns the central wavelength in meters or the specified units
-
-        Parameters
-        ----------
-        asMicrometers : bool
-            If True, return the wavelength in microns
-        asNanometers : bool
-            If True, return the wavelength in nanometers
-        asAngstroms : bool
-            If True, return the wavelength in Angstroms
+        Returns the central wavelength
 
         Returns
         -------
         float
             The central wavelength setting
-
         """
-        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
-        if unit_arg_list.count(True) == 1:
-            # Just one of the unit arguments was set to True. Return the
-            # central wavelength in these units
-            if asMicrometers:
-                output_units = "micrometers"
-            if asNanometers:
-                output_units = "nanometers"
-            if asAngstroms:
-                output_units = "angstroms"
-        else:
-            # Either none of the unit arguments were set to True or more than
-            # one of the unit arguments was set to True. In either case,
-            # return the central wavelength in the default units of meters.
-            output_units = "meters"
-
-        central_wavelength = self.phu.get('WAVELENG', -1)
+        central_wavelength = self.phu.get('WAVELENG', -1)  # in Angstroms
         if central_wavelength < 0.0:
             return None
-        else:
-            return gmu.convert_units('angstroms', central_wavelength,
-                                     output_units)
+
+        return central_wavelength
+
+    @astro_data_descriptor
+    def detector_y_offset(self):
+        return -super().detector_y_offset()
 
     @returns_list
     @use_keyword_if_prepared
@@ -218,19 +195,6 @@ class AstroDataGsaoi(AstroDataGemini):
         else:
             return [_zpt(a, filter_name, g, in_adu)
                     for a, g in zip(array_name, gain)]
-
-    @astro_data_descriptor
-    def nonlinearity_coeffs(self):
-        """
-        For each extension, return a tuple (a0,a1,a2) of coefficients such
-        that the linearized counts are a0 + a1*c _ a2*c^2 for raw counts c
-
-        Returns
-        -------
-        tuple/list
-            coefficients
-        """
-        return self._look_up_arr_property('coeffs')
 
     @use_keyword_if_prepared
     @astro_data_descriptor

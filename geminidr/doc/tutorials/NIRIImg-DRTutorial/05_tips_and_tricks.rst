@@ -30,9 +30,8 @@ Manual search
 -------------
 Ideally, the BPMs will show up in the list of associated calibrations, the
 "Load Associated Calibration" tab on the archive search form (next section).
-This will happen of all new data.  For old data, until we fix an issue
-recently discovered, they will not show up as associated calibration.  But
-they are there and can easily be found.
+This will happen of all new data.  Yet, it is also possible to search for
+them manually.
 
 On the archive search form, set the "Instrument" to match your data, set the
 "Obs.Type" to "BPM", if relevant for the instrument, set the "Binning".  Hit
@@ -63,41 +62,38 @@ show up with the green background.
 
 |verticalpadding|
 
-This will be the case for new data (from late March 2023).  For old data,
-until we fix an issue recently discovered, they will not show up as
-associated calibration and you will have to find them manual as explained
-in the previous section, :ref:`manualBPM`.  We understand the issue and are
-working on a fix.
+If a BPM does not show up, see if you find one using the manual search
+explained in the previous section, :ref:`manualBPM`.
 
 
-Calibration service
--------------------
-The calibration service in DRAGONS 3.1 adds several new features.  One of them
-is the ability to search multiple databases in a serial way, including online
-database, like the Gemini archive.
+.. Calibration service
+.. -------------------
+.. The calibration service in DRAGONS 3.1 adds several new features.  One of them
+.. is the ability to search multiple databases in a serial way, including online
+.. database, like the Gemini archive.
 
-The system will look first in your local database for processed calibration
-and BPMs.  If it does not find anything that matches, it will look in the
-next database.  To activate this feature, in ``~/.dragons/``, create or edit
-the configuration file ``dragonsrc`` as follows:
+.. The system will look first in your local database for processed calibration
+.. and BPMs.  If it does not find anything that matches, it will look in the
+.. next database.  To activate this feature, in ``~/.dragons/``, create or edit
+.. the configuration file ``dragonsrc`` as follows:
 
-.. code-block:: none
+.. .. code-block:: none
 
-    [calibs]
-    databases = ${path_to_my_data}/niriimg_tutorial/playground/cal_manager.db get store
-                https://archive.gemini.edu get
+.. ..     [calibs]
+..     databases = ${path_to_my_data}/niriimg_tutorial/playground/cal_manager.db get store
+..                 https://archive.gemini.edu get
 
-If you know that you will be connected to the internet when you reduce the data,
-you do not need to pre-download the BPM, DRAGONS will find it for you in the
-archive.
+.. If you know that you will be connected to the internet when you reduce the data,
+.. you do not need to pre-download the BPM, DRAGONS will find it for you in the
+.. archive.
 
-If you want to pre-download the BPM without having to search for it, like in the
-previous two sections, you can let DRAGONS find it and download it for you:
+.. If you want to pre-download the BPM without having to search for it, like in the
+.. previous two sections, you can let DRAGONS find it and download it for you:
 
-.. code-block:: none
+.. .. code-block:: none
 
-    $ reduce -r getBPM <file_for_which_you_need_bpm>
-    $ caldb add calibrations/processed_bpm/<the_bpm>
+..     $ reduce -r getBPM <file_for_which_you_need_bpm>
+..     $ caldb add calibrations/processed_bpm/<the_bpm>
 
 
 Bypassing automatic calibration association

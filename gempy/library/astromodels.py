@@ -1,4 +1,4 @@
-# Copyright(c) 2019-2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2019-2025 Association of Universities for Research in Astronomy, Inc.
 #
 # astromodels.py
 #
@@ -167,7 +167,10 @@ class Rotate2D(FittableModel):
             raise ValueError("Expected input arrays to have the same shape")
         orig_shape = x.shape or (1,)
         inarr = np.array([x.flatten(), y.flatten()])
-        s, c = math.sin(angle), math.cos(angle)
+        if np.isscalar(angle):
+            s, c = math.sin(angle), math.cos(angle)
+        else:
+            s, c = math.sin(angle[0]), math.cos(angle[0])
         x, y = np.dot(np.array([[c, -s], [s, c]], dtype=np.float64), inarr)
         x.shape = y.shape = orig_shape
         return x, y
@@ -376,9 +379,9 @@ class UnivariateSplineWithOutlierRemoval:
             # x-value space, not the x-index space!
             if order is not None:
                 if order > 0:
-                    fully_masked_regions = np.sum(
+                    fully_masked_regions = np.sum([
                         full_mask[np.logical_and(xunique>=x1, xunique<=x2)].all()
-                        for x1, x2 in zip(knots[:-1], knots[1:]))
+                        for x1, x2 in zip(knots[:-1], knots[1:])])
                     wts[full_mask] = epsf if fully_masked_regions > min(k, order) else epsf
                 else:
                     wts = None if w is None else w.copy()
@@ -636,6 +639,79 @@ def make_inverse_chebyshev1d(model, sampling=1, rms=None, max_deviation=None):
     return m_inverse
 
 
+def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
+                            fixed_linear=False, debug=False):
+    """
+    This helper function creates a distortion model given an input model,
+    input and reference coordinates,
+
+    Parameters
+    ----------
+    m_init : astropy.modeling.models.Chebyshev2D
+        A blank initial model covering the region of interest.
+    transform_axis : int (0 or 1)
+        The axis to transform the image along; alternatively, the axis along
+        which tracing.trace_lines() performed the trace which produced the
+        `in_coords` and `ref_coords` used. (This is in the Python sense, 0 or 1,
+        not the value returned by the dispaxis() descriptor).
+    in_coords, ref_coords : arrays (2,N) for 2D data
+        Lists of coordinates for the model fitting.
+    fixed_linear : bool
+        Fix the linear term? (For instance, if creating a distortion model for
+        rectifying a slit when only one edge of a flat is traceable.)
+
+    Returns
+    -------
+    model : astropy.modeling.models.Model
+        The output model, with forward and backward transformations
+    m_final, m_inverse : astropy.modeling.models.Chebyshev2D instances
+        describing the forward and inverse transformations used in `model`.
+    """
+    # Rather than fit to the reference coords, fit to the
+    # *shift* we want in the spectral direction and then add a
+    # linear term which will produce the desired model. This
+    # allows us to use spectral_order=0 if there's only a single
+    # traceable line.
+    if transform_axis == 0:
+        domain_start, domain_end = m_init.x_domain
+        param_names = [f'c1_{i}' for i in range(m_init.y_degree + 1)]
+    else:
+        domain_start, domain_end = m_init.y_domain
+        param_names = [f'c{i}_1' for i in range(m_init.x_degree + 1)]
+    domain_centre = 0.5 * (domain_start + domain_end)
+    if fixed_linear:
+        for pn in param_names:
+            getattr(m_init, pn).fixed = True
+    shifts = ref_coords[transform_axis] - in_coords[transform_axis]
+
+    if debug:
+        print("DEBUG: shifts")
+        for i in range(in_coords[0].size):
+            print(in_coords[0][i], in_coords[1][i], shifts[i])
+
+    # Find model to transform actual (x,y) locations to the
+    # value of the reference pixel along the dispersion axis
+    fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                               sigma_clip, sigma=3)
+    m_final, _ = fit_it(m_init, *in_coords, shifts)
+    m_inverse, _ = fit_it(m_init, *ref_coords, -shifts)
+
+    # Add the linear term: the coordinate perpendicular to the trace direction
+    for m in (m_final, m_inverse):
+        m.c0_0 += domain_centre
+        # param_names[0] will be 'c1_0' (transform_axis == 0) or 'c0_1'.
+        getattr(m, param_names[0]).value += domain_end - domain_centre
+
+    if transform_axis == 0:
+        model = models.Mapping((0, 1, 1)) | (m_final & models.Identity(1))
+        model.inverse = models.Mapping((0, 1, 1)) | (m_inverse & models.Identity(1))
+    else:
+        model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
+        model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
+
+    return model, m_final, m_inverse
+
+
 def get_named_submodel(model, name):
     """
     Extracts a named submodel from a CompoundModel. astropy allows
@@ -670,3 +746,32 @@ def get_named_submodel(model, name):
         raise IndexError("Multiple components found using '{}' as name\n"
                          "at indices {}".format(name, found))
     return model[found[0]]
+
+
+def replace_submodel_in_gwcs(wcs, name, model):
+    """
+    This replaces a named submodel in a gWCS object with a new model,
+    maintaining the overall pipeline.
+
+    Parameters
+    ----------
+    wcs: `gwcs.wcs.WCS`
+        the gWCS object to be modified
+    name: str
+        name of the model to be replaced
+    model: `astropy.modeling.Model`
+        model instance to insert in place of the named model
+
+    Returns
+    -------
+    `gwcs.wcs.WCS`: modified gWCS object
+    """
+    new_pipeline = []
+    for step in wcs.pipeline:
+        try:
+            new_transform = step.transform.replace_submodel(name, model)
+        except (AttributeError, ValueError):  # AttrError if transform is None
+            new_pipeline.append(step)
+        else:
+            new_pipeline.append((step.frame, new_transform))
+    return wcs.__class__(new_pipeline)

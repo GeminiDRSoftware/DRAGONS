@@ -65,6 +65,14 @@ our source code inside the path to the Python installed libraries. This way,
 if you make changes to your source code, these changes will be reflected in the
 installed DRAGONS.
 
+The ``pytest_dragons`` plugin includes several useful customizations for running
+tests in DRAGONS. It is not necessary for using DRAGONS purely for data reduction,
+but is required to run DRAGONS tests with PyTest. It can be installed using ``pip``:
+
+.. code-block:: bash
+
+    $ pip install -e git+https://github.com/GeminiDRSoftware/pytest_dragons.git@v1.0.0#egg=pytest_dragons
+
 In addiction to installing DRAGONS, you might need to provide input data to the
 tests. The root path of the input data should be stored in the ``$DRAGONS_TEST``
 environment variable, which can be set with:
@@ -88,7 +96,11 @@ structure. The only difference is the most internal directory, which should be
 :code:`refs/`, like this:
 :code:`$DRAGONS_TEST/gemini_instruments/gmos/test_gmos/refs/`.
 
-Here is another example:
+The general outline is that the directory structure to the test file(s) is
+repeated for the input or reference files, starting from the directory defined
+as ``$DRAGONS_TEST``, adding a directory with the same name as the test file,
+excluding any directories named "tests" in the structure, and appending
+"inputs" or "refs". Here are some more examplee:
 
 .. list-table::
    :widths: 25 75
@@ -97,8 +109,14 @@ Here is another example:
      - geminidr/gmos/tests/test_gmos_spect_ls_apply_qe_correction.py
    * - Path to inputs:
      - $DRAGONS_TEST/geminidr/gmos/test_gmos_spect_ls_apply_qe_correction/inputs/
-   * - Path to refs:
+   * - Path to reference files:
      - $DRAGONS_TEST/geminidr/gmos/test_gmos_spect_ls_apply_qe_correction/refs/
+   * - Test module:
+     - geminidr/core/tests/test_image.py
+   * - Path to inputs:
+     - $DRAGONS_TEST/geminidr/core/test_image/inputs
+   * - Path to reference files:
+     - $DRAGONS_TEST/geminidr/core/test_image/ref
 
 This architecture allows a direct relationship between the path to the data and
 the test that uses it. It is important to highlight that this file management is
@@ -389,7 +407,8 @@ that are used in DRAGONS' tests. The most commonly used fixtures are:
 
 PyTest fixtures are modular since they can be used by fixtures. This allowed the
 creation of custom fixtures for the DRAGONS Testing Suite. All our custom
-fixtures now live inside the ``pytest_dragons/plugin.py`` module.
+fixtures now live inside the ``pytest_dragons/plugin.py`` module, where they are
+imported from ``pytest_dragons/fixtures.py``.
 
 Here is a very brief description of the fixtures defined in this plugin module:
 
@@ -400,11 +419,33 @@ Here is a very brief description of the fixtures defined in this plugin module:
      - Context manager that allows easily changing working directories.
    * - path_to_inputs
      - Absolute directory path to local static input data.
+   * - path_to_common_inputs
+     - Absolute directory path to local static input data that is required by multiple tests.
    * - path_to_refs
      - Absolute directory path to local static reference data.
    * - path_to_outputs
      - Absolute directory path to temporary or static output data.
 
+Fixtures from the two tables above do not need to be imported explicitly, and
+can simply be called. (They are imported automatically when importing ``pytest``.)
+Some additional useful fixtures (which do need to be imported) can be found in
+``astrodata/testing.py``. Here is a brief description of them:
+
+.. list-table::
+   :widths: 25 50
+
+   * - asssert_most_close
+     - Test for two arrays being "close" within a given tolerance.
+   * - assert_most_equal
+     - Test for two arrays being equal up to a maximum number different.
+   * - assert_same_class
+     - Check that two ``astrodata`` objects have the same class.
+   * - compare_models
+     - Check that two models are the same, with helpful output if they differ.
+   * - download_from_archive
+     - Dowload a given file from the archive and cache it locally.
+   * - ad_compare
+     - Check that two ``astrodata`` objects are the same.
 
 PyTest Configuration File
 -------------------------
@@ -448,8 +489,10 @@ decorator.
 
 The example above shows that parametrize's first argument should be a string
 containing the name of parameters of the test. The second argument should be a
-list (dictionaries and sets **do not** work) containing tuples of lists with
-the same number of elements as the number of parameters.
+list (dictionaries and sets **do not** work) containing tuples or lists with
+the same number of elements as the number of parameters. More information on
+parametrizing tests can be found in the PyTest documentation. It is a useful way
+to run the same test on multiple files or test cases.
 
 
 Parametrizing fixtures
@@ -585,29 +628,116 @@ to be properly registered in the :code:`setup.cfg` file.
 Examples
 ========
 
-In the following example, :code:`processed_flat` is a fixture (function) that
-reduces a FLAT and returns the processed AD object. :code:`reference_ad` is a
-fixture (function) that returns a function and that function returns the AD
-object with the given filename from the :code:`path_to_refs`.
+Here are some examples demonstrating some of the concepts described here in more
+detail. The following example demonstrates some of the functionality of the
+``path_to_inputs``, ``path_to_refs``, and ``change_working_dir`` fixtures which
+come in the ``pytest_dragons`` plugin. These fixtures simplify access to data files
+used as input or references for tests, removing the need to manually write out
+the full directory structure. The ``regression`` and ``preprocessed_data``
+marks indicate that the test uses as input a preprocessed file, and compares the
+output of running an operation on that file with a reference file. (These two
+marks often, but not always, go together; the input file could instead come from
+the archive as seen in the next example, and the output of an operation on a
+preprocessed file may not need to be compared to a reference.) As a reminder,
+``path_to_inputs`` here is
+``$DRAGONS_TEST/geminidr/core/test_standardize/inputs`` due to the location of the
+test file, while ``path_to_refs`` is
+``$DRAGONS_TEST/geminidr/core/test_standardize/refs``.
 
 .. code-block:: python
-   :caption: geminidr/gmos/recipes/ql/tests/test_make_processed_flat.py
+    :caption: geminidr/core/tests/test_standardize.py
 
-   @pytest.mark.gmosls
-   @pytest.mark.parametrize("processed_flat", datasets, indirect=True)
-   def test_regression_processed_flat(processed_flat, reference_ad):
-      """
-      Regression tests for reduce_FLAT recipe.
+    @pytest.mark.regression
+    @pytest.mark.preprocessed_data
+    def test_addVAR(self, change_working_dir, path_to_inputs, path_to_refs):
 
-      Parameters
-      ----------
-      processed_flat : fixture
-         returns an AstroData object containing a processed flat.
-      reference_ad : fixture
-         returns a function that loads the reference flat file.
-      """
-      ref_flat = reference_ad(processed_flat.filename)
-      for ext, ext_ref in zip(processed_flat, ref_flat):
-         np.testing.assert_allclose(ext.mask, ext_ref.mask)
-         np.testing.assert_almost_equal(
-            ext.data, ext_ref.data, decimal=3)
+        with change_working_dir():
+            ad = astrodata.open(os.path.join(path_to_inputs,
+                                'N20070819S0104_ADUToElectrons.fits'))
+            p = NIRIImage([ad])
+            adout = p.addVAR(read_noise=True, poisson_noise=True)[0]
+        assert ad_compare(adout, astrodata.open(os.path.join(path_to_refs,
+                                             'N20070819S0104_varAdded.fits')))
+
+As seen here, ``change_working_dir`` can be used as a context manager with
+``with``. Note that the results of a primitive are always returned as a list,
+even with only member, which is why ``adout`` is defined using ``[0]``.
+(``.pop()`` can also be used.) This test demonstrates the simplest way to perform
+an operation on a (preprocessed) input file and compare it to a reference file.
+
+In the following example, ``datasets`` defines a list of files to be
+used in the test (here, the list only has one member, but it could have more).
+``raw_ad`` is a fixture (function) which takes a filename (in the form of a string),
+downloads the file from the Gemini archive, and returns an AD object. There are
+multiple ways to achieve this same effect, but this represents a simple, reusable
+fixture that could in principle be used with other tests and datasets.
+
+.. code-block:: python
+    :caption: geminidr/core/tests/test_ccd.py
+
+    datasets = ["N20190101S0001.fits"]  # 4x4 binned so limit is definitely 65535
+
+    # -- Fixtures ----------------------------------------------------------------
+    @pytest.fixture(scope='function')
+    def raw_ad(request):
+        filename = request.param
+        raw_ad = astrodata.open(download_from_archive(filename))
+        return raw_ad
+
+    # -- Tests --------------------------------------------------------------------
+    @pytest.mark.dragons_remote_data
+    @pytest.mark.parametrize("raw_ad", datasets, indirect=True)
+    def test_saturation_level_modification_in_overscan_correct(raw_ad):
+        """Confirm that the saturation_level descriptor return is modified
+        when the bias level is subtracted by overscanCorrect()"""
+        p = GMOSImage([raw_ad])  # modify if other instruments are used as well
+        assert raw_ad.saturation_level() == [65535] * len(raw_ad)
+        p.prepare()
+        assert raw_ad.saturation_level() == [65535] * len(raw_ad)
+        p.overscanCorrect()
+        bias_levels = np.asarray(raw_ad.hdr['OVERSCAN'])
+        np.testing.assert_allclose(raw_ad.saturation_level(), 65535 - bias_levels)
+        np.testing.assert_allclose(raw_ad.saturation_level(), raw_ad.non_linear_level())
+
+The NumPy function ``np.testing.assert_allclose()`` can be used to check for near
+equality of an array, as seen here. For a single value, ``pytest.approx()`` can
+be used, e.g. ``assert some_value == pytest.approx(1.23e-4)``. This code also
+demonstrates a useful way (though not the only way) of organizing test files.
+
+An important note about the ``download_from_archive`` fixture: it will not download data
+for which the proprietary period (generally one year) is still in effect. In
+general, it is only really useful where a test requires raw data files. If a test
+instead uses files at some intermediate stage of reduction, it is simpler (and
+faster) to create the preprocessed inputs and store them for later use.
+
+Here is a slightly simplified example which demonstrates parametrizing multiple
+values at once, along with several other concepts such as ``path_to_inputs``
+and ``path_to_refs``:
+
+.. code-block:: python
+    :caption: geminidr/core/tests/test_spect.py
+
+    @pytest.mark.preprocessed_data
+    @pytest.mark.parametrize('filename,instrument',
+                             [('N20121118S0375_distortionCorrected.fits', 'GNIRS'),
+                              ('S20131019S0050_distortionCorrected.fits', 'F2'),
+                              ('N20100614S0569_distortionCorrected.fits', 'NIRI'),
+                              ])
+    def test_slit_rectification(filename, instrument, change_working_dir,
+                                  path_to_inputs):
+
+        classes_dict = {'GNIRS': GNIRSLongslit,
+                        'F2': F2Longslit,
+                        'NIRI': NIRILongslit}
+
+        with change_working_dir(path_to_inputs):
+            ad = astrodata.open(filename)
+
+        p = classes_dict[instrument]([ad])
+        ad_out = p.determineSlitEdges().pop()
+        for coeff in ('c1', 'c2', 'c3'):
+            np.testing.assert_allclose(ad_out[0].SLITEDGE[coeff], 0, atol=0.25)
+
+This example shows a different way of using ``change_working_dir``, by passing
+``path_to_inputs`` to it directly. This may be convenient if ``path_to_refs`` is
+not also required (or *vice versa*).

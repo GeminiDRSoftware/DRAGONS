@@ -32,4 +32,24 @@ def makeProcessedFlat(p):
     p.storeProcessedFlat()
     return
 
+def checkFlatCounts(p):
+    """
+    For checking count levels in flat field.
+
+    Parameters
+    ----------
+    p : PrimitivesBASE object
+        A primitive set matching the recipe_tags.
+    """
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.biasCorrect(do_cal="force")
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.recordPixelStats(prefix='FLAT')
+    p.writeOutputs(strip=True, suffix='_checkFlatCounts')
+    return
+
 _default = makeProcessedFlat

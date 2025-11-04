@@ -1,5 +1,10 @@
 .. ex1_gnirsim_twostars_api.rst
 
+.. role:: raw-html(raw)
+   :format: html
+
+.. |verticalpadding| replace:: :raw-html:`<br>`
+
 .. _twostars_api:
 
 ********************************************************************************
@@ -189,7 +194,7 @@ Pick the one you prefer, in this case, they all yield the same list.
     .. code-block::
 
         checkwcs = Reduce()
-        checkwcs.files = list_of_science_images
+        checkwcs.files = target
         checkwcs.recipename = 'checkWCS'
         checkwcs.runr()
 
@@ -286,6 +291,8 @@ This can be seen by using "|showpars|"::
    :scale: 100%
    :align: center
 
+|verticalpadding|
+
 The BPM, the master dark and the master flat are in our local calibration
 database.  For any other Gemini facility instrument, they would both be
 retrieved automatically by the calibration manager.  However, GNIRS not being
@@ -300,7 +307,7 @@ retrieved automatically.
 
     reduce_target = Reduce()
     reduce_target.files.extend(target)
-    reduce_target.uparms = [('darkCorrect:dark', 'N20120102S0538_dark.fits')]
+    reduce_target.uparms = dict([('darkCorrect:dark', 'N20120102S0538_dark.fits')])
     reduce_target.runr()
 
 The output stack units are in electrons (header keyword BUNIT=electrons).

@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
@@ -30,6 +32,14 @@ def testnd():
     return nd
 
 
+def _stack(arrays):
+    arrays = [x for x in arrays]
+    data = np.array([arr.data for arr in arrays]).sum(axis=0)
+    unc = np.array([arr.uncertainty.array for arr in arrays]).sum(axis=0)
+    mask = np.array([arr.mask for arr in arrays]).sum(axis=0)
+    return NDAstroData(data=data, variance=unc, mask=mask)
+
+
 def test_var(testnd):
     data = np.zeros(5)
     var = np.array([1.2, 2, 1.5, 1, 1.3])
@@ -49,15 +59,7 @@ def test_window(testnd):
 
 
 def test_windowedOp(testnd):
-
-    def stack(arrays):
-        arrays = [x for x in arrays]
-        data = np.array([arr.data for arr in arrays]).sum(axis=0)
-        unc = np.array([arr.uncertainty.array for arr in arrays]).sum(axis=0)
-        mask = np.array([arr.mask for arr in arrays]).sum(axis=0)
-        return NDAstroData(data=data, variance=unc, mask=mask)
-
-    result = windowedOp(stack, [testnd, testnd],
+    result = windowedOp(_stack, [testnd, testnd],
                         kernel=(3, 3),
                         with_uncertainty=True,
                         with_mask=True)
@@ -67,10 +69,32 @@ def test_windowedOp(testnd):
 
     nd2 = NDAstroData(data=np.zeros((4, 4)))
     with pytest.raises(ValueError, match=r"Can't calculate final shape.*"):
-        result = windowedOp(stack, [testnd, nd2], kernel=(3, 3))
+        result = windowedOp(_stack, [testnd, nd2], kernel=(3, 3))
 
     with pytest.raises(AssertionError, match=r"Incompatible shape.*"):
-        result = windowedOp(stack, [testnd, testnd], kernel=[3], shape=(5, 5))
+        result = windowedOp(_stack, [testnd, testnd], kernel=[3], shape=(5, 5))
+
+
+def test_windowedOp_with_result(testnd):
+    result = NDAstroData(data=np.empty_like(testnd.data),
+                         variance=np.empty_like(testnd.data),
+                         mask=np.empty_like(testnd.data, dtype=np.uint16))
+    windowedOp(_stack, [testnd, testnd],
+               kernel=(3, 3),
+               result=result,
+               with_uncertainty=True,
+               with_mask=True)
+
+    assert_array_equal(result.data, testnd.data * 2)
+    assert_array_equal(result.uncertainty.array, testnd.uncertainty.array * 2)
+    assert result.mask[3, 4] == 2
+
+    nd2 = NDAstroData(data=np.zeros((4, 4)))
+    with pytest.raises(ValueError, match=r"Can't calculate final shape.*"):
+        result = windowedOp(_stack, [testnd, nd2], kernel=(3, 3))
+
+    with pytest.raises(AssertionError, match=r"Incompatible shape.*"):
+        result = windowedOp(_stack, [testnd, testnd], kernel=[3], shape=(5, 5))
 
 
 def test_transpose(testnd):
@@ -93,7 +117,7 @@ def test_uncertainty_negative_numbers():
     arr = np.zeros(5)
 
     # No warning if all 0
-    with pytest.warns(None) as w:
+    with warnings.catch_warnings(record=True) as w:
         ADVarianceUncertainty(arr)
     assert len(w) == 0
 
@@ -129,6 +153,9 @@ def test_wcs_slicing():
     assert nd[..., 10:].wcs(10, 10) == (20, 10)
     assert nd[:, 5].wcs(10) == (5, 10)
     assert nd[20, -10:].wcs(0) == (40, 20)
+    # and with flips
+    assert nd[::-1].wcs(10, 10) == (10, 39)
+    assert nd[:, ::-1].wcs(10, 10) == (39, 10)
 
 
 def test_access_to_other_planes(testnd):
@@ -141,6 +168,17 @@ def test_access_to_other_planes(testnd):
 
 def test_access_to_other_planes_when_windowed(testnd):
     ndwindow = testnd.window[1:, 1:]
+    assert ndwindow.data.shape == (4, 4)
+    assert ndwindow.data[0, 0] == testnd.shape[1] + 1
+    assert ndwindow.OBJMASK.shape == (4, 4)
+    assert ndwindow.OBJMASK[0, 0] == testnd.shape[1] + 1
+    assert isinstance(ndwindow.OBJCAT, Table)
+    assert len(ndwindow.OBJCAT) == 3
+
+
+# Basically the same test as above but using slicing.
+def test_access_to_other_planes_when_sliced(testnd):
+    ndwindow = testnd[1:, 1:]
     assert ndwindow.data.shape == (4, 4)
     assert ndwindow.data[0, 0] == testnd.shape[1] + 1
     assert ndwindow.OBJMASK.shape == (4, 4)

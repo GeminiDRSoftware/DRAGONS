@@ -32,6 +32,7 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 from .primitives_gsaoi import GSAOI
 from . import parameters_gsaoi_image
 from .lookups import gsaoi_static_distortion_info as gsdi
+from .lookups.geometry_conf import tile_gaps
 
 
 @parameter_override
@@ -70,6 +71,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
             suffix to be added to output files
         first_pass: float
             search radius (arcsec) for the initial alignment matching
+        final: float
+            search radius (arcsec) for final object matching
         min_sources: int
             minimum number of matched sources required to apply a WCS shift
         cull_sources: bool
@@ -79,6 +82,8 @@ class GSAOIImage(GSAOI, Image, Photometry):
             allow image rotation to align to reference image?
         scale: bool
             allow image scaling to align to reference image?
+        max_iters: int
+            maximum number of iterations for polynomial fit
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -271,9 +276,9 @@ class GSAOIImage(GSAOI, Image, Photometry):
 
         for ad in adinputs:
             if len(ad) == 1:
-                raise OSError(f"{self.myself()} must be run on unmosaicked "
-                              f"GSAOI data, but {ad.filename} has been "
-                              "mosaicked/tiled.")
+                raise ValueError(f"{self.myself()} must be run on unmosaicked "
+                                 f"GSAOI data, but {ad.filename} has been "
+                                 "mosaicked/tiled.")
             # Check we have a REFCAT and at least one OBJCAT to match
             try:
                 refcat = ad.REFCAT
@@ -534,8 +539,9 @@ class GSAOIImage(GSAOI, Image, Photometry):
                 raise ValueError(f"{ad.filename} does not have 4 extensions")
             applied_static = sum("static" in ext.wcs.available_frames for ext in ad)
             if applied_static not in (0, len(ad)):
-                raise OSError(f"Some (but not all) extensions in {ad.filename}"
-                              " have had the static disortion correction applied")
+                raise ValueError(
+                    f"Some (but not all) extensions in {ad.filename} have had "
+                    "the static disortion correction applied")
             # No-op silently
             if applied_static == len(ad):
                 continue
@@ -566,6 +572,44 @@ class GSAOIImage(GSAOI, Image, Photometry):
                                 (ext.wcs.output_frame, None)])
 
         return adinputs
+
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
+        """
+        Checks whether the fields of view of two F2 images overlap
+        sufficiently to be considerd part of a single ExposureGroup.
+        GSAOIImage requires its own code since it has multiple detectors
+
+        Parameters
+        ----------
+        ad1: AstroData
+            one of the input AD objects
+        ad2: AstroData
+            the other input AD object
+        frac_FOV: float (0 < frac_FOV <= 1)
+            fraction of the field of view for an overlap to be considered. If
+            frac_FOV=1, *any* overlap is considered to be OK
+
+        Returns
+        -------
+        bool: do the fields overlap sufficiently?
+        """
+        # In case they've been mosaicked in some way
+        if len(ad1) * len(ad2) == 1:
+            return super()._fields_overlap(ad1, ad2, frac_FOV)
+        elif len(ad1) == 1 or len(ad2) == 1:
+            raise NotImplementedError("Cannot compute overlap for GSAOI images"
+                                      "if only one has been mosaicked")
+
+        # We try to deal with the possibility of only 3 working detectors
+        # which means we can't make assumptions about their relative positions
+        # Compute center of FOV in ad[0] pixel coords
+        gaps = tile_gaps[ad1.detector_name()]
+        centers = [[2048 + 0.5 * gap if p1 == 0 else -0.5 * gap
+                    for p1, gap in zip(ad[0].detector_section()[::2], gaps)]
+                   for ad in (ad1, ad2)]
+        pos2 = ad2[0].wcs.invert(*ad1[0].wcs(*centers[0]))
+        return all(abs(p1 - p2) < frac_FOV * (4096 + gap)
+                   for p1, p2, gap in zip(centers[1], pos2, gaps))
 
 
 def merge_gsaoi_objcats(ad, cull_sources=False):
@@ -739,7 +783,7 @@ def make_alignment_figure(coords1, coords2, matched, fname1, fname2, radius=1):
     Figure object
     """
     def trim_filename(fname):
-        return re.sub("_(.*)\.(.*)", "", fname)
+        return re.sub(r"_(.*)\.(.*)", "", fname)
 
     fig, ax = plt.subplots()
     ax.set_title(f"{trim_filename(fname1)}[open] / "

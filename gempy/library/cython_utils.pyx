@@ -19,13 +19,22 @@ cimport cython
 from libc.math cimport sqrt
 from libc.stdlib cimport malloc, free
 
+# This is an interface to
+
+def masked_median(float [:] data, unsigned short [:] mask, int data_size):
+    cdef float med
+    med = median(&data[0], &mask[0], 1, data_size, 1)
+    return med
+
+
 # These functions are used by nddops.py for combining images, especially
 # in the stackFrames() primitive
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef float median(float data[], unsigned short mask[], int has_mask,
-                  int data_size) except? -1:
+                  int data_size, int bad) except? -1:
     """
     One-dimensional true median, with optional masking.
 
@@ -39,6 +48,10 @@ cdef float median(float data[], unsigned short mask[], int has_mask,
         (add description)
     data_size : int
         (add description)
+    bad : int
+        values in the mask lower than this are considered "good". This is
+        1 in general operation, but 65535 when used as part of iterclip
+        because of the way NDStacker handles masking.
 
     Returns
     -------
@@ -54,7 +67,7 @@ cdef float median(float data[], unsigned short mask[], int has_mask,
 
     if has_mask:
         for i in range(data_size):
-            if mask[i] < 65535:
+            if mask[i] < bad:
                 tmp[nused] = data[i]
                 nused += 1
     if nused == 0:  # if not(has_mask) or all(mask)
@@ -139,27 +152,28 @@ cdef void mask_stats(float data[], unsigned short mask[], int has_mask,
         nused = data_size
     mean = sum / float(nused)
     if return_median:
-        result[0] = <double>median(data, mask, has_mask, data_size)
+        result[0] = <double>median(data, mask, has_mask, data_size, 65535)
     else:
         result[0] = mean
     result[1] = sumsq / nused - mean*mean
 
 
-cdef long num_good(unsigned short mask[], long data_size):
+@cython.exceptval(check=False)
+cdef long num_good(unsigned short mask[], int data_size) except? 0:
     """
     Returns the number of unmasked pixels in an array.
 
     Parameters
     ----------
     mask : unsigned short array
-        (add description)
+        array of mask pixels
     data_size : long
-        (add description)
+        size of array
 
     Returns
     -------
-    ngood : (?)
-        (add description)
+    ngood : long
+        number of good pixels in stack
     """
     cdef long i, ngood = 0
 
@@ -173,7 +187,7 @@ cdef long num_good(unsigned short mask[], long data_size):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
-             int has_var, int num_img, long data_size, double lsigma,
+             int has_var, long num_img, long data_size, double lsigma,
              double hsigma, int max_iters, int mclip, int sigclip):
     """
     Iterative sigma-clipping. This is the function that interfaces with python.
@@ -188,7 +202,7 @@ def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
         (add description)
     has_var : int
         Worry about the input variance array?
-    num_img : int
+    num_img : long
         Number of input images.
     data_size : long
         Number of pixels per input image
@@ -267,6 +281,7 @@ def iterclip(float [:] data, unsigned short [:] mask, float [:] variance,
 
     return np.asarray(data), np.asarray(mask), np.asarray(variance)
 
+
 ##############################################################
 # The following function is used by the BruteLandscapeFitter()
 
@@ -294,3 +309,154 @@ def landstat(double [:] landscape, int [:] coords, int [:] len_axes,
             sum += landscape[l]
 
     return sum
+
+
+##############################################################
+# The following code is used by polynomial interpolators
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def polyinterp(float [:] array_in, int [:] inlengths, int ndim,
+               float [:] array_out, int [:] outlengths,
+               float [:] geomap, int affinity, int order, float cval):
+    """
+    Perform polynomial interpolation of one array to another array of the
+    same dimensionality.
+
+    Parameters
+    ----------
+    array_in : float array
+        input array that is being transformed
+    inlengths : int array
+        axis lengths of input image (in python order)
+    ndim : int
+        number of dimensions of array
+    array_out : float array
+        pre-created output array for placing results
+    outlengths : int array
+        axis lengths of output image (in python order)
+    geomap : float array
+        either (affinity=False) ndim * npixout array representing locations
+            in array_in where each pixel in array_out maps back to
+        or (affinity=True) ndim * (ndim + 1) array of affine transformation
+            matrix and offset
+    affinity : int
+        boolean to describe nature of geomap
+    order : int (3 or 5)
+        order of interpolation (will be downgraded near boundaries)
+    cval : float
+        value to insert for out-of-bounds pixels
+    """
+    cdef long i, nstep, npixout=1
+    cdef int j, k, dim, totpix, num_pix=1
+    cdef float p, q, pp, qq, ppp, qqq, coord, sum
+    cdef float tmpcoeff[6]
+    cdef int pix1, npix
+    cdef int coords[10]
+
+    for dim in range(ndim):
+        num_pix *= order + 1
+        coords[dim] = 0
+        npixout *= outlengths[dim]
+    coords[ndim] = 1
+
+    # space for all coefficients
+    cdef float *coeffs = <float *> malloc(num_pix * sizeof(float))
+    if not coeffs:
+        raise MemoryError()
+
+    # space for pixel number indices
+    cdef long *pixels = <long *> malloc(num_pix * sizeof(long))
+    if not pixels:
+        raise MemoryError()
+
+    for i in range(npixout):
+        for j in range(num_pix):
+            coeffs[j] = 1.0
+            pixels[j] = 0
+
+        totpix = 1  # total number of input pixels contributing
+        nstep = 1  # indexing increment in this dimension
+        for dim in range(ndim - 1, -1, -1):
+            if totpix > 0:
+                if affinity:
+                    coord = 0.
+                    for j in range(ndim + 1):
+                        coord += geomap[dim * (ndim + 1) + j] * coords[j]
+                else:
+                    coord = geomap[dim * npixout + i]
+                if coord >= 0 and coord < inlengths[dim] - 1:
+                    pix1 = int(coord)
+                    p = coord - pix1
+                    q = 1. - p
+                    if pix1 > 0 and pix1 < inlengths[dim] - 2 and order >= 3:
+                        pp = p * (p * p - 1.) / 6.
+                        qq = q * (q * q - 1.) / 6.
+                        if pix1 > 1 and pix1 < inlengths[dim] - 3 and order >= 5:
+                            ppp = pp * 0.05 * (p * p - 4.)
+                            qqq = qq * 0.05 * (q * q - 4.)
+                            pix1 -= 2
+                            npix = 6
+                            tmpcoeff[0] = qqq
+                            tmpcoeff[1] = qq - 4 * qqq + ppp
+                            tmpcoeff[2] = q - qq - qq + pp + 6 * qqq - 4 * ppp
+                            tmpcoeff[3] = p - pp - pp + qq + 6 * ppp - 4 * qqq
+                            tmpcoeff[4] = pp - 4 * ppp + qqq
+                            tmpcoeff[5] = ppp
+                        else:  # cubic interpolation
+                            pix1 -= 1
+                            npix = 4
+                            tmpcoeff[0] = qq
+                            tmpcoeff[1] = q + pp - qq - qq
+                            tmpcoeff[2] = p + qq - pp - pp
+                            tmpcoeff[3] = pp
+                    else:  # only linear interpolation
+                        npix = 2
+                        tmpcoeff[0] = q
+                        tmpcoeff[1] = p
+
+                    for j in range(totpix):
+                        for k in range(npix - 1, -1, -1):
+                            pixels[k * totpix + j] = pixels[j] + (pix1 + k) * nstep
+                            coeffs[k * totpix + j] = coeffs[j] * tmpcoeff[k]
+
+                    totpix *= npix
+                    nstep *= inlengths[dim]
+
+                else:
+                    totpix = 0
+
+        if totpix > 0:
+            sum = 0.
+            for j in range(totpix):
+                sum += coeffs[j] * array_in[pixels[j]]
+            array_out[i] = sum
+        else:
+            array_out[i] = cval
+
+        coords[ndim - 1] += 1
+        for j in range(ndim - 1, -1, -1):
+            if coords[j] == outlengths[j]:
+                coords[j] = 0
+                if j > 0:
+                    coords[j - 1] += 1
+
+
+##############################################################
+# The following function is used by the telluric code
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_unmasked(float [:] waves, float [:] x, int x_size, unsigned short [:] good):
+    """
+    Determine which elements of waves[] are in x[] and returns the good pixels.
+    good[] should be set to an array of zeros (same size as waves) before calling
+    """
+    cdef int i=0, j=0
+    for j in range(x_size):
+        if waves[i] == x[j]:
+            good[i] = 1
+        else:
+            while waves[i] != x[j]:
+                i += 1
+            good[i] = 1

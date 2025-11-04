@@ -91,6 +91,12 @@ class CalibDB(PrimitivesBASE):
         self._assert_calibrations(adinputs, cals)
         return adinputs
 
+    def getProcessedPinhole(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_pinhole(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
+        return adinputs
+
     def getProcessedStandard(self, adinputs=None):
         procmode = 'sq' if self.mode == 'sq' else None
         cals = self.caldb.get_processed_standard(adinputs, procmode=procmode)
@@ -100,6 +106,12 @@ class CalibDB(PrimitivesBASE):
     def getProcessedSlitIllum(self, adinputs=None):
         procmode = 'sq' if self.mode == 'sq' else None
         cals = self.caldb.get_processed_slitillum(adinputs, procmode=procmode)
+        self._assert_calibrations(adinputs, cals)
+        return adinputs
+
+    def getProcessedTelluric(self, adinputs=None):
+        procmode = 'sq' if self.mode == 'sq' else None
+        cals = self.caldb.get_processed_telluric(adinputs, procmode=procmode)
         self._assert_calibrations(adinputs, cals)
         return adinputs
 
@@ -244,6 +256,17 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
+    def storeProcessedPinhole(self, adinputs=None, suffix=None, force=False):
+        caltype = 'processed_pinhole'
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        if force:
+            adinputs = gt.convert_to_cal_header(adinput=adinputs, caltype="pinhole",
+                                                keyword_comments=self.keyword_comments)
+        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
+                                           primname=self.myself(), keyword="PROCPNHL")
+        self.storeCalibration(adinputs, caltype=caltype)
+        return adinputs
+
     def storeProcessedScience(self, adinputs=None, suffix=None):
         for ad in adinputs:
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCSCI")
@@ -341,6 +364,25 @@ class CalibDB(PrimitivesBASE):
         self.storeCalibration(adinputs, caltype=caltype)
         return adoutputs
 
+    def storeProcessedTelluric(self, adinputs=None, suffix=None):
+        caltype = 'processed_telluric'
+        self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        for ad in adinputs:
+            passes_std = all(hasattr(ext, 'SENSFUNC') for ext in ad)
+            if passes_std:
+                _ = self._markAsCalibration([ad], suffix=suffix,
+                                        primname=self.myself(),
+                                        keyword="PROCSTND")
+            passes_tel = all(hasattr(ext, 'TELLABS') for ext in ad) and \
+                hasattr(ad, 'TELLFIT')
+            # if all of the extensions on this ad have a TELLLABS attribute.
+            # Changes to ad are done in-place.
+            if passes_tel:
+                _ = self._markAsCalibration([ad], suffix=suffix,
+                                           primname=self.myself(), keyword="PROCTELL")
+        self.storeCalibration(adinputs, caltype=caltype)
+        return adinputs
+
 
 ##################
 
@@ -361,7 +403,11 @@ def _update_datalab(ad, suffix, mode, keyword_comments_lut):
 
     datalab = ad.data_label()
     obsid = ad.observation_id()
-    new_datalab = re.sub('(%s-[0-9]+)(-[0-9A-Za-z]+)+$' % obsid, r'\1',
+    # new_datalab = re.sub('(%s-[0-9]+)(-[0-9A-Za-z]+)+$' % obsid, r'\1',
+    #                      datalab) + extension
+    # KL I think that this will work with old datalabel and new GPP datalabels
+    #    And with ghost debundled data.
+    new_datalab = re.sub('(%s(-[0-9]+)+((-[A-Z]+)+(-[0-9]+)+)*)(-[A-Z]+)+$' % obsid, r'\1',
                          datalab) + extension
     ad.phu.set('DATALAB', new_datalab, keyword_comments_lut['DATALAB'])
     return

@@ -36,6 +36,7 @@ mosaicked_datasets = [d.split('.')[0] + "_mosaickedTwilight.fits" for d in datas
 multiext_datasets = [d.split('.')[0] + "_twilight.fits" for d in datasets]
 
 
+@pytest.mark.skip
 @pytest.mark.slow
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
@@ -107,6 +108,7 @@ def test_create_slit_illumination_with_mosaicked_data(ad, change_working_dir, re
             os.path.join(PLOT_PATH, ad.filename.replace(".fits", ".png")))
 
 
+@pytest.mark.skip
 @pytest.mark.slow
 @pytest.mark.gmosls
 @pytest.mark.preprocessed_data
@@ -192,7 +194,7 @@ def test_split_mosaic_into_extensions(request):
         ext.data = data
 
     mosaic_ad = transform.resample_from_wcs(
-        ad, "mosaic", attributes=None, order=1, process_objcat=False)
+        ad, "mosaic", attributes=None, interpolant="linear", process_objcat=False)
 
     mosaic_ad[0].data = np.pad(mosaic_ad[0].data, 10, mode='edge')
 

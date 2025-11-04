@@ -10,6 +10,7 @@ from . import gemini
 
 from . import bhros
 from . import f2
+from . import ghost
 from . import gmos
 from . import gnirs
 from . import gpi

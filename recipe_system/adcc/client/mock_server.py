@@ -50,8 +50,8 @@ def get_site_information():
 
     lt_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     unxtime = time.time()
-    utc_now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
-    utc_offset = datetime.datetime.utcnow() - datetime.datetime.now()
+    utc_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S.%f")
+    utc_offset = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - datetime.datetime.now()
 
     site_information = {
         "local_site": "gemini-south",

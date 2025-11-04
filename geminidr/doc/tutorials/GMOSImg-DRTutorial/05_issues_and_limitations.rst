@@ -40,8 +40,3 @@ screen. We recommend using the DRAGONS logger located in the
     from gempy.utils import logutils
     logutils.config(file_name='gmos_data_reduction.log')
 
-
-Astropy warnings
-================
-You might see some warning messages from AstroPy that are related to the
-header of the images. It is safe to ignore them.

@@ -1,38 +1,375 @@
 .. changes.rst
 
+.. include:: symbols.txt
+
 .. _changes:
 
 ***********
 Change Logs
 ***********
 
-3.1.1
+4.1.0
+=====
+
+This major release includes new support for near-infrared spectroscopic data.
+Specifically, we are introducing support for GNIRS cross-dispersed data.
+
+Many improvements and bug fixes have been included in this release. Below we
+list the most notable ones.
+
+New Features
+------------
+
+Full support for the reduction of GNIRS cross-dispersed spectroscopy data.
+    GNIRS cross-dispersed data reduction can now be performed in DRAGONS.  Full
+    support from raw data to telluric and flux calibrated data is available. All
+    GNIRS cross-dispersed configurations are supported.
+
+    The software builds upon the GNIRS longslit support introduced in DRAGONS
+    V4.0.0.
+
+Improvements
+------------
+**geminidr.core**
+
+  * log-linear wavelength resampling is now supported.
+
+    Instead of the ``force_linear`` boolean parameter in the
+    ``resampleToCommonFrame`` primitive, the ``output_wave_scale``
+    parameter now accepts three values: ``linear``,  ``loglinear``,
+    and ``reference``.  The first two force a linear or log-linear
+    resampling along the wavelength axis, while ``reference`` maintains the
+    wavelength sampling of the reference frame, but can only be used if
+    ``trim_spectral=True`` since it is unsafe to extrapolate this solution.
+
+  * ``stackFrames``
+
+    The ``scale`` and ``zero`` parameters now work by a pairwise comparison
+    of the overlap regions of the input frames and perform a least-squares
+    minimization of the differences after applying an appropriate
+    transformation, rather than simply scaling by the average value of the
+    entire image (or ``statsec`` if provided).
+
+    The previous behavior can be restored by setting the new parameter
+    ``debug_old_normalization=True``.
+
+  * Easier handling of incorrect solutions in the
+    ``determineWavelengthSolution`` GUI
+
+    If all identified lines are deleted in the GUI, the model will revert
+    to the initial linear solution instead of maintaining the original (bad)
+    solution.
+
+**geminidr.gnirs**
+
+  * A non-linearity correction is now applied to GNIRS data taken at Gemini
+    North with the original IR Detector Controller (between 2010 and summer
+    2025). This follows the same form as the NIRI non-linearity correction.
+
+  * Before fitting a smooth function in ``normalizeFlat``, the flat field is
+    divided by a sawtooth pattern to remove the odd-even row effect seen in
+    the data. This pattern is re-applied to the data after the normalization.
+
+**geminidr**
+
+  * Static images such as illumination masks are now distributed as bzip2
+    files to reduce the size of the download.
+
+
+Interface Modifications
+-----------------------
+**geminidr.core**
+
+  * ``resampleToCommonFrame``:  The ``output_wave_scale``
+    parameter now accepts three values: ``linear``,  ``loglinear``,
+    and ``reference``.
+
+  * ``determineWavelengthSolution`` will now proceed even if no solution
+    is found, leaving the initial linear solution in place.
+
+  * The default parameters of ``fitTelluric`` have changed so as not to mask
+    regions with significant intrinsic stellar absorption.
+
+**gempy.scripts**
+
+    * The ``showpars`` script now supports the ``--all`` (or ``-a``) option to
+      list all parameters, including the debug-level ones which are normally
+      hidden.
+
+
+4.0.0
+=====
+
+This major release includes new support for near-infrared spectroscopic data.
+Specifically, we are introducing support for GNIRS longslit data.
+
+Many improvements and bug fixes have been included in this release.  Below
+we list the most notable ones.
+
+New Features
+------------
+
+Full support for the reduction of GNIRS longslit spectroscopy data.
+  GNIRS longslit data reduction can now be performed in DRAGONS.  Full support
+  from raw data to telluric and flux calibrated data is available. All GNIRS
+  wavebands are supported, X, J, H, K, as well as L and M.  All three
+  dispersers, 10 l/mm, 32 l/mm, and 111 l/mm are supported.
+
+  The software offers algorithms and tools to help with the wavelength
+  calibration.  Wavelength calibrations from arc lamp, OH and |O2| sky lines,
+  and from telluric features are all supported.  The tutorial includes a
+  guide to help you choose the best wavelength calibration method for your data.
+
+  Algorithms and tools are includes to help with the measurment of the
+  telluric model and the sensitivity function and then for the correction of
+  the telluric features present in the data.
+
+
+
+Improvements
+------------
+**geminidr.core**
+
+  * Additional interpolation modes during resampling.
+
+    Cubic and quintic polynomial interpolation are now available. The "order"
+    parameter that was previously used to designate the order of spline
+    interpolation has been replaced by a string parameter, "interpolant" that
+    can take the value "nearest", "linear", "poly3", "poly5", "spline3", or
+    "spline5".
+
+  * Better ability to correct WCS
+
+    ``standardizeWCS`` provides options for dealing with incorrect values in
+    the FITS headers by constructing new WCS models from the telescope
+    offsets and/or target and position angle information.  The option to
+    control this is ``prepare:bad_wcs``
+
+
+Interface Modifications
+-----------------------
+
+**geminidr.core**
+**geminidr.ghost**
+
+* Rename the ``order`` parameter to ``interpolant`` in the following primitives:
+
+  * ``resampleToCommonFrame``
+  * ``transferObjectMask``
+  * ``distortionCorrect``
+  * ``linearizeSpectra``
+  * ``combineNodAndShuffleBeams``
+  * ``mosaicDetectors``
+  * ``shiftImages``
+  * ``combineOrders``
+
+**geminidr.core**
+
+* Rename the ``threshold`` parameter in ``transferObjectMask`` to
+  ``dq_threshold``, in line with other primitives.
+* The ``force_linear`` boolean parameter of the spectroscopic
+  ``resampleToCommonFrame`` primitive has been deprecated. Use
+  ``output_wave_scale`` instead, with options ``linear`` and ``reference``
+  corresponding to ``force_linear`` values of ``True`` and ``False``,
+  respectively.
+* The spectroscopic version of ``adjustWCSToReference`` now has an additional
+  option, ``wcs``, which uses the absolute WCS information to align. This is
+  equivalent to the old option "None", which was available as a fallback
+  method. This is now the default fallback method, with "None" resulting in
+  an exception if the primary method does not provide valid offsets.
+
+**calibration database**
+
+Any calibration database created with a version of DRAGONS prior to 4.0.0 will
+not be compatible because v4.0 uses a new version of the archive code which
+defines the underlying database schema (conda package ``fitsstorage``). You
+will need to create a new database and ``caldb add`` your calibrations to it.
+
+
+Bug fixes
+---------
+
+**geminidr.core**
+
+* ``resampleToCommonFrame(trim_spectral=True)`` did not work as documented.
+  It trimmed the spectral coverage to the extent of the reference (as
+  ``trim_spatial`` works) instead of to the intersection of the spectral
+  coverages of all inputs. This has been corrected.
+* If not resampling the output spectrum, it is required to set
+  ``trim_spectral=True`` to avoid errors from evaluating the wavelength
+  solution and its inverse beyond its original limits.
+
+----------------------------------------------------------
+
+3.2.3
+=====
+
+Dependency Updates
+------------------
+**gempy.library**
+
+* Ensure compatibility with SciPy v1.15 (matching.py)
+
+Improvements
+------------
+**gempy**
+
+* Improve interrupt handling and allow additional loggers to enhance the
+  operation of GOATS.
+
+
+3.2.2
+=====
+
+Bug Fixes
+---------
+**geminidr.ghost**
+
+* Fix an issue where the GHOST reduction would fail if specific header
+  values were not in the expected format.
+
+Improvements
+------------
+* Reduce memory usage in ``flagCosmicRays`` and ``QECorrect`` primitives.
+
+3.2.1
 =====
 
 Improvements
 ------------
+**geminidr & gempy**
+
+* Improved speed and success rate of wavelength calibration.
+
+**geminidr.ghost**
+
+* Added ``makeIRAFCompatible`` primitive to write order-combined GHOST
+  spectra in a non-FITS-standard format that is compatible with IRAF.
+
+Bug fixes
+---------
+**geminidr.ghost**
+
+* Cause data validation to fail for echellograms without exactly 4 extensions.
+
+* Fixed an occasional issue with bad pixels causing ``traceFibers`` to fail.
+
+**geminidr.interactive**
+
+* Fixed issues where certain values were not initialized correctly.
+
+* Fixed stylesheet issues
+
+New Features
+------------
+
+**gemini_instruments.gnirs**
+
+* Preemptively added support for handling GNIRS data produced with the new
+  detector controller software that will be installed in coming months.  An
+  additional patch release will be issued once the gain, read noise, and other
+  detector properties are known.
+
+Documentation
+-------------
+* Several updates to the GHOST tutorials to fix errors and improve clarity.
+
+Interface Modifications
+-----------------------
+**gemini_instruments.gnirs**
+
+* New prims_motor_steps descriptor to support flat association with HR-IFU
+and SciOps prism mechanism reproducibility workarounds adopted in Apr-2024.
+
+**gemini_instruments.ghost**
+
+* Change GHOST fast/low read mode from "fast" to "rapid".
+
+3.2.0
+=====
+
+This release includes support for GHOST data reduction and the new CCDs
+installed in GMOS-S in late 2023.
+
+New Features
+------------
+
+Full support for the reduction of GHOST data.
+  This is based on the external GHOSTDR package, with important improvements.
+  Includes changes to the names and scope of primitives to better align with the
+  other instrument recipes.
+
+**Support for new GMOS-S CCDs installed in late 2023.**
+
+Improvements
+------------
+**astrodata.wcs**
+
+* Support for reading and writing log-linear wavelength axes to/from FITS.
+
+* Support for reading and writing tabular wavelength information to/from FITS.
 
 **astrodata.provenance**
 
 * Renamed the ``PROVHISTORY`` table to ``HISTORY``, and changed wording in the
-code from "provenance history" to simply "history".
+  code from "provenance history" to simply "history".
+
+**astrodata.fits**
+
+* Support reading ASCII tables when opening FITS files with astrodata
 
 **geminidr.core**
 
+* Creation of new ``skip_primitive`` parameter, e.g.,
+  ``reduce -p skyCorrectFromSlit:skip_primitive=True`` which allows any
+  primitive in a recipe to be skipped. Note that inconsiderate use of this
+  may cause a recipe to crash because the inputs to the subsequent primitive
+  in the recipe may be inappropriate.
+
+* Creation of new ``write_outputs`` parameter, e.g.,
+  ``reduce -p ADUToElectrons:write_outputs=True`` which will write to disk
+  the outputs of the primitive.
+
 * Allow input files to ``shiftImages`` to recognize tabs or multiple
   whitespaces as the delimiter
+
+**geminidr.gsaoi**
+
+* Modification to the `nostack` science recipe to not "store" the image but
+  rather continue and detect sources in the images in anticipation of the likely
+  stacking that will follow later.  The output images will have the
+  `_sourcesDetected` suffix rather than the `_image` suffix.
 
 **recipe_system.cal_service**
 
 * Whitespace now allowed in directory paths (if quoted), e.g.,
   ``databases = "~/.my dragons/dragons.db"``
 
-Bug Fixes
+
+Bug fixes
 ---------
+**geminidr.core**
+
+* Set default ``calculateSensitivity.bandpass`` parameter to 0.001 nm to
+  better handle pure spectra in flux density units.
+
+* Allow ``display`` to handle non-standard extension names, which did not
+  work as intended.
 
 **geminidr.gmos**
 
 * Fix the QE model selection for the GMOS-S EEV CDDs.
+
+**recipe_system**
+
+* Set the ``engineering`` flag to False for all data stored in the local
+  calibration database, to ensure that it can be retrieved.
+
+Compatibility
+-------------
+**geminidr.interactive**
+
+* The interactive tools are now compatible with and require bokeh v3 and above.
 
 
 3.1.0
@@ -449,8 +786,8 @@ Compatibility
 
 **geminidr.core**
 
-* Add compatibility with sigma_clip fro astropy v3.1+ 
-  
+* Add compatibility with sigma_clip fro astropy v3.1+
+
 **geminidr.gmos**
 
 * Add IRAF compatibility recipe.

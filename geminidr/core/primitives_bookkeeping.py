@@ -5,6 +5,7 @@
 # ------------------------------------------------------------------------------
 import os
 from copy import deepcopy
+from itertools import zip_longest
 
 import astrodata, gemini_instruments
 
@@ -111,6 +112,66 @@ class Bookkeeping(PrimitivesBASE):
         log = self.log
         log.fullinfo('Clearing stream {}'.format(params.get('stream', 'main')))
         return []
+
+    def combineSlices(self, adinputs=None, from_stream=None, **params):
+        """
+        This primitive combines extensions from AD objects in an input stream
+        with those in a reference stream.
+
+        Parameters
+        ----------
+        from_stream : str
+            name of stream containing ADs with extensions to combine from
+        ids : str
+            A 1-indexed, comma-separated string of id numbers of the extensions
+            to take from `from_stream` and combine with those in `adinputs`.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        ids = params["ids"]
+
+        if from_stream not in self.streams.keys():
+            log.warning(f"Stream {from_stream} does not exist so nothing "
+                        "to transfer")
+            return adinputs
+
+        source_length = len(self.streams[from_stream])
+        if not (source_length == 1 or source_length == len(adinputs)):
+            log.warning("Incompatible stream lengths: "
+                        f"{len(adinputs)} and {source_length}")
+            return adinputs
+
+        # Get the list of extension IDs to combine from the secondary stream.
+        # Note that extension IDs are 1-indexed, though it doesn't require
+        # any specific handling in the code here.
+        ids = [] if ids is None else sorted([int(n) for n in ids.split(',')])
+
+        log.stdinfo(f"Combining slices from stream {from_stream}")
+        log.debug(f"Extension IDs to combine: {ids}")
+
+        adoutputs = []
+        for ad1, ad2 in zip(*gt.make_lists(adinputs, self.streams[from_stream])):
+
+            adout = astrodata.create(ad1.phu)
+            adout.filename = ad1.filename
+            adout.orig_filename = ad1.orig_filename
+
+            for ext1, ext2 in zip_longest(ad1, ad2):
+
+                if (ext1 is not None and ext2 is not None) and ext1.id in ids:
+                    adout.append(ext2)
+                elif (ext1 is None and ext2 is not None):
+                    # If ad2 has more extensions than ad1, just append them.
+                    adout.append(ext2)
+                else:
+                    # If ID not in the list of IDs to combine, or ad1 has more
+                    # extensions than ad2.
+                    adout.append(ext1)
+
+            adoutputs.append(adout)
+
+        return adoutputs
 
     def copyInputs(self, adinputs=None, **params):
         """
@@ -260,6 +321,10 @@ class Bookkeeping(PrimitivesBASE):
         tags: str/None
             Tags which frames must match to be selected
         """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        log.debug("Removing inputs with tags: {}".format(tags))
+
         if tags is None:
             return adinputs
         required_tags = tags.split(',')
@@ -272,6 +337,13 @@ class Bookkeeping(PrimitivesBASE):
         #adoutputs = [ad for ad in adinputs
         #             if set(required_tags).issubset(ad.tags)]
         adoutputs = [ad for ad in adinputs if not (set(required_tags) & ad.tags)]
+        log.debug("Remaining files:")
+        if adoutputs:
+            for ad in adoutputs:
+                log.debug("    {}".format(ad.filename))
+        else:
+            log.debug("    No files remaining")
+
         return adoutputs
 
     def selectFromInputs(self, adinputs=None, tags=None):
@@ -284,6 +356,10 @@ class Bookkeeping(PrimitivesBASE):
         tags: str/None
             Tags which frames must match to be selected
         """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        log.debug("Selecting inputs with tags: {}".format(tags))
+
         if tags is None:
             return adinputs
         required_tags = tags.split(',')
@@ -296,6 +372,13 @@ class Bookkeeping(PrimitivesBASE):
         #adoutputs = [ad for ad in adinputs
         #             if set(required_tags).issubset(ad.tags)]
         adoutputs = [ad for ad in adinputs if set(required_tags) & ad.tags]
+        if adoutputs:
+            log.debug("Selected files:")
+            for ad in adoutputs:
+                log.debug("    {}".format(ad.filename))
+        else:
+            log.debug("    No files selected")
+
         return adoutputs
 
     def showInputs(self, adinputs=None, purpose=None):
@@ -454,7 +537,7 @@ class Bookkeeping(PrimitivesBASE):
                         f"{len(adinputs)} and {source_length}")
             return adinputs
 
-        log.stdinfo(f"Transferring attribute {attribute} from stream {source}")
+        log.stdinfo(f"Transferring attribute '{attribute}' from stream {source}")
 
         # Keep track of whether we find anything to transfer, as failing to
         # do so might indicate a problem and we should warn the user
@@ -481,7 +564,8 @@ class Bookkeeping(PrimitivesBASE):
             if found:
                 ad1.update_filename(suffix=suffix, strip=True)
 
-        if not found:
+        # Do not report this if the above loop never ran because of no adinputs!
+        if not found and len(adinputs):
             log.warning(f"Did not find any {attribute} attributes to transfer")
 
         return adinputs
@@ -529,7 +613,7 @@ class Bookkeeping(PrimitivesBASE):
                               "written to the same name {}".format(
                         params['outfilename'])
                     log.critical(message)
-                    raise OSError(message)
+                    raise RuntimeError(message)
                 else:
                     outfilename = params['outfilename']
             else:

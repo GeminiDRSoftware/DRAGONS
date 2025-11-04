@@ -28,10 +28,14 @@ class ADVarianceUncertainty(VarianceUncertainty):
     """
     @VarianceUncertainty.array.setter
     def array(self, value):
-        if value is not None and np.any(value < 0):
-            warnings.warn("Negative variance values found. Setting to zero.",
-                          RuntimeWarning)
-            value = np.where(value >= 0., value, 0.)
+        if value is not None:
+            neg = value < 0
+            if np.any(neg):
+                warnings.warn(
+                    "Negative variance values found. Setting to zero.",
+                     RuntimeWarning
+                )
+                value[neg] = 0.
         VarianceUncertainty.array.fset(self, value)
 
 
@@ -102,19 +106,25 @@ class AstroDataMixin:
 
         mods = []
         mapped_axes = []
-        for i, (slice_, length) in enumerate(zip(slices[::-1], self.shape)):
+        for i, (slice_, length) in enumerate(zip(slices[::-1], self.shape[::-1])):
             model = []
             if isinstance(slice_, slice):
-                if slice_.step and slice_.step > 1:
+                if slice_.step and abs(slice_.step) > 1:
                     raise IndexError("Cannot slice with a step")
+                if slice_.step == -1:
+                    model.append(models.Scale(-1))
                 if slice_.start:
-                    start = length + slice_.start if slice_.start < 1 else slice_.start
+                    start = (length + slice_.start) if slice_.start < 0 else slice_.start
                     if start > 0:
                         model.append(models.Shift(start))
-                mapped_axes.append(max(mapped_axes)+1 if mapped_axes else 0)
+                elif slice_.start is None and slice_.step == -1:
+                    model.append(models.Shift(length - 1))
+                mapped_axes.append(max(mapped_axes) + 1 if mapped_axes else 0)
             elif isinstance(slice_, INTEGER_TYPES):
-                model.append(models.Const1D(slice_))
+                model.append(models.Const1D((length + slice_) if slice_ < 0 else slice_))
                 mapped_axes.append(-1)
+            elif slice_ is None:  # equivalent to slice(None, None, None)
+                mapped_axes.append(max(mapped_axes) + 1 if mapped_axes else 0)
             else:
                 raise IndexError("Slice not an integer or range")
             if model:
@@ -175,7 +185,19 @@ class AstroDataMixin:
 
     @property
     def size(self):
-        return self._data.size
+        return np.multiply.reduce(self.shape)
+
+    def has_mask(self):
+        """
+        Returns True if the mask is not None without loading the whole array.
+        """
+        return self.window[(slice(0, 1),) * len(self.shape)].mask is not None
+
+    def has_variance(self):
+        """
+        Returns True if the mask is not None without loading the whole array.
+        """
+        return self.window[(slice(0, 1),) * len(self.shape)].variance is not None
 
 
 class FakeArray:
@@ -392,9 +414,9 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
                 return ret
             elif hasattr(source, 'shape'):
                 if section is None or source.shape != self.shape:
-                    return np.array(source, copy=False)
+                    return np.asarray(source)
                 else:
-                    return np.array(source, copy=False)[section]
+                    return np.asarray(source)[section]
             else:
                 return source
 
@@ -473,9 +495,9 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
 
         """
         self.data[section] = input.data
-        if self.uncertainty is not None:
+        if self.uncertainty is not None and getattr(input, 'uncertainty', None) is not None:
             self.uncertainty.array[section] = input.uncertainty.array
-        if self.mask is not None:
+        if self.mask is not None and getattr(input, 'mask', None) is not None:
             self.mask[section] = input.mask
 
     def __repr__(self):
@@ -496,5 +518,16 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
         return self.__class__(
             self.data.T,
             uncertainty=None if unc is None else unc.__class__(unc.array.T),
-            mask=None if self.mask is None else self.mask.T, wcs=new_wcs, copy=False
+            mask=None if self.mask is None else self.mask.T, wcs=new_wcs,
+            meta=self.meta, copy=False
         )
+
+    def _slice(self, item):
+        """Additionally slice things like OBJMASK"""
+        kwargs = super()._slice(item)
+        if 'other' in kwargs['meta']:
+            kwargs['meta'] = deepcopy(self.meta)
+            for k, v in kwargs['meta']['other'].items():
+                if isinstance(v, np.ndarray) and v.shape == self.shape:
+                    kwargs['meta']['other'][k] = v[item]
+        return kwargs

@@ -3,19 +3,22 @@
 #
 #                                                        primtives_gmos_spect.py
 # ------------------------------------------------------------------------------
+import gc
 import os
 
 import numpy as np
 from importlib import import_module
 from datetime import datetime
-from functools import reduce
-from copy import deepcopy
+from copy import copy, deepcopy
+from functools import partial
 
 from astropy.modeling import models, Model
 from astropy import units as u
 from scipy.interpolate import UnivariateSpline
 
+import geminidr
 from geminidr.core import Spect
+from gempy.library.fitting import fit_1D
 from .primitives_gmos import GMOS
 from . import parameters_gmos_spect
 
@@ -27,7 +30,8 @@ from gempy.library import astromodels as am
 from gempy.library import transform, wavecal
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
-
+from ..interactive.fit.wavecal import WavelengthSolutionVisualizer
+from ..interactive.interactive import UIParameters
 
 # Put this here for now!
 def qeModel(ext, use_iraf=False):
@@ -80,16 +84,32 @@ def qeModel(ext, use_iraf=False):
                            "2006-08-31": [2.225037, -4.441856E-3, 5.216792E-6, -1.977506E-9]},
         "EEV 8261-07-04": {"1900-01-01": [1.3771, -1.863e-3, 2.559e-6, -1.0289e-9],
                            "2006-08-31": [8.694583E-1, 1.021462E-3, -2.396927E-6, 1.670948E-9]},
-        # GMOS-S Hamamatsu CCD1 and 3
+        # GMOS-S Hamamatsu CCD1 (original) and 3
         "BI5-36-4k-2": {"order": 3,
                         "knots": [374., 409., 451., 523.5, 584.5, 733.5, 922., 1070.75],
                         "coeffs": [1.04722893, 0.87968707, 0.70533794, 0.67657144, 0.71217743,
                                    0.82421959, 0.94903734, 1.00847771, 0.98158784, 0.90798127]},
-        "BI12-34-4k-1": {"order": 3,
-                         "knots": [340.25, 377.5, 406., 439., 511.5, 601., 746., 916.5, 1070.],
-                         "coeffs": [0.7433304, 1.07041859, 1.51006315, 1.43997471, 1.03126307,
-                                    0.84984109, 0.8944949, 1.02806209, 1.11960524, 1.12224211,
-                                    0.95279761]},
+        # CCD3 before and after replacement (it's the same CCD but this
+        # is a ratio to CCD2, which has changed)
+        "BI12-34-4k-1": {"1900-01-01": {"order": 3,
+                                        "knots": [340.25, 377.5, 406., 439.,
+                                                  511.5, 601., 746., 916.5, 1070.],
+                                        "coeffs": [0.7433304, 1.07041859, 1.51006315,
+                                                   1.4399747, 1.03126307, 0.84984109,
+                                                   0.8944949, 1.02806209, 1.11960524,
+                                                   1.1222421, 0.95279761]},
+                         "2023-12-14": {"order": 3,
+                                        "knots": [342.75, 361.0, 371.0, 405.0, 432.0,
+                                                  458.5, 582.0, 715.5, 1043.5],
+                                        "coeffs": [1.1720608, 1.6827764, 2.1932968,
+                                                   0.6824087, 1.0712193, 1.0245441,
+                                                   0.9778866, 0.9672609, 0.9682988,
+                                                   0.97707780, 0.9745534]}},
+        # GMOS-S Hamamatsu new CCD1
+        "BI11-41-4k-2": {"order": 3,
+                         "knots": [408.0, 487.0, 524.0, 568.5, 775.5, 1096.0],
+                         "coeffs": [0.8045865, 0.9031578, 1.1704650, 1.1776077, 1.0853394,
+                                    0.8585280, 0.8748014, 0.8858184]},
         # IRAF coefficients
         ("BI5-36-4k-2", "IRAF"): [-6.00810046e+02,  6.74834788e+00, -3.26251680e-02,
                                   8.87677395e-05, -1.48699188e-07, 1.57120033e-10,
@@ -175,6 +195,10 @@ class GMOSSpect(Spect, GMOS):
             log.warning("QE correction has been turned off.")
             return adinputs
 
+        taper_locut, taper_losig = 350, 25  # nm
+        taper_hicut, taper_hisig = 1200, 200
+        xgrid = np.array([])
+
         for ad in adinputs:
 
             if ad.phu.get(timestamp_key):
@@ -208,7 +232,9 @@ class GMOSSpect(Spect, GMOS):
                 if index in ccd2_indices:
                     continue
 
-                trans = ext.wcs.forward_transform
+                # astropy issue #17094: need to copy the WCS to avoid
+                # enormous memory usag
+                trans = deepcopy(ext.wcs.forward_transform)
 
                 # There should always be a wavelength model (even if it's an
                 # approximation) as long as the data have been prepared, but
@@ -234,24 +260,25 @@ class GMOSSpect(Spect, GMOS):
                         raise ValueError(msg)
                     log.warning(msg)
 
-                ygrid, xgrid = np.indices(ext.shape)
-                # TODO: want with_units
-                waves = trans(xgrid, ygrid)[0] * u.nm  # Wavelength always axis 0
+                if xgrid.shape != ext.shape:
+                    ygrid, xgrid = np.mgrid[:ext.shape[0], :ext.shape[1]]
+                    taper = np.ones_like(ext.data)
+                    waves = trans(xgrid, ygrid)[0]  # Wavelength always axis 0
+                    qe_correction = np.empty_like(ext.data)
+                else:
+                    taper[:] = 1.
+                    waves[:] = trans(xgrid, ygrid)[0]  # Wavelength always axis 0
 
                 # Tapering required to prevent QE correction from blowing up
                 # at the extremes (remember, this is a ratio, not the actual QE)
                 # We use half-Gaussians to taper
-                taper = np.ones_like(ext.data)
-                taper_locut, taper_losig = 350 * u.nm, 25 * u.nm
-                taper_hicut, taper_hisig = 1200 * u.nm, 200 * u.nm
-                taper[waves < taper_locut] = np.exp(-((waves[waves < taper_locut]
-                                                       - taper_locut) / taper_losig) ** 2)
-                taper[waves > taper_hicut] = np.exp(-((waves[waves > taper_hicut]
-                                                       - taper_hicut) / taper_hisig) ** 2)
+                taper[waves < taper_locut] = np.exp(-((waves
+                                                       - taper_locut) / taper_losig) ** 2)[waves < taper_locut]
+                taper[waves > taper_hicut] = np.exp(-((waves
+                                                       - taper_hicut) / taper_hisig) ** 2)[waves > taper_hicut]
                 try:
-                    qe_correction = (qeModel(ext, use_iraf=use_iraf)(
-                        (waves / u.nm).to(u.dimensionless_unscaled).value).astype(
-                        np.float32) - 1) * taper + 1
+                    qe_correction[:] = (qeModel(ext, use_iraf=use_iraf)(
+                        waves).astype(np.float32) - 1) * taper + 1
                 except TypeError:  # qeModel() returns None
                     msg = f"No QE correction found for {ad.filename} extension {ext.id}"
                     if 'sq' in self.mode:
@@ -262,8 +289,12 @@ class GMOSSpect(Spect, GMOS):
                 log.stdinfo(f"Mean relative QE of extension {ext.id} is "
                             f"{qe_correction.mean():.5f}")
                 if not is_flat:
-                    qe_correction = 1. / qe_correction
+                    qe_correction[:] = 1. / qe_correction
                 ext.multiply(qe_correction)
+
+            # The other half of preventing enormous memory usage
+            del trans
+            gc.collect()
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -489,7 +520,6 @@ class GMOSSpect(Spect, GMOS):
         spectral_order_param = params.pop('spectral_order')
         spatial_order_param = params.pop('spatial_order')
 
-        adoutputs = []
         for ad in adinputs:
             spectral_order = 9 if spectral_order_param is None else spectral_order_param
 
@@ -510,20 +540,20 @@ class GMOSSpect(Spect, GMOS):
             else:  # custom ROI?  Use the generic flagCR default.
                 spatial_order = None
 
+            # flagCosmicRays() modifies in-place so just call it
             if spatial_order is None:
-                adoutputs.extend(super().flagCosmicRays([ad],
-                                         spectral_order=spectral_order,
-                                         **params))
+                super().flagCosmicRays([ad],
+                                       spectral_order=spectral_order,
+                                       **params)
             else:
-                adoutputs.extend(super().flagCosmicRays([ad],
-                                         spectral_order=spectral_order,
-                                         spatial_order=spatial_order,
-                                         **params))
+                super().flagCosmicRays([ad],
+                                       spectral_order=spectral_order,
+                                       spatial_order=spatial_order,
+                                       **params)
 
-        # ?? delete adinputs ??
-        return adoutputs
+        return adinputs
 
-    def standardizeWCS(self, adinputs=None, suffix=None):
+    def standardizeWCS(self, adinputs=None, **params):
         """
         This primitive updates the WCS attribute of each NDAstroData extension
         in the input AstroData objects. For spectroscopic data, it means
@@ -536,28 +566,21 @@ class GMOSSpect(Spect, GMOS):
         ----------
         suffix: str/None
             suffix to be added to output files
-
         """
-        log = self.log
-        timestamp_key = self.timestamp_keys[self.myself()]
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
+        super().standardizeWCS(adinputs, **params)
         for ad in adinputs:
-            log.stdinfo(f"Adding spectroscopic WCS to {ad.filename}")
-            cenwave = ad.central_wavelength(asNanometers=True)
-            if ad.instrument() == "GMOS-S" and cenwave > 950:
-                cenwave += (6.89483617 - 0.00332086 * cenwave) * cenwave - 3555.048
-            else:
-                cenwave = cenwave
-            transform.add_longslit_wcs(ad, central_wavelength=cenwave)
-
-            # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=suffix, strip=True)
+            self._add_longslit_wcs(ad, pointing=None)
         return adinputs
 
-    def _get_arc_linelist(self, waves=None):
-        use_second_order = waves.max() > 1000 and abs(np.diff(waves).mean()) < 0.2
+    def _get_linelist(self, wave_model=None, *args, **kwargs):
+        # There aren't many lines in the very red, so one way to improve the
+        # wavecal might have been to take out any blocking filter to get all the
+        # lines from ~500 nm at twice the wavelength. The GMOS team doesn't do
+        # that, however, so it would just results in a bunch of extra lines that
+        # don't actually exist, so keep use_second_order = False here; the code
+        # is left as a template for how such stuff might operate.
+        #waves = wave_model(np.arange(*wave_model.domain))
+        #use_second_order = waves.max() > 1000 and abs(np.diff(waves).mean()) < 0.2
 
         use_second_order = False
         lookup_dir = os.path.dirname(import_module('.__init__',

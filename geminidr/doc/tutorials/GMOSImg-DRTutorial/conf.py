@@ -30,20 +30,20 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial<br> GMOS Imaging Data Reduction'
-copyright = '2023, Association of Universities for Research in Astronomy'
+copyright = '2025, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The short X.Y version
 #version = astrodata.version(short=True)
-version = '3.1'
+version = '4.2_dev'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-release = '3.1.0'
-rtdurl = 'v'+release
-#release = '3.1.x'
+#release = '4.1.0'
+#rtdurl = 'v'+release
+#release = '4.1.x'
 #rtdurl = 'release-'+release
-#rtdurl = 'latest'
+rtdurl = 'latest'
 
 
 # -- General configuration ---------------------------------------------------
@@ -86,7 +86,7 @@ language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'April 2023'
+today = 'October 2025'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
@@ -132,7 +132,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'DRAGONSTutorial-GMOStut'
+htmlhelp_basename = 'TutorialSeries-GMOSImgDRDRAGONS'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -159,7 +159,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'DRAGONSTutorial-GMOStut.tex', 'DRAGONS Tutorial - GMOS Data Reduction',
+    (master_doc, 'TutorialSeries-GMOSImgDRDRAGONS.tex', 'Tutorial Series - GMOS Imaging Data Reduction with DRAGONS',
      'DRAGONS Team', 'manual'),
 ]
 
@@ -169,7 +169,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'dragonstutorial-gmos', 'DRAGONS Tutorial - GMOS Data Reduction',
+    (master_doc, 'tutorialseries-gmosimgdrdragons', 'Tutorial Series - GMOS Imaging Data Reduction with DRAGONS',
      [author], 1)
 ]
 
@@ -215,11 +215,11 @@ epub_exclude_files = ['search.html']
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
 #    'astrodata': ('https://astrodata-user-manual.readthedocs.io/en/latest/', None),
-    'astropy': ('http://docs.astropy.org/en/stable/', None),
-    'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'matplotlib': ('https://matplotlib.org/', None),
-    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'astropy': ('https://docs.astropy.org/en/stable/', None),
+    #'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    #'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
+    'matplotlib': ('https://matplotlib.org/stable', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
     'python': ('https://docs.python.org/3', None),
 }
 
