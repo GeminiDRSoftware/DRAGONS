@@ -103,7 +103,8 @@ def get_ref_path(band, kind):
         identified_lines_v0=dataroot / f"SKY_SDC{band}_20140525.identified_lines_v0.json",
         # echellogram_data=json.load((dataroot / f"SDC{band}_20140525.echellogram.json").open()),
         echellogram_data=dataroot / f"SDC{band}_20240721.echellogram.json",
-        ref_lines_oh=dataroot / "ref_lines_oh.fits"
+        ref_lines_oh=dataroot / "ref_lines_oh.fits",
+        ref_lines_hitran_json=dataroot / "hitran_bootstrap_K_20140525.json"
     )
 
     return k[kind]
@@ -1529,6 +1530,35 @@ class Igrins(Gemini, NearIR):
         tbl = Table.read(ref_file.open("rb"), format="fits") # "ref_lines_oh.fits"
         df_ref_data0 = tbl.to_pandas()
 
+        df_ref_data0["kind"] = "oh"
+
+        # now load hitran if band is K
+        if band == "K":
+            import json
+            ref_file = get_ref_path(band, "ref_lines_hitran_json")
+            j = json.load(ref_file.open())
+            dff = []
+            for o, v in j.items():
+                _df = pd.DataFrame(v)
+                _df["order"] = o
+                dff.append(_df)
+            df = pd.concat(dff)
+            # df_ref_data0 : order  gid  lid        um
+
+            next_gid = 10**int(np.ceil(np.log10(len(df_ref_data0)))+1)
+
+            df_hitran = pd.DataFrame(dict(order=df["order"].astype(int),
+                                          um=df["wavelength"],
+                                          gid=np.arange(len(df))+next_gid,
+                                          kind="hitran"
+                                          )
+                                     )
+
+            df_ref_data0 = pd.concat([df_ref_data0, df_hitran],
+                                     axis=0, ignore_index=True)
+        else:
+            pass
+
         from scipy.interpolate import interp1d
         x = np.arange(2048)
         # for each order, add pixel coordinate from the initial wvlsol
@@ -1553,6 +1583,7 @@ class Igrins(Gemini, NearIR):
 
         # The filtered df_ref_data should only have valid pixels.
 
+        sigma_init_map = dict(hitran=5)
 
         def _fit(df_ref_data, spec_by_order):
             # we prepare a dataframe index of (order, gid)
@@ -1565,7 +1596,9 @@ class Igrins(Gemini, NearIR):
             # For each group, we fit the sliced data with multiple gaussian.
             for (o, gid), grp in grouped:
                 if (s := spec_by_order.get(o, None)) is not None:
-                    r = fit_gaussian_group(x, s, grp["pixel"])
+                    sigma_pixel = sigma_init_map.get(grp["kind"].iloc[0], 1.5)
+                    r = fit_gaussian_group(x, s, grp["pixel"], sigma_pixel)
+
                     # add column for the fit parameter
                     df_fit.loc[(o, gid), ["shift", "sigma", "height", "baseline"]] = r[0]
                     # add column for fitted pixel position
@@ -1606,16 +1639,10 @@ class Igrins(Gemini, NearIR):
 
 
         df_fit_list.sort(key=itemgetter(0))
-        df_fit_oh = pd.concat([df_fit for _, df_fit in df_fit_list],
-                              keys=[c for c, _ in df_fit_list],
-                              names=["slit_center"],
-                              axis=0)
-
-        df_fit_master = pd.concat([df_fit_oh],
-                                  keys=["oh"],
-                                  names=["kind"],
+        df_fit_master = pd.concat([df_fit for _, df_fit in df_fit_list],
+                                  keys=[c for c, _ in df_fit_list],
+                                  names=["slit_center"],
                                   axis=0)
-
 
         tbl = Table.from_pandas(df_fit_master.reset_index())
 
@@ -1665,11 +1692,11 @@ class Igrins(Gemini, NearIR):
         vmin = np.percentile(ss, 100*drop)
         vmax = np.percentile(ss, 100*(1 - drop))
 
-        msk = (ss0_std > vmin) & (ss0_std < vmax)
+        msk = (vmin < ss0_std) & (ss0_std < vmax)
 
         mskk = msk.reindex(dft.index, level=1)
-        dft.loc[:, "badmask"] = 0
-        dft.loc[mskk, "badmask"] = mskk.astype(int)
+        dft.loc[:, "badmask"] = 1
+        dft.loc[mskk, "badmask"] = 0 # mskk.astype(int)
 
         return dft
 

@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 from pathlib import Path
+import importlib.resources as resources
 
 import numpy as np
 from scipy.ndimage import median_filter, zoom, gaussian_filter1d, binary_dilation, binary_erosion
@@ -158,8 +159,10 @@ def estimate_flexure(adlist, ad_sky, exptime):
 	#mask = (fits.getdata(master_cal_dir+'/'+band+'-band_sky_mask.fits') == 1.0)
 
     band = get_band(adlist)
-    master_cal_dir = Path("calib")
-    mask = (fits.getdata(master_cal_dir / f'{band}-band_sky_mask_igrins2.fits') == 1.0)
+    mskname = f'{band}-band_sky_mask_igrins2.fits'
+    mask_path = resources.files('igrinsdr.igrins.lookups.ref_data').joinpath(mskname)
+    with resources.as_file(mask_path) as p:
+        mask = (fits.getdata(p) == 1.0)
     refframe[~mask] = np.nan
 
 	#for dataframe in data:
