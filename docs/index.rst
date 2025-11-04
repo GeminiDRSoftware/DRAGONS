@@ -8,6 +8,7 @@ A python package to reduce IGRINS2 spectra based on DRAGONS framework.
    :caption: Documentation
    :hidden:
    
+   Install <INSTALL>
    User's Guide <IGRINSDR_users_manual>
    Developer's Guide <DevelopersGuide>
    Notebooks <notebooks>
@@ -40,7 +41,9 @@ A python package to reduce IGRINS2 spectra based on DRAGONS framework.
 Installation
 ^^^^^^^^^^^^
 
-For now, please download the source from the github repo and install.
+Please see the :doc:`INSTALL` file for installation instructions.
+
+Follow :doc:`IGRINSDR_users_manual` to process IGRINS2 data w/ igrinsdr.
 
 Indices and tables
 ==================

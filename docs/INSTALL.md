@@ -1,19 +1,23 @@
 # Installing IGRINSDR
 
 ## Prerequisites
-- git
-- DRAGONS v4 (see [installation instructions](https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/v4.0.0/install.html))
+- DRAGONS v4.1 (see [installation instructions](https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/v4.1.0/install.html))
 
 ## Dependencies
 
 IGRINSDR has only one required dependency:
-- DRAGONS v4 or higher (already listed in Prerequisites)
+- DRAGONS v4.1 or higher (already listed in Prerequisites)
 
 All other dependencies are optional or will be automatically installed as part of DRAGONS.
 
 ## Installation Methods
 
-### 1. Install directly from GitHub (recommended)
+### 1. Install  from pypi (recommended)
+```bash
+pip install igrinsdr
+```
+
+### 2. Install directly from GitHub (recommended)
 
 The easiest way to install IGRINSDR is directly from the GitHub repository. This will install the latest development version from the `dev` branch:
 
@@ -21,7 +25,7 @@ The easiest way to install IGRINSDR is directly from the GitHub repository. This
 pip install git+https://github.com/GeminiDRSoftware/IGRINSDR.git@dev
 ```
 
-### 2. Install from a local clone
+### 3. Install from a local clone
 
 If you want to modify the source code or contribute to the project:
 

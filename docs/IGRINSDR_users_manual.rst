@@ -6,8 +6,9 @@ DRAGONS-compatible version of IGRINS2 pipeline
 
    DRAGONS-compatible version is in very early stage of development.
    This is largely a translation of original IGRINS plp pipeline to the
-   DRAGONS framework. For now, it only supports H band spectra, and
-   stellar sources taken with ABBA nodding.
+   DRAGONS framework. For now, it supports H and K band spectra, and the
+   results should be comparable to that of the plp version of the
+   pipeline.
 
 .. container:: alert alert-success
 
@@ -18,7 +19,7 @@ DRAGONS-compatible version of IGRINS2 pipeline
 Install
 =======
 
-Please consult “INSTALL.md” and install IGRINSDR.
+Please consult :doc:``INSTALL`` to install IGRINSDR.
 
 Setting up
 ==========
@@ -89,14 +90,18 @@ directory.
 
       !mkdir unbundled_20240429
       %cd unbundled_20240429
-      %dataselect_ig --tags BUNDLE ../mef_20240429/N*.fits -o list_of_bundles.txt
 
    .. container:: cell-output cell-output-stdout
 
       ::
 
-         mkdir: cannot create directory ‘unbundled_20240429’: File exists
-         /media/DATA2024/jjlee/igrins/igrins_indata/unbundled_20240429
+         /home/jjlee/git_personal/IGRINSDR/test_i2/unbundled_20240429
+
+.. container:: cell
+
+   .. code:: python
+
+      %dataselect_ig --tags BUNDLE ../mef_20240429/N*.fits -o list_of_bundles.txt
 
 .. container:: cell
 
@@ -163,9 +168,9 @@ directory.
       ::
 
 
-                     --- reduce v4.1.0_dev ---
+                     --- reduce v4.1.0 ---
 
-         Running on Python 3.12.2
+         Running on Python 3.12.12
          All submitted files appear valid:
          ../mef_20240429/N20240429S0120.fits ... ../mef_20240429/N20240429S0384.fits, 40 files submitted.
          ================================================================================
@@ -304,6 +309,7 @@ directory.
 
    .. code:: python
 
+      # This require igrinsdr_helper to be installed (pip install igrinsdr-helper)
       from igrinsdr_helper.igrinsdr_tree import get_ad_tree
       from pathlib import Path
 
@@ -313,7 +319,7 @@ directory.
 
       ::
 
-         Tree(nodes=(Node(icon_style='success', name="'IGRINS IGRINS-2 H GEMINI UNPREPARED NORTH SPECT'", nodes=(Node(i…
+         Tree(nodes=(Node(icon_style='success', name="'SPECT UNPREPARED NORTH IGRINS GEMINI H IGRINS-2'", nodes=(Node(i…
 
 Running REDUCE
 ==============
@@ -392,9 +398,9 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
       ::
 
 
-                     --- reduce v4.1.0_dev ---
+                     --- reduce v4.1.0 ---
 
-         Running on Python 3.12.2
+         Running on Python 3.12.12
          All submitted files appear valid:
          unbundled_20240429/N20240429S0365_H.fits ... unbundled_20240429/N20240429S0384_H.fits, 20 files submitted.
          ================================================================================
@@ -499,8 +505,6 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
             -------------------
                PRIMITIVE: storeCalibration
                ---------------------------
-               ~/.dragons/dragons.db: Storing calibrations/processed_bpm/N20240429S0365_H_badpixel.fits as processed_bpm
-               WARNING - Overriding engineering status on file N20240429S0365_H_badpixel.fits
                .
             .
              Wrote N20240429S0365_H_badpixel.fits in output directory
@@ -517,9 +521,9 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
       ::
 
 
-                     --- reduce v4.1.0_dev ---
+                     --- reduce v4.1.0 ---
 
-         Running on Python 3.12.2
+         Running on Python 3.12.12
          All submitted files appear valid:
          unbundled_20240429/N20240429S0365_H.fits ... unbundled_20240429/N20240429S0384_H.fits, 20 files submitted.
          ================================================================================
@@ -660,7 +664,7 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
             .
             PRIMITIVE: normalizeFlat
             ------------------------
-         /home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/procedures/normalize_flat.py:121: RuntimeWarning: All-NaN slice encountered
+         /home/jjlee/miniforge3/envs/dragons41/lib/python3.12/site-packages/igrinsdr/igrins/procedures/normalize_flat.py:121: RuntimeWarning: All-NaN slice encountered
            s = np.nanmedian(dn,
             .
             PRIMITIVE: thresholdFlatfield
@@ -670,8 +674,6 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
             -----------------------------
                PRIMITIVE: storeCalibration
                ---------------------------
-               ~/.dragons/dragons.db: Storing calibrations/processed_flat/N20240429S0375_H_flat.fits as processed_flat
-               WARNING - Overriding engineering status on file N20240429S0375_H_flat.fits
                .
             .
              Wrote N20240429S0375_H_flat.fits in output directory
@@ -720,13 +722,7 @@ Run reduce_ig with the name of the created badpixel file as a parameter.
 
    .. container:: cell-output cell-output-display
 
-      ::
-
-         <matplotlib.image.AxesImage at 0x7b674fd70110>
-
-   .. container:: cell-output cell-output-display
-
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-16-output-2.png
+      |image1|
 
 SKY
 ===
@@ -781,9 +777,9 @@ We will run reduce, but we need to explicitly set the calibration file.
       ::
 
 
-                     --- reduce v4.1.0_dev ---
+                     --- reduce v4.1.0 ---
 
-         Running on Python 3.12.2
+         Running on Python 3.12.12
          All submitted files appear valid:
          unbundled_20240429/N20240429S0204_H.fits
          Manually assigned N20240429S0375_H_flat.fits as processed_flat
@@ -832,9 +828,16 @@ We will run reduce, but we need to explicitly set the calibration file.
             -------------------------
             Converting N20240429S0204_H_rpc.fits from ADU to electrons by multiplying by the gain
             .
+            PRIMITIVE: streamFirstFrame
+            ---------------------------
+            .
             PRIMITIVE: stackFrames
             ----------------------
             No stacking will be performed, since at least two input AstroData objects are required for stackFrames
+            .
+            PRIMITIVE: setReferenceFrame
+            ----------------------------
+         Sky frames exp time > 30 s.  Using the first frame.
             .
             PRIMITIVE: extractSimpleSpec
             ----------------------------
@@ -853,11 +856,11 @@ We will run reduce, but we need to explicitly set the calibration file.
             .
             PRIMITIVE: identifyMultiline
             ----------------------------
+         /home/jjlee/miniforge3/envs/dragons41/lib/python3.12/site-packages/igrinsdr/igrins/primitives_igrins.py:1582: UserWarning: Boolean Series key will be reindexed to match DataFrame index.
+           df_ref_data = df_ref_data0.set_index("gid")[msk].reset_index()
             .
             PRIMITIVE: volumeFit
             --------------------
-         /home/jjlee/git_personal/IGRINSDR/src/igrinsdr/igrins/procedures/process_wvlsol_volume_fit.py:66: FutureWarning: The provided callable <function std at 0x73261472d6c0> is currently using SeriesGroupBy.std. In a future version of pandas, the provided callable will be used directly. To keep current behavior pass the string "std" instead.
-           ss0_std = ss0.transform(np.std)
             .
             PRIMITIVE: makeSpectralMaps
             ---------------------------
@@ -869,8 +872,6 @@ We will run reduce, but we need to explicitly set the calibration file.
             ----------------------------
                PRIMITIVE: storeCalibration
                ---------------------------
-               ~/.dragons/dragons.db: Storing calibrations/processed_arc/N20240429S0204_H_arc.fits as processed_arc
-               WARNING - Overriding engineering status on file N20240429S0204_H_arc.fits
                .
             .
              Wrote N20240429S0204_H_arc.fits in output directory
@@ -895,7 +896,8 @@ We will run reduce, but we need to explicitly set the calibration file.
          [ 0]   science                  NDAstroData       (2048, 2048)   float32
                    .variance             ADVarianceUncerta (2048, 2048)   float32
                    .mask                 ndarray           (2048, 2048)   uint16
-                   .LINEFIT              Table             (755, 8)       n/a
+                   .FLEXCORR             ndarray           (2048, 2048)   float32
+                   .LINEFIT              Table             (755, 10)      n/a
                    .LINEID               Table             (1311, 4)      n/a
                    .ORDERMAP             ndarray           (2048, 2048)   int32
                    .SLITEDGE             Table             (54, 6)        n/a
@@ -923,13 +925,7 @@ We will run reduce, but we need to explicitly set the calibration file.
 
    .. container:: cell-output cell-output-display
 
-      ::
-
-         <matplotlib.image.AxesImage at 0x7b674fdaa090>
-
-   .. container:: cell-output cell-output-display
-
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-21-output-2.png
+      |image2|
 
 .. container:: cell
 
@@ -940,13 +936,7 @@ We will run reduce, but we need to explicitly set the calibration file.
 
    .. container:: cell-output cell-output-display
 
-      ::
-
-         <matplotlib.image.AxesImage at 0x7b674fc88560>
-
-   .. container:: cell-output cell-output-display
-
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-22-output-2.png
+      |image3|
 
 .. container:: cell
 
@@ -956,50 +946,33 @@ We will run reduce, but we need to explicitly set the calibration file.
 
    .. container:: cell-output cell-output-display
 
-      orders
-      wavelengths
-      int64
-      float64[2048]
-      98
-      1.8111845305271381 .. 1.836035401709596
-      99
-      1.793346677244365 .. 1.8179594968565163
-      100
-      1.7758703120185257 .. 1.8002490469894932
-      101
-      1.7587447624226658 .. 1.7828931980091172
-      102
-      1.7419597745563777 .. 1.7658815214669366
-      103
-      1.7255054927289801 .. 1.7492039939027881
-      104
-      1.709372440314816 .. 1.7328509773742082
-      105
-      1.6935515017025407 .. 1.7168132010984456
-      106
-      1.678033905266142 .. 1.7010817441336077
-      ...
-      ...
-      115
-      1.5507296414785057 .. 1.5719646403767509
-      116
-      1.5378282688044835 .. 1.5588720767301498
-      117
-      1.5251524275689152 .. 1.5460066971159918
-      118
-      1.5126964394220823 .. 1.5333627265242802
-      119
-      1.5004548168831622 .. 1.5209345840630037
-      120
-      1.4884222553873612 .. 1.5087168748698823
-      121
-      1.4765936257273986 .. 1.4967043824251922
-      122
-      1.4649639668667247 .. 1.4848920612426426
-      123
-      1.453528479103312 .. 1.4732750299167972
-      124
-      1.4422825175642295 .. 1.461848564506913
+      .. raw:: html
+
+         <div><i>Table length=27</i>
+         <table id="table130246895758048" class="table-striped table-bordered table-condensed">
+         <thead><tr><th>orders</th><th>wavelengths</th></tr></thead>
+         <thead><tr><th>int64</th><th>float64[2048]</th></tr></thead>
+         <tr><td>98</td><td>1.8111782542108175 .. 1.8360355144088847</td></tr>
+         <tr><td>99</td><td>1.7933426895060407 .. 1.8179597713646614</td></tr>
+         <tr><td>100</td><td>1.7758681385798152 .. 1.8002494404830163</td></tr>
+         <tr><td>101</td><td>1.7587439812773917 .. 1.782893672643976</td></tr>
+         <tr><td>102</td><td>1.7419600139206783 .. 1.7658820441832508</td></tr>
+         <tr><td>103</td><td>1.7255064290909259 .. 1.7492045362390494</td></tr>
+         <tr><td>104</td><td>1.7093737965777989 .. 1.7328515152904171</td></tr>
+         <tr><td>105</td><td>1.6935530454170697 .. 1.7168137148076754</td></tr>
+         <tr><td>106</td><td>1.6780354469450487 .. 1.7010822179415082</td></tr>
+         <tr><td>...</td><td>...</td></tr>
+         <tr><td>115</td><td>1.5507289869980991 .. 1.5719646536388854</td></tr>
+         <tr><td>116</td><td>1.5378277608000863 .. 1.5588720877995714</td></tr>
+         <tr><td>117</td><td>1.5251522576605656 .. 1.5460067266025135</td></tr>
+         <tr><td>118</td><td>1.5126968270416608 .. 1.5333627976870645</td></tr>
+         <tr><td>119</td><td>1.5004560083395406 .. 1.5209347227215062</td></tr>
+         <tr><td>120</td><td>1.4884245229705029 .. 1.5087171093185106</td></tr>
+         <tr><td>121</td><td>1.4765972668494782 .. 1.4967047433514884</td></tr>
+         <tr><td>122</td><td>1.4649693032384512 .. 1.4848925816488199</td></tr>
+         <tr><td>123</td><td>1.4535358559437301 .. 1.4732757450444671</td></tr>
+         <tr><td>124</td><td>1.4422923028423884 .. 1.4618495117648447</td></tr>
+         </table></div>
 
 A0V
 ===
@@ -1051,9 +1024,9 @@ Again, we need to explicitly specify calibration files.
       ::
 
 
-                     --- reduce v4.1.0_dev ---
+                     --- reduce v4.1.0 ---
 
-         Running on Python 3.12.2
+         Running on Python 3.12.12
          All submitted files appear valid:
          unbundled_20240429/N20240429S0194_H.fits ... unbundled_20240429/N20240429S0197_H.fits, 4 files submitted.
          Manually assigned N20240429S0375_H_flat.fits as processed_flat
@@ -1111,19 +1084,21 @@ Again, we need to explicitly specify calibration files.
             .
             PRIMITIVE: makeAB
             -----------------
+         #### stackFrames!!
                PRIMITIVE: stackFrames
                ----------------------
                Combining 2 inputs with mean and sigclip rejection
                Combining images.
                
                .
+         #### stackFrames!!
                PRIMITIVE: stackFrames
                ----------------------
                Combining 2 inputs with mean and sigclip rejection
                Combining images.
                
                .
-         /home/jjlee/git_personal/DRAGONS/astrodata/nddata.py:32: RuntimeWarning: Negative variance values found. Setting to zero.
+         /home/jjlee/miniforge3/envs/dragons41/lib/python3.12/site-packages/astrodata/nddata.py:32: RuntimeWarning: Negative variance values found. Setting to zero.
            warnings.warn("Negative variance values found. Setting to zero.",
             .
             PRIMITIVE: estimateSlitProfile
@@ -1172,13 +1147,7 @@ Again, we need to explicitly specify calibration files.
 
    .. container:: cell-output cell-output-display
 
-      ::
-
-         [Text(0.5, 0, 'wavelength axis'), Text(0, 0.5, 'order axis')]
-
-   .. container:: cell-output cell-output-display
-
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-28-output-2.png
+      |image4|
 
 .. container:: cell
 
@@ -1190,7 +1159,7 @@ Again, we need to explicitly specify calibration files.
 
    .. container:: cell-output cell-output-display
 
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-29-output-1.png
+      |image5|
 
 .. container:: cell
 
@@ -1202,7 +1171,7 @@ Again, we need to explicitly specify calibration files.
 
    .. container:: cell-output cell-output-display
 
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-30-output-1.png
+      |image6|
 
 .. container:: cell
 
@@ -1236,7 +1205,7 @@ Again, we need to explicitly specify calibration files.
 
    .. container:: cell-output cell-output-display
 
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-32-output-1.png
+      |image7|
 
 .. container:: cell
 
@@ -1257,7 +1226,6 @@ Again, we need to explicitly specify calibration files.
          [ 0]   science                  NDAstroData       (2048, 2048)   float64
                    .variance             ADVarianceUncerta (2048, 2048)   float64
                    .mask                 ndarray           (2048, 2048)   uint16
-                   .SLITPROFILE          Table             (5, 3)         n/a
                    .SLITPROFILE_MAP      ndarray           (2048, 2048)   float64
                    .SPEC1D               Table             (27, 5)        n/a
                    .WVLCOR               Table             (4, 2)         n/a
@@ -1311,9 +1279,9 @@ Run reduce.
       ::
 
 
-                     --- reduce v4.1.0_dev ---
+                     --- reduce v4.1.0 ---
 
-         Running on Python 3.12.2
+         Running on Python 3.12.12
          All submitted files appear valid:
          unbundled_20240429/N20240429S0190_H.fits ... unbundled_20240429/N20240429S0193_H.fits, 4 files submitted.
          Manually assigned N20240429S0375_H_flat.fits as processed_flat
@@ -1371,19 +1339,21 @@ Run reduce.
             .
             PRIMITIVE: makeAB
             -----------------
+         #### stackFrames!!
                PRIMITIVE: stackFrames
                ----------------------
                Combining 2 inputs with mean and sigclip rejection
                Combining images.
                
                .
+         #### stackFrames!!
                PRIMITIVE: stackFrames
                ----------------------
                Combining 2 inputs with mean and sigclip rejection
                Combining images.
                
                .
-         /home/jjlee/git_personal/DRAGONS/astrodata/nddata.py:32: RuntimeWarning: Negative variance values found. Setting to zero.
+         /home/jjlee/miniforge3/envs/dragons41/lib/python3.12/site-packages/astrodata/nddata.py:32: RuntimeWarning: Negative variance values found. Setting to zero.
            warnings.warn("Negative variance values found. Setting to zero.",
             .
             PRIMITIVE: estimateSlitProfile
@@ -1431,13 +1401,7 @@ Run reduce.
 
    .. container:: cell-output cell-output-display
 
-      ::
-
-         [Text(0.5, 0, 'wavelength axis'), Text(0, 0.5, 'order axis')]
-
-   .. container:: cell-output cell-output-display
-
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-38-output-2.png
+      |image8|
 
 .. container:: cell
 
@@ -1450,13 +1414,7 @@ Run reduce.
 
    .. container:: cell-output cell-output-display
 
-      ::
-
-         (0.0, 0.7)
-
-   .. container:: cell-output cell-output-display
-
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-39-output-2.png
+      |image9|
 
 .. container:: cell
 
@@ -1468,4 +1426,15 @@ Run reduce.
 
    .. container:: cell-output cell-output-display
 
-      .. image:: IGRINSDR_users_manual_files/figure-rst/cell-40-output-1.png
+      |image10|
+
+.. |image1| image:: IGRINSDR_users_manual_files/figure-rst/cell-17-output-1.png
+.. |image2| image:: IGRINSDR_users_manual_files/figure-rst/cell-22-output-1.png
+.. |image3| image:: IGRINSDR_users_manual_files/figure-rst/cell-23-output-1.png
+.. |image4| image:: IGRINSDR_users_manual_files/figure-rst/cell-29-output-1.png
+.. |image5| image:: IGRINSDR_users_manual_files/figure-rst/cell-30-output-1.png
+.. |image6| image:: IGRINSDR_users_manual_files/figure-rst/cell-31-output-1.png
+.. |image7| image:: IGRINSDR_users_manual_files/figure-rst/cell-33-output-1.png
+.. |image8| image:: IGRINSDR_users_manual_files/figure-rst/cell-39-output-1.png
+.. |image9| image:: IGRINSDR_users_manual_files/figure-rst/cell-40-output-1.png
+.. |image10| image:: IGRINSDR_users_manual_files/figure-rst/cell-41-output-1.png
