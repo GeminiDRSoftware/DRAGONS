@@ -91,10 +91,12 @@ class AstroDataIGRINS_(igrins.AstroDataIgrins):
         if isinstance(otype, str):
             if 'STD' in otype:
                 oclass = 'partnerCal'
-            elif 'TAR' in otype:
+            elif otype in ['TAR', "science"]:
                 oclass = 'science'
             elif otype in ["partnerCal"]:
                 oclass = 'partnerCal'
+            elif otype in ["dayCal"]:
+                oclass = 'dayCal'
         else:
             oclass = "unknown"
 
@@ -113,9 +115,11 @@ class AstroDataIGRINS_(igrins.AstroDataIgrins):
             Observation type.
 
         """
-        otype = self.phu.get(self._keyword_for('observation_type'))
+        # otype = self.phu.get(self._keyword_for('observation_type'))
+        otype = self.phu.get("OBSTYPE")
         if not otype:
-            otype = self[0].hdr.get(self._keyword_for('observation_type'))
+            # otype = self[0].hdr.get(self._keyword_for('observation_type'))
+            otype = self[0].hdr.get("OBSTYPE")
         ftype = self.phu.get("FRMTYPE")
         if not otype:
             ftype = self[0].hdr.get("FRMTYPE")
@@ -123,6 +127,12 @@ class AstroDataIGRINS_(igrins.AstroDataIgrins):
         if otype in ['STD', 'TAR']:
             otype = 'OBJECT'
         elif otype in ['FLAT']:
+
+            if self.phu.get("GCALLAMP") == "QH" and self.phu.get("GCALSHUT") == "CLOSED":
+                ftype = "ON"
+            elif self.phu.get("GCALLAMP") == "IRhigh" and self.phu.get("GCALSHUT") == "CLOSED":
+                ftype = "OFF"
+
             otype = f"FLAT_{ftype}"
 
         return otype
@@ -432,6 +442,7 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
 
     __keyword_dict = dict(
         wavelength_band = 'FILTER',
+        observation_type = 'OBSTYPE',
     )
 
     @staticmethod

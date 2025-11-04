@@ -81,3 +81,30 @@ def test_tags_mef(ad_mef):
     unexpected_tags = []
 
     _check_tags(ad_mef, expected_tags, unexpected_tags)
+
+
+def test_tgt(ad_tgt):
+    assert ad_tgt.observation_class() == "science"
+    assert ad_tgt.observation_type() == "OBJECT"
+
+
+def test_std(ad_std):
+    assert ad_std.observation_class() == "partnerCal"
+    assert ad_std.observation_type() == "OBJECT"
+
+
+def test_sky(ad_sky):
+    # FIXME some sky files have obclass of partnerCal, some have science.
+    # So we do not test it for now.
+    # assert ad_sky.observation_class() == "science"
+    assert ad_sky.observation_type() == "OBJECT"
+
+
+def test_flaton(ad_flaton):
+    assert ad_flaton.observation_class() == "dayCal"
+    assert ad_flaton.observation_type() == "FLAT_ON"
+
+
+def test_flatoff(ad_flatoff):
+    assert ad_flatoff.observation_class() == "dayCal"
+    assert ad_flatoff.observation_type() == "FLAT_OFF"
