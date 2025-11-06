@@ -63,7 +63,7 @@ def test_adjust_wcs_with_correlation(files, path_to_inputs, caplog):
 
     # Return the (RA, dec) as a SkyCoord at the location of each aperture
     # Then confirm that the sky coordinates are all similar
-    skycoords = [ad[0].wcs(center, 0, with_units=True)[1]
+    skycoords = [ad[0].wcs.pixel_to_world(center, 0)[1]
                   for ad, center in zip(adinputs, centers)]
     c0 = skycoords[0]
     for c in skycoords[1:]:

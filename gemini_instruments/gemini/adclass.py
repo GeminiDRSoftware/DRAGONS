@@ -2119,7 +2119,7 @@ class AstroDataGemini(AstroData):
             if ext.wcs is None:
                 return None
             yc, xc = [0.5 * l for l in ext.shape]
-            coords = ext.wcs([xc, xc, xc+1], [yc, yc+1, yc], with_units=True)
+            coords = ext.wcs.pixel_to_world([xc, xc, xc+1], [yc, yc+1, yc])
             if isinstance(coords, SkyCoord):  # pure image
                 return np.median([i.separation(j).arcsec
                                   for i, j in combinations(coords, 2)])
