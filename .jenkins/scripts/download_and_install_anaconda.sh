@@ -40,6 +40,5 @@ conda config --remove channels http://jastro.org/astroconda/public || :
 conda config --add channels conda-forge
 conda config --add channels http://astroconda.gemini.edu/public
 conda config --set channel_priority true
-conda config --set restore_free_channel false
 conda update --quiet conda
 conda env list
