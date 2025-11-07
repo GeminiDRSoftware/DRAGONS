@@ -88,7 +88,7 @@ setup(name='dragons',
           'bottleneck>=1.2',
         # 'fits_storage>=3.4.0',  # this would need uploading to PyPI first
           'future>=0.17',
-          'gwcs>=0.19,<=0.22.1',
+          'gwcs>=0.19,!=0.24',
           'holoviews>=1.20',
           'jinja2>=3.0',
           'jsonschema>=3.0',
