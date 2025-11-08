@@ -45,7 +45,9 @@ def checkFlatCounts(p):
     p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
-    p.biasCorrect(do_cal="force")
+    # Skip bias subtraction - we do overscan subtraction, so this makes no
+    # difference to the count level
+    # p.biasCorrect(do_cal="force")
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True)
     p.recordPixelStats(prefix='FLAT')
