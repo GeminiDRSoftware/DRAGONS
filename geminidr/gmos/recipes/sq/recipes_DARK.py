@@ -19,7 +19,7 @@ def makeProcessedDark(p):
         A primitive set matching the recipe_tags.
     """
 
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ(add_illum_mask=False)
     p.addVAR(read_noise=True)
     p.overscanCorrect()

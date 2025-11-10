@@ -18,7 +18,7 @@ def makeProcessedBias(p):
     """
 
     p.prepare(require_wcs=False)
-    p.addDQ()
+    p.addDQ(add_illum_mask=False)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
     p.addToList(purpose="forStack")
