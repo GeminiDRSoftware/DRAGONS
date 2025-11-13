@@ -1,3 +1,4 @@
+from copy import deepcopy
 from itertools import count
 import os
 
@@ -6,7 +7,9 @@ import numpy as np
 import pytest
 from astrodata.testing import ad_compare, download_from_archive
 from geminidr.core.primitives_preprocess import Preprocess
+from geminidr.f2.primitives_f2_image import F2Image
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr.gmos.primitives_gmos_image import GMOSImage
 from geminidr.gsaoi.primitives_gsaoi_image import GSAOIImage
 from geminidr.niri.primitives_niri_image import NIRIImage
 from gempy.library.astrotools import cartesian_regions_to_slices
@@ -452,17 +455,16 @@ def test_scale_by_exposure_time(niri_images):
     assert abs(ad2[0].data.mean() - ad2_orig_value / ad2.phu["ORIGTEXP"]) < 0.001
 
 
-# @pytest.mark.xfail(reason="Test needs revision", run=False)
-# def test_add_object_mask_to_dq(astrofaker):
-#     ad_orig = astrofaker.create('F2', 'IMAGE')
+@pytest.mark.gmos
+@pytest.mark.preprocessed_data
+def test_add_object_mask_to_dq(path_to_inputs):
+    """Confirm that all pixels in the OBJMASK get set to 1 in the output mask"""
+    ad_orig = astrodata.open(os.path.join(path_to_inputs, "N20220131S0094_refcatAdded.fits"))
+    p = GMOSImage([deepcopy(ad_orig)])
+    ad = p.addObjectMaskToDQ()[0]
 
-#     # astrodata.open(os.path.join(TESTDATAPATH, 'GMOS', 'N20150624S0106_refcatAdded.fits'))
-#     p = GMOSImage([deepcopy(ad_orig)])
-#     ad = p.addObjectMaskToDQ()[0]
-
-#     for ext, ext_orig in zip(ad, ad_orig):
-#         assert all(ext.mask[ext.OBJMASK == 0] == ext_orig.mask[ext.OBJMASK == 0])
-#         assert all(ext.mask[ext.OBJMASK == 1] == ext_orig.mask[ext.OBJMASK == 1] | 1)
+    for ext, ext_orig in zip(ad, ad_orig):
+        assert (ext.mask & ext_orig.OBJMASK).sum() == ext_orig.OBJMASK.sum()
 
 
 # @pytest.mark.xfail(reason="Test needs revision", run=False)
@@ -795,6 +797,24 @@ def test_separate_sky_proximity(groups, niri_sequence):
     # 'object' and half as 'sky'.
     assert len(p.streams['main']) * 2 == len(adinputs)
     assert len(p.streams['sky']) * 2 == len(adinputs)
+
+
+def test_nonlinearity_correct_f2():
+    """Runs nonlinearityCorrect() on the same F2 image (a flat)
+    before and after ADUToElectrons() to confirm similar results"""
+    file_path = download_from_archive("S20230408S0010.fits")
+    ad = astrodata.open(file_path)
+    p = F2Image([ad])
+    p.prepare()
+    p.addDQ()
+    ad_safe = deepcopy(p.adinputs[0])
+    p.nonlinearityCorrect()
+    ad1 = p.ADUToElectrons().pop()
+    p = F2Image([ad_safe])
+    p.ADUToElectrons()
+    ad2 = p.nonlinearityCorrect().pop()
+
+    ad_compare(ad1, ad2, rtol=2e-7, ignore=['filename'])
 
 # @pytest.mark.parametrize('frame', ['object', 'sky'])#, 'mixed'])
 # def test_list_ra_dec(frame, niri_sequence):
