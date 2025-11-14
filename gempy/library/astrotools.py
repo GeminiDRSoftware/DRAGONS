@@ -631,8 +631,12 @@ def parse_user_regions(regions, dtype=int, allow_step=False):
             ranges.append((None, None))
             continue
         try:
-            values = [dtype(x) if x else None
-                      for x in range_.replace("-", ":", 1).split(":")]
+            if range_.startswith("-"):
+                values = [dtype(x) if x else None
+                          for x in ("-"+range_[1:].replace("-", ":", 1)).split(":")]
+            else:
+                values = [dtype(x) if x else None
+                          for x in range_.replace("-", ":", 1).split(":")]
             assert len(values) in (1, 2, 2+allow_step)
             if len(values) > 1 and values[0] is not None and values[1] is not None and values[0] > values[1]:
                 values[0], values[1] = values[1], values[0]

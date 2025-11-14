@@ -176,6 +176,9 @@ def test_parse_user_regions():
     with pytest.raises(ValueError):
         parse("1:10:2")
     assert parse("50:20") == [(20, 50), ]
+    assert parse("-2:5") == [(-2, 5)]
+    assert parse("-2-5") == [(-2, 5)]
+    assert parse("-10--5") == [(-10, -5)]
 
 
 def test_cartesian_regions_to_slices():
