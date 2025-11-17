@@ -16,9 +16,9 @@ def reduceScience(p):
     """
     p.prepare()
     p.addDQ()
-    p.nonlinearityCorrect() # non-linearity correction tbd even for gemini iraf
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect() # non-linearity correction tbd even for gemini iraf
     p.darkCorrect()
     p.flatCorrect()
     p.attachWavelengthSolution()
