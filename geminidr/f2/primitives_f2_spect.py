@@ -42,7 +42,7 @@ class F2Spect(Telluric, Spect, F2):
         """
         This produces an appropriate stacked F2 spectroscopic flat, based on
         the inputs. For F2 spectroscopy, lamp-on flats have the dark current
-        removed by subtracting darks.
+        removed by subtracting darks, but lamp-off flats are also allowed.
 
         Parameters
         ----------
@@ -58,36 +58,63 @@ class F2Spect(Telluric, Spect, F2):
         if not adinputs:
             return adinputs
 
-        # This is basically the generic makeLampFlat code, but altered to
-        # distinguish between FLATs and DARKs, not LAMPONs and LAMPOFFs
+        def check_exposure_times(adlist):
+            return all(abs(ad.exposure_time() - adlist[0].exposure_time()) < 0.01
+                       for ad in adlist[1:])
+
         flat_list = self.selectFromInputs(adinputs, tags='FLAT')
+        flat_on_list = self.selectFromInputs(flat_list, tags='LAMPON')
+        flat_off_list = self.selectFromInputs(flat_list, tags='LAMPOFF')
         dark_list = self.selectFromInputs(adinputs, tags='DARK')
+        if not flat_on_list:
+            raise ValueError("No lamp-on flats have been provided")
+        if dark_list and flat_on_list and flat_off_list:
+            log.warning("Darks have been provided as well as lamp-on and "
+                        "lamp-off flats. Ignoring the darks.")
+            dark_list = []
         stack_params = self._inherit_params(params, "stackFrames")
         if dark_list:
             self.showInputs(dark_list, purpose='darks')
             dark_list = self.stackDarks(dark_list, **stack_params)
-        self.showInputs(flat_list, purpose='flats')
         stack_params.update({'zero': False, 'scale': False})
-        flat_list = self.stackFrames(flat_list, **stack_params)
+        if flat_off_list:
+            self.showInputs(flat_off_list, purpose='lamp-off flats')
+            if not check_exposure_times(flat_off_list):
+                raise ValueError("Lamp-off flats are not of equal exposure time")
+            flat_off_list = self.stackFrames(flat_off_list, **stack_params)
+        self.showInputs(flat_on_list, purpose='lamp-on flats')
+        if not check_exposure_times(flat_on_list):
+            raise ValueError("Lamp-on flats are not of equal exposure time")
+        flat_on_list = self.stackFrames(flat_on_list, **stack_params)
 
-        if flat_list and dark_list:
-            log.fullinfo("Subtracting stacked dark from stacked flat")
-            flat = flat_list[0]
-            flat.subtract(dark_list[0])
+        if flat_off_list or dark_list:
+            if dark_list:
+                subtype = "dark"
+                sublist = dark_list
+                if not check_exposure_times(flat_on_list + dark_list):
+                    log.warning("Lamp-on flats and darks do not have the same exposure time.")
+            else:
+                subtype = "lamp-off flat"
+                sublist = flat_off_list
+                if not check_exposure_times(flat_on_list + flat_off_list):
+                    log.warning("Lamp-on and lamp-off flats do not have the same exposure time.")
+            log.stdinfo(f"Subtracting stacked {subtype} from stacked lamp-on flat")
+            flat = flat_on_list.pop()
+            flat.subtract(sublist.pop())
             flat.update_filename(suffix=suffix, strip=True)
             return [flat]
 
-        elif flat_list:  # No darks were passed.
+        else:  # Only lamp-on flats were passed.
             # Look for dark in calibration manager; if not found, crash.
             log.fullinfo("Only had flats to stack. Calling darkCorrect.")
-            flat_list = self.darkCorrect(flat_list, suffix=suffix,
+            flat_on_list = self.darkCorrect(flat_on_list, suffix=suffix,
                                          dark=None, do_cal='procmode')
-            if flat_list[0].phu.get('DARKIM') is None:
+            if flat_on_list[0].phu.get('DARKIM') is None:
                 # No dark was subtracted by darkCorrect:
                 raise CalibrationNotFoundError(
                     "No processed dark found in calibration database. Please "
                     "either provide one, or include a list of darks as input.")
-            return flat_list
+            return flat_on_list
 
     def standardizeWCS(self, adinputs=None, **params):
         """
