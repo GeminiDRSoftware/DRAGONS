@@ -195,10 +195,20 @@ class Standardize(PrimitivesBASE):
                 log.warning("addLatencyToDQ() not defined in primitivesClass "
                             + self.__class__.__name__)
 
-        # Add the illumination mask if requested
+        # Add the illumination mask if requested. Only for illuminated frames
         if params['add_illum_mask']:
-            adinputs = self.addIllumMaskToDQ(
-                adinputs, **self._inherit_params(params, "addIllumMaskToDQ"))
+            needs_illum = [not ad.tags.intersection({'DARK', 'BIAS'})
+                           for ad in adinputs]
+            modified = self.addIllumMaskToDQ(
+                [ad for doit, ad in zip(needs_illum, adinputs) if doit],
+                **self._inherit_params(params, "addIllumMaskToDQ"))
+
+            # Insert the modified files into the "adinputs" list
+            j = 0
+            for i in range(len(adinputs)):
+                if needs_illum[i]:
+                    adinputs[i] = modified[j]
+                    j += 1
 
         # Timestamp and update filenames
         for ad in adinputs:
