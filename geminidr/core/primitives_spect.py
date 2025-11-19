@@ -4031,6 +4031,7 @@ class Spect(Resample):
                                     ", ".join(coeffs))
 
                     mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
+                    mask &= (DQ.max ^ DQ.non_linear)  # allow non-linear pixels to be fit
                     slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
 
                     masked_data = np.ma.masked_array(data, mask=mask)
