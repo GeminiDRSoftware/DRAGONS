@@ -56,7 +56,8 @@ class F2LineSpreadFunction(LineSpreadFunction):
         #convolutions = [(partial(self.skew_normal, scale=1), 25 * self.dispersion),
         #                #boxcar_func, 0.5 * slit_width * lsf_scaling)]
         fwhm = self.slit_width_pix * self.orig_dispersion
-        gaussian_func = partial(convolution.gaussian_constant_fwhm, fwhm=fwhm)
+        gaussian_func = partial(convolution.gaussian_constant_fwhm,
+                                fwhm=fwhm*lsf_scaling)
         gaussian_dw = 2 * fwhm
         convolutions = [(partial(self.skew_normal, scale=1), 25 * self.dispersion),
                         (gaussian_func, gaussian_dw)]
