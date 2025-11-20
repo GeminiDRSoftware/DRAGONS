@@ -7,6 +7,7 @@
 import os
 
 from importlib import import_module
+from nis import match
 
 from astropy.modeling import models
 
@@ -21,6 +22,7 @@ from gemini_instruments import gmu
 from geminidr import CalibrationNotFoundError
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
+from ..gsaoi.tests.test_gsaoi_image import adinputs
 
 
 # ------------------------------------------------------------------------------
@@ -37,6 +39,55 @@ class F2Spect(Telluric, Spect, F2):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_f2_spect)
+
+    def darkCorrect(self, adinputs=None, **params):
+        """
+        This primitive performs dark subtraction on F2 spectroscopic data.
+        It differs from the generic version in that it will look for a
+        lamp-off flat in the list of inputs and use that to subtract the
+        dark and thermal components instead of looking for a processed
+        dark.  This case happens in HK-HK and R3K-Klong configurations as
+        far as we know.
+
+        Parameters
+        ----------
+        suffix: str
+            The suffix to be added to the output file.
+        dark: list of :class:`~astrodata.AstroData` or None
+            List of dark frames to be used for the correction. If None,
+            the calibration database will be searched for an appropriate
+            dark frame.
+        do_cal: str
+            Whether to search for calibration frames in the calibration
+            database. Options are 'yes', 'no', and 'procmode'. In the last
+            case, calibration frames will be searched for only if the input
+            frames are processed.
+        """
+
+        if 'ARC' in adinputs[0].tags and params['dark'] is None:
+            lampoffs = []
+            arcs = []
+            for ad in adinputs:
+                if 'LAMPOFF' in ad.tags:
+                    lampoffs.append(ad)
+                else:
+                    arcs.append(ad)
+            if lampoffs:
+                log = self.log
+                log.fullinfo("Using lamp-off flat(s) for dark correction.")
+                # Check that all exposure times match
+                exptimes = [ad.exposure_time() for ad in adinputs]
+                if not all(abs(et - exptimes[0]) < 0.01 for et in exptimes[1:]):
+                    raise ValueError("Lamp-off flats and arcs do not have the same exposure time")
+                # Stack lamp-offs
+                stack_params = self._inherit_params(params, "stackFrames")
+                stack_params.update({'zero': False, 'scale': False})
+                self.showInputs(lampoffs, purpose='lamp-off flats for dark correction')
+                lampoff_stack = self.stackFrames(lampoffs, **stack_params)
+                params['dark'] = [lampoff_stack[0]]
+
+        return super().darkCorrect(arcs, **params)
+
 
     def makeLampFlat(self, adinputs=None, **params):
         """
