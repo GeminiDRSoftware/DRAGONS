@@ -311,11 +311,23 @@ class Standardize(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def makeIRAFCompatible(self, adinputs=None):
+    def makeIRAFCompatible(self, adinputs=None, **params):
         """
         Add keywords to make the pipeline-processed file compatible
         with the tasks in the Gemini IRAF package. For Hamamatsu data, also
         trim off the 48/binning rows and 1 column that IRAF trims off.
+
+        Parameters
+        ----------
+
+        delvar : Bool
+            If True, delete the VAR extension from the first extension of the ad
+
+        deldq: Bool
+            If True, delete the DQ extension from the first extension of the ad
+
+        delobjmask: Book
+            If True, delete the OBJMASK from the first extension of the ad
         """
         log = self.log
         log.debug(gt.log_message('primitive', self.myself(), 'starting'))
@@ -323,6 +335,16 @@ class Standardize(PrimitivesBASE):
 
         for ad in adinputs:
             irafcompat.pipeline2iraf(ad)
+
+            if params['delvar']:
+                ad[0].variance = None
+
+            if params['deldq']:
+                ad[0].mask = None
+
+            if params['delobjmask'] and hasattr(ad[0], 'OBJMASK'):
+                del ad[0].OBJMASK
+
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
 
         return adinputs
