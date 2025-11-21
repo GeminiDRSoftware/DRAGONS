@@ -64,14 +64,14 @@ class F2Spect(Telluric, Spect, F2):
             frames are processed.
         """
 
+        to_correct = []
         if 'ARC' in adinputs[0].tags and params['dark'] is None:
             lampoffs = []
-            arcs = []
             for ad in adinputs:
                 if 'LAMPOFF' in ad.tags:
                     lampoffs.append(ad)
                 else:
-                    arcs.append(ad)
+                    to_correct.append(ad)
             if lampoffs:
                 log = self.log
                 log.fullinfo("Using lamp-off flat(s) for dark correction.")
@@ -85,8 +85,10 @@ class F2Spect(Telluric, Spect, F2):
                 self.showInputs(lampoffs, purpose='lamp-off flats for dark correction')
                 lampoff_stack = self.stackFrames(lampoffs, **stack_params)
                 params['dark'] = [lampoff_stack[0]]
+        else:
+            to_correct = adinputs
 
-        return super().darkCorrect(arcs, **params)
+        return super().darkCorrect(to_correct, **params)
 
 
     def makeLampFlat(self, adinputs=None, **params):
