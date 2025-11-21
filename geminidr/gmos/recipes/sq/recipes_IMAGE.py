@@ -46,8 +46,11 @@ def reducePreimage(p):
     This recipe performs the standardization and corrections needed to
     convert the raw input science images into a stacked image. It does the
     resampling in a manner suitable for GMMPS mask preparation, and calls
-    makeIRAFCompatible to add IRAF-style header keywords and to trim the image
-    to the same dimensions that IRAF would generate.
+    makeIRAFCompatible to add IRAF-style header keywords, to trim the image
+    to the same dimensions that IRAF would generate, and to delete the
+    VAR, DQ and OBJMASK extensions which may cause confusion during some of the
+    legacy mask design process. Before discarding the DQ plane, the recipe fills
+    in DQ masked pixels in the SCI plane.
 
     Parameters
     ----------
@@ -72,7 +75,8 @@ def reducePreimage(p):
     p.flagCosmicRaysByStacking()
     p.scaleCountsToReference()
     p.stackFrames(zero=True)
-    p.makeIRAFCompatible()
+    p.applyDQPlane()
+    p.makeIRAFCompatible(delvar=True, deldq=True, delobjmask=True)
     p.storeProcessedScience(suffix="_preimage")
     return
 
