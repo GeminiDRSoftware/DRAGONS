@@ -9,11 +9,11 @@ import re
 import astrodata
 
 def pipeline2iraf(ad, verbose=False):
-        
-    if "GMOS" in ad.tags:
-        compat_with_iraf_GMOS(ad, verbose)
+
     if "GMOS" in ad.tags and 'Hamamatsu' in ad.detector_name(pretty=True):
         trim_like_iraf(ad, verbose)
+    if "GMOS" in ad.tags:
+        compat_with_iraf_GMOS(ad, verbose)
     elif "F2" in ad.tags:
         compat_with_iraf_F2(ad, verbose)
     else:
@@ -179,7 +179,6 @@ def _copy_wcs_to_phu(ad):
     for keyword in wcs_dict:
         if keyword in keywords:
             ad.phu.set(keyword, wcs_dict[keyword], 'For IRAF compatibility')
-
     if 'EQUINOX' in ad[0].hdr:
         ad.phu.set('EQUINOX', ad[0].hdr['EQUINOX'], 'For IRAF compatibility')
 
