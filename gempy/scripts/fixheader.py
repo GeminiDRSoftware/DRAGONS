@@ -2,11 +2,22 @@
 #
 #                                                                       DRAGONS
 #                                                                 gempy.scripts
-#                                                                    fixhead.py
+#                                                                    fixheader.py
 # -----------------------------------------------------------------------------
+"""
+This command will fix the headers of FITS files by editing or adding a keyword
+to the primary header or one or more of the extension headers. Without the
+-a/--add option, the keyword must already exist: if it is present in the
+primary header, it will be modified there; otherwise it will be edited in the
+headers of the extensions where it is already present. With the -a/--add
+option, the keyword will be added to the primary header by default: to add it
+to a specific extension, append ':extid' (where 'extid' is usually identical
+to the EXTVER) to the filename; to add it to all extensions, just use ':'
+"""
 
 import sys
 from argparse import ArgumentParser
+import textwrap
 
 import astrodata, gemini_instruments
 from gempy import __version__
@@ -17,15 +28,16 @@ DTYPES = {'int': int, 'float': float, 'str': str}
 
 def main(args=None):
     parser = ArgumentParser(
-        description=f"Primitive parameter display, v{__version__}")
+        description=f"Header keyword editor, v{__version__}",
+        epilog=textwrap.dedent(__doc__))
     parser.add_argument("-v", "--version", action="version",
                         version=f"v{__version__}")
-    parser.add_argument('filename', help="filename or filename:[extension]")
-    parser.add_argument('keyword', help="keyword")
+    parser.add_argument('filename', help="filename or filename[:[extension]]")
+    parser.add_argument('keyword', help="keyword to change")
     parser.add_argument('value', help="new value")
-    parser.add_argument("-d", "--dtype", help="data type")
+    parser.add_argument("-d", "--dtype", help="data type (int, float, str)")
     parser.add_argument("-a", "--add", action="store_true",
-                        help="add new keyword")
+                        help="add (rather than replace) new keyword")
     args = parser.parse_args(args)
     if ":" in args.filename:
         filename, extid = args.filename.split(":")
@@ -72,8 +84,9 @@ def update_header(filename, extid, keyword, value, add, dtype=None):
         if keyword in ad[index].hdr or add:
             if keyword in ad[index].hdr and dtype is None:
                 dtype = type(ad[index].hdr[keyword])
+            print(f"Updating {keyword}={ad[index].hdr[keyword]} -> {value} "
+                  f"in extension {ad[index].id}")
             ad[index].hdr[keyword] = coerce(value, dtype)
-            print(f"Updating {keyword}={value} in extension {ad[index].id}")
         else:
             raise KeyError(f"{keyword} not found in {filename}:{extid} and "
                            "'--add' not selected")
@@ -85,6 +98,8 @@ def update_header(filename, extid, keyword, value, add, dtype=None):
         if not add:
             for ext, already in zip(ad, already_values):
                 if already is not None:
+                    print(f"Updating {keyword}={ext.hdr[keyword]} -> {value} "
+                          f"in extension {ext.id}")
                     ext.hdr[keyword] = coerce(value, type(ext.hdr[keyword])
                                               if dtype is None else dtype)
         else:
