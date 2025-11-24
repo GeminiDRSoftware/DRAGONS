@@ -61,7 +61,7 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename, mag, bbtemp):
     p = pclass([ad])
     adout = p.fitTelluric(magnitude=mag, bbtemp=bbtemp,
                           shift_tolerance=None,
-                          debug_stellar_mask_threshold=0.9).pop()
+                          debug_stellar_mask_threshold=0.).pop()
 
     adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
     assert ad_compare(adout, adref)
