@@ -132,7 +132,7 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
 
         # This is where we diverge because of the complexity of Telluric
         def fn():
-            # Perform the fit
+            # Perform the fit.
             m_final, new_mask = vis.calibrator.perform_fit(
                 self.my_fit_index, sigma_clipping=self.sigma_clip)
             #for k, v in zip(m_final.param_names, m_final.parameters):
@@ -143,7 +143,7 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
             # based on sigma-clipping
             start_pix = 0
             for i, (fit, nparams) in enumerate(zip(vis.fits, m_final.nparams)):
-                ngoodpix = (~vis.calibrator.mask[i]).sum()
+                ngoodpix = (~(vis.calibrator.mask[i] | vis.calibrator.user_mask[i])).sum()
                 # Obviously this naming is ridiculous!
                 fit.fit = m_final.models[i]
                 # The mask being returned is the size of the originally good
@@ -151,9 +151,8 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
                 # user in the UI. But the update_mask() method only wants
                 # points that were used in the fit, i.e., not those that
                 # had been masked by the user/stellar absorption features.
-                user_masked = np.asarray([m in (self.UserMasked.name, "stellar") for m in fit.mask])
-                fit.fit.mask = new_mask[start_pix:start_pix+ngoodpix][~user_masked]
-                #print(i, start_pix, start_pix+ngoodpix, new_mask.size)
+                # This is handled by update_mask()
+                fit.fit.mask = new_mask[start_pix:start_pix+ngoodpix]
                 fit.update_mask()
                 start_pix += ngoodpix
 
