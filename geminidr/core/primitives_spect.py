@@ -5063,6 +5063,11 @@ class Spect(Resample):
                 else:
                     tab_labels.extend([f"Aperture {apnum}" for apnum in aptable["number"]])
 
+            # We don't have any apertures to trace
+            if not tab_labels:
+                log.warning(f"{ad.filename} has no apertures to trace")
+                continue
+
             # Set up UIParameters for trace_lines() call
             _config = self.params[self.myself()]
             _config.update(**params)
