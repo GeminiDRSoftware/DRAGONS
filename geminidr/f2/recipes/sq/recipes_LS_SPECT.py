@@ -37,6 +37,7 @@ def reduceScience(p):
     p.storeProcessedScience(suffix="_2D")
     p.extractSpectra()
     p.telluricCorrect()
+    p.fluxCalibrate()
     p.storeProcessedScience(suffix="_1D")
 
 
@@ -72,7 +73,7 @@ def reduceTelluric(p):
     p.traceApertures()
     p.extractSpectra()
     p.fitTelluric()
-    p.storeProcessedScience(suffix="_1D")
+    p.storeProcessedTelluric()
 
 
 def  makeWavecalFromSkyEmission(p):
@@ -88,7 +89,6 @@ def  makeWavecalFromSkyEmission(p):
 
     p.prepare()
     p.addDQ()
-    p.addVAR(read_noise=True)
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
     p.darkCorrect()
