@@ -84,11 +84,6 @@ class AstroDataGnirs(AstroDataGemini):
         if self.phu.get('PROCSTND'):
             return TagSet(['STANDARD', 'CAL'])
 
-    @astro_data_tag
-    def _type_telluric(self):
-        if self.phu.get('PROCTELL'):
-            return TagSet(['TELLURIC', 'CAL'])
-
     @returns_list
     @astro_data_descriptor
     def array_name(self):

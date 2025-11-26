@@ -18,7 +18,7 @@ def reduceScience(p):
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
-    p.nonlinearityCorrect() # non-linearity correction tbd even for gemini iraf
+    p.nonlinearityCorrect()
     p.darkCorrect()
     p.flatCorrect()
     p.attachWavelengthSolution()
@@ -53,7 +53,7 @@ def reduceTelluric(p):
     """
     p.prepare()
     p.addDQ()
-    p.nonlinearityCorrect() # non-linearity correction tbd even for gemini iraf
+    p.nonlinearityCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
     p.darkCorrect()

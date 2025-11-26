@@ -25,7 +25,9 @@ class addVARConfig(config.Config):
 
 
 class makeIRAFCompatibleConfig(config.Config):
-    pass
+    delvar = config.Field("Delete the VAR plane of the first extension", bool, False, optional=True)
+    deldq = config.Field("Delete the DQ plane of the first extension", bool, False, optional=True)
+    delobjmask = config.Field("Delete the OBJMASK plane of the first extension", bool, False, optional=True)
 
 
 class standardizeInstrumentHeadersConfig(config.Config):

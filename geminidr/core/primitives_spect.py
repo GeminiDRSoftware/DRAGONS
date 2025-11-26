@@ -4031,6 +4031,7 @@ class Spect(Resample):
                                     ", ".join(coeffs))
 
                     mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
+                    mask &= (DQ.max ^ DQ.non_linear)  # allow non-linear pixels to be fit
                     slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
 
                     masked_data = np.ma.masked_array(data, mask=mask)
@@ -5061,6 +5062,11 @@ class Spect(Resample):
                         tab_labels.append(tab_label)
                 else:
                     tab_labels.extend([f"Aperture {apnum}" for apnum in aptable["number"]])
+
+            # We don't have any apertures to trace
+            if not tab_labels:
+                log.warning(f"{ad.filename} has no apertures to trace")
+                continue
 
             # Set up UIParameters for trace_lines() call
             _config = self.params[self.myself()]

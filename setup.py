@@ -37,10 +37,11 @@ SCRIPTS = [
 ]
 SCRIPTS += [
     os.path.join('gempy', 'scripts', name)
-    for name in ('dataselect', 'dgsplot', 'fwhm_histogram', 'gmosn_fix_headers',
-                 'gmoss_fix_HAM_BPMs.py', 'gmoss_fix_headers.py',
-                 'pipeline2iraf', 'profile_all_obj', 'psf_plot', 'showrecipes',
-                 'showd', 'showpars', 'typewalk', 'zp_histogram')
+    for name in ('dataselect', 'dgsplot', 'fixheader', 'fwhm_histogram',
+                 'gmosn_fix_headers', 'gmoss_fix_HAM_BPMs.py',
+                 'gmoss_fix_headers.py', 'pipeline2iraf', 'profile_all_obj',
+                 'psf_plot', 'showrecipes', 'showd', 'showpars', 'typewalk',
+                 'zp_histogram')
 ]
 
 # EXTENSIONS
