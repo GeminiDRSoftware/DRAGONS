@@ -294,7 +294,7 @@ fixture_data = {
     ('F2', 'S20160616S0072.fits') : ['GCAL_IR_ON', 'FLAT', 'SIDEREAL', 'SPECT', 'F2', 'CAL', 'LS', 'GEMINI', 'SOUTH',
                                      'UNPREPARED', 'RAW', 'LAMPON', 'GCALFLAT'],
     ('F2', 'S20160616S0075.fits') : ['IMAGE', 'SIDEREAL', 'F2', 'ACQUISITION', 'IMAGE', 'GEMINI', 'SOUTH', 'UNPREPARED',
-                                     'RAW', 'THRUSLIT', 'RAW'],
+                                     'RAW', 'THRUSLIT', 'LS'],
     ('F2', 'S20160708S0025.fits') : ['AT_ZENITH', 'AZEL_TARGET', 'DARK', 'F2', 'CAL', 'NON_SIDEREAL', 'GEMINI', 'SOUTH',
                                      'UNPREPARED', 'RAW'],
 
