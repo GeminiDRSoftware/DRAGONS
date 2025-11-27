@@ -64,8 +64,10 @@ class Calibrator(ABC):
             self.user_mask = np.zeros_like(x, dtype=bool)
 
         try:
-            regions = ui_params['regions']
-        except (TypeError, KeyError):
+            regions = ui_params.regions
+        except (TypeError, AttributeError):
+            return
+        if regions is None:
             return
 
         # Effectively the code from fit_1D

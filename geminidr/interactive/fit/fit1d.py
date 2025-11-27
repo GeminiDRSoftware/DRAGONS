@@ -46,7 +46,7 @@ from geminidr.interactive.interactive import (
     FitQuality,
 )
 from geminidr.interactive.interactive_config import interactive_conf
-from gempy.library.astrotools import cartesian_regions_to_slices
+from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
 
 
@@ -467,12 +467,16 @@ class InteractiveModel1D(InteractiveModel):
             }
 
         goodpix = np.array(
-            [m not in [self.UserMasked.name] + self.extra_mask_names for m in self.mask]
+            [m not in [self.UserMasked.name, self.BandMasked.name] +
+             self.extra_mask_names for m in self.mask]
         )
 
         self.quality = FitQuality.BAD
 
         if goodpix.sum():
+            # We're no longer sending "regions" to fit_1D because we're
+            # excluding those pixels here
+            regions = fitparms.pop("regions", "no regions")
             new_fit = fit_1D(
                 self.y[goodpix],
                 points=self.x[goodpix],
@@ -482,6 +486,8 @@ class InteractiveModel1D(InteractiveModel):
                 else self.weights[goodpix],
                 **fitparms,
             )
+            if regions != "no regions":
+                fitparms["regions"] = regions
 
             # For splines, "rank" is the number of spline pieces; for
             # Chebyshevs it's effectively the number of fitted points (max
@@ -526,9 +532,10 @@ class InteractiveModel1D(InteractiveModel):
     def update_mask(self):
         """Update the mask based on the current fit. The mask in the bokeh
         object is the size of the input data, but the mask returned by the
-        fit is only the size of the non-user/band/other-masked pixels."""
+        fit is only the size of the non-user/other-masked pixels."""
         goodpix = np.array(
-            [m not in [self.UserMasked.name] + self.extra_mask_names for m in self.mask]
+            [m not in [self.UserMasked.name, self.BandMasked.name] +
+             self.extra_mask_names for m in self.mask]
         )
 
         mask = self.mask.copy()
@@ -1093,7 +1100,7 @@ class Fit1DPanel:
         prep_fit1d_params_for_fit1d(fitting_parameters)
 
         # Avoids having to check whether this is None all the time
-        band_model = GIRegionModel(domain=domain)
+        band_model = GIRegionModel(domain=domain, dtype=x.dtype)
 
         self.model = interactive_model_class(
             fitting_parameters,
@@ -1163,11 +1170,7 @@ class Fit1DPanel:
         # Initializing regions here ensures the listeners are notified of the
         # changes to regions.
         if fitting_parameters.get("regions") is not None:
-            region_tuples = cartesian_regions_to_slices(
-                fitting_parameters["regions"]
-            )
-
-            band_model.load_from_tuples(region_tuples)
+            band_model.load_from_string(fitting_parameters["regions"])
 
         # TODO refactor? this is dupe from band_model_handler hacking it in
         # here so I can account for the initial state of the band model (which

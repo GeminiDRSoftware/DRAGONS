@@ -377,10 +377,13 @@ class TelluricPanel(Fit1DPanel):
 
         absorption = at.divide0(model.y, model.aux_data.data['continuum'][good])
         goodpix = [m == 'good' for m in model.mask]
-        spline = make_interp_spline(model.x[goodpix],
-                                    absorption[goodpix], k=3)
-        spline.extrapolate = False  # will return np.nan outside range
-        model.aux_data.data['telluric_data'] = spline(model.aux_data.data['waves'])
+        if np.sum(goodpix) > 3:
+            spline = make_interp_spline(model.x[goodpix],
+                                        absorption[goodpix], k=3)
+            spline.extrapolate = False  # will return np.nan outside range
+            model.aux_data.data['telluric_data'] = spline(model.aux_data.data['waves'])
+        else:
+            model.aux_data.data['telluric_data'] = np.ones_like(model.aux_data.data['waves'])
 
 
 class TelluricVisualizer(Fit1DVisualizer):
