@@ -4858,8 +4858,13 @@ class Spect(Resample):
                            key=lambda xx: xx[1], reverse=True)).T
                 deep_enough = [x > peak_value / (i + 2)
                                for i, x in enumerate(possible_beams[1])]
+                # So we find the first trough that's deep enough (True)
+                # and then find the next trough that isn't (False). All
+                # these are considered -ve beams. We also have to account
+                # for there not being any False entries after the True.
                 nbeams = ((first_true := np.argmax(deep_enough)) +
-                          np.argmin(deep_enough[first_true:]))
+                          (np.argmin(deep_enough[first_true:]) or
+                           (len(deep_enough) - first_true)))
                 beam_offsets = peak_location - possible_beams[0, :nbeams]
                 log.debug(f"{ad.filename} beam offsets: "+" ".join(
                     [str(x) for x in beam_offsets]))
