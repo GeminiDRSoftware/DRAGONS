@@ -4822,13 +4822,15 @@ class Spect(Resample):
         # which is faster.
         for ad in adinputs:
             if self.timestamp_keys['subtractSky'] in ad.phu:
+                # Determine the smallest spatial extent of the extensions
+                # (we assume all the extensions have the same pixel scale)
                 spataxes = np.asarray(ad.dispersion_axis()) - 1
                 min_size = min(ext.shape[spataxis]
                                for ext, spataxis in zip(ad, spataxes))
                 xcorr_sum = np.zeros((2 * min_size - 1,))
 
                 for ext, spataxis in zip(ad, spataxes):
-                    # If this ext is wider than the minimum, it's xcorr will
+                    # If this ext is wider than the minimum, its xcorr will
                     # be wider and we need to trim it to the same size.
                     xcorr_slice = (slice(ext.shape[spataxis] - min_size,
                                          min_size - ext.shape[spataxis])
@@ -4838,9 +4840,9 @@ class Spect(Resample):
                         _slice = i if spataxis == 1 else (slice(None), i)
                         row = np.ma.masked_array(ext.data[_slice],
                                                  None if ext.mask is None else
-                                                 ext.mask[_slice])
+                                                 ext.mask[_slice] & DQ.not_signal)
                         # Without the "maximum" we get a symmetric xcorr array
-                        xcorr_sum += np.ma.correlate(
+                        xcorr_sum += np.correlate(
                             np.maximum(row, 0), -row, mode='full')[xcorr_slice]
 
                 # This is expected to be at zero shift
@@ -4850,17 +4852,28 @@ class Spect(Resample):
                 # The idea here is that we can have one -ve beam if it's as
                 # strong as the +ve beam, or two if they're at least half as
                 # strong, etc. Because of noise, we add 1 to the denominator.
-                possible_beams = sorted(x[:2] for x in peak_finding.get_extrema(
-                    xcorr_sum, remove_edge_maxima=False) if x[2])[::-1]
-                beam_locations = [x[0] for i, x in enumerate(possible_beams)
-                                  if x[1] > peak_value / (i + 2)]
-                beam_offsets = peak_location - np.array(beam_locations)
-                log.debug(f"{ad.filename} beam offsets: "+" ".join(
-                    [str(x) for x in beam_offsets]))
+                possible_beams = np.array(
+                    sorted([x[:2] for x in peak_finding.get_extrema(
+                        xcorr_sum, remove_edge_maxima=False) if x[2]],
+                           key=lambda xx: xx[1], reverse=True)).T
+                if possible_beams.size:
+                    deep_enough = [x > peak_value / (i + 2)
+                                   for i, x in enumerate(possible_beams[1])]
+                    # So we find the first trough that's deep enough (True)
+                    # and then find the next trough that isn't (False). All
+                    # these are considered -ve beams. We also have to account
+                    # for there not being any False entries after the True.
+                    nbeams = ((first_true := np.argmax(deep_enough)) +
+                              (np.argmin(deep_enough[first_true:]) or
+                               (len(deep_enough) - first_true)))
+                    if nbeams > 0:
+                        beam_offsets = peak_location - possible_beams[0, :nbeams]
+                        log.debug(f"{ad.filename} beam offsets: "+" ".join(
+                            [str(x) for x in beam_offsets]))
 
-                # Store them somewhere for retrieval later
-                for ext in ad:
-                    ext.nddata.meta['negative_beam_offsets'] = beam_offsets
+                        # Store them somewhere for retrieval later
+                        for ext in ad:
+                            ext.nddata.meta['negative_beam_offsets'] = beam_offsets
 
         if interactive:
             apgrow = list()

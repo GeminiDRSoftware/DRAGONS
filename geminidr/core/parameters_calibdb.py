@@ -54,6 +54,10 @@ class getProcessedSlitIllumConfig(config.Config):
     pass
 
 
+class getProcessedTelluricConfig(config.Config):
+    pass
+
+
 class getBPMConfig(config.Config):
     pass
 
@@ -128,6 +132,7 @@ class storeProcessedStandardConfig(config.Config):
 
 class storeProcessedSlitIllumConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitIllum", optional=True)
+
 
 class storeProcessedTelluricConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_telluric", optional=True)

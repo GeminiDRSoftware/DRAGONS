@@ -56,23 +56,21 @@ class AstroDataF2(AstroDataGemini):
 
     @astro_data_tag
     def _tag_is_ls(self):
-        if not self._tag_is_spect():
-            return
-
         decker = self.phu.get('DECKER') == 'Long_slit' or self.phu.get('DCKERPOS') == 'Long_slit'
-
         if decker or re.match(".?pix-slit", self.phu.get('MOSPOS', '')):
-            return TagSet(['LS', 'SPECT'])
+            if self._tag_is_spect():
+                return TagSet(['LS', 'SPECT'])
+            else:
+                return TagSet(['LS', 'THRUSLIT'], if_present=['IMAGE'])
 
     @astro_data_tag
     def _tag_is_mos(self):
-        if not self._tag_is_spect():
-            return
-
         decker = self.phu.get('DECKER') == 'mos' or self.phu.get('DCKERPOS') == 'mos'
-
         if decker or re.match("mos.?", self.phu.get('MOSPOS', '')):
-            return TagSet(['MOS', 'SPECT'])
+            if self._tag_is_spect():
+                return TagSet(['MOS', 'SPECT'])
+            else:
+                return TagSet(['MOS', 'THRUSLIT'], if_present=['IMAGE'])
 
     @astro_data_tag
     def _tag_arc(self):
@@ -97,6 +95,12 @@ class AstroDataF2(AstroDataGemini):
             return TagSet(['POL'])
         elif disp.startswith('DISP_PRISM'):
             return TagSet(['SPECT', 'IFU'])
+
+    @astro_data_tag
+    def _tag_standard(self):
+        if self.phu.get('PROCSTND'):
+            return TagSet(['STANDARD', 'CAL'])
+
 
     @returns_list
     @astro_data_descriptor
