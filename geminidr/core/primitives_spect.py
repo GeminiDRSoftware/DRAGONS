@@ -4856,22 +4856,24 @@ class Spect(Resample):
                     sorted([x[:2] for x in peak_finding.get_extrema(
                         xcorr_sum, remove_edge_maxima=False) if x[2]],
                            key=lambda xx: xx[1], reverse=True)).T
-                deep_enough = [x > peak_value / (i + 2)
-                               for i, x in enumerate(possible_beams[1])]
-                # So we find the first trough that's deep enough (True)
-                # and then find the next trough that isn't (False). All
-                # these are considered -ve beams. We also have to account
-                # for there not being any False entries after the True.
-                nbeams = ((first_true := np.argmax(deep_enough)) +
-                          (np.argmin(deep_enough[first_true:]) or
-                           (len(deep_enough) - first_true)))
-                beam_offsets = peak_location - possible_beams[0, :nbeams]
-                log.debug(f"{ad.filename} beam offsets: "+" ".join(
-                    [str(x) for x in beam_offsets]))
+                if possible_beams.size:
+                    deep_enough = [x > peak_value / (i + 2)
+                                   for i, x in enumerate(possible_beams[1])]
+                    # So we find the first trough that's deep enough (True)
+                    # and then find the next trough that isn't (False). All
+                    # these are considered -ve beams. We also have to account
+                    # for there not being any False entries after the True.
+                    nbeams = ((first_true := np.argmax(deep_enough)) +
+                              (np.argmin(deep_enough[first_true:]) or
+                               (len(deep_enough) - first_true)))
+                    if nbeams > 0:
+                        beam_offsets = peak_location - possible_beams[0, :nbeams]
+                        log.debug(f"{ad.filename} beam offsets: "+" ".join(
+                            [str(x) for x in beam_offsets]))
 
-                # Store them somewhere for retrieval later
-                for ext in ad:
-                    ext.nddata.meta['negative_beam_offsets'] = beam_offsets
+                        # Store them somewhere for retrieval later
+                        for ext in ad:
+                            ext.nddata.meta['negative_beam_offsets'] = beam_offsets
 
         if interactive:
             apgrow = list()
