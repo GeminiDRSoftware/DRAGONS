@@ -6,6 +6,12 @@
 The DRAGONS Team
 ****************
 
+DRAGONS logo created by Bruno Quint.
+    The DRAGONS logo uses the Python blue and the Gemini yellow.  The
+    DRAGONS represent the D and G of DRAGONS; the G is for Gemini in the
+    DRAGONS acronym, Data Reduction for Astronomy from Gemini Observatory
+    North and South.
+
 Current DRAGONS Team
 ====================
 (Alphabetical order)
