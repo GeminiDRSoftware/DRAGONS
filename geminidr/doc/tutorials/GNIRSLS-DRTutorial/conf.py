@@ -77,7 +77,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'TutorialSeries-GMOSLSDRDRAGONS.tex', 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS Documentation',
+    (master_doc, 'TutorialSeries-GNIRSLSDRDRAGONS.tex', 'Tutorial Series - GNIRS Longslit Data Reduction with DRAGONS Documentation',
      'DRAGONS Team', 'manual'),
 ]
 
