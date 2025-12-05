@@ -12,6 +12,14 @@ def validate_magstr(value):
     return True
 
 
+class divideByTelluricConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_telluricDivided", optional=True)
+    telluric = config.ListField("File with telluric model", (AstroData, str), None,
+                                optional=True, single=True)
+    pixel_shift = config.RangeField("Shift in pixels", float, None, min=-5, max=5,
+                                     inclusiveMin=True, inclusiveMax=True, optional=True)
+
+
 class fitTelluricConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_telluricFitted", optional=True)
     bbtemp = config.RangeField("Stellar blackbody temperature", float, 9650,
