@@ -58,6 +58,73 @@ class Telluric(Spect):
         else:
             self._line_spread_function = lsf_module.lsf_factory(self.__class__.__name__)
 
+    def divideByTelluric(self, adinputs=None, **params):
+        """
+        Temporary primitive to do crude telluric correction and flux
+        calibration by dividing by the telluric spectrum
+        """
+        from gempy.library.telluric_models import Planck
+
+        log = self.log
+        sfx = params["suffix"]
+        telluric = params["telluric"]
+        manual_shift = params["pixel_shift"] or 0
+
+        # Get a suitable standard (should have a TELLFIT table)
+        if telluric is None:
+            telluric_list = self.caldb.get_processed_telluric(adinputs)
+        else:
+            telluric_list = (telluric, None)
+
+        for ad, telluric, origin in zip(*gt.make_lists(adinputs, *telluric_list,
+                                    force_ad=(1,))):
+
+            if 'LS' not in ad.tags:
+                log.warning(f"No changes will be made to {ad.filename}, "
+                            "as it's not a longslit spectrum")
+                continue
+
+            if telluric is None:
+                log.warning(f"No changes will be made to {ad.filename}, "
+                            "since no processed telluric was specified")
+                continue
+
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the processed telluric {telluric.filename}"
+                        f"{origin_str}")
+
+            tellpix = np.arange(telluric[0].data.size)
+            telldata = np.interp(tellpix + manual_shift, tellpix, telluric[0].data,
+                                 left=np.nan, right=np.nan)
+
+            row = list(telluric.HISTORY["primitive"]).index("fitTelluric")
+            # needed to evaluate the stringified version of the args
+            false, true, null = False, True, None
+            fitting_args = eval(telluric.HISTORY["args"][row])
+            magnitude = fitting_args["magnitude"]
+            bbtemp = fitting_args["bbtemp"]
+            abmag = fitting_args["abmag"]
+            w0, f0 = at.Magnitude(magnitude, abmag=abmag).properties()
+            abstr = " (AB)" if abmag else ""
+            log.stdinfo(f"Adopting {magnitude}{abstr} and Teff={bbtemp}K")
+            fluxden_in_flam_units = f0.to(u.W / (u.m ** 2 * u.nm),
+                                          equivalencies=u.spectral_density(w0))
+
+            planck = Planck(temperature=bbtemp)
+            wtelluric = telluric[0].wcs(tellpix)
+            bbspek = (planck(wtelluric) * fluxden_in_flam_units /
+                      planck(w0.to(u.nm).value))
+            correction = telldata / bbspek * telluric.exposure_time() / ad.exposure_time()
+
+            for ext in ad:
+                wsci = ext.wcs(np.arange(ext.nddata.size))
+                this_corr = np.interp(wsci, wtelluric, correction, left=np.nan, right=np.nan)
+                ext.divide(this_corr.astype(np.float32))
+
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
     def fitTelluric(self, adinputs=None, **params):
         """
         Simultaneously fit telluric absorption features and instrument

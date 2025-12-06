@@ -600,6 +600,10 @@ class Spect(Resample):
             Suffix to be added to output files.
         arc : :class:`~astrodata.AstroData` or str or None
             Arc(s) containing distortion map & wavelength calibration.
+        use_same_arc : bool
+            Require the use of the same arc for all frames? If True and
+            more than one arc is returned from the CalDB, then the most
+            commonly-chosen arc is used for all frames.
 
         Returns
         -------
@@ -615,6 +619,7 @@ class Spect(Resample):
 
         sfx = params["suffix"]
         arc = params["arc"]
+        use_same_arc = params.get("use_same_arc", False)
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if arc is None:
@@ -637,6 +642,20 @@ class Spect(Resample):
                     warnmsg = "More than one arc is being used"
                     if len(set(cenwaves)) > 1:
                         warnmsg += f" for central wavelength {cenwave:.1f}nm"
+                    if use_same_arc:
+                        arcs = [(item, arc_list.files.count(item[0]))
+                                for i, item in enumerate(list(set(arc_list.items())))
+                                if i in indices]
+                        if len(arcs) > 1:
+                            sorted_arcs = sorted(arcs, key=lambda arc: arc[1], reverse=True)
+                            if sorted_arcs[0][1] == sorted_arcs[1][1]:
+                                warnmsg += "; there is no unique most common arc."
+                                use_this_arc = sorted_arcs[0][0]
+                            else:
+                                warnmsg += "; choosing the most common one."
+                                use_this_arc = sorted_arcs[0][0]
+                            for i in indices:
+                                arc_list[i] = use_this_arc
                     log.warning(warnmsg)
 
         fail = False
