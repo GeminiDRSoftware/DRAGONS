@@ -87,6 +87,8 @@ class attachWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionAttached", optional=True)
     arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
                            optional=True, single=True)
+    use_same_arc = config.Field("Use the same arc for all inputs with the same central wavelength?",
+                                bool, False, optional=False)
 
 
 class calculateSensitivityConfig(config.core_1Dfitting_config):

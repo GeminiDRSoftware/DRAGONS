@@ -15,6 +15,11 @@ class associateSkyConfig(parameters_preprocess.associateSkyConfig):
         self.min_skies = 2
 
 
+class attachWavelengthSolutionConfig(parameters_spect.attachWavelengthSolutionConfig):
+    def setDefaults(self):
+        self.use_same_arc = True
+
+
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     def setDefaults(self):
         self.order = 3
