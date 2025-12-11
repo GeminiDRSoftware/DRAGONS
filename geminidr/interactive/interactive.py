@@ -1489,6 +1489,10 @@ class GIRegionModel:
         """A convenience property"""
         return np.issubdtype(self.dtype, np.integer)
 
+    @property
+    def max_decimals(self):
+        return 0 if self.integers else 2
+
     def add_listener(self, listener):
         """
         Add a listener to this region model.
@@ -1701,6 +1705,13 @@ class GIRegionModel:
              if v[0] == v[1] and len(self.regions) > 1:
                  self.delete_region(k)
 
+        for k, v in self.regions.items():
+            if self.integers:
+                self.adjust_region(k, int(v[0]), int(np.ceil(v[1])))
+            else:
+                self.adjust_region(k, np.round(v[0], decimals=self.max_decimals),
+                                   np.round(v[1], decimals=self.max_decimals))
+
         for listener in self.listeners:
             listener.finish_regions()
 
@@ -1802,7 +1813,8 @@ class GIRegionModel:
             return retval
 
         def deNone(val, offset=0, max_decimals=0):
-            return "" if val is None else val + offset
+            return "" if val is None else np.round(val + offset,
+                                                   decimals=self.max_decimals)
 
         if self.regions is None or len(self.regions.values()) == 0:
             return ""
