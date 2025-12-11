@@ -1432,7 +1432,6 @@ class Spect(Resample):
         min_points = params.get("debug_min_points_per_trace", 0)
         min_relative_height = params.get("debug_min_relative_peak_height", 0.)
 
-        orders = (max(spectral_order, 1), spatial_order)
         fail = False
 
         for ad in adinputs:
@@ -1648,13 +1647,14 @@ class Spect(Resample):
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
-                ydeg = orders[dispaxis]
-                if len(traces) <= ydeg:
+                orders = [max(spectral_order, 1), spatial_order]
+                if len(traces) <= spectral_order:
+                    orders[dispaxis] = max(len(traces)-1, 1)
                     log.warning(f"Only {len(traces)} traces so reducing "
-                                f"spectral order from {ydeg} to {len(traces)-1}")
-                    ydeg = len(traces) - 1
+                                f"spectral order from {spectral_order} to "
+                                f"{orders[dispaxis]}")
                 m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
-                                            y_degree=ydeg,
+                                            y_degree=orders[dispaxis],
                                             x_domain=[0, ext.shape[1]-1],
                                             y_domain=[0, ext.shape[0]-1])
 
