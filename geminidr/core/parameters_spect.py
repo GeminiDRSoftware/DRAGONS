@@ -586,6 +586,7 @@ class normalizeFlatConfig(config.core_1Dfitting_config):
     offset_from_center = config.Field("Offset in pixels from center of slit",
                                       int, None, optional=True)
     nsum = config.RangeField('Number of rows/columns to average (about "center")', int, 10, min=1)
+    regions = config.Field("Sample regions. (eg. 100:150,251:264)", str, None, optional=True)
     threshold = config.RangeField("Threshold for flagging unilluminated pixels",
                                   float, 0.01, min=0.0001, max=1.0)
     interactive = config.Field("Interactive fitting?", bool, False)
