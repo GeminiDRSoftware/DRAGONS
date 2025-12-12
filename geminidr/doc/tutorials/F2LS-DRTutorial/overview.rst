@@ -33,8 +33,8 @@ We show how to run the same reduction using both methods.
 
 The tutorials are:
 
-* :ref:`JH grating <f2ls_JH_example>`
-* :ref:`HK grating <f2ls_HK_example>`
+* :ref:`JH grating <f2ls_JHHK_example>`
+* :ref:`HK grating <f2ls_R3KJband_example>`
 * :ref:`K-band R3K grating <f2ls_R3KKband_example>`
 
 See the |RSUserInstall| to install the software if you have not already.

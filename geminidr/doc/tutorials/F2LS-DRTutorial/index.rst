@@ -19,13 +19,17 @@ Tutorial Series - Flamingos 2 Longslit Data Reduction with DRAGONS
    overview
    datasets
    cal_service
-   ex1_f2ls_JH
-   ex2_f2ls_HK_skylines
+   ex1_f2ls_JHHK
    ex3_f2ls_R3KKband
-   f2ls_wavecal_guide
    tips_and_tricks
    issues_and_limitations
-   interactive
+
+
+..   ex2_f2ls_R3KJband
+
+..   ex4_f2ls_HK_skylines
+..   f2ls_wavecal_guide
+..   interactive
 
 Indices and tables
 ==================

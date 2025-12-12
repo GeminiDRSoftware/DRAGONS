@@ -13,11 +13,11 @@ author = 'DRAGONS Team'
 release = '4.2_dev'
 #release = '4.1.0'
 #rtdurl = 'v'+release
-#release = '4.1.x'
-#rtdurl = 'release-'+release
-rtdurl = 'latest'
+#release = '4.x'
+rtdurl = 'release-'+release
+#rtdurl = 'latest'
 
-today = 'October 2025'
+today = 'April 2026'
 
 
 # -- General configuration ---------------------------------------------------
