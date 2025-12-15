@@ -136,7 +136,7 @@ file, the flat.  The data was taken with the correct exposure time, but
 the header is wrong.
 
 Let's fix that.  So that you can rerun these same commands before, we first
-the problematic file and give it a new name, leaving the original untouched.
+make a copy of the problematic file and give it a new name, leaving the original untouched.
 Obviously, with your own data, you would just fix the downloaded file once
 and for all, skipping the copy.  The tool ``fixheader`` changes the file
 in place.
@@ -188,7 +188,9 @@ Two lamp-on flats were taken for this observation.  One after the telluric
 sequence and one after the science sequence.   The recipe to make the master
 flats will combine the flats more than one is passed.  We need each flat to be
 processed independently as they were taken at a slightly different telescope
-orientation.  Therefore we need to separate them into two lists.  There are
+orientation.  Therefore we need to separate them into two lists.
+
+There are
 various ways to do that with |dataselect|.  Here we show how to use a
 range of UT times.  Note that we use the tag LAMPON in case the arc LAMPOFF
 was downloaded.  As explained before, we do not use that lamp-off flat.
@@ -225,7 +227,8 @@ arc observations in it and they will be processed independently.
 A list for the telluric
 -----------------------
 DRAGONS does not recognize the telluric star as such.  This is because, at
-Gemini, the observations are taken like science data and the GNIRS headers do not
+Gemini, the observations are taken like science data and the Flamingos 2
+headers do not
 explicitly state that the observation is a telluric standard.  In most cases,
 the ``observation_class`` descriptor can be used to differentiate the telluric
 from the science observations, along with the rejection of the ``CAL`` tag to
@@ -312,7 +315,7 @@ into the interactive mode to save time.
 
     reduce @flatsci.lis -p interactive=True
 
-insert screenshot of the interactive fit.
+<insert screenshot of the interactive fit.>
 
 We find that a region going from pixel 225 to 1815 and an order of 6 is leading
 to a reasonable fit.  Avoiding a fit that goes negative helps a lot.  We
@@ -328,7 +331,7 @@ Obtaining the wavelength solution for Flamingos 2 is fairly straightforward.
 There are usually a sufficient number of lines in the lamp.
 
 The recipe for the arc requires a flat as it contains a map of the
-unilluminated areas.   The master dark is required becaused of the strong
+unilluminated areas.   The master dark is required because of the strong
 pattern that is often horizontal and that could be interpreted as an emission
 line if not removed.
 
