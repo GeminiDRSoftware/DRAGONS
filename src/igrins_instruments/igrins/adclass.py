@@ -128,9 +128,9 @@ class AstroDataIGRINS_(igrins.AstroDataIgrins):
             otype = 'OBJECT'
         elif otype in ['FLAT']:
 
-            if self.phu.get("GCALLAMP") == "QH" and self.phu.get("GCALSHUT") == "CLOSED":
+            if self._check_if_flat_lamp_on():
                 ftype = "ON"
-            elif self.phu.get("GCALLAMP") == "IRhigh" and self.phu.get("GCALSHUT") == "CLOSED":
+            else:
                 ftype = "OFF"
 
             otype = f"FLAT_{ftype}"
@@ -468,12 +468,23 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
         if self.phu.get('OBSTYPE').strip() == 'FLAT':
             return TagSet(['FLAT', 'CAL'])
 
+    def _check_if_flat_lamp_on(self):
+        if self.phu.get('GCALLAMP') == 'QH' and self.phu.get('GCALSHUT') == 'CLOSED':
+            return True
+        elif self.phu.get('GCALLAMP') == 'IRhigh' and self.phu.get('GCALSHUT') == 'OPEN':
+            return True
+        elif self.phu.get('GCALLAMP') == 'IRhigh' and self.phu.get('GCALSHUT') == 'CLOSED':
+            return False
+
     @astro_data_tag
     def _type_gcal_lamp(self):
         # When flats are processed, they're neither "on" nor "off"
-        if self.phu.get('GCALLAMP') == 'QH' and self.phu.get('GCALSHUT') == 'CLOSED':
+
+        is_lamp_on = self._check_if_flat_lamp_on()
+
+        if is_lamp_on:
             return TagSet(['LAMPON'], blocked_by=['PROCESSED'])
-        elif self.phu.get('GCALLAMP') == 'IRhigh' and self.phu.get('GCALSHUT') == 'CLOSED':
+        else:
             return TagSet(['LAMPOFF'], blocked_by=['PROCESSED'])
 
     @astro_data_tag
