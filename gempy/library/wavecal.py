@@ -226,7 +226,7 @@ class LineList:
 
 
 def find_line_peaks(data, mask=None, variance=None, fwidth=None, min_snr=3,
-                    min_sep=2, reject_bad=False, nbright=0):
+                    min_sep=2, reject_bad=False, nbright=0, pinpoint_index=-1):
     """
     Find peaks in a 1D spectrum and return their locations and weights for
     a variety of weighting schemes.
@@ -261,7 +261,7 @@ def find_line_peaks(data, mask=None, variance=None, fwidth=None, min_snr=3,
     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
     peaks, _, peak_snrs = peak_finding.find_wavelet_peaks(
         data, widths=widths, mask=mask, variance=variance, min_snr=min_snr,
-        min_sep=min_sep, reject_bad=reject_bad)
+        min_sep=min_sep, reject_bad=reject_bad, pinpoint_index=pinpoint_index)
     fit_this_peak = peak_snrs > min_snr
     fit_this_peak[np.argsort(peak_snrs)[len(peaks) - nbright:]] = False
     peaks = peaks[fit_this_peak]
@@ -589,6 +589,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     cenwave = config["central_wavelength"]
     dispersion = config["dispersion"]
 
+    pinpoint_index = None if ext.instrument() == "F2" else -1
+
     log = FakeLog() if config["interactive"] == True else p.log
     # This allows suppression of the terminal log output by calling the function
     # with loglevel='debug'.
@@ -656,7 +658,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     peaks, weights = find_line_peaks(
         data, mask=mask, variance=variance,
         fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
-        reject_bad=False, nbright=config.get("nbright", 0))
+        reject_bad=False, nbright=config.get("nbright", 0), pinpoint_index=pinpoint_index)
 
     # Do the second iteration of fwidth estimation and peak finding, this time using the number of peaks
     # found after the first fwidth estimation, in order to get more accurate
@@ -673,7 +675,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         peaks, weights = find_line_peaks(
             data, mask=mask, variance=variance,
             fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
-            reject_bad=False, nbright=config.get("nbright", 0))
+            reject_bad=False, nbright=config.get("nbright", 0), pinpoint_index=pinpoint_index)
 
     # Determine extent of data in spectrum
     x1 = mask.astype(bool).argmin()
