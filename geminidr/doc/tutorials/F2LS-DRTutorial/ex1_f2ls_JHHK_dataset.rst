@@ -20,7 +20,7 @@ The calibrations we use for this example are:
   star observation, and the science observations.  The darks are
   taken once a week.
 * Lamp-on flats taken in the same configurations as the science and
-  the telluric star observations. They areobtained at night after the
+  the telluric star observations. They are obtained at night after the
   science and telluric sequences.
 * Arcs taken at night after the science data and after the telluric data.
 * Telluric standard observations taken in the same configurations as the
