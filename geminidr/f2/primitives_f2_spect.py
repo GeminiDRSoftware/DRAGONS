@@ -7,7 +7,6 @@
 import os
 
 from importlib import import_module
-from nis import match
 
 from astropy.modeling import models
 
