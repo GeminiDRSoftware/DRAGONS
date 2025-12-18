@@ -5601,7 +5601,7 @@ class Spect(Resample):
                 _slice = tuple(length // 2 if i == spataxis else None
                                for i, length in enumerate(ext.shape))
                 lsf = self._line_spread_function(ext.__class__(
-                    ext.nddata[_slice].flatten(), phu=ext.phu, is_single=True))
+                    ext.data[_slice].flatten(), phu=ext.phu, is_single=True))
             return lsf.mean_resolution
         except (AttributeError, TypeError):
             resolution_1pix_slit = ext.actual_central_wavelength() / ext.dispersion()
