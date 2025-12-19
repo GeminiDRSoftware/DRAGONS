@@ -314,6 +314,10 @@ def test_regression_determine_wavelength_solution(
         # wavelengths outside where we've matched lines
         lines = ref_ext.WAVECAL["wavelengths"].data
         lines = lines[lines > 0]  # column is padded with zeros
+
+        if lines.size == 0:
+            continue
+
         indices = np.where(np.logical_and(ref_wavelength > lines.min(),
                                           ref_wavelength < lines.max()))
         tolerance = 0.5 * (slit_size_in_px * dispersion)
