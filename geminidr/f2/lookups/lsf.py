@@ -37,15 +37,16 @@ class F2LineSpreadFunction(LineSpreadFunction):
 
         # Estimate the mean resolution at an "average" row
         # This attribute is needed for the wavecal reference spectrum plot
-        alpha = self.skew(1600)
-        omega = self.omega(1600)
+        alpha = self.skew(1450)
+        omega = self.omega(1450)
         # From https://en.wikipedia.org/wiki/Skew_normal_distribution
         var_skew = omega ** 2 * (1 - alpha ** 2 / (np.pi * (1 + alpha ** 2)))
         var_slit = (self.slit_width_pix * self.orig_dispersion) ** 2
         self.mean_resolution = self.all_waves.mean() / np.sqrt(var_skew + var_slit)
 
     def skew_normal(self, w0, dw, scale=1):
-        y = self.slit_row - (w0 - self.orig_cenwave) / self.orig_dispersion
+        # actual_central_wavelength corresponds to row 1024, not the slit row
+        y = 1024 - (w0 - self.orig_cenwave) / self.orig_dispersion
         skew, omega = self.skew(y), self.omega(y) * scale
         xnorm = dw / omega + skew / np.sqrt(0.5 * np.pi * (1 + skew * skew))
         phi = np.exp(-0.5 * xnorm * xnorm) * (1 + erf(0.70710678 * skew * xnorm))
