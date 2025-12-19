@@ -5598,12 +5598,13 @@ class Spect(Resample):
                 lsf = self._line_spread_function(ext)
             else:
                 spataxis = ext.dispersion_axis() - 1  # python sense
-                _slice = tuple(length // 2 if i == spataxis else None
+                _slice = tuple(length // 2 if i == spataxis else slice(None)
                                for i, length in enumerate(ext.shape))
                 lsf = self._line_spread_function(ext.__class__(
-                    ext.data[_slice].flatten(), phu=ext.phu, is_single=True))
+                    ext.nddata[_slice], phu=ext.phu, is_single=True))
             return lsf.mean_resolution
         except (AttributeError, TypeError):
+            raise
             resolution_1pix_slit = ext.actual_central_wavelength() / ext.dispersion()
             slit_width_pix = ext.slit_width() / ext.pixel_scale()
             return abs(resolution_1pix_slit // slit_width_pix)

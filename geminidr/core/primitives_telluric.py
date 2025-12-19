@@ -1151,6 +1151,10 @@ class LineSpreadFunction(ABC):
         assert len(ext.shape) == 1, "Input is not 1-dimensional"
         npix = ext.shape[0]
         self.all_waves = ext.wcs(np.arange(npix))
+        # Handle the case where we have a 1D slice of a higher-dimension
+        # image, which will return additional axes
+        if isinstance(self.all_waves, tuple):
+            self.all_waves = self.all_waves[0]
         self.dispersion = abs(np.median(np.diff(self.all_waves)))
         # For lack of any better estimate, but these should get overridden
         # in the relevant subclass
