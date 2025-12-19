@@ -141,7 +141,7 @@ input_pars = [
     ("N20200818S0038_aperturesFound.fits", dict(absorption=True)), # 2.242um, 0.1" slit; All good
     #("N20220816S0472_aperturesFound.fits", dict(absorption=True)), # 2.302um, 0.1" slit. Ord. 5 - difficult, blanket absorption, misident.
     #("N20220816S0476_aperturesFound.fits", dict(absorption=True)), # 2.362um, 0.1" slit -//-, ord. 7 - no lines, misident
-    ("N20220816S0480_aperturesFound.fits", dict(absorption=True)), # 2.422um, 0.1" slit; one order with no arc lines
+    #("N20220816S0480_aperturesFound.fits", dict(absorption=True)), # 2.422um, 0.1" slit; one order with no arc lines -- WRONG SOLUTION!
     #("N20220816S0484_aperturesFound.fits", dict(absorption=True)), # 2.482um, 0.1" slit, ord 4 - difficult, blank absoprion, misident, or. 7 - misident, no lines.
 ]
 associated_calibrations = {
