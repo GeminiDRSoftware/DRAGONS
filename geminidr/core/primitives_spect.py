@@ -5604,7 +5604,6 @@ class Spect(Resample):
                     ext.nddata[_slice], phu=ext.phu, is_single=True))
             return lsf.mean_resolution
         except (AttributeError, TypeError):
-            raise
             resolution_1pix_slit = ext.actual_central_wavelength() / ext.dispersion()
             slit_width_pix = ext.slit_width() / ext.pixel_scale()
             return abs(resolution_1pix_slit // slit_width_pix)
