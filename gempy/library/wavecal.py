@@ -678,8 +678,11 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
             reject_bad=False, nbright=config.get("nbright", 0), pinpoint_index=pinpoint_index)
 
     # Determine extent of data in spectrum
-    x1 = mask.astype(bool).argmin()
-    x2 = mask.size - mask.astype(bool)[::-1].argmin()
+    if mask is not None:
+        x1 = mask.astype(bool).argmin()
+        x2 = mask.size - mask.astype(bool)[::-1].argmin()
+    else:
+        x1, x2 = 0, data.size
 
     if dispaxis == 1:
         _slice = (center, slice(None))
@@ -742,7 +745,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         p.log.stdinfo("Applying peak-to-centroid shifts to lines.")
         peaks = peak_to_centroid_func(peaks)
 
-    return {"spectrum": np.ma.masked_array(data[x1:x2], mask=mask[x1:x2]),
+    return {"spectrum": np.ma.masked_array(
+        data[x1:x2], mask=None if mask is None else mask[x1:x2]),
             "init_models": m_init, "peaks": peaks, "weights": weights,
             "linelist": linelist, "fwidth": fwidth, "location": location,
             "peak_to_centroid_func": peak_to_centroid_func,
