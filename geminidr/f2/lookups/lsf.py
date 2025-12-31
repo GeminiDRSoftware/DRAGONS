@@ -53,10 +53,10 @@ class F2LineSpreadFunction(LineSpreadFunction):
         return phi / phi.sum()
 
     def convolutions(self, lsf_scaling=1):
-        #boxcar_func = partial(convolution.boxcar, width=slit_width*lsf_scaling)
-        #convolutions = [(partial(self.skew_normal, scale=1), 25 * self.dispersion),
-        #                #boxcar_func, 0.5 * slit_width * lsf_scaling)]
         fwhm = self.slit_width_pix * self.orig_dispersion
+        # boxcar_func = partial(convolution.boxcar, width=fwhm*lsf_scaling)
+        # convolutions = [(partial(self.skew_normal, scale=1), 25 * self.dispersion),
+        #                 (boxcar_func, fwhm*2)]
         gaussian_func = partial(convolution.gaussian_constant_fwhm,
                                 fwhm=fwhm*lsf_scaling)
         gaussian_dw = 2 * fwhm

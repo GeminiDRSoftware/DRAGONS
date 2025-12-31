@@ -449,28 +449,27 @@ class F2Spect(Telluric, Spect, F2):
             a callable that modifies a pixel value (or array thereof) of a
             line peak to the centroid
         """
-        # (c1, c2, c3) Chebyshev coefficients for each slit width
-        coefficients = {1: (4.471281214, -0.062329556, 1.324079642),
-                        2: (4.138404874, -0.054101213, 1.306253510),
-                        3: (3.739663083, -0.048616217, 1.248004911),
-                        4: (3.328556440, -0.042899206, 1.166940684),
-                        6: (2.595923451, -0.029713970, 0.990172698),
-                        8: (1.966203933, -0.017133596, 0.801233150),
+        # (c1, c3) Chebyshev coefficients for each slit width
+        coefficients = {1: (3.9029145352224286, 1.0409009914898588),
+                        2: (3.700922980002846, 1.0316558532817541),
+                        3: (3.425366901923241, 1.059424415261008),
+                        4: (3.1280237101658357, 1.1019794225196382),
+                        6: (2.455604480423782, 1.1844363798411677),
+                        8: (1.781002390052844, 1.3316380498243399),
                         }
         try:
             slitwidth = int(ext.focal_plane_mask().replace('pix-slit', ''))
         except AttributeError:  # fpm() is returning None
             raise ValueError(f"Cannot determine slit width for {ext.filename}")
         try:
-            c1, c2, c3 = coefficients[slitwidth]
+            c1, c3 = coefficients[slitwidth]
         except KeyError:
             raise ValueError(f"Slit width {slitwidth} for {ext.filename}"
                              "unknown")
 
-        # c0=c2 because the function must evaluate to 0 at the domain midpoint
         # Domain is (0, 2122) since slit projects on row 1061
         # The 1061 values are so the model returns the new pixel location
         # and not the shift (so we don't need to wrap the model)
-        m_tweak = models.Chebyshev1D(degree=3, c0=c2+1061, c1=c1+1061,
-                                     c2=c2, c3=c3, domain=(0, 2122))
+        m_tweak = models.Chebyshev1D(degree=3, c0=1061, c1=c1+1061,
+                                     c2=0, c3=c3, domain=(0, 2122))
         return m_tweak
