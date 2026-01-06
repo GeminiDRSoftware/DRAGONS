@@ -1661,6 +1661,8 @@ class Spect(Resample):
                 fixed_linear = (spectral_order == 0) or len(traces) == 1
                 model, m_final, m_inverse = am.create_distortion_model(
                     m_init, 1-dispaxis, in_coords, ref_coords, fixed_linear)
+                log.stdinfo("Distortion model/inverse rms = "
+                            f"{model.meta['fwd_rms']:.3f}/{model.meta['inv_rms']:.3f} pixels")
 
                 # TODO: Some logging about quality of fit
                 # print(np.min(diff), np.max(diff), np.std(diff))
