@@ -5399,8 +5399,25 @@ class Spect(Resample):
 
     @staticmethod
     def _convert_peak_to_centroid(ext):
-        """Default for instruments with symmetric line spread functions"""
-        return models.Identity(1)
+        """
+        Default no-modification function. See the F2Spect version for
+        details on how this should behave for asymmetric line spread
+        functions.
+
+        Parameters
+        ----------
+        ext: single-slice AstroData
+            the extension for which the shifts are to be calculation
+
+        Returns
+        -------
+        callable:
+            a callable that takes two inputs (pixel location of a peak in
+            dispersion direction, pixel location in spatial direction) and
+            returns the pixel location of the centroid in the dispersion
+            direction.
+        """
+        return models.Mapping((0,), n_inputs=2)
 
     def _get_linelist(self, wave_model=None, *args, **kwargs):
         """

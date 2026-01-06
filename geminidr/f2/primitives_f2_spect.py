@@ -446,8 +446,10 @@ class F2Spect(Telluric, Spect, F2):
         Returns
         -------
         callable:
-            a callable that modifies a pixel value (or array thereof) of a
-            line peak to the centroid
+            a callable that takes two inputs (pixel location of a peak in
+            dispersion direction, pixel location in spatial direction) and
+            returns the pixel location of the centroid in the dispersion
+            direction.
         """
         # (c1, c3) Chebyshev coefficients for each slit width
         coefficients = {1: (3.9029145352224286, 1.0409009914898588),
@@ -470,6 +472,6 @@ class F2Spect(Telluric, Spect, F2):
         # Domain is (0, 2122) since slit projects on row 1061
         # The 1061 values are so the model returns the new pixel location
         # and not the shift (so we don't need to wrap the model)
-        m_tweak = models.Chebyshev1D(degree=3, c0=1061, c1=c1+1061,
-                                     c2=0, c3=c3, domain=(0, 2122))
+        m_tweak = models.Mapping((0,), n_inputs=2) | models.Chebyshev1D(
+            degree=3, c0=1061, c1=c1+1061, c2=0, c3=c3, domain=(0, 2122))
         return m_tweak

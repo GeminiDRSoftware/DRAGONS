@@ -738,14 +738,15 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
                                 f"(nm/pixel):\n{waves[1]} {dw0:.4f}")
 
     peak_to_centroid_func = p._convert_peak_to_centroid(ext)
-    peaks = peak_to_centroid_func(peaks)
+    peaks = peak_to_centroid_func(peaks, center)
 
     return {"spectrum": np.ma.masked_array(
         data[x1:x2], mask=None if mask is None else mask[x1:x2]),
-            "init_models": m_init, "peaks": peaks, "weights": weights,
-            "linelist": linelist, "fwidth": fwidth, "location": location,
-            "peak_to_centroid_func": peak_to_centroid_func,
-            "bounds_setter": partial(p._wavelength_model_bounds, ext=ext)}
+        "init_models": m_init, "peaks": peaks, "weights": weights,
+        "linelist": linelist, "fwidth": fwidth, "location": location,
+        "peak_to_centroid_func": peak_to_centroid_func,
+        "bounds_setter": partial(p._wavelength_model_bounds, ext=ext),
+        "extraction_center": center}
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
                   linelist=None, fwidth=4,

@@ -963,7 +963,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 try:
                     orig_peak = pinpoint_peaks(pinpoint_data, [pixel - xmin],
                                                None)[0][0]
-                    peak = self.model.meta["peak_to_centroid_func"](orig_peak + xmin)
+                    peak = self.model.meta["peak_to_centroid_func"](orig_peak + xmin,
+                                                                    self.model.meta["extraction_center"])
                 except IndexError:  # no peak
                     print("Couldn't find a peak")
                     return
