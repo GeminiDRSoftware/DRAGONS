@@ -737,13 +737,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
                     log.warning(f"{i}. Wavelength at middle, and dispersion "
                                 f"(nm/pixel):\n{waves[1]} {dw0:.4f}")
 
-    try:
-        peak_to_centroid_func = p._convert_peak_to_centroid(ext)
-    except AttributeError:
-        peak_to_centroid_func = lambda x: x
-    else:
-        p.log.stdinfo("Applying peak-to-centroid shifts to lines.")
-        peaks = peak_to_centroid_func(peaks)
+    peak_to_centroid_func = p._convert_peak_to_centroid(ext)
+    peaks = peak_to_centroid_func(peaks)
 
     return {"spectrum": np.ma.masked_array(
         data[x1:x2], mask=None if mask is None else mask[x1:x2]),

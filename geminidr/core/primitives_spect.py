@@ -5397,6 +5397,11 @@ class Spect(Resample):
 
         return adinputs
 
+    @staticmethod
+    def _convert_peak_to_centroid(ext):
+        """Default for instruments with symmetric line spread functions"""
+        return models.Identity(1)
+
     def _get_linelist(self, wave_model=None, *args, **kwargs):
         """
         Returns a list of wavelengths of the arc reference lines used by the
