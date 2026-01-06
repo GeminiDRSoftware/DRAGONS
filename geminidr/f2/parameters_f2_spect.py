@@ -36,7 +36,7 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     def setDefaults(self):
         self.spectral_order = 3
         self.min_snr = 7.
-        self.min_line_length = 0.3
+        self.min_line_length = 0.8
         self.debug_reject_bad = False
 
 
