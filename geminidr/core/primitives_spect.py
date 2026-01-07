@@ -1641,9 +1641,17 @@ class Spect(Resample):
                 ref_coords = np.array([coord for trace in traces for
                                        coord in trace.reference_coordinates()]).T
 
+                for i, trace in enumerate(traces):
+                    table_name = f"TRACE{i+1:03d}"
+                    t = Table(names=("raw_xin", "raw_yin", "raw_xref", "raw_yref"),
+                              data=list(np.array(trace.input_coordinates()).T) + list(np.array(trace.reference_coordinates()).T))
+                    setattr(ext, table_name, t)
+
                 # Convert all coordinates from peaks to centroids
                 in_coords = np.asarray(convert_to_centroid(*in_coords))
                 ref_coords = np.asarray(convert_to_centroid(*ref_coords))
+                ext.INCOORDS = in_coords
+                ext.REFCOORDS = ref_coords
 
                 # If the frame has a rectification model, then we want to
                 # calculate the distortion transform *after* applying this
@@ -1666,6 +1674,9 @@ class Spect(Resample):
                     # S0 replace the X values in ref_coords with the ones in
                     # in_coords. Coords are *always* (x, y)
                     ref_coords[dispaxis] = in_coords[dispaxis]
+                    ext.INCOORDS2 = np.asarray(in_coords)
+                    ext.REFCOORDS2 = ref_coords
+                print("Do I have a rectification model?", has_rect_model)
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
