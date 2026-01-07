@@ -1449,6 +1449,15 @@ class Spect(Resample):
 
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
+                peak_to_centroid_func = self._convert_peak_to_centroid(ext)
+                # The peak-to-centroid function always takes the dispersion
+                # coordinate as its first argument, but in_coords and
+                # ref_coords are always (x, y), so provide a single interface
+                # to handle both orientations
+                if dispaxis == 0:
+                    convert_to_centroid = lambda x, y: (x, peak_to_centroid_func(y, x))
+                else:
+                    convert_to_centroid = lambda x, y: (peak_to_centroid_func(x, y), y)
 
                 # Here's a lot of input-checking
                 extname = f'{ad.filename} extension {ext.id}'
@@ -1474,6 +1483,8 @@ class Spect(Resample):
                     if id_only:
                         try:
                             # Peak locations in pixels are 1-indexed
+                            # These will already have been converted from
+                            # peak-to-centroid
                             initial_peaks = (ext.WAVECAL['peaks'] - 1)
                         except KeyError:
                             log.warning("Cannot find peak locations in {} "
@@ -1501,6 +1512,8 @@ class Spect(Resample):
                         # range of the starting and ending rows/columns.
                         log.stdinfo("Finding peaks by extracting {}s {} to {}".
                             format(direction, extract_info.start + 1, extract_info.stop))
+                        spatial_coord_func = models.Const1D(
+                            0.5 * (extract_info.start + extract_info.stop-1))
                     else:
                         # For non-straight slits, `extract_info` is the 1D
                         # Chebyshev polynomial that traces the center of the slit.
@@ -1510,12 +1523,17 @@ class Spect(Resample):
                         log.stdinfo(f"Extracting 1D spectrum for extension {ext.id}")
                         log.stdinfo(f"  ±{nsum/2:.1f} {direction}s "
                                      "around polynomial with " + ", ".join(coeffs))
+                        spatial_coord_func = extract_info
 
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                     initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
-                        variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
+                        variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad,
+                        pinpoint_index=None)  # just the raw peaks
+                    initial_peaks = peak_to_centroid_func(
+                        initial_peaks, spatial_coord_func(initial_peaks))
+
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
 
@@ -1623,6 +1641,10 @@ class Spect(Resample):
                 ref_coords = np.array([coord for trace in traces for
                                        coord in trace.reference_coordinates()]).T
 
+                # Convert all coordinates from peaks to centroids
+                in_coords = np.asarray(convert_to_centroid(*in_coords))
+                ref_coords = np.asarray(convert_to_centroid(*ref_coords))
+
                 # If the frame has a rectification model, then we want to
                 # calculate the distortion transform *after* applying this
                 # model. This is important because, if we only have one line
@@ -1663,9 +1685,6 @@ class Spect(Resample):
                     m_init, 1-dispaxis, in_coords, ref_coords, fixed_linear)
                 log.stdinfo("Distortion model/inverse rms = "
                             f"{model.meta['fwd_rms']:.3f}/{model.meta['inv_rms']:.3f} pixels")
-
-                # TODO: Some logging about quality of fit
-                # print(np.min(diff), np.max(diff), np.std(diff))
 
                 if debug:  # pragma: no cover
                     self.viewer.color = "green"
