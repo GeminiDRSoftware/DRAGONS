@@ -1275,6 +1275,9 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
     def reconstruct_points_additional_work(self, data):
         """Reconstruct the initial points to work with."""
         super().reconstruct_points_additional_work(data)
+        for fit in self.fits:
+            fit.meta["location"] = (f"{fit.meta['location'].split()[0]} "
+                                    f"{self.widgets['center'].value}")
 
         if data is not None:
             for i, _ in enumerate(self.fits):
