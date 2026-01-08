@@ -718,8 +718,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
             break
         i = np.argmax(diffs < min_sep)
         # Replace with mean of re-pinpointed points
-        new_peaks = pinpoint_peaks(pinpoint_data, peaks=peaks[i:i+2], mask=mask,
-                                   halfwidth=int(0.5*np.median(widths)))
+        new_peaks = pinpoint_peaks(pinpoint_data, peaks=peaks[i:i+2])
         del peaks[i+1]
         del values[i+1]
         if new_peaks[0]:
