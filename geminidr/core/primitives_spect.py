@@ -1651,7 +1651,7 @@ class Spect(Resample):
                 in_coords = np.asarray(convert_to_centroid(*in_coords))
                 ref_coords = np.asarray(convert_to_centroid(*ref_coords))
                 ext.INCOORDS = in_coords
-                ext.REFCOORDS = ref_coords
+                ext.REFCOORDS = deepcopy(ref_coords)
 
                 # If the frame has a rectification model, then we want to
                 # calculate the distortion transform *after* applying this
