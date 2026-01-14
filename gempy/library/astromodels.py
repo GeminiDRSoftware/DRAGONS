@@ -640,7 +640,7 @@ def make_inverse_chebyshev1d(model, sampling=1, rms=None, max_deviation=None):
 
 
 def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
-                            fixed_linear=False, debug=False):
+                            weights=None, fixed_linear=False, debug=False):
     """
     This helper function creates a distortion model given an input model,
     input and reference coordinates,
@@ -693,8 +693,8 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
     # value of the reference pixel along the dispersion axis
     fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                sigma_clip, sigma=3)
-    m_final, fwd_mask = fit_it(m_init, *in_coords, shifts)
-    m_inverse, inv_mask = fit_it(m_init, *ref_coords, -shifts)
+    m_final, fwd_mask = fit_it(m_init, *in_coords, shifts, weights=weights)
+    m_inverse, inv_mask = fit_it(m_init, *ref_coords, -shifts, weights=weights)
     fwd_rms = np.std((m_final(*in_coords) - shifts)[~fwd_mask])
     inv_rms = np.std((m_inverse(*ref_coords) + shifts)[~inv_mask])
 

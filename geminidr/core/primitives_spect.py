@@ -1640,6 +1640,10 @@ class Spect(Resample):
                 # perpendicular to the line remains constant at its initial value
                 ref_coords = np.array([coord for trace in traces for
                                        coord in trace.reference_coordinates()]).T
+                try:
+                    weights = np.array([w for trace in traces for w in trace.weights()])
+                except TypeError:  # there's a None
+                    weights = None
 
                 for i, trace in enumerate(traces):
                     table_name = f"TRACE{i+1:03d}"
@@ -1674,9 +1678,8 @@ class Spect(Resample):
                     # S0 replace the X values in ref_coords with the ones in
                     # in_coords. Coords are *always* (x, y)
                     ref_coords[dispaxis] = in_coords[dispaxis]
-                    ext.INCOORDS2 = np.asarray(in_coords)
+                    ext.INCOORDS2 = np.asarray(list(in_coords) + [list(weights)])
                     ext.REFCOORDS2 = ref_coords
-                print("Do I have a rectification model?", has_rect_model)
 
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
@@ -1693,7 +1696,7 @@ class Spect(Resample):
 
                 fixed_linear = (spectral_order == 0) or len(traces) == 1
                 model, m_final, m_inverse = am.create_distortion_model(
-                    m_init, 1-dispaxis, in_coords, ref_coords, fixed_linear)
+                    m_init, 1-dispaxis, in_coords, ref_coords, weights, fixed_linear)
                 log.stdinfo("Distortion model/inverse rms = "
                             f"{model.meta['fwd_rms']:.3f}/{model.meta['inv_rms']:.3f} pixels")
 
@@ -2097,7 +2100,8 @@ class Spect(Resample):
                 # The `fixed_linear` parameter is False because we should
                 # have both edges for each slit.
                 model, m_final_2d, m_inverse_2d = am.create_distortion_model(
-                    m_init_2d, dispaxis, in_coords, ref_coords, False)
+                    m_init_2d, dispaxis, in_coords, ref_coords, weights=None,
+                    fixed_linear=False)
                 model.name = "PNHLRECT"
 
                 try:

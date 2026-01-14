@@ -379,13 +379,15 @@ class Trace:
     Note that trace_lines() (which creates Trace objects) *always* traces in
     the vertical direction, regardless of the orientation of the image.
     """
-    def __init__(self, starting_point, reverse_returned_coords=False):
+    def __init__(self, starting_point, starting_weight=None, reverse_returned_coords=False):
         """
         Parameters
         ----------
         starting_point : len-2 iterable of numbers
             The point from which to start the trace, with the tracing axis as
             the first number.
+        starting_weight : float/None
+            A weight to assign to this point
         reverse_returned_coords : bool, optional
             Whether to reversed the coordinates when returning them. The default
             is False. This is because Trace keeps track of coordinates with the
@@ -393,7 +395,7 @@ class Trace:
             but it may be preferable to get the output in (x, y) order.
         """
         self.starting_point = self._verify_point(starting_point)
-        self.points = deque([self.starting_point])
+        self.points = deque([self.starting_point + (starting_weight,)])
         self.last_point = self.starting_point
         self.steps_missed = 0
         self.active = True
@@ -436,29 +438,35 @@ class Trace:
     def start_coordinates(self, reverse=None):
         """Return the starting point in the same coordinate order as the
         input_coordinates() and reference_coordinates()"""
-        return self.starting_point[::-1] if (
-                reverse or reverse is None and self.reversed) else self.starting_point
+        return self.starting_point[1::-1] if (
+                reverse or reverse is None and self.reversed) else self.starting_point[:2]
 
     def input_coordinates(self, reverse=None):
         if reverse or reverse is None and self.reversed:
-            return [(x, y) for y, x in self.points]
-        return [(y, x) for y, x in self.points]
+            return [(x, y) for y, x, w in self.points]
+        return [(y, x) for y, x, w in self.points]
 
     def reference_coordinates(self, reference_coord=None, reverse=None):
         xref = reference_coord or self.starting_point[1]
         if reverse or reverse is None and self.reversed:
-            return [(xref, y) for y, _ in self.points]
-        return [(y, xref) for y, _ in self.points]
+            return [(xref, y) for y, _, w in self.points]
+        return [(y, xref) for y, _, w in self.points]
 
-    def add_point(self, point):
+    def weights(self):
+        w = [p[2] for p in self.points]
+        if w.count(None):  # all points must have weights
+            return None
+        return w
+
+    def add_point(self, point, weight=None):
         """Add a point to the deque, at either end as appropriate"""
         point = self._verify_point(point)
         y = point[0]
 
         if y > self.top_limit:
-            self.points.append(point)
+            self.points.append(point + (weight,))
         elif y < self.bottom_limit:
-            self.points.appendleft(point)
+            self.points.appendleft(point + (weight,))
         else:
             # Should only add points at ends of range
             raise RuntimeError("Trying to insert point in middle of trace,"
@@ -468,7 +476,8 @@ class Trace:
 
     def remove_point(self, point):
         """Remove a point from the deque"""
-        self.points.remove(point)
+        index = [p[:2] for p in self.points].index(point)
+        self.points.remove(self.points[index])
 
     def predict_location(self, row, lookback=4, order=1):
         """Predict where the next peak will be in the tracing direction.
@@ -619,22 +628,24 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     # Get accurate starting positions for all peaks if requested
     if initial_tolerance is None:
         initial_peaks = initial
+        initial_peak_values = [data[int(np.round(i))] for i in initial_peaks]
     else:
         data, mask, var = func(ext_data[_slice(start)],
                                mask=None if ext_mask is None
                                else ext_mask[_slice(start)], variance=None)
         data = _profile_for_centering(data, var, rwidth)
 
-        peaks = pinpoint_peaks(data, peaks=initial, mask=mask,
-                               halfwidth=halfwidth)[0]
+        peaks, peak_values = pinpoint_peaks(data, peaks=initial, mask=mask,
+                                            halfwidth=halfwidth)
         if not peaks:
             return []
-        initial_peaks = []
+        initial_peaks, initial_peak_values = [], []
         for peak in initial:
             j = np.argmin(abs(np.array(peaks) - peak))
             new_peak = peaks[j]
             if abs(new_peak - peak) <= initial_tolerance:
                 initial_peaks.append(new_peak)
+                initial_peak_values.append(peak_values[j])
             else:
                 log.debug(f"Cannot recenter peak at coordinate {peak}")
 
@@ -661,9 +672,9 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
     # If tracing vertically-dispersed data the coordinates in the Trace will
     # be in (y, x) order and since we need (x, y) elsewhere we reverse them here.
-    traces = [Trace((start, peak),
+    traces = [Trace((start, peak), starting_weight=np.sqrt(value),
                     reverse_returned_coords=(axis == 0))
-              for peak in initial_peaks]
+              for peak, value in zip(initial_peaks, initial_peak_values)]
     for direction, step_centers in zip((1, -1), (step_centers_up, step_centers_down)):
         for trace in traces:
             trace.last_point = trace.starting_point
@@ -752,7 +763,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                         else (peaks[0], effective_ypos))))
                         viewer.line(origin=0, **kwargs)
 
-                    trace.add_point((effective_ypos, peaks[0]))
+                    trace.add_point((effective_ypos, peaks[0]), np.sqrt(peak_values[0]))
                     trace.steps_missed = 0
             else:  # We don't bin across completely dead regions
                 # We really shouldn't get here as this should be handled by
