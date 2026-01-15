@@ -8,6 +8,10 @@
 Example 1 - Datasets description
 ********************************
 
+.. todo:  add a warning that the read_mode need to match for dark association
+          I got a case where some flats and arcs are taken in 1 and others
+          in the same program for same disperser with 8.
+
 In this example, we will reduce Flamingos 2 longslit observations
 of the 2022 eruption of the recurrent nova U Sco.  The data were
 obtained with the JH and the HK gratings.
