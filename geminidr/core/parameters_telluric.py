@@ -31,6 +31,8 @@ class fitTelluricConfig(config.core_1Dfitting_config):
                                     min=0.5, max=2.0, optional=True)
     regions = config.Field("Wavelength sample regions (nm)", str, None, optional=True,
                            check=parameters_spect.validate_regions_float)
+    order = config.RangeField("Order of fitting function", int, 6, min=1, max=30,
+                       inclusiveMax=True)
     interactive = config.Field("Display interactive fitter?", bool, False)
     weighting = config.ChoiceField("Weighting scheme", str,
                                    allowed={"variance": "Inverse variance",
@@ -49,7 +51,6 @@ class fitTelluricConfig(config.core_1Dfitting_config):
 
     def setDefaults(self):
         self.niter = 1
-        self._fields['order'].max = 30
 
 
 class telluricCorrectConfig(parameters_generic.calRequirementConfig):
