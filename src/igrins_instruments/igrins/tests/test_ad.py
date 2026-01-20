@@ -108,3 +108,8 @@ def test_flaton(ad_flaton):
 def test_flatoff(ad_flatoff):
     assert ad_flatoff.observation_class() == "dayCal"
     assert ad_flatoff.observation_type() == "FLAT_OFF"
+
+def test_exposure_time(ad_sky):
+    "We test if exposure_time is correctly read."
+    assert ad_sky.exposure_time() == 300.
+    assert ad_sky[0].exposure_time() == 300.

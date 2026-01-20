@@ -292,7 +292,14 @@ class AstroDataIGRINSBase(AstroDataIGRINS_):
 
     @astro_data_descriptor
     def exposure_time(self):
-        return self.hdr["EXPTIME"]
+        if self.is_single:
+            exptime = self.phu.get("EXPTIME", None)
+            exptime0 = self.hdr.get("EXPTIME", None)
+        else:
+            exptime = self.phu.get("EXPTIME", None)
+            exptime0 = self[0].hdr.get("EXPTIME", None)
+
+        return exptime0 if exptime is None else exptime
 
 
 class AstroDataIGRINS(AstroDataIGRINSBase):
