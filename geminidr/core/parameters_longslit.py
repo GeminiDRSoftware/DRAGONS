@@ -4,5 +4,5 @@
 from geminidr.core import parameters_generic
 from gempy.library import config
 
-class Longslit(config.Config):
-    pass
+#class Longslit(config.Config):
+#    pass
