@@ -8,6 +8,7 @@ from copy import deepcopy
 from itertools import zip_longest
 
 import astrodata, gemini_instruments
+from astrodata.provenance import clone_provenance, clone_history
 
 from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import parameter_override, capture_provenance
@@ -168,6 +169,9 @@ class Bookkeeping(PrimitivesBASE):
                     # If ID not in the list of IDs to combine, or ad1 has more
                     # extensions than ad2.
                     adout.append(ext1)
+
+            clone_provenance(ad2.PROVENANCE, adout)
+            clone_history(ad2.HISTORY, adout)
 
             adoutputs.append(adout)
 
