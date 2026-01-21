@@ -1529,8 +1529,7 @@ class Spect(Resample):
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                     initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
-                        variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad,
-                        pinpoint_index=None)  # just the raw peaks
+                        variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
                     initial_peaks = peak_to_centroid_func(
                         initial_peaks, spatial_coord_func(initial_peaks))
 
