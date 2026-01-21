@@ -540,7 +540,8 @@ class Trace:
 
 @unpack_nddata
 def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
-                halfwidth=4, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
+                halfwidth=None, cwidth=None,
+                rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
                 max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None,
                 min_peak_value=None, min_line_length=0.):
     """
@@ -571,6 +572,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         Coordinates of peaks
     halfwidth : int
         half-width of centroid box in pixels.
+    cwidth : int
+        width of centroiding box in pixels
     rwidth : int/None
         width of Ricker filter to apply to each collapsed 1D slice
     nsum : int
@@ -603,6 +606,12 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     These objects are *always* configured to return coordinates in (x, y) order.
     """
     log = logutils.get_logger(__name__)
+
+    if [cwidth, halfwidth].count(None) != 1:
+        raise ValueError("Must specify only one of cwidth and halfwidth")
+
+    if halfwidth is None:
+        halfwidth = (cwidth + 1.9) // 2
 
     # Make life easier for the poor coder by transposing data if needed,
     # so that we're always tracing along columns
