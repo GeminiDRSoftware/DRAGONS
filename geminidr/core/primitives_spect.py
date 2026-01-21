@@ -1504,6 +1504,10 @@ class Spect(Resample):
                     fwidth = peak_finding.estimate_peak_width(data, boxcar_size=30)
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
+                # We have to perform some gymnastics here. Because the tracing
+                # requires that the initial location is close to the true
+                # peak, we must send the peak locations, not the centroids.
+                # So we must "invert" anything in the WAVECAL table.
                 if initial_peaks is None:
                     data, mask, variance, extract_info = peak_finding.average_along_slit(
                         ext, center=start, nsum=nsum)
@@ -1526,13 +1530,15 @@ class Spect(Resample):
                         spatial_coord_func = extract_info
 
                     # Find peaks; convert width FWHM to sigma
-                    widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
+                    widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)
                     initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad,
                         pinpoint_index=None)  # just the raw peaks
-                    initial_peaks = peak_to_centroid_func(
-                        initial_peaks, spatial_coord_func(initial_peaks))
+                else:
+                    # "Invert" the shift to go from the centroid to the peak
+                    initial_peaks -= (peak_to_centroid_func(
+                        initial_peaks, start) - initial_peaks)
 
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
@@ -1640,10 +1646,6 @@ class Spect(Resample):
                 # perpendicular to the line remains constant at its initial value
                 ref_coords = np.array([coord for trace in traces for
                                        coord in trace.reference_coordinates()]).T
-                try:
-                    weights = np.array([w for trace in traces for w in trace.weights()])
-                except TypeError:  # there's a None
-                    weights = None
 
                 for i, trace in enumerate(traces):
                     table_name = f"TRACE{i+1:03d}"
@@ -1678,7 +1680,7 @@ class Spect(Resample):
                     # S0 replace the X values in ref_coords with the ones in
                     # in_coords. Coords are *always* (x, y)
                     ref_coords[dispaxis] = in_coords[dispaxis]
-                    ext.INCOORDS2 = np.asarray(list(in_coords) + [list(weights)])
+                    ext.INCOORDS2 = in_coords
                     ext.REFCOORDS2 = ref_coords
 
                 # The model is computed entirely in the pixel coordinate frame
@@ -1696,7 +1698,8 @@ class Spect(Resample):
 
                 fixed_linear = (spectral_order == 0) or len(traces) == 1
                 model, m_final, m_inverse = am.create_distortion_model(
-                    m_init, 1-dispaxis, in_coords, ref_coords, weights, fixed_linear)
+                    m_init, 1-dispaxis, in_coords, ref_coords, weights=None,
+                    fixed_linear=fixed_linear)
                 log.stdinfo("Distortion model/inverse rms = "
                             f"{model.meta['fwd_rms']:.3f}/{model.meta['inv_rms']:.3f} pixels")
 

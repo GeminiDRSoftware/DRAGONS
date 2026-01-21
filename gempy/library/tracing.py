@@ -452,11 +452,22 @@ class Trace:
             return [(xref, y) for y, _, w in self.points]
         return [(y, xref) for y, _, w in self.points]
 
+    @property
     def weights(self):
         w = [p[2] for p in self.points]
         if w.count(None):  # all points must have weights
             return None
         return w
+
+    @weights.setter
+    def weights(self, value):
+        try:
+            if len(value) != len(self):
+                raise ValueError("Weights do not match length of trace")
+        except TypeError:  # single value was provided
+            self.points = deque([p[:2] + (value,)] for p in self.points)
+        else:
+            self.points = deque([p[:2] + (w,)] for p, w in zip(self.points, value))
 
     def add_point(self, point, weight=None):
         """Add a point to the deque, at either end as appropriate"""
@@ -529,7 +540,7 @@ class Trace:
 
 @unpack_nddata
 def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
-                cwidth=5, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
+                halfwidth=4, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
                 max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None,
                 min_peak_value=None, min_line_length=0.):
     """
@@ -558,8 +569,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         Row/column to start trace (None => middle).
     initial : sequence
         Coordinates of peaks
-    cwidth : int
-        Width of centroid box in pixels.
+    halfwidth : int
+        half-width of centroid box in pixels.
     rwidth : int/None
         width of Ricker filter to apply to each collapsed 1D slice
     nsum : int
@@ -618,7 +629,6 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                             cwt_ricker(data, widths=[rwidth])[0], 0)
         return np.where(data / np.sqrt(var) > 0.5, data, 0)
 
-    halfwidth = cwidth // 2
     if start is None:
         start = ext_data.shape[0] // 2
         log.stdinfo(f"Starting trace at {direction} {start}")
@@ -626,15 +636,14 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         start = int(min(max(start, nsum // 2), ext_data.shape[0] - nsum / 2))
 
     # Get accurate starting positions for all peaks if requested
+    data, mask, var = func(ext_data[_slice(start)],
+                           mask=None if ext_mask is None
+                           else ext_mask[_slice(start)], variance=None)
     if initial_tolerance is None:
         initial_peaks = initial
         initial_peak_values = [data[int(np.round(i))] for i in initial_peaks]
     else:
-        data, mask, var = func(ext_data[_slice(start)],
-                               mask=None if ext_mask is None
-                               else ext_mask[_slice(start)], variance=None)
         data = _profile_for_centering(data, var, rwidth)
-
         peaks, peak_values = pinpoint_peaks(data, peaks=initial, mask=mask,
                                             halfwidth=halfwidth)
         if not peaks:
@@ -734,7 +743,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
                         peaks, peak_values = pinpoint_peaks(
                             data[j], peaks=[predicted_peak], mask=mask[j],
-                            halfwidth=halfwidth)
+                            halfwidth=halfwidth, debug=False)
 
                         if (not peaks or min_peak_value is not None and
                                 peak_values[0] < min_peak_value or

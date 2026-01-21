@@ -37,27 +37,56 @@ def test_estimate_peak_width(fwhm):
 
 
 @pytest.mark.parametrize("noise", [0.01, 0.1, 0.2, 0.4])
-@pytest.mark.skip("Test is failing and need to be checked")
 def test_find_peaks(noise):
-
     x = np.arange(0, 3200)
     y = np.zeros_like(x, dtype=float)
     n_peaks = 20
 
     stddev = 4.
+    widths = np.arange(0.75, 1.26, 0.05) * stddev
     peaks = np.linspace(
         x.min() + 0.05 * np.ptp(x), x.max() - 0.05 * np.ptp(x), n_peaks)
 
     for x0 in peaks:
         g = models.Gaussian1D(mean=x0, stddev=stddev, amplitude=100)
         y += g(x)
-
     np.random.seed(0)
     y += (np.random.random(x.size) - 0.5) * noise
 
-    peaks_detected, _, _ = peak_finding.find_wavelet_peaks(y, np.ones_like(y) * stddev)
+    peaks_detected, _, _ = peak_finding.find_wavelet_peaks(
+        y, widths=widths, variance=np.ones_like(y) * stddev,
+        pinpoint_index=None)
 
     np.testing.assert_allclose(peaks_detected, peaks, atol=1)
+
+
+@pytest.mark.parametrize("center", np.arange(49.5, 50.5, 0.1))
+@pytest.mark.parametrize("halfwidth", np.arange(1, 4))
+@pytest.mark.parametrize("noise", [2.])
+def test_pinpoint_peaks_boxcar(center, halfwidth, noise):
+    np.random.seed(0)
+    x = np.arange(100)
+    y = 100 * np.minimum(np.minimum(np.maximum((center+halfwidth+0.5)-x, 0), 1),
+                         np.minimum(np.maximum(x-(center-halfwidth-0.5), 0), 1))
+    y += np.random.normal(size=y.shape) * noise
+    peaks, values = peak_finding.pinpoint_peaks(y, peaks=[50],
+                                                halfwidth=halfwidth+1)
+    assert len(peaks) == 1
+    assert peaks[0] == pytest.approx(center, abs=0.1, rel=0)
+
+
+@pytest.mark.parametrize("center", np.arange(49.5, 50.5, 0.1))
+@pytest.mark.parametrize("stddev", np.arange(2, 5, 0.5))
+@pytest.mark.parametrize("noise", [0.01, 0.1, 0.5, 2.])
+def test_pinpoint_peaks_gaussian(center, stddev, noise):
+    np.random.seed(0)
+    x = np.arange(100)
+    y = 100 * np.exp(-0.5*((x-center)/stddev)**2)
+    y += np.random.normal(size=y.shape) * noise
+    peaks, values = peak_finding.pinpoint_peaks(y, peaks=[50],
+                                                halfwidth=int(stddev+0.5))
+    assert len(peaks) == 1
+    assert peaks[0] == pytest.approx(center, abs=0.1, rel=0)
 
 
 def test_get_limits():

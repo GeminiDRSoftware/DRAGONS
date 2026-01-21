@@ -26,6 +26,7 @@ import warnings
 import numpy as np
 from astropy.modeling import models
 from astropy.stats import sigma_clip, sigma_clipped_stats
+from matplotlib import pyplot as plt
 from scipy import interpolate, optimize, signal
 
 from astrodata import NDAstroData
@@ -709,7 +710,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     # Clip the really noisy parts of the data and get more accurate positions
     #pinpoint_data[snr < 0.5] = 0
     peaks, values = pinpoint_peaks(pinpoint_data, peaks=peaks, mask=mask,
-                                   halfwidth=int(0.5*np.median(widths)))
+                                   halfwidth=max(edge // 2, 2))
 
     # Clean up peaks that are too close together
     while True:
@@ -719,7 +720,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
         i = np.argmax(diffs < min_sep)
         # Replace with mean of re-pinpointed points
         new_peaks = pinpoint_peaks(pinpoint_data, peaks=peaks[i:i+2], mask=mask,
-                                   halfwidth=int(0.5*np.median(widths)))
+                                   halfwidth=edge//2+1)
         del peaks[i+1]
         del values[i+1]
         if new_peaks[0]:
@@ -754,8 +755,8 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
 
 @unpack_nddata
-def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
-                   keep_bad=False):
+def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=None, threshold=None,
+                   keep_bad=False, debug=False):
     """
     Improves positions of peaks with centroiding. It uses a deliberately
     small centroiding box to avoid contamination by nearby lines, which
@@ -788,6 +789,8 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
           (may be shorter than the input list of peaks)
     values: list of the fitted peak values (same length as peaks)
     """
+    if halfwidth is None:
+        raise ValueError('halfwidth cannot be None')
     halfwidth = max(halfwidth, 2)  # Need at least 5 pixels to constrain spline
     int_limits = np.array([-1, -0.5, 0.5, 1])
     npts = len(data)
@@ -814,7 +817,7 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
         xc = np.argmax(data[max(xc - 1, 0):min(xc + 2, npts)]) + xc - 1
         x1 = int(xc - halfwidth - 1)
         x2 = int(xc + halfwidth + 2)
-        m = mask[x1:x2]
+        m = mask[x1:x2].astype(bool)
         if x1 < 0 or x2 > data.size - 1 or np.isnan(data[xc]) or np.sum(~m) < 4:
             if keep_bad:
                 final_peaks.append(np.nan)
@@ -872,6 +875,14 @@ def pinpoint_peaks(data, peaks=None, mask=None, halfwidth=4, threshold=None,
             if keep_bad:
                 final_peaks.append(np.nan)
                 peak_values.append(np.nan)
+
+        if debug:
+            print("DEBUGGING", final_peaks, peak_values)
+            fig, ax = plt.subplots()
+            ax.plot(data, 'k-')
+            ax.plot(np.arange(x1, x2), data[x1:x2])
+            plt.show()
+
     return final_peaks, peak_values
 
 
