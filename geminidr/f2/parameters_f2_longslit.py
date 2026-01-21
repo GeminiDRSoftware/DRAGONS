@@ -1,6 +1,6 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_f2_longslit.py file, in alphabetical order.
-from geminidr.core import parameters_standardize
+from geminidr.core import parameters_spect, parameters_standardize
 from gempy.library import config
 
 
@@ -17,3 +17,8 @@ class addIllumMaskToDQConfig(parameters_standardize.addIllumMaskToDQConfig):
 class addMDFConfig(config.Config):
     # Does not use MDF files
     suffix = config.Field("Filename suffix", str, "_mdfAdded", optional=True)
+
+
+class traceApertures(parameters_spect.traceAperturesConfig):
+    def setDefaults(self):
+        self.order = 3
