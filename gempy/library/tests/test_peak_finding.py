@@ -60,6 +60,35 @@ def test_find_peaks(noise):
     np.testing.assert_allclose(peaks_detected, peaks, atol=1)
 
 
+@pytest.mark.parametrize("center", np.arange(49.5, 50.5, 0.1))
+@pytest.mark.parametrize("halfwidth", np.arange(1, 4))
+@pytest.mark.parametrize("noise", [2.])
+def test_pinpoint_peaks_boxcar(center, halfwidth, noise):
+    np.random.seed(0)
+    x = np.arange(100)
+    y = 100 * np.minimum(np.minimum(np.maximum((center+halfwidth+0.5)-x, 0), 1),
+                         np.minimum(np.maximum(x-(center-halfwidth-0.5), 0), 1))
+    y += np.random.normal(size=y.shape) * noise
+    peaks, values = peak_finding.pinpoint_peaks(y, peaks=[50],
+                                                halfwidth=halfwidth+1)
+    assert len(peaks) == 1
+    assert peaks[0] == pytest.approx(center, abs=0.1, rel=0)
+
+
+@pytest.mark.parametrize("center", np.arange(49.5, 50.5, 0.1))
+@pytest.mark.parametrize("stddev", np.arange(2, 5, 0.5))
+@pytest.mark.parametrize("noise", [0.01, 0.1, 0.5, 2.])
+def test_pinpoint_peaks_gaussian(center, stddev, noise):
+    np.random.seed(0)
+    x = np.arange(100)
+    y = 100 * np.exp(-0.5*((x-center)/stddev)**2)
+    y += np.random.normal(size=y.shape) * noise
+    peaks, values = peak_finding.pinpoint_peaks(y, peaks=[50],
+                                                halfwidth=int(stddev+0.5))
+    assert len(peaks) == 1
+    assert peaks[0] == pytest.approx(center, abs=0.1, rel=0)
+
+
 def test_get_limits():
     CENT, SIG = 250, 20
     x = np.arange(CENT * 2)
