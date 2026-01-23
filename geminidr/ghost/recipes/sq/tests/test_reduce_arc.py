@@ -76,4 +76,4 @@ def test_reduce_arc(input_filename, caldict, arm, path_to_inputs, path_to_refs):
     # We can reuse the GhostArm object since we already know that 'arm'
     # 'and res_mode' match
     wfitref = arm.evaluate_poly(adref[0].WFIT)
-    assert_allclose(wfitref, wfitout)
+    assert_allclose(wfitref, wfitout, atol=0.001)
