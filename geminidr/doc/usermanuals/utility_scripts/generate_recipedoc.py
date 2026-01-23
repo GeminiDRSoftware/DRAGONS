@@ -22,7 +22,7 @@ import textwrap
 
 SHORT_DESCRIPTION = "General documentation for recipes."
 
-DOCUMENTED_INSTPKG = {'f2', 'gmos', 'gnirs', 'gsaoi', 'niri'}
+DOCUMENTED_INSTPKG = {'f2', 'ghost', 'gmos', 'gnirs', 'gsaoi', 'niri'}
 DRPKG = 'geminidr'
 
 def parse_args(command_line_args):

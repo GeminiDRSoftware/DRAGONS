@@ -28,7 +28,7 @@ from gempy.library import config
 
 SHORT_DESCRIPTION = "Generate primitive doc from docstrings and pex.config class definitions."
 
-DOCUMENTED_INSTPKG = {'core', 'f2', 'gemini', 'gmos', 'gnirs', 'gsaoi', 'niri'}
+DOCUMENTED_INSTPKG = {'core', 'f2', 'gemini', 'ghost', 'gmos', 'gnirs', 'gsaoi', 'niri'}
 DRPKG = 'geminidr'
 
 PARAMHEADER = 'Parameter defaults and options\n' \
