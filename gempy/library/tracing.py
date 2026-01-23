@@ -540,7 +540,7 @@ class Trace:
 
 @unpack_nddata
 def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
-                cwidth=5, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
+                halfwidth=None, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
                 max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None,
                 min_peak_value=None, min_line_length=0.):
     """
@@ -569,8 +569,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         Row/column to start trace (None => middle).
     initial : sequence
         Coordinates of peaks
-    cwidth : int
-        Width of centroid box in pixels.
+    halfwidth : int
+        half-width of centroid box in pixels.
     rwidth : int/None
         width of Ricker filter to apply to each collapsed 1D slice
     nsum : int
@@ -629,7 +629,6 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                             cwt_ricker(data, widths=[rwidth])[0], 0)
         return np.where(data / np.sqrt(var) > 0.5, data, 0)
 
-    halfwidth = cwidth // 2
     if start is None:
         start = ext_data.shape[0] // 2
         log.stdinfo(f"Starting trace at {direction} {start}")
@@ -832,7 +831,7 @@ def trace_aperture(ext, location, ui_params, viewer=None, apnum=None):
     return trace_lines(
         ext,
         axis=dispaxis,
-        cwidth=5,
+        halfwidth=2,
         initial=[location],
         initial_tolerance=None,
         max_missed=ui_params.values['max_missed'],

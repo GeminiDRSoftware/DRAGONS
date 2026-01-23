@@ -1567,7 +1567,7 @@ class Spect(Resample):
                             # Only need a single `start` value for all lines.
                             ext, axis=1 - dispaxis,
                             start=start, initial=initial_peaks,
-                            rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
+                            rwidth=rwidth, halfwidth=max(int(fwidth/2), 2), step=step,
                             nsum=nsum, max_missed=max_missed,
                             max_shift=max_shift * ybin / xbin,
                             viewer=self.viewer if debug else None,
@@ -1583,7 +1583,7 @@ class Spect(Resample):
                             traces.extend(tracing.trace_lines(
                                 ext, axis=1 - dispaxis,
                                 start=start, initial=[peak],
-                                rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
+                                rwidth=rwidth, halfwidth=max(int(fwidth/2), 2), step=step,
                                 nsum=nsum, max_missed=max_missed,
                                 max_shift=max_shift * ybin / xbin,
                                 viewer=self.viewer if debug else None,
@@ -2046,7 +2046,7 @@ class Spect(Resample):
                     ext, axis=dispaxis,
                     start=start,
                     initial=initial_peaks[min_trace_pos:max_trace_pos],
-                    rwidth=None, cwidth=max(int(fwidth), 5),
+                    rwidth=None, halfwidth=max(int(fwidth/2), 2),
                     step=step, nsum=nsum, max_missed=max_missed,
                     max_shift=max_shift * ybin / xbin,
                     min_line_length=min_line_length,
@@ -2336,7 +2336,6 @@ class Spect(Resample):
                 noise = at.std_from_pixel_variations(
                         convolved_median_slice, subtract_linear_fits=False)
                 min_height = min_snr * noise
-                cwidth = 8
 
                 # TODO: It's unclear whether find_wavelet_peaks() might be
                 # better for this.
@@ -2346,12 +2345,12 @@ class Spect(Resample):
                 # find_peaks returns integer values, so use pinpoint_peaks
                 # to better describe the positions.
                 positions_1, _ = peak_finding.pinpoint_peaks(
-                    median_slice, peaks=positions_1, halfwidth=cwidth//2)
+                    median_slice, peaks=positions_1, halfwidth=4)
                 positions_2, _ = find_peaks(
                     -convolved_median_slice, height=min_height, distance=10,
                     prominence=min_height, wlen=21)
                 positions_2, _ = peak_finding.pinpoint_peaks(
-                    -median_slice, peaks=positions_2, halfwidth=cwidth//2)
+                    -median_slice, peaks=positions_2, halfwidth=4)
 
                 log.fullinfo('Found edge candidates at:\n'
                              f'  {name_edge1.capitalize()}: {positions_1}\n'
@@ -2527,7 +2526,7 @@ class Spect(Resample):
                         max_missed=params['debug_max_missed'],
                         step=params['debug_step'], nsum=params['debug_nsum'],
                         max_shift=params['debug_max_shift'],
-                        min_peak_value=thresh, cwidth=cwidth,
+                        min_peak_value=thresh, halfwidth=3,
                         min_line_length=debug_min_line_length) or [None] if edge else [None]
                         for mult, edge, thresh in zip((1, -1), edges, min_peak_values)))
 
