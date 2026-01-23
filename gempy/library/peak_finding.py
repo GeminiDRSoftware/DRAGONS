@@ -692,7 +692,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     # Turn into array and remove those too close to the edges
     peaks = np.array(new_peaks)
-    edge = 2.35482 * np.median(widths)
+    edge = 2.35482 * np.median(widths)  # FWHM
     peaks = peaks[np.logical_and(peaks > edge, peaks < len(data) - 1 - edge)]
 
     # Remove peaks very close to unilluminated/no-data pixels
@@ -709,7 +709,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     # Clip the really noisy parts of the data and get more accurate positions
     #pinpoint_data[snr < 0.5] = 0
     peaks, values = pinpoint_peaks(pinpoint_data, peaks=peaks, mask=mask,
-                                   halfwidth=int(0.5*np.median(widths)))
+                                   halfwidth=int(np.ceil(0.5*(edge-1))))
 
     # Clean up peaks that are too close together
     while True:
