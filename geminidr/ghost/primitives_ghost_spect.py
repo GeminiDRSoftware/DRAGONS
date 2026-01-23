@@ -1036,7 +1036,7 @@ class GHOSTSpect(GHOST):
                         size=2*radius+1)
                     variance = nmad * nmad
                 peaks = peak_finding.find_wavelet_peaks(
-                    flux.copy(), widths=np.arange(2.5, 4.5, 0.1),
+                    flux.copy(), widths=np.arange(0.9, 2.01, 0.05),
                     variance=variance, min_snr=min_snr, min_sep=5,
                     pinpoint_index=None, reject_bad=False)
                 fit_g = fitting.TRFLSQFitter()  # recommended fitter
