@@ -603,6 +603,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     These objects are *always* configured to return coordinates in (x, y) order.
     """
     log = logutils.get_logger(__name__)
+    if halfwidth is None:
+        raise ValueError('trace_lines(): halfwidth cannot be None')
 
     # Make life easier for the poor coder by transposing data if needed,
     # so that we're always tracing along columns

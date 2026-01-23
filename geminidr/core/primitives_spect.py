@@ -1567,7 +1567,7 @@ class Spect(Resample):
                             # Only need a single `start` value for all lines.
                             ext, axis=1 - dispaxis,
                             start=start, initial=initial_peaks,
-                            rwidth=rwidth, halfwidth=max(int(fwidth/2), 2), step=step,
+                            rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
                             nsum=nsum, max_missed=max_missed,
                             max_shift=max_shift * ybin / xbin,
                             viewer=self.viewer if debug else None,
@@ -1583,7 +1583,7 @@ class Spect(Resample):
                             traces.extend(tracing.trace_lines(
                                 ext, axis=1 - dispaxis,
                                 start=start, initial=[peak],
-                                rwidth=rwidth, halfwidth=max(int(fwidth/2), 2), step=step,
+                                rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
                                 nsum=nsum, max_missed=max_missed,
                                 max_shift=max_shift * ybin / xbin,
                                 viewer=self.viewer if debug else None,
@@ -2046,7 +2046,7 @@ class Spect(Resample):
                     ext, axis=dispaxis,
                     start=start,
                     initial=initial_peaks[min_trace_pos:max_trace_pos],
-                    rwidth=None, halfwidth=max(int(fwidth/2), 2),
+                    rwidth=None, halfwidth=max(fwidth // 2, 2),
                     step=step, nsum=nsum, max_missed=max_missed,
                     max_shift=max_shift * ybin / xbin,
                     min_line_length=min_line_length,
@@ -2526,7 +2526,7 @@ class Spect(Resample):
                         max_missed=params['debug_max_missed'],
                         step=params['debug_step'], nsum=params['debug_nsum'],
                         max_shift=params['debug_max_shift'],
-                        min_peak_value=thresh, halfwidth=3,
+                        min_peak_value=thresh, halfwidth=4,
                         min_line_length=debug_min_line_length) or [None] if edge else [None]
                         for mult, edge, thresh in zip((1, -1), edges, min_peak_values)))
 
