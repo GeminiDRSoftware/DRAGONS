@@ -2,6 +2,7 @@
 
 import os
 import pytest
+import numpy as np
 from numpy.testing import assert_allclose
 
 from astrodata.testing import ad_compare, download_from_archive
@@ -76,4 +77,6 @@ def test_reduce_arc(input_filename, caldict, arm, path_to_inputs, path_to_refs):
     # We can reuse the GhostArm object since we already know that 'arm'
     # 'and res_mode' match
     wfitref = arm.evaluate_poly(adref[0].WFIT)
-    assert_allclose(wfitref, wfitout, atol=0.001)
+    # tolerance of 1/200 of the average pixel size
+    atol = 0.005 * np.median(np.diff(wfitref, axis=-1).mean(axis=-1))
+    assert_allclose(wfitref, wfitout, atol=atol)

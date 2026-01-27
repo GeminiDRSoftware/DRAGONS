@@ -1035,10 +1035,11 @@ class GHOSTSpect(GHOST):
                         abs(flux - median_filter(flux, size=2*radius+1)),
                         size=2*radius+1)
                     variance = nmad * nmad
+                # We send halfwidth=2 to avoid contamination from nearby peaks
                 peaks = peak_finding.find_wavelet_peaks(
-                    flux.copy(), widths=np.arange(0.9, 2.01, 0.05),
+                    flux.copy(), widths=np.arange(2.5, 4.5, 0.1),
                     variance=variance, min_snr=min_snr, min_sep=5,
-                    pinpoint_index=None, reject_bad=False)
+                    pinpoint_index=None, reject_bad=False, halfwidth=2)
                 fit_g = fitting.TRFLSQFitter()  # recommended fitter
                 these_peaks = []
                 for x in peaks[0]:

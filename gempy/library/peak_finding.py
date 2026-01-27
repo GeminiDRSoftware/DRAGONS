@@ -606,7 +606,8 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
 
 @unpack_nddata
 def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, min_sep=3,
-                       min_frac=0.20, reject_bad=True, pinpoint_index=-1):
+                       min_frac=0.20, reject_bad=True, pinpoint_index=-1,
+                       halfwidth=None):
     """
     Find peaks in a 1D array using a wavelet method. This uses scipy.signal
     routines, but requires some duplication of that code since the
@@ -636,6 +637,9 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
         which index (in the wavelet-transformed array, ordered by "widths")
         should be used for determining more the more accurate peak positions
         (None => use untransformed data)
+    halfwidth: int / Nonw
+        half-width of the centering box; None will use a value derived from
+        the "widths" parameter
 
     Returns
     -------
@@ -647,6 +651,9 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     max_width = max(widths)
     window_size = 4 * max_width + 1
+    edge = 2.35482 * np.median(widths)  # edge-avoidance = FWHM
+    if halfwidth is None:
+        halfwidth = int(np.ceil(0.5 * (edge - 1)))
 
     # If no variance is supplied we estimate S/N from pixel-to-pixel variations
     # (do this before any smoothing)
@@ -692,7 +699,6 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     # Turn into array and remove those too close to the edges
     peaks = np.array(new_peaks)
-    edge = 2.35482 * np.median(widths)  # FWHM
     peaks = peaks[np.logical_and(peaks > edge, peaks < len(data) - 1 - edge)]
 
     # Remove peaks very close to unilluminated/no-data pixels
@@ -709,7 +715,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     # Clip the really noisy parts of the data and get more accurate positions
     #pinpoint_data[snr < 0.5] = 0
     peaks, values = pinpoint_peaks(pinpoint_data, peaks=peaks, mask=mask,
-                                   halfwidth=int(np.ceil(0.5*(edge-1))))
+                                   halfwidth=halfwidth)
 
     # Clean up peaks that are too close together
     while True:
