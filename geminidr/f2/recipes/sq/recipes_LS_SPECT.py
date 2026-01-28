@@ -94,7 +94,6 @@ def  makeWavecalFromSkyEmission(p):
     p.darkCorrect()
     p.flatCorrect()
     p.stackFrames()
-    p.makeIRAFCompatible()
     p.determineWavelengthSolution()
     p.determineDistortion()
     p.storeProcessedArc(force=True)
