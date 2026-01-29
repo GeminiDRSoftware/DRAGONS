@@ -151,6 +151,8 @@ Inspect the sensitivity function
 ================================
 The sensitivity function is stored in the processed telluric star file.
 To inspect the sensitivity function, you can use the following Python code.
+The example below plots the sensitivity function for the first of six orders,
+``ad[0]``, which is Order 3.  To plot Order 8, you would use ``ad[5]``.
 
 .. code-block:: python
     :linenos:
@@ -166,6 +168,12 @@ To inspect the sensitivity function, you can use the following Python code.
     ad = astrodata.open('N20210407S0188_telluric.fits')
     sensfunc = am.table_to_model(ad[0].SENSFUNC)
     w = ad[0].wcs(np.arange(ad[0].data.size))
+
+    std_wave_unit = ad[0].SENSFUNC['knots'].unit
+    std_flux_unit = ad[0].SENSFUNC['coefficients'].unit
+
+    plt.xlabel(f'Wavelength ({std_wave_unit})')
+    plt.ylabel(f'{std_flux_unit}')
     plt.plot(w, sensfunc(w))
     plt.show()
 
