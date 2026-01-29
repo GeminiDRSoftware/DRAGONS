@@ -50,6 +50,20 @@ To activate the interactive mode for a specific primitive, eg. ``traceApertures`
      redux.files = [files_to_reduce]
      redux.uparms = dict([('traceApertures:interactive', True)])
 
+.. _jupyter:
+
+Jupyter notebooks
+=================
+If you are using Jupyter notebooks, add these two lines at the top of your
+notebook to enable the interactive tools::
+
+    import nest_asyncio
+    nest_asyncio.apply()
+
+We do not formally support Jupyter notebooks but adding those two lines appears
+to work.
+
+
 
 .. _ui_layout:
 
