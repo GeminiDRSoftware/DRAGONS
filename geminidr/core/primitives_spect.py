@@ -4882,9 +4882,12 @@ class Spect(Resample):
                     # and then find the next trough that isn't (False). All
                     # these are considered -ve beams. We also have to account
                     # for there not being any False entries after the True.
-                    nbeams = ((first_true := np.argmax(deep_enough)) +
-                              (np.argmin(deep_enough[first_true:]) or
-                               (len(deep_enough) - first_true)))
+                    if any(deep_enough):
+                        nbeams = ((first_true := np.argmax(deep_enough)) +
+                                  (np.argmin(deep_enough[first_true:]) or
+                                   (len(deep_enough) - first_true)))
+                    else:
+                        nbeams = 0
                     if nbeams > 0:
                         beam_offsets = peak_location - possible_beams[0, :nbeams]
                         log.debug(f"{ad.filename} beam offsets: "+" ".join(
@@ -4893,6 +4896,8 @@ class Spect(Resample):
                         # Store them somewhere for retrieval later
                         for ext in ad:
                             ext.nddata.meta['negative_beam_offsets'] = beam_offsets
+                    else:
+                        log.debug(f"{ad.filename} No negative beams found")
 
         if interactive:
             apgrow = list()

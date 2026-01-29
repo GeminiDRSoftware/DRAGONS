@@ -874,7 +874,7 @@ class GHOSTSpect(GHOST):
 
         dark = params.get("dark")
         if dark is None:
-            dark_list = self.caldb.get_processed_slitflat(adinputs)
+            dark_list = self.caldb.get_processed_dark(adinputs)
         else:
             dark_list = (dark, None)
 

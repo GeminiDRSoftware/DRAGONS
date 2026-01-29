@@ -55,6 +55,8 @@ class Telluric(Spect):
             lsf_module = import_module('.lsf', self.inst_lookups)
         except ModuleNotFoundError:
             pass
+        except AttributeError:
+            pass
         else:
             self._line_spread_function = lsf_module.lsf_factory(self.__class__.__name__)
 

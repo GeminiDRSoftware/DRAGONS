@@ -193,6 +193,8 @@ class stackFramesConfig(parameters_stack.core_stacking_config):
     def setDefaults(self):
         self.reject_method = "none"
 
+class standardizeSpectralFormatConfig(config.Config):
+    pass
 
 class traceFibersConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_fibersTraced",
