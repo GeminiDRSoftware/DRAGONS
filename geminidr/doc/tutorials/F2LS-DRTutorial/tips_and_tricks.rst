@@ -31,6 +31,35 @@ measure the shift for you by setting ``shift`` to ``None``.  This will trigger
 the algorithm that tries to calculate the shift on it's own.
 
 
+Inspect the sensitivity function
+================================
+The sensitivity function is stored in the processed telluric star file.
+To inspect the sensitivity function, you can use the following Python code.
+
+.. code-block:: python
+    :linenos:
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    import astrodata
+    import gemini_instruments
+
+    from gempy.library import astromodels as am
+
+    ad = astrodata.open('N20210407S0188_telluric.fits')
+    sensfunc = am.table_to_model(ad[0].SENSFUNC)
+    w = ad[0].wcs(np.arange(ad[0].data.size))
+
+    std_wave_unit = ad[0].SENSFUNC['knots'].unit
+    std_flux_unit = ad[0].SENSFUNC['coefficients'].unit
+
+    plt.xlabel(f'Wavelength ({std_wave_unit})')
+    plt.ylabel(f'{std_flux_unit}')
+    plt.plot(w, sensfunc(w))
+    plt.show()
+
+
 Useful parameters
 =================
 
