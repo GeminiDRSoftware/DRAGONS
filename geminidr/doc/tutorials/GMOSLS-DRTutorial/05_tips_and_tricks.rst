@@ -134,29 +134,25 @@ do it.
 .. code-block:: python
     :linenos:
 
-    from scipy.interpolate import BSpline
     import numpy as np
     import matplotlib.pyplot as plt
 
     import astrodata
     import gemini_instruments
+    from gemini.library import astromodels as am
 
     ad = astrodata.open('S20170826S0160_standard.fits')
 
-    sensfunc = ad[0].SENSFUNC
+    sensfunc = am.table_to_model(ad[0].SENSFUNC)
 
-    order = sensfunc.meta['header'].get('ORDER', 3)
-    func = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, order)
-    std_wave_unit = sensfunc['knots'].unit
-    std_flux_unit = sensfunc['coefficients'].unit
+    w = ad[0].wcs(np.arange(ad[0].data.size))
 
-    w1 = ad[0].wcs(0)
-    w2 = ad[0].wcs(ad[0].data.size)
+    std_wave_unit = ad[0].SENSFUNC['knots'].unit
+    std_flux_unit = ad[0].SENSFUNC['coefficients'].unit
 
-    x = np.arange(w1, w2)
     plt.xlabel(f'Wavelength ({std_wave_unit})')
     plt.ylabel(f'{std_flux_unit}')
-    plt.plot(x, func(x))
+    plt.plot(w, sensfunc(w))
     plt.show()
 
 
