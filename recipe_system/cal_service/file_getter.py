@@ -47,10 +47,11 @@ class CachedFileGetter(object):
         if calconf:
             self.cachedir = calconf.get('system_calcache_dir')
             self.cachegbs = calconf.get('system_calcache_gbs')
-            try:
-                self.cachegbs = float(self.cachegbs)
-            except ValueError:
-                self.log.error("Cannot parse system_calcache_gbs")
+            if self.cachedir:
+                try:
+                    self.cachegbs = float(self.cachegbs)
+                except (ValueError, TypeError):
+                    self.log.error("Cannot parse system_calcache_gbs")
 
     def _fetchurltofile(self, url, filepath):
         """
