@@ -187,7 +187,6 @@ associated_calibrations = {
 @pytest.mark.f2ls
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad,params", input_pars, indirect=['ad'])
-@pytest.mark.skip("MUST WORK")
 def test_regression_for_determine_distortion_using_wcs(
         ad, params, change_working_dir, ref_ad_factory):
     """
