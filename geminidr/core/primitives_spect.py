@@ -2827,8 +2827,8 @@ class Spect(Resample):
             log.stdinfo(f"Determining wavelength solution for {ad.filename}")
             uiparams = UIParameters(
                     config, reinit_params=["center", "nsum", "min_snr", "min_sep",
-                                           "fwidth", "central_wavelength", "dispersion",
-                                                       "in_vacuo"])
+                                           "central_wavelength", "dispersion",
+                                           "in_vacuo"])
             if self.generated_linelist is not None:
                 # Add some extra parameters to the UI when the linelist gets generated on-the-fly
                 if self.generated_linelist == "atran":
