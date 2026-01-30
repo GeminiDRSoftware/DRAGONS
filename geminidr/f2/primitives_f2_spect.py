@@ -370,8 +370,12 @@ class F2Spect(Telluric, Spect, F2):
             except AttributeError:  # fpm() is returning None
                 log.warning(f"Cannot determine slit width for {ad.filename}")
             else:
-                these_params["fwidth"] = 2 + 0.5 * slitwidth
-                log.stdinfo(f"Setting fwidth={these_params['fwidth']}")
+                new_fwidth = 2 + 0.5 * slitwidth
+                msg = f"Setting fwidth={new_fwidth}"
+                if these_params["fwidth"] is not None:
+                    msg += f" (overriding {these_params['fwidth']})"
+                these_params["fwidth"] = new_fwidth
+                log.stdinfo(msg)
 
             min_snr_isNone = True if these_params["min_snr"] is None else False
 
@@ -452,12 +456,17 @@ class F2Spect(Telluric, Spect, F2):
             direction.
         """
         # (c1, c3) Chebyshev coefficients for each slit width
-        coefficients = {1: (3.9029145352224286, 1.0409009914898588),
-                        2: (3.700922980002846, 1.0316558532817541),
-                        3: (3.425366901923241, 1.059424415261008),
-                        4: (3.1280237101658357, 1.1019794225196382),
-                        6: (2.455604480423782, 1.1844363798411677),
-                        8: (1.781002390052844, 1.3316380498243399),
+        # These are fits to the shift between the location of an
+        # unresolved line, convolved with the F2 LSF and measured using
+        # the wavecal code with fwidth=2+slit_width_pix/2 and
+        # pinpoint_index=-1 (as with the other instruments), and the true
+        # line centroid.
+        coefficients = {1: (4.454508275353763, 1.3154399517570343),
+                        2: (4.128667433814609, 1.3026978454709508),
+                        3: (3.7511040337877475, 1.2536863144584471),
+                        4: (3.321902139377075, 1.1665824281024912),
+                        6: (2.566429511625488, 0.974537543389409),
+                        8: (1.9089787811259242, 0.7706419237582739),
                         }
         try:
             slitwidth = int(ext.focal_plane_mask().replace('pix-slit', ''))

@@ -589,8 +589,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     cenwave = config["central_wavelength"]
     dispersion = config["dispersion"]
 
-    pinpoint_index = None if ext.instrument() == "F2" else -1
-
     log = FakeLog() if config["interactive"] == True else p.log
     # This allows suppression of the terminal log output by calling the function
     # with loglevel='debug'.
@@ -658,7 +656,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     peaks, weights = find_line_peaks(
         data, mask=mask, variance=variance,
         fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
-        reject_bad=False, nbright=config.get("nbright", 0), pinpoint_index=pinpoint_index)
+        reject_bad=False, nbright=config.get("nbright", 0), pinpoint_index=-1)
 
     # Do the second iteration of fwidth estimation and peak finding, this time using the number of peaks
     # found after the first fwidth estimation, in order to get more accurate
@@ -675,7 +673,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         peaks, weights = find_line_peaks(
             data, mask=mask, variance=variance,
             fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
-            reject_bad=False, nbright=config.get("nbright", 0), pinpoint_index=pinpoint_index)
+            reject_bad=False, nbright=config.get("nbright", 0), pinpoint_index=-1)
 
     # Determine extent of data in spectrum
     if mask is not None:
