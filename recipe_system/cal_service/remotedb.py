@@ -51,7 +51,8 @@ class RemoteDB(CalDB):
             server = f"http://{server}"
         self.server = server
         self._calmgr = f"{self.server}/jsoncalmgr"
-        self._proccal_url = f"{self.server}/upload_processed_cal"
+        #self._proccal_url = f"{self.server}/upload_processed_cal"
+        self._proccal_url = f"{self.server}/upload_file"
         self._science_url = f"{self.server}/upload_file"
         self._upload_cookie = upload_cookie or UPLOADCOOKIE
 
