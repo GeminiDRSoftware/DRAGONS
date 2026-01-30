@@ -108,13 +108,14 @@ large.)
     ../playdata/example1/S20230417S0038.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
     ../playdata/example1/S20230417S0039.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
     ../playdata/example1/S20230417S0040.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+
 ..    ../playdata/example1/bpm_20220601_ghost_blue_11_full_4amp.fits           BPM                                   1                                   1                                                     slow
 ..    ../playdata/example1/bpm_20220601_ghost_red_11_full_4amp.fits            BPM                                   1                                   1                                                     slow
 
 
 Bad Pixel Mask
 ==============
-Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
+Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are handled as
 calibrations.  They are downloadable from the archive instead of being
 packaged with the software. They are automatically associated like any other
 calibrations.  This means that the user can now download the BPMs along with
@@ -618,7 +619,7 @@ possible configurations:
     the December 2023 FTrun in two-object mode or with one of the IFUs stowed
     you may see "ripple" artifacts in your data due to contamination of the
     sky fibres by light from the target(s). Using
-    ``-p extractSpectra:sky_subtract=False weighting=uniform`` may help.
+    ``-p extractSpectra:sky_subtract=False extractSpectra:weighting=uniform`` may help.
 
 
 It is possible to write the spectra to a text file with ``write1DSpectra``,
@@ -702,5 +703,5 @@ so you should run
 
   reduce -r makeIRAFCompatible S20230416S0079_red001_dragons.fits
 
-which will create a file ``S20230416S0079_red001_irafCompatible.fits`` that
-IRAF can read. Note, however, that this file is **incompatible with DRAGONS**.
+which will create a file ``S20230416S0079_red001_dragons_irafCompatible.fits`` that
+IRAF can read. Note, however, that this file is now **incompatible with DRAGONS**.
