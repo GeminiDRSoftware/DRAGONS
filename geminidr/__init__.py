@@ -154,7 +154,7 @@ class PrimitivesBASE:
         QA metrics uploaded if 'metrics' in upload.  E.g.::
 
             upload = ['metrics', ['calibs', ... ]]
-
+    processed
     config_file : str/None
         name of DRAGONS configuration file (None => default)
     """
@@ -191,6 +191,7 @@ class PrimitivesBASE:
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
         self.user_params      = uparms if isinstance(uparms, dict) else dict(uparms) if uparms else {}
+        self.processed_filenames = []
 
         # remove quotes from string values.  This happens when quotes are used
         # in the @-file.  The shell removes the quotes automatically.

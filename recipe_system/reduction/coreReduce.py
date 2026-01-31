@@ -134,6 +134,7 @@ class Reduce:
         self.config_file = args.config
         self._upload = args.upload
         self._output_filenames = None
+        self.processed_filenames = None
         self.recipename = args.recipename if args.recipename else '_default'
 
     @property
@@ -167,10 +168,11 @@ class Reduce:
         <void>
 
         """
-        self._output_filenames = reduce_data(files=self.files, mode=self.mode, drpkg=self.drpkg,
-                                             recipename=self.recipename,
-                                             uparms=self.uparms, ucals=self.ucals, upload=self.upload,
-                                             config_file=self.config_file, suffix=self.suffix)
+        self._output_filenames, self.processed_filenames = reduce_data(
+            files=self.files, mode=self.mode, drpkg=self.drpkg,
+            recipename=self.recipename, uparms=self.uparms, ucals=self.ucals,
+            upload=self.upload, config_file=self.config_file,
+            suffix=self.suffix)
 
 
     # -------------------------------- prive -----------------------------------
@@ -613,4 +615,4 @@ def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, 
 
     log.stdinfo("reduce completed successfully.")
 
-    return _output_filenames
+    return _output_filenames, p.processed_filenames

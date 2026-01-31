@@ -141,6 +141,13 @@ class CalibDB(PrimitivesBASE):
 
             self.caldb.store_calibration(ad, caltype=caltype)
 
+            # Add the filename to the p.processed_filenames list. This does
+            # duplicate code in caldb.store_calibration a bit, but CS and PH
+            # decided that caldb.store_calibration shouldn't be doing that
+            # anyway, it should be in localdb, so avoid relying on it.
+            self.processed_filenames.append(
+                os.path.join(self.caldb.caldir, caltype, ad.filename))
+
         return adinputs
 
     def _markAsCalibration(self, adinputs=None, suffix=None, update_datalab=True,
@@ -316,6 +323,9 @@ class CalibDB(PrimitivesBASE):
                 ad.update_filename(suffix=f"_{mode}"+suffix, strip=True)
                 self.caldb.store_calibration(ad, caltype="processed_science")
                 ad.filename = old_filename
+
+            # Add it to the p.processed_filenames list
+            self.processed_filenames.append(ad.filename)
 
         return adinputs
 
