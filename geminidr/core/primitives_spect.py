@@ -1484,8 +1484,12 @@ class Spect(Resample):
                         try:
                             # Peak locations in pixels are 1-indexed
                             # These will already have been converted from
-                            # peak-to-centroid
-                            initial_peaks = (ext.WAVECAL['peaks'] - 1)
+                            # peak-to-centroid, so we want to convert them
+                            # back, since we're tracing peaks
+                            shifts = (peak_to_centroid_func(
+                                ext.WAVECAL['peaks']-1, start) -
+                                      (ext.WAVECAL['peaks']-1))
+                            initial_peaks = ext.WAVECAL['peaks']-1 - shifts
                         except KeyError:
                             log.warning("Cannot find peak locations in {} "
                                         "- identifying lines in middle {}".
