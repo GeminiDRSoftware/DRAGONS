@@ -92,10 +92,7 @@ Set up the Local Calibration Manager
     :ref:`cal_service_config` and :ref:`cal_service_api`.
 
 We recommend that you clean up your working directory (``playground``) and
-start a fresh calibration database (``caldb init -w``) when you start a new
-example.
-
-Start a fresh calibration database (``caldb.init(wipe=True)``) when you
+create a fresh calibration database (``caldb.init(wipe=True)``) when you
 start a new example.
 
 Create file lists
@@ -271,7 +268,7 @@ processed flat is constructed from two sets of stacked lamp-on flats, each
 illuminated
 differently to ensure that all orders in the reassembled flat are well
 illuminated.  You do not have to worry about the details, as long as you
-pass the two sets of raw flats as input to the ``reduce`` command, the software will take
+pass the two sets of raw flats as input to the ``Reduce`` instance, the software will take
 care of the assembly.
 
 The processed flat will also contain the illumination mask that identify the location
@@ -529,9 +526,10 @@ launch DS9 first.)
 Each order is extracted separately and stored in separate extensions in the
 MEF file.  The 1D extracted spectrum before telluric correction or flux
 calibration, obtained by adding the option
-``-p extractSpectra:write_outputs=True`` to the ``reduce`` call.  You can
-plot all the orders on a common plot with ``dgsplot``. (The ``--thin`` option
-simply plots a thinner line than the default width.)
+``('extractSpectra:write_outputs', True)`` to the ``uparms`` dictionary.
+
+You can
+plot all the orders on a common plot with ``dgsplot``.
 
 ::
 

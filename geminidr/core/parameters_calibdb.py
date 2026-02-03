@@ -17,6 +17,7 @@ class setCalibrationConfig(config.Config):
                  "processed_fringe": "processed fringe",
                  "processed_standard": "processed standard",
                  "processed_slitillum": "processed slitillum",
+                 "processed_telluric": "processed telluric",
                  }
         )
     calfile = config.Field("Filename of calibration", str)
@@ -53,6 +54,8 @@ class getProcessedStandardConfig(config.Config):
 class getProcessedSlitIllumConfig(config.Config):
     pass
 
+class getProcessedTelluricConfig(config.Config):
+    pass
 
 class getProcessedTelluricConfig(config.Config):
     pass

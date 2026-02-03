@@ -28,4 +28,4 @@ There is no API version of this example at this time.
 
    ex2_gnirsxd_SXD111mm_dataset
    ex2_gnirsxd_SXD111mm_cmdline
-..   ex2_gnirsxd_SXD111mm_api
+   ex2_gnirsxd_SXD111mm_api

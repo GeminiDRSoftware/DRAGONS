@@ -1,4 +1,4 @@
-.. ex2_gnirsxd_SXD111mm_cmdline.rst
+.. ex2_gnirsxd_SXD111mm_api.rst
 
 .. include:: symbols.txt
 
@@ -6,16 +6,14 @@
 
    <br />
 
-.. _gnirsxd_SXD111mm_cmdline:
+.. _gnirsxd_SXD111mm_api:
 
-******************************************************************
-Example 2 - SXD+111 Point Source - Using the "reduce" command line
-******************************************************************
+***************************************************************
+Example 2 - SXD+111 Point Source - Using the "Reduce" class API
+***************************************************************
 
 In this example, we will reduce the GNIRS crossed-dispersed observation of
-an erupting recurrent nova using the "|reduce|" command that
-is operated directly from the unix shell.  Just open a terminal and load the
-DRAGONS conda environment to get started.
+an erupting recurrent nova using the DRAGONS API.
 
 This cross-dispersed observation uses the 111 l/mm grating, the short-blue
 camera and the 0.3 arcsec slit.  The dither pattern is the standard ABBA, one
@@ -67,6 +65,36 @@ The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
 the interactive tools using that browser.  The allowed strings are "**safari**",
 "**chrome**", and "**firefox**".
 
+Importing libraries
+===================
+
+.. code-block:: python
+    :linenos:
+
+    import glob
+
+    import astrodata
+    import gemini_instruments
+    from recipe_system.reduction.coreReduce import Reduce
+    from gempy.adlibrary import dataselect
+
+The ``dataselect`` module will be used to create file lists for the
+biases, the flats, the arcs, the telluric star, and the science observations.
+The ``Reduce`` class is used to set up and run the data
+reduction.
+
+Setting up the logger
+=====================
+We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 7
+
+    from gempy.utils import logutils
+    logutils.config(file_name='gnirsls_tutorial.log')
+
+
 Set up the Local Calibration Manager
 ====================================
 
@@ -74,11 +102,11 @@ Set up the Local Calibration Manager
 
     Instructions to configure and use the calibration service are found in
     :ref:`cal_service`, specifically the these sections:
-    :ref:`cal_service_config` and :ref:`cal_service_cmdline`.
+    :ref:`cal_service_config` and :ref:`cal_service_api`.
 
 We recommend that you clean up your working directory (``playground``) and
-start a fresh calibration database (``caldb init -w``) when you start a new
-example.
+create a fresh calibration database (``caldb.init(wipe=True)``) when you
+start a new example.
 
 Create file lists
 =================
@@ -92,13 +120,33 @@ have to do it.  However, DRAGONS provides tools to help you with that.
 
 The first step is to create input file lists.  The tool "|dataselect|" helps.
 It uses Astrodata tags and |descriptors| to select the files and
-send the filenames to a text file that can then be fed to "|reduce|".  (See the
+send the filenames to a text file that can then be fed to "Reduce".  (See the
 |astrodatauser| for information about Astrodata and for a list
 of |descriptors|.)
 
-First, navigate to the ``playground`` directory in the unpacked data package::
+The first step is to create input file lists.  The tool "|dataselect|" helps.
+It uses Astrodata tags and |descriptors| to select the files and
+send the filenames to a text file that can then be fed to ``Reduce``.  (See the
+|astrodatauser| for information about Astrodata and for a list
+of |descriptors|.)
 
-    cd <path>/gnirsxd_tutorial/playground
+The first list we create is a list of all the files in the ``playdata``
+directory.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 9
+
+    all_files = glob.glob('../playdata/example2/*.fits')
+    all_files.sort()
+
+We will search that list for files with specific characteristics.  We use
+the ``all_files`` :class:`list` as an input to the function
+``dataselect.select_data()`` .  The function's signature is::
+
+    select_data(inputs, tags=[], xtags=[], expression='True')
+
+We show several usage examples below.
 
 
 Three lists for the flats
@@ -117,33 +165,43 @@ configurations used for the science observations.
 But first, to see which central wavelengths have been used, run |showd| on
 the flats.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 11
 
-    dataselect ../playdata/example2/*.fits --tags FLAT | showd -d central_wavelength
-
-    -------------------------------------------------------------
-    filename                                   central_wavelength
-    -------------------------------------------------------------
-    ../playdata/example2/N20191013S0036.fits             1.55e-06
-    ../playdata/example2/N20191013S0037.fits             1.55e-06
-    ...
-    ../playdata/example2/N20191013S0054.fits             1.68e-06
-    ../playdata/example2/N20191013S0055.fits             1.68e-06
-    ...
-    ../playdata/example2/N20191013S0072.fits             1.81e-06
-    ../playdata/example2/N20191013S0073.fits             1.81e-06
+    for filename in dataselect.select_data(all_files, ['FLAT']):
+        ad = astrodata.open(filename)
+        print(filename, ad.central_wavelength())
 
 ::
 
-    dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.55e-6' -o flat155.lis
-    dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.68e-6' -o flat168.lis
-    dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.81e-6' -o flat181.lis
+    ../playdata/example2/N20191013S0036.fits 1.55e-06
+    ../playdata/example2/N20191013S0037.fits 1.55e-06
+    ...
+    ../playdata/example2/N20191013S0054.fits 1.68e-06
+    ../playdata/example2/N20191013S0055.fits 1.68e-06
+    ...
+    ../playdata/example2/N20191013S0072.fits 1.81e-06
+    ../playdata/example2/N20191013S0073.fits 1.81e-06
+
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 14
+
+    flats155 = dataselect.select_data(all_files, ['FLAT'], [],
+                        dataselect.expr_parser('central_wavelength==1.55e-6'))
+    flats168 = dataselect.select_data(all_files, ['FLAT'], [],
+                        dataselect.expr_parser('central_wavelength==1.68e-6'))
+    flats181 = dataselect.select_data(all_files, ['FLAT'], [],
+                        dataselect.expr_parser('central_wavelength==1.81e-6'))
 
 Note that we have downloaded only the October data from that program.  If
 the September data were also in our raw data directory, we would have to add
-a date constraint to the expression, like this:
+a date constraint to the expression, like this::
 
-    ``dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.55e-6 and ut_date=="2019-10-13"' -o flatSep155.lis``
+    flats155Oct = dataselect.select_data(all_files, ['FLAT'], [],
+            dataselect.expr_parser('central_wavelength==1.55e-6 and ut_date=="2019-10-13"'))
 
 
 A list for the pinholes
@@ -173,11 +231,17 @@ decide to use both, they will be stacked.
 Here, like for the flats, we need to create a list for each of the three
 configurations.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 20
 
-    dataselect ../playdata/example2/*.fits --tags ARC --expr='central_wavelength==1.55e-6' -o arc155.lis
-    dataselect ../playdata/example2/*.fits --tags ARC --expr='central_wavelength==1.68e-6' -o arc168.lis
-    dataselect ../playdata/example2/*.fits --tags ARC --expr='central_wavelength==1.81e-6' -o arc181.lis
+    arcs155 = dataselect.select_data(all_files, ['ARC'], [],
+                        dataselect.expr_parser('central_wavelength==1.55e-6'))
+    arcs168 = dataselect.select_data(all_files, ['ARC'], [],
+                        dataselect.expr_parser('central_wavelength==1.68e-6'))
+    arcs181 = dataselect.select_data(all_files, ['ARC'], [],
+                        dataselect.expr_parser('central_wavelength==1.81e-6'))
+
 
 
 Three lists for the telluric
@@ -190,11 +254,28 @@ from the science observations, along with the rejection of the ``CAL`` tag to
 reject flats and arcs.  Telluric stars will be observed under the ``partnerCal``
 or ``progCal`` classes, the science observation under the ``science`` class.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 26
 
-    dataselect ../playdata/example2/*.fits --xtags=CAL --expr='observation_class!="science" and central_wavelength==1.55e-6' -o tel155.lis
-    dataselect ../playdata/example2/*.fits --xtags=CAL --expr='observation_class!="science" and central_wavelength==1.68e-6' -o tel168.lis
-    dataselect ../playdata/example2/*.fits --xtags=CAL --expr='observation_class!="science" and central_wavelength==1.81e-6' -o tel181.lis
+    tellurics155 = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class!="science" and central_wavelength==1.55e-6')
+    )
+    tellurics168 = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class!="science" and central_wavelength==1.68e-6')
+    )
+    tellurics181 = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class!="science" and central_wavelength==1.81e-6')
+    )
 
 
 A list for the science observations
@@ -207,37 +288,31 @@ standards which are set to ``partnerCal`` or ``progCal``.
 We already know that we have multiple central_wavelength settings and that we
 will need a list of each.
 
-If we had multiple targets, we would need to split them into separate lists. To
-inspect what we have we can use |dataselect| and |showd| together.
+If we had multiple targets, we would need to split them into separate lists
+using the ``object`` descriptor.  Here we only have one target.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 44
 
-    dataselect ../playdata/example2/*.fits --expr='observation_class=="science"' | showd -d object,central_wavelength
-
-    -------------------------------------------------------------------------
-    filename                                      object   central_wavelength
-    -------------------------------------------------------------------------
-    ../playdata/example2/N20191013S0006.fits   V3890 Sgr             1.55e-06
-    ../playdata/example2/N20191013S0007.fits   V3890 Sgr             1.55e-06
-    ../playdata/example2/N20191013S0008.fits   V3890 Sgr             1.55e-06
-    ../playdata/example2/N20191013S0009.fits   V3890 Sgr             1.55e-06
-    ../playdata/example2/N20191013S0010.fits   V3890 Sgr             1.68e-06
-    ../playdata/example2/N20191013S0011.fits   V3890 Sgr             1.68e-06
-    ../playdata/example2/N20191013S0012.fits   V3890 Sgr             1.68e-06
-    ../playdata/example2/N20191013S0013.fits   V3890 Sgr             1.68e-06
-    ../playdata/example2/N20191013S0014.fits   V3890 Sgr             1.81e-06
-    ../playdata/example2/N20191013S0015.fits   V3890 Sgr             1.81e-06
-    ../playdata/example2/N20191013S0016.fits   V3890 Sgr             1.81e-06
-    ../playdata/example2/N20191013S0017.fits   V3890 Sgr             1.81e-06
-
-Here we only have one object from the same sequence.  If we had multiple
-objects we could add the object name in the expression.
-
-::
-
-    dataselect ../playdata/example2/*.fits --expr='observation_class=="science" and central_wavelength==1.55e-6 and object=="V3890 Sgr"' -o sci155.lis
-    dataselect ../playdata/example2/*.fits --expr='observation_class=="science" and central_wavelength==1.68e-6 and object=="V3890 Sgr"' -o sci168.lis
-    dataselect ../playdata/example2/*.fits --expr='observation_class=="science" and central_wavelength==1.81e-6 and object=="V3890 Sgr"' -o sci181.lis
+    science155 = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class=="science" and central_wavelength==1.55e-6')
+    )
+    science168 = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class=="science" and central_wavelength==1.68e-6')
+    )
+    science181 = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class=="science" and central_wavelength==1.81e-6')
+    )
 
 
 Bad Pixel Mask
@@ -254,9 +329,12 @@ to get the BPMs from the archive.
 To add the static BPM included in the data package to the local calibration
 database:
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 62
 
-    caldb add ../playdata/example2/bpm*.fits
+    for bpm in dataselect.select_data(all_files, ['BPM']):
+        caldb.add_cal(bpm)
 
 
 Master Flat Field
@@ -266,7 +344,7 @@ observation sequence to match the telescope and instrument flexure.  The
 processed flat is constructed from two sets of stacked lamp-on flats, each
 exposed differently to ensure that all orders in the reassembled flat are
 well illuminated.  You do not have to worry about the details, as long as you
-pass the two sets of raw flats as input to the ``reduce`` command, the software
+pass the two sets of raw flats as input to the ``Reduce`` instance, the software
 will take care of the assembly.
 
 The processed flat will also contain the illumination mask that identify the
@@ -276,22 +354,57 @@ model is also calculated.
 
 Each central wavelength settings must be reduced separately.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 64
 
-    reduce @flat155.lis
-    reduce @flat168.lis
-    reduce @flat181.lis
+    reduce_flats155 = Reduce()
+    reduce_flats155.files.extend(flats155)
+    reduce_flats155.runr()
+
+    reduce_flats168 = Reduce()
+    reduce_flats168.files.extend(flats168)
+    reduce_flats168.runr()
+
+    reduce_flats181 = Reduce()
+    reduce_flats181.files.extend(flats181)
+    reduce_flats181.runr()
+
 
 It might be useful to run the flat reduction in interactive mode.  Also, in
-this case, using ``-p normalizeFlat:grow=2`` helps rejecting the pixels near
+this case, using ``('normalizeFlat:grow', 2)`` helps rejecting the pixels near
 the edge and ensure a smoother fit.  You can play with the other parameters
 too.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 75
 
-    reduce @flat155.lis -p interactive=True normalizeFlat:grow=2
-    reduce @flat168.lis -p interactive=True normalizeFlat:grow=2
-    reduce @flat181.lis -p interactive=True normalizeFlat:grow=2 normalizeFlat:niter=2
+    reduce_flats155 = Reduce()
+    reduce_flats155.files.extend(flats155)
+    reduce_flats155.uparms = dict([
+                            ('normalizeFlat:grow', 2),
+                            ('interactive', True),
+                            ])
+    reduce_flats155.runr()
+
+    reduce_flats168 = Reduce()
+    reduce_flats168.files.extend(flats168)
+    reduce_flats168.uparms = dict([
+                            ('normalizeFlat:grow', 2),
+                            ('interactive', True),
+                            ])
+    reduce_flats168.runr()
+
+    reduce_flats181 = Reduce()
+    reduce_flats181.files.extend(flats181)
+    reduce_flats181.uparms = dict([
+                            ('normalizeFlat:grow', 2),
+                            ('normalizeFlat:niter', 2),
+                            ('interactive', True),
+                            ])
+    reduce_flats181.runr()
+
 
 The interactive tools are introduced in section :ref:`interactive`.
 
@@ -319,16 +432,17 @@ sufficient.
 
 Since the ``attachPinholeRectification`` step will have to be skipped for
 all the recipes that requests it, let's save ourselves some typing and let's
-put that instructions in an file that we can attach later to our ``reduce``
-calls.
+put that instructions dictionary that we can attach later to our ``Reduce``
+instance.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 99
 
-   echo "-p attachPinholeRectification:skip_primitive=True" > nopinhole.param
-
+    nopinhole = dict([('attachPinholeRectification:skip_primitive', True)])
 
 If you had pinhole observation, just like the flats they would need to be
-reduced each configuration separately (eg. `reduce @pinhole155.lis`)
+reduced each configuration separately.
 
 
 Wavelength Solution
@@ -396,11 +510,32 @@ Solution from the Arc Lamp
 During the processing of the arc, the illumination mask and the rectification
 model will be obtained from the processed flat.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 100
 
-    reduce @arc155.lis -p interactive=True @nopinhole.param
-    reduce @arc168.lis -p interactive=True @nopinhole.param
-    reduce @arc181.lis -p interactive=True @nopinhole.param
+    reduce_arcs155 = Reduce()
+    reduce_arcs155.files.extend(arcs155)
+    reduce_arcs155.uparms = dict([
+                        ('interactive', True),
+                        ]) | nopinhole
+    reduce_arcs155.runr()
+
+    reduce_arcs168 = Reduce()
+    reduce_arcs168.files.extend(arcs168)
+    reduce_arcs168.uparms = dict([
+                        ('interactive', True),
+                        ]) | nopinhole
+    reduce_arcs168.runr()
+
+    reduce_arcs181 = Reduce()
+    reduce_arcs181.files.extend(arcs181)
+    reduce_arcs181.uparms = dict([
+                        ('interactive', True),
+                        ]) | nopinhole
+    reduce_arcs181.runr()
+
+
 
 The interactive tools are introduced in section :ref:`interactive`.
 
@@ -421,11 +556,34 @@ If the exposure times are long enough, chances are that the OH and
 O\ :sub:`2`\  sky lines are your best bet to get a good solution in most
 orders at most H-band settings, especially if you do not need Order 7 and 8.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 120
 
-    reduce -r makeWavecalFromSkyEmission @sci155.lis -p interactive=True @nopinhole.param
-    reduce -r makeWavecalFromSkyEmission @sci168.lis -p interactive=True @nopinhole.param
-    reduce -r makeWavecalFromSkyEmission @sci181.lis -p interactive=True @nopinhole.param
+    reduce_skyarcs155 = Reduce()
+    reduce_skyarcs155.files.extend(science155)
+    reduce_skyarcs155.recipename = 'makeWavecalFromSkyEmission'
+    reduce_skyarcs155.uparms = dict([
+                        ('interactive', True),
+                        ]) | nopinhole
+    reduce_skyarcs155.runr()
+
+    reduce_skyarcs168 = Reduce()
+    reduce_skyarcs168.files.extend(science168)
+    reduce_skyarcs168.recipename = 'makeWavecalFromSkyEmission'
+    reduce_skyarcs168.uparms = dict([
+                        ('interactive', True),
+                        ]) | nopinhole
+    reduce_skyarcs168.runr()
+
+    reduce_skyarcs181 = Reduce()
+    reduce_skyarcs181.files.extend(science181)
+    reduce_skyarcs181.recipename = 'makeWavecalFromSkyEmission'
+    reduce_skyarcs181.uparms = dict([
+                        ('interactive', True),
+                        ]) | nopinhole
+    reduce_skyarcs181.runr()
+
 
 For the 1.55 |um| setting, beware that the automatic solution for Order 7 is
 completely wrong.  Delete all the lines and identify them manually.  Remember
@@ -456,34 +614,58 @@ We will verify the solutions we calculated above.  We have:
 +------------------------+-------------------------+
 
 We need to run ``fitTelluric`` with each one and assess the quality of the
-model for each order.   We use the ``--user_cal`` option to override the
+model for each order.   We use the ``ucals`` atrribute to override the
 automatic "proccessed arc" selection.
 
 We need to use information about the star like the temperature and
 the magnitude.   See the section about the modeling of the telluric
-below for more details.   For now, create a file named ``hip94510.param``
-with this content::
+below for more details.   For now, create a dictionary named ``hip94510``
+with this content
 
-    -p
-    fitTelluric:bbtemp=9700
-    fitTelluric:magnitude='K=6.754'
+.. code-block:: python
+    :linenos:
+    :lineno-start: 143
+
+    hip94510 = dict([('fitTelluric:bbtemp', 9700),
+                     ('fitTelluric:magnitude', 'K=6.754')
+                   ])
 
 
 For 1.55 |um|
 +++++++++++++
 You can "Abort" ``fitTelluric`` when you are done with the inspection.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 146
 
-    reduce @tel155.lis -r reduceTelluric --user_cal processed_arc:N20191013S0034_arc.fits -p fitTelluric:interactive=True @hip94510.param @nopinhole.param
+    reduce_tel155 = Reduce()
+    reduce_tel155.files.extend(tellurics155)
+    reduce_tel155.recipename = 'reduceTelluric'
+    reduce_tel155.uparms = dict([
+                                  ('fitTelluric:interactive', True),
+                                 ]) | hip94510 | nopinhole
+    reduce_tel155.ucals = dict([('processed_arc', 'N20191013S0034_arc.fits')])
+    reduce_tel155.runr()
+
 
 You will see that the "ringing" in the deep telluric features is well fit.
 Order 3 to 5, and Order 8 give a good result.  In Order 6 and 7, the wavelength
 scale is clearly offset and the model is wrong.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 154
 
-    reduce @tel155.lis -r reduceTelluric --user_cal processed_arc:N20191013S0006_arc.fits -p fitTelluric:interactive=True @hip94510.param @nopinhole.param
+    reduce_tel155 = Reduce()
+    reduce_tel155.files.extend(tellurics155)
+    reduce_tel155.recipename = 'reduceTelluric'
+    reduce_tel155.uparms = dict([
+                                  ('fitTelluric:interactive', True),
+                                 ]) | hip94510 | nopinhole
+    reduce_tel155.ucals = dict([('processed_arc', 'N20191013S0006_arc.fits')])
+    reduce_tel155.runr()
+
 
 The ringing is not as well fit, if at all when using the solution from the sky
 lines.  However, the fits for Order 6 and 7 are good.
@@ -535,16 +717,36 @@ not perfect, clearly better.
 For 1.68 |um|
 +++++++++++++
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 162
 
-    reduce @tel168.lis -r reduceTelluric --user_cal processed_arc:N20191013S0052_arc.fits -p fitTelluric:interactive=True @hip94510.param @nopinhole.param
+    reduce_tel168 = Reduce()
+    reduce_tel168.files.extend(tellurics168)
+    reduce_tel168.recipename = 'reduceTelluric'
+    reduce_tel168.uparms = dict([
+                                  ('fitTelluric:interactive', True),
+                                 ]) | hip94510 | nopinhole
+    reduce_tel168.ucals = dict([('processed_arc', 'N20191013S0052_arc.fits')])
+    reduce_tel168.runr()
+
 
 The solutions from arc are reasonable for all orders.  However, we will see
 that the sky lines are doing better for Orders 3-7.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 170
 
-    reduce @tel168.lis -r reduceTelluric --user_cal processed_arc:N20191013S0010_arc.fits -p fitTelluric:interactive=True @hip94510.param @nopinhole.param
+    reduce_tel168 = Reduce()
+    reduce_tel168.files.extend(tellurics168)
+    reduce_tel168.recipename = 'reduceTelluric'
+    reduce_tel168.uparms = dict([
+                                  ('fitTelluric:interactive', True),
+                                 ]) | hip94510 | nopinhole
+    reduce_tel168.ucals = dict([('processed_arc', 'N20191013S0010_arc.fits')])
+    reduce_tel168.runr()
+
 
 From the sky lines, Order 8 is not usable.  But overall, the fit for the Orders
 are better than from the arc lamp solution.
@@ -577,17 +779,37 @@ on the right.
 For 1.81 |um|
 +++++++++++++
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 178
 
-    reduce @tel181.lis -r reduceTelluric --user_cal processed_arc:N20191013S0070_arc.fits -p fitTelluric:interactive=True @hip94510.param @nopinhole.param
+    reduce_tel181 = Reduce()
+    reduce_tel181.files.extend(tellurics181)
+    reduce_tel181.recipename = 'reduceTelluric'
+    reduce_tel181.uparms = dict([
+                                  ('fitTelluric:interactive', True),
+                                 ]) | hip94510 | nopinhole
+    reduce_tel181.ucals = dict([('processed_arc', 'N20191013S0070_arc.fits')])
+    reduce_tel181.runr()
+
 
 For Order 4 and 7, the model from the arc solution is clearly erroneous.  Order
 8 is not great but it is usable and will have to do since Order 8 from the sky
 lines is clearly wrong at the blue end.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 186
 
-    reduce @tel181.lis -r reduceTelluric --user_cal processed_arc:N20191013S0014_arc.fits -p fitTelluric:interactive=True @hip94510.param @nopinhole.param
+    reduce_tel181 = Reduce()
+    reduce_tel181.files.extend(tellurics181)
+    reduce_tel181.recipename = 'reduceTelluric'
+    reduce_tel181.uparms = dict([
+                                  ('fitTelluric:interactive', True),
+                                 ]) | hip94510 | nopinhole
+    reduce_tel181.ucals = dict([('processed_arc', 'N20191013S0014_arc.fits')])
+    reduce_tel181.runr()
+
 
 With the sky line solution, it is Order 8 that is bad.  The other Orders are
 good.   The telluric fit for Order 3 is good, it is the continuum that is
@@ -648,20 +870,60 @@ extensions 1 to 6, respectively**.  This is the index scale we have to use.
 It is not the most elegant solution, but for now, it works.
 
 
-Combine 1.55 |um|::
+Combine 1.55 |um|:
 
-    reduce -r combineWavelengthSolutions N20191013S0006_arc.fits N20191013S0034_arc.fits -p ids=1,2,3,6
-    reduce -r storeProcessedArc N20191013S0006_combinedArc.fits -p suffix=_arc155
+.. code-block:: python
+    :linenos:
+    :lineno-start: 194
 
-Combine 1.68 |um|::
+    reduce_comb = Reduce()
+    reduce_comb.files.extend(['N20191013S0006_arc.fits', 'N20191013S0034_arc.fits'])
+    reduce_comb.recipename = 'combineWavelengthSolutions'
+    reduce_comb.uparms = dict([('ids', '1,2,3,6')])
+    reduce_comb.runr()
 
-    reduce -r combineWavelengthSolutions N20191013S0010_arc.fits N20191013S0052_arc.fits -p ids=6
-    reduce -r storeProcessedArc N20191013S0010_combinedArc.fits -p suffix=_arc168
+    reduce_store = Reduce()
+    reduce_store.files.extend(['N20191013S0006_combinedArc.fits'])
+    reduce_store.recipename = 'storeProcessedArc'
+    reduce_store.uparms = dict([('suffix', '_arc155')])
+    reduce_store.runr()
 
-Combine 1.81 |um|::
+Combine 1.68 |um|:
 
-    reduce -r combineWavelengthSolutions N20191013S0014_arc.fits N20191013S0070_arc.fits -p ids=6
-    reduce -r storeProcessedArc N20191013S0014_combinedArc.fits -p suffix=_arc181
+.. code-block:: python
+    :linenos:
+    :lineno-start: 205
+
+    reduce_comb = Reduce()
+    reduce_comb.files.extend(['N20191013S0010_arc.fits', 'N20191013S0052_arc.fits'])
+    reduce_comb.recipename = 'combineWavelengthSolutions'
+    reduce_comb.uparms = dict([('ids', '6')])
+    reduce_comb.runr()
+
+    reduce_store = Reduce()
+    reduce_store.files.extend(['N20191013S0010_combinedArc.fits'])
+    reduce_store.recipename = 'storeProcessedArc'
+    reduce_store.uparms = dict([('suffix', '_arc168')])
+    reduce_store.runr()
+
+
+Combine 1.81 |um|:
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 216
+
+    reduce_comb = Reduce()
+    reduce_comb.files.extend(['N20191013S0014_arc.fits', 'N20191013S0070_arc.fits'])
+    reduce_comb.recipename = 'combineWavelengthSolutions'
+    reduce_comb.uparms = dict([('ids', '6')])
+    reduce_comb.runr()
+
+    reduce_store = Reduce()
+    reduce_store.files.extend(['N20191013S0014_combinedArc.fits'])
+    reduce_store.recipename = 'storeProcessedArc'
+    reduce_store.uparms = dict([('suffix', '_arc181')])
+    reduce_store.runr()
 
 
 Cleaning up the Calibration Database
@@ -669,13 +931,17 @@ Cleaning up the Calibration Database
 Finally, we need to clean up the calibration database to make sure only the
 final wavelength solutions are found in the database.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 227
 
-    caldb remove *_combinedArc.fits
-    caldb remove *_arc.fits
+    for filedata in caldb.list_files():
+        if '_combinedArc.fits' in filedata.name or '_arc.fits' in filedata.name:
+            caldb.remove_cal(filedata.name)
 
-A ``caldb list | grep arc`` call should show only the 3 final wavelength
-solutions.
+
+A ``caldb list | grep arc`` call from the command line should show only
+the 3 final wavelength solutions.
 
 
 Telluric Standard
@@ -700,26 +966,53 @@ effect on the telluric correction, so the temperature from any reliable
 source can be used. Using Simbad, we find that the star has a magnitude
 of H=6.792.
 
-Instead of typing the values on the command line, we will use a parameter file
-to store them.  In a normal text file (here we name it "hip94510.param"), we write::
+Instead of typing the values on the command line, we will use a dictionary
+named ``hip94510`` to store them.  This will be passed to ``Reduce``.
 
-    -p
-    fitTelluric:bbtemp=9700
-    fitTelluric:magnitude='K=6.754'
+.. code-block:: python
+    :linenos:
+    :lineno-start: 230
 
-Then we can call the ``reduce`` command with the parameter file.  The telluric
-fitting primitive can be run in interactive mode.
+    hip94510 = dict([('fitTelluric:bbtemp', 9700),
+                     ('fitTelluric:magnitude', 'K=6.754')
+                   ])
+
 
 Note that the data are recognized by Astrodata as normal GNIRS cross-dispersed
 science spectra.  To calculate the telluric correction, we need to specify the
-telluric recipe (``-r reduceTelluric``), otherwise the default science
+telluric recipe (``reduceTelluric``), otherwise the default science
 reduction will be run.
 
-::
+The telluric fitting primitive can be run in interactive mode.
 
-    reduce @tel155.lis -r reduceTelluric @hip94510.param -p fitTelluric:interactive=True @nopinhole.param
-    reduce @tel168.lis -r reduceTelluric @hip94510.param -p fitTelluric:interactive=True @nopinhole.param
-    reduce @tel181.lis -r reduceTelluric @hip94510.param -p fitTelluric:interactive=True @nopinhole.param
+.. code-block:: python
+    :linenos:
+    :lineno-start: 233
+
+    reduce_tel155 = Reduce()
+    reduce_tel155.files.extend(tellurics155)
+    reduce_tel155.recipename = 'reduceTelluric'
+    reduce_tel155.uparms = dict([
+                                  ('fitTelluric:interactive', True),
+                                 ]) | hip94510 | nopinhole
+    reduce_tel155.runr()
+
+    reduce_tel168 = Reduce()
+    reduce_tel168.files.extend(tellurics168)
+    reduce_tel168.recipename = 'reduceTelluric'
+    reduce_tel168.uparms = dict([
+                                  ('fitTelluric:interactive', True),
+                                 ]) | hip94510 | nopinhole
+    reduce_tel168.runr()
+
+    reduce_tel181 = Reduce()
+    reduce_tel181.files.extend(tellurics181)
+    reduce_tel181.recipename = 'reduceTelluric'
+    reduce_tel181.uparms = dict([
+                                  ('fitTelluric:interactive', True),
+                                 ]) | hip94510 | nopinhole
+    reduce_tel181.runr()
+
 
 The spline order defaults to 6 and that is usually a good value.  You can
 experiment with it if you want to see how it affects the fit.
@@ -755,12 +1048,17 @@ is at the bottom and blue at the top.  This will be reversed when the data is
 resampled and the distortion corrected and wavelength calibration are applied.
 
 With all the calibrations in the local calibration manager, for a **Quicklook
-Quality output**, one only needs to call |reduce| on the science frames to get
+Quality output**, one only needs to call ``Reduce`` on the science frames to get
 an extracted spectrum.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 256
 
-    reduce @sci155.lis @nopinhole.param
+    reduce_sci155 = Reduce()
+    reduce_sci155.files.extend(science155)
+    reduce_sci155.uparms = nopinhole
+    reduce_sci155.runr()
 
 For a Science Quality output, it is recommended to run the reduction in
 interactive mode, in particular to adjust the wavelength shift often needed
@@ -771,14 +1069,28 @@ To run the reduction with all the interactive tools activated, set the
 interactivity lies mostly in the telluric correction since an offset in
 wavelength needs to be applied.  This is not always needed but it's safer to
 verify anyway.  To target that step, one would use
-``telluricCorrect:interactive=True`` instead of the non-specific call that
+``('telluricCorrect:interactive', True)`` instead of the non-specific call that
 activates all the interactive steps.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 260
 
-    reduce @sci155.lis -p interactive=True @nopinhole.param
-    reduce @sci168.lis -p interactive=True @nopinhole.param
-    reduce @sci181.lis -p interactive=True @nopinhole.param
+    reduce_sci155 = Reduce()
+    reduce_sci155.files.extend(science155)
+    reduce_sci155.uparms = dict([('interactive', True)]) | nopinhole
+    reduce_sci155.runr()
+
+    reduce_sci168 = Reduce()
+    reduce_sci168.files.extend(science168)
+    reduce_sci168.uparms = dict([('interactive', True)]) | nopinhole
+    reduce_sci168.runr()
+
+    reduce_sci181 = Reduce()
+    reduce_sci181.files.extend(science181)
+    reduce_sci181.uparms = dict([('interactive', True)]) | nopinhole
+    reduce_sci181.runr()
+
 
 When you get to the ``telluricCorrect`` step, you can experiment with the
 shift between the telluric standard and the target.  Both need to be well
@@ -799,30 +1111,36 @@ A section of 2D spectrum before extraction is shown on the right, with blue wave
 the bottom and the red-end at the top.  Note that each order has been rectified
 and is being stored in separate extensions in the MEF file.  Here they are
 displayed together, side by side.
-(``reduce -r display N20191013S0006_2D.fits -p zscale=False``, launch DS9 first.)
 
 Each order is extracted separately and stored in separate extensions in the
 MEF file.  The 1D extracted spectrum before telluric correction or flux
 calibration, obtained by adding the option
-``-p extractSpectra:write_outputs=True`` to the ``reduce`` call.  You can
-plot all the orders on a common plot with ``dgsplot``. (The ``--thin`` option
-simply plots a thinner line than the default width.)
+``('extractSpectra:write_outputs', True)`` to the ``Reduce`` instance.
+
+You can
+plot all the orders on a common plot with ``dgsplot``.
 
 ::
 
-    dgsplot N20191013S0006_extracted.fits 1 --thin
+    from gempy.adlibrary import plotting
+    ad = astrodata.open('N20191013S0006_extracted.fits')
+    plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
+
 
 .. image:: _graphics/gnirsxd_SXD111mm_155extracted.png
    :width: 450
    :alt: 1D extracted 1.55 |um| spectrum before telluric correction or flux calibration
 
 The 1D extracted spectrum after telluric correction but before flux
-calibration, obtained with ``-p telluricCorrect:write_outputs=True``, looks
+calibration, obtained with ``('telluricCorrect:write_outputs', True)``, looks
 like this.
 
 ::
 
-    dgsplot N20191013S0006_telluricCorrected.fits 1 --thin
+    from gempy.adlibrary import plotting
+    ad = astrodata.open('N20191013S0006_telluricCorrected.fits')
+    plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
+
 
 .. image:: _graphics/gnirsxd_SXD111mm_155tellcor.png
    :width: 600
@@ -833,7 +1151,9 @@ telluric features and flux calibrated.
 
 ::
 
-    dgsplot N20191013S0006_1D.fits 1 --thin
+    from gempy.adlibrary import plotting
+    ad = astrodata.open('N20191013S0006_1D.fits')
+    plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
 
 .. image:: _graphics/gnirsxd_SXD111mm_1d_155.png
    :width: 600
@@ -846,13 +1166,26 @@ The plots above are for one central wavelength setting.   We probably want to
 scale and stitch all the orders from all 3 final spectra together to get one
 continuous spectrum.  We use the primitive ``combineOrders`` to do that.
 
+.. code-block:: python
+    :linenos:
+    :lineno-start: 274
+
+    reduce_combine = Reduce()
+    reduce_combine.recipename = 'combineOrders'
+    reduce_combine.files.extend([reduce_sci155.output_filenames[0],
+                                 reduce_sci168.output_filenames[0],
+                                 reduce_sci181.output_filenames[0]])
+    reduce_combine.uparms = dict([('scale', True)])
+    reduce_combine.runr()
+
+
 ::
 
-    reduce -r combineOrders N20191013S0006_1D.fits N20191013S0010_1D.fits N20191013S0014_1D.fits -p scale=True
 
-::
+    from gempy.adlibrary import plotting
+    ad = astrodata.open('N20191013S0006_ordersCombined.fits')
+    plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
 
-    dgsplot N20191013S0006_ordersCombined.fits 1 --thin
 
 .. image:: _graphics/gnirsxd_SXD111mm_1d_full.png
    :width: 600

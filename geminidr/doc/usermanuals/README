@@ -4,7 +4,7 @@ There are two steps:
 
 1) run the script to generate the docs from the docstrings and the parameter
    files.
-     utility_scripts/generate_primdoc.py -d primitives/generated-doc
+     utility_scripts/generate_primdoc.py -d primitives/generated_doc
 
 2) use the template to write the primitive_name.rst file that will load the
    generated subsections.   The template is "primmitive_createExample.rst" in
