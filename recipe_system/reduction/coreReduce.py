@@ -134,6 +134,7 @@ class Reduce:
         self.config_file = args.config
         self._upload = args.upload
         self._output_filenames = None
+        self.processed_filenames = None
         self.recipename = args.recipename if args.recipename else '_default'
 
     @property
@@ -167,10 +168,16 @@ class Reduce:
         <void>
 
         """
-        self._output_filenames = reduce_data(files=self.files, mode=self.mode, drpkg=self.drpkg,
-                                             recipename=self.recipename,
-                                             uparms=self.uparms, ucals=self.ucals, upload=self.upload,
-                                             config_file=self.config_file, suffix=self.suffix)
+        # reduce_data returns a dict of things which become attributes of
+        # the Reduce() instance
+        retdict = reduce_data(
+            files=self.files, mode=self.mode, drpkg=self.drpkg,
+            recipename=self.recipename, uparms=self.uparms, ucals=self.ucals,
+            upload=self.upload, config_file=self.config_file,
+            suffix=self.suffix)
+
+        for k, v in retdict.items():
+            setattr(self, k, v)
 
 
     # -------------------------------- prive -----------------------------------
@@ -613,4 +620,7 @@ def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, 
 
     log.stdinfo("reduce completed successfully.")
 
-    return _output_filenames
+    # Return a dictionary, Reduce.runr() sets these as attributes of the
+    # Reduce() instance with the names of the dictionary keywords
+    return {'_output_filenames': _output_filenames,
+            'processed_filenames': p.processed_filenames}
