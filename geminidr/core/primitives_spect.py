@@ -1512,8 +1512,6 @@ class Spect(Resample):
                         # range of the starting and ending rows/columns.
                         log.stdinfo("Finding peaks by extracting {}s {} to {}".
                             format(direction, extract_info.start + 1, extract_info.stop))
-                        spatial_coord_func = models.Const1D(
-                            0.5 * (extract_info.start + extract_info.stop-1))
                     else:
                         # For non-straight slits, `extract_info` is the 1D
                         # Chebyshev polynomial that traces the center of the slit.
@@ -1523,15 +1521,12 @@ class Spect(Resample):
                         log.stdinfo(f"Extracting 1D spectrum for extension {ext.id}")
                         log.stdinfo(f"  ±{nsum/2:.1f} {direction}s "
                                      "around polynomial with " + ", ".join(coeffs))
-                        spatial_coord_func = extract_info
 
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                     initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
-                    initial_peaks = peak_to_centroid_func(
-                        initial_peaks, spatial_coord_func(initial_peaks))
 
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
