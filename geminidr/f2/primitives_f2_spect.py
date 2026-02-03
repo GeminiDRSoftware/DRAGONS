@@ -13,11 +13,9 @@ from astropy.modeling import models
 from geminidr.core import Spect, Telluric
 from .primitives_f2 import F2
 from . import parameters_f2_spect
-from gemini_instruments.f2.lookup import dispersion_offset_mask, resolving_power
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import transform, wavecal
-from gemini_instruments import gmu
 from geminidr import CalibrationNotFoundError
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
