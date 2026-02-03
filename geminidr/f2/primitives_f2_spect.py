@@ -19,7 +19,6 @@ from gempy.library import transform, wavecal
 from geminidr import CalibrationNotFoundError
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
-from ..gsaoi.tests.test_gsaoi_image import adinputs
 
 
 # ------------------------------------------------------------------------------
