@@ -145,8 +145,9 @@ class CalibDB(PrimitivesBASE):
             # duplicate code in caldb.store_calibration a bit, but CS and PH
             # decided that caldb.store_calibration shouldn't be doing that
             # anyway, it should be in localdb, so avoid relying on it.
-            self.processed_filenames.append(
-                os.path.join(self.caldb.caldir, caltype, ad.filename))
+            fullpath = os.path.join(self.caldb.caldir, caltype, ad.filename)
+            log.stdinfo(f"Processed Filename: {fullpath}")
+            self.processed_filenames.append(fullpath)
 
         return adinputs
 
@@ -325,6 +326,7 @@ class CalibDB(PrimitivesBASE):
                 ad.filename = old_filename
 
             # Add it to the p.processed_filenames list
+            self.log.stdinfo(f"Processed Filename: {ad.filename}")
             self.processed_filenames.append(ad.filename)
 
         return adinputs
