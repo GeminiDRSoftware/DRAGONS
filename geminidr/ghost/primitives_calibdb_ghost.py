@@ -50,7 +50,7 @@ class CalibDBGHOST(CalibDB):
         self.log.debug(gt.log_message("primitive", self.myself(), "starting"))
         adinputs = self._markAsCalibration(adinputs, suffix=suffix,
                                     primname=self.myself(), keyword="PRSLITIM",
-                                    update_release=True)
+                                    update_release=True, update_obsclass=True)
         self.storeCalibration(adinputs, caltype=caltype)
         return adinputs
 
