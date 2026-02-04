@@ -145,12 +145,14 @@ class CalibDB(PrimitivesBASE):
             # duplicate code in caldb.store_calibration a bit, but CS and PH
             # decided that caldb.store_calibration shouldn't be doing that
             # anyway, it should be in localdb, so avoid relying on it.
-            self.processed_filenames.append(
-                os.path.join(self.caldb.caldir, caltype, ad.filename))
+            fullpath = os.path.join(self.caldb.caldir, caltype, ad.filename)
+            log.stdinfo(f"Processed Filename: {fullpath}")
+            self.processed_filenames.append(fullpath)
 
         return adinputs
 
     def _markAsCalibration(self, adinputs=None, suffix=None, update_datalab=True,
+                           update_release=False, update_obsclass=False,
                            primname=None, keyword=None):
         """
         Updates filenames, datalabels (if asked) and adds header keyword
@@ -187,6 +189,11 @@ class CalibDB(PrimitivesBASE):
             else:
                 strip = False
             ad.update_filename(suffix=proc_suffix, strip=strip)
+            if update_release:
+                _update_release(ad)
+            if update_obsclass:
+                ad.phu.set('OBSCLASS', 'progCal',
+                           'Calibration derived from science observation')
             if update_datalab:
                 _update_datalab(ad, suffix, mode, self.keyword_comments)
             if mark_history:
@@ -325,6 +332,7 @@ class CalibDB(PrimitivesBASE):
                 ad.filename = old_filename
 
             # Add it to the p.processed_filenames list
+            self.log.stdinfo(f"Processed Filename: {ad.filename}")
             self.processed_filenames.append(ad.filename)
 
         return adinputs
@@ -421,3 +429,11 @@ def _update_datalab(ad, suffix, mode, keyword_comments_lut):
                          datalab) + extension
     ad.phu.set('DATALAB', new_datalab, keyword_comments_lut['DATALAB'])
     return
+
+def _update_release(ad):
+    # Update the release date to be the same as the observation date. Used for
+    # Calibrations (which are immediately public) derived from science
+    # observations (which generally have a proprietary period)
+
+    ad.phu.set('RELEASE', ad.ut_datetime().date().isoformat(),
+               'Derived Calibration for immediate release')

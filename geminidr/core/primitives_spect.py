@@ -4875,7 +4875,7 @@ class Spect(Resample):
                                    else slice(None))
                     for i in range(ext.shape[1 - spataxis]):
                         _slice = i if spataxis == 1 else (slice(None), i)
-                        row = np.ma.masked_array(ext.data[_slice],
+                        row = np.ma.masked_array(ext.data[_slice] - np.median(ext.data[_slice]),
                                                  None if ext.mask is None else
                                                  ext.mask[_slice] & DQ.not_signal)
                         # Without the "maximum" we get a symmetric xcorr array
@@ -4886,12 +4886,20 @@ class Spect(Resample):
                 peak_location = xcorr_sum.argmin()
                 peak_value = -xcorr_sum[peak_location]
 
+                # The default min_snr=3 for get_extrema() so it will find too
+                # many maxima in xcorr_sum. These should be comparable to the
+                # magnitude of the trough, so set a limit (we have to do the
+                # same calculation to esimate the stddev of the profile as
+                # does get_extrema).
+                stddev = at.std_from_pixel_variations(xcorr_sum, subtract_linear_fits=True)
+                min_snr = max(0.01 * peak_value / stddev, 3)
+
                 # The idea here is that we can have one -ve beam if it's as
                 # strong as the +ve beam, or two if they're at least half as
                 # strong, etc. Because of noise, we add 1 to the denominator.
                 possible_beams = np.array(
                     sorted([x[:2] for x in peak_finding.get_extrema(
-                        xcorr_sum, remove_edge_maxima=False) if x[2]],
+                        xcorr_sum, remove_edge_maxima=False, min_snr=min_snr) if x[2]],
                            key=lambda xx: xx[1], reverse=True)).T
                 if possible_beams.size:
                     deep_enough = [x > peak_value / (i + 2)
