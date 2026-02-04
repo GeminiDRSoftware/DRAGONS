@@ -192,7 +192,8 @@ class CalibDB(PrimitivesBASE):
             if update_release:
                 _update_release(ad)
             if update_obsclass:
-                ad.phu.set('OBSCLASS', 'progCal',
+                if ad.observation_class() == 'science':
+                    ad.phu.set('OBSCLASS', 'progCal',
                            'Calibration derived from science observation')
             if update_datalab:
                 _update_datalab(ad, suffix, mode, self.keyword_comments)
@@ -434,6 +435,8 @@ def _update_release(ad):
     # Update the release date to be the same as the observation date. Used for
     # Calibrations (which are immediately public) derived from science
     # observations (which generally have a proprietary period)
-
-    ad.phu.set('RELEASE', ad.ut_datetime().date().isoformat(),
-               'Derived Calibration for immediate release')
+    obsdate = ad.ut_datetime().date().isoformat()
+    release = ad.phu.get('RELEASE')
+    if obsdate != release:
+        ad.phu.set('RELEASE', ad.ut_datetime().date().isoformat(),
+                   'Derived Calibration for immediate release')
