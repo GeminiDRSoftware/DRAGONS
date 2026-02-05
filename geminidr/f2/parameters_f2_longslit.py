@@ -19,6 +19,6 @@ class addMDFConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_mdfAdded", optional=True)
 
 
-class traceApertures(parameters_spect.traceAperturesConfig):
+class traceAperturesConfig(parameters_spect.traceAperturesConfig):
     def setDefaults(self):
         self.order = 3
