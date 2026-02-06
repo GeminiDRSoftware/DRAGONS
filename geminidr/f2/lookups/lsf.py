@@ -33,7 +33,7 @@ class F2LineSpreadFunction(LineSpreadFunction):
         # skew is in the sense of wavelength, and y is the *original* row
         # so large y => -ve skew because they are the bluest wavelengths
         self.skew = lambda y: (1 - y / self.slit_row) * 12
-        self.omega = lambda y: (5.0 + 4.0 * (2 * (y / self.slit_row - 1) ** 2 - 1)) * self.dispersion
+        self.omega = lambda y: (5.0 + 4.0 * (2 * (y / self.slit_row - 1) ** 2 - 1)) * self.orig_dispersion
 
         # Estimate the mean resolution at an "average" row
         # This attribute is needed for the wavecal reference spectrum plot
