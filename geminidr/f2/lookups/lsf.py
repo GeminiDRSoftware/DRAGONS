@@ -57,9 +57,9 @@ class F2LineSpreadFunction(LineSpreadFunction):
         # boxcar_func = partial(convolution.boxcar, width=fwhm*lsf_scaling)
         # convolutions = [(partial(self.skew_normal, scale=1), 25 * self.dispersion),
         #                 (boxcar_func, fwhm*2)]
-        gaussian_func = partial(convolution.gaussian_constant_fwhm,
-                                fwhm=fwhm*lsf_scaling)
-        gaussian_dw = 2 * fwhm
+        gaussian_func = partial(convolution.truncated_gaussian_constant_fwhm,
+                                fwhm=fwhm*lsf_scaling, trunc=fwhm)
+        gaussian_dw = fwhm
         convolutions = [(partial(self.skew_normal, scale=1), 25 * self.dispersion),
                         (gaussian_func, gaussian_dw)]
         print("CONVOLUTIONS", convolutions)
