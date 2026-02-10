@@ -33,7 +33,7 @@ class F2LineSpreadFunction(LineSpreadFunction):
         # skew is in the sense of wavelength, and y is the *original* row
         # so large y => -ve skew because they are the bluest wavelengths
         self.skew = lambda y: (1 - y / self.slit_row) * 12
-        self.omega = lambda y: (5.0 + 4.0 * (2 * (y / self.slit_row - 1) ** 2 - 1)) * self.orig_dispersion
+        self.omega = lambda y: (4.8 + 4.2 * (2 * (y / self.slit_row - 1) ** 2 - 1)) * self.orig_dispersion
 
         # Estimate the mean resolution at an "average" row
         # This attribute is needed for the wavecal reference spectrum plot
@@ -59,8 +59,7 @@ class F2LineSpreadFunction(LineSpreadFunction):
         #                 (boxcar_func, fwhm*2)]
         gaussian_func = partial(convolution.truncated_gaussian_constant_fwhm,
                                 fwhm=fwhm*lsf_scaling, trunc=fwhm)
-        gaussian_dw = fwhm
-        convolutions = [(partial(self.skew_normal, scale=1), 25 * self.dispersion),
-                        (gaussian_func, gaussian_dw)]
+        convolutions = [(partial(self.skew_normal, scale=1), 20 * self.orig_dispersion),
+                        (gaussian_func, fwhm)]
         print("CONVOLUTIONS", convolutions)
         return convolutions
