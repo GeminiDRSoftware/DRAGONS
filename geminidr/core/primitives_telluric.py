@@ -36,8 +36,6 @@ from geminidr.interactive.fit.telluric import TelluricCorrectVisualizer, Telluri
 from . import parameters_telluric
 from geminidr import CalibrationNotFoundError
 
-from datetime import datetime
-
 
 # geminidr.gemini.lookups
 LOOKUPS_PATH = os.path.split(qa_constraints.__file__)[0]
@@ -203,7 +201,6 @@ class Telluric(Spect):
                     tspek_list = []
                     spectral_indices = []
                     spectral_order_names = []
-                    start = datetime.now()
                     for i, ext in enumerate(ad):
                         if (len(ext.shape) == 1 and
                                 ext.hdr.get('APERTURE') == aperture_to_use):
@@ -239,12 +236,10 @@ class Telluric(Spect):
                             try:
                                 spectral_order_names.append(f"Order {ext.hdr['SPECORDR']}")
                             except KeyError:
-                                spectral_order_names.append(f"Extension {i}")
-                    # print(datetime.now() - start, "Making Calibrator() object")
+                                spectral_order_names.append(f"Extension {i+1}")
                     if not tspek_list:
                         raise ValueError(f"No 1D spectra found in {ad.filename}")
                     tcal = TelluricCalibrator(tspek_list, ui_params=uiparams)
-                    # print(datetime.now() - start, "Made Calibrator() object")
 
                 if inter:
                     visualizer = TelluricVisualizer(
