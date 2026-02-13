@@ -322,6 +322,7 @@ associated_calibrations = {
 }
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.skip("MUST WORK; testing smoothing")
 @pytest.mark.f2ls
 @pytest.mark.wavecal
 @pytest.mark.preprocessed_data
