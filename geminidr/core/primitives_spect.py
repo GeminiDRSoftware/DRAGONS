@@ -210,8 +210,7 @@ class Spect(Resample):
                 try:
                     input_data = wavecal.get_all_input_data(
                         ext, self, config_dict, linelist=None,
-                        bad_bits=DQ.not_signal, skylines=True,
-                        loglevel=loglevel)
+                        bad_bits=DQ.not_signal)
                 except ValueError:
                     raise ValueError("Something went wrong in finding sky "
                                      "lines - check that the spectrum is being "

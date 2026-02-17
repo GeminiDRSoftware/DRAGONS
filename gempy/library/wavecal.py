@@ -546,7 +546,7 @@ def create_chebyshev(waves, central_wavelength=None, dispersion=None,
 
 
 def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
-                       skylines=False, loglevel='stdinfo'):
+                       loglevel='stdinfo'):
     """
     There's a specific order needed to do things:
     1) The initial model and 1D spectrum give us the wavelength extrema
@@ -564,9 +564,6 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         bitwise-and the mask with this to produce the mask
     config : dict
         dictionary of parameters
-    skylines : bool
-        True if the reference lines being used are skylines, othewise False if
-        they are arc lines
     loglevel : str, ('stdinfo', 'fullinfo', 'debug')
         Sets the log level at which to print some output from the function. If
         left at the default 'stdinfo', all information will be printed to the
@@ -712,8 +709,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         linelist = p._get_linelist(wave_model=m_init, ext=ext, config=config)
 
     # This wants to be logged even in interactive mode
-    sky_or_arc = 'reference sky' if skylines else 'arc'
-    msg = f"Found {len(peaks)} peaks and {len(linelist)} {sky_or_arc} lines"
+    msg = f"Found {len(peaks)} peaks and {len(linelist)} reference lines"
     p.log.stdinfo(msg) if config["interactive"] == True else logit(msg)
 
     m_init = [m_init]
