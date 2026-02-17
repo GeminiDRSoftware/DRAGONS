@@ -420,11 +420,12 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
 
 
 def create_interactive_inputs(ad, ui_params=None, p=None,
-                              linelist=None, bad_bits=0):
+                              linelist=None, bad_bits=0, absorption=False):
     data = {"x": [], "y": [], "meta": []}
     for ext in ad:
         input_data, fit1d, _ = get_automated_fit(
-            ext, ui_params, p=p, linelist=linelist, bad_bits=bad_bits)
+            ext, ui_params, p=p, linelist=linelist, bad_bits=bad_bits,
+            absorption=absorption)
         # peak locations and line wavelengths of matched peaks/lines
         data["x"].append(fit1d.points[~fit1d.mask])
         data["y"].append(fit1d.image[~fit1d.mask])
@@ -455,7 +456,8 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
     return data
 
 
-def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
+def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0,
+                      absorption=False):
     """
     Produces a wavelength fit for a given slice of an AstroData object.
     In non-interactive mode, this is the final result; in interactive mode
@@ -474,6 +476,8 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
         user-supplied linelist filename
     bad_bits : int
         bitwise-and the mask with this to produce the mask
+    absorption: bool
+        if True, invert the spectrum since we're identifying troughts
 
     Returns
     -------
@@ -486,7 +490,8 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
         whether this fit is likely to be good
     """
     input_data = get_all_input_data(
-        ext, p, ui_params.toDict(), linelist=linelist, bad_bits=bad_bits)
+        ext, p, ui_params.toDict(), linelist=linelist, bad_bits=bad_bits,
+        absorption=absorption)
     spectrum = input_data["spectrum"]
     init_models = input_data["init_models"]
     peaks, weights = input_data["peaks"], input_data["weights"]
@@ -546,7 +551,7 @@ def create_chebyshev(waves, central_wavelength=None, dispersion=None,
 
 
 def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
-                       loglevel='stdinfo'):
+                       absorption=False, loglevel='stdinfo'):
     """
     There's a specific order needed to do things:
     1) The initial model and 1D spectrum give us the wavelength extrema
@@ -564,6 +569,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         bitwise-and the mask with this to produce the mask
     config : dict
         dictionary of parameters
+    absorption: bool
+        if True, invert the spectrum since we're identifying troughts
     loglevel : str, ('stdinfo', 'fullinfo', 'debug')
         Sets the log level at which to print some output from the function. If
         left at the default 'stdinfo', all information will be printed to the
@@ -627,6 +634,9 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     if mask is not None:
         mask &= bad_bits
         data[mask > 0] = 0.
+
+    if absorption:
+        data *= -1
 
     # FWHM expected from resolution, in case estimation from data fails
     exp_fwidth = ((cenwave or ext.central_wavelength(asNanometers=True))

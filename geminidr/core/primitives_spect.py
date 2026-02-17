@@ -2820,16 +2820,6 @@ class Spect(Resample):
             uiparams.fields["center"].max = min(
                 ext.shape[ext.dispersion_axis() - 1] for ext in ad)
 
-            # In case when absorption lines are used for wavelength calibration,
-            # we set the data to negative to make absorption lines into emission
-            # lines, and perform all calculations on this negative data.
-            if absorption:
-                calc_ad = deepcopy(ad)
-                for i, data in enumerate(ad.data):
-                   calc_ad[i].data = -data
-            else:
-                calc_ad = ad
-
             # Hold the list of figures to be saved to disk
             figures = []
 
@@ -2841,8 +2831,8 @@ class Spect(Resample):
                 for ext in ad:
                     axis = 0 if ext.data.ndim == 1 else 2 - ext.dispersion_axis()
                     domains.append([0, ext.shape[axis] - 1])
-                reconstruct_points = partial(wavecal.create_interactive_inputs, calc_ad, p=self,
-                            linelist=linelist, bad_bits=DQ.not_signal)
+                reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
+                            linelist=linelist, bad_bits=DQ.not_signal, absorption=absorption)
 
                 tab_labels = self._make_tab_labels(ad)
 
@@ -2864,12 +2854,13 @@ class Spect(Resample):
                     fit1d.image = image
                     wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
-                for ext, calc_ext in zip(ad, calc_ad):
+                for ext in ad:
                     if len(ad) > 1:
                         log.stdinfo(f"Determining solution for extension {ext.id}")
 
                     input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
-                        calc_ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
+                        ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal,
+                        absorption=absorption)
                     wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
                     if not acceptable_fit:
                         log.warning("No acceptable wavelength solution found")
