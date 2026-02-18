@@ -324,7 +324,7 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
                         these_params["order"] = 1
 
                     if these_params["min_snr"] is None:
-                        these_params["min_snr"] = 1
+                        these_params["min_snr"] = 2
 
                     if these_params["center"] is None:
                         try:
