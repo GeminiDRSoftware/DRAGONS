@@ -714,11 +714,13 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     # Clip the really noisy parts of the data and get more accurate positions
     #pinpoint_data[snr < 0.5] = 0
-    print(peaks)
+    print(len(peaks), peaks)
+    peaks, values = pinpoint_peaks(pinpoint_data, peaks=peaks, mask=mask,
+                                   halfwidth=halfwidth)
     peaks, values = pinpoint_peaks(pinpoint_data, peaks=peaks, mask=mask,
                                    halfwidth=min(halfwidth, 2))
-    print("PINPOINTED new branch")
-    print(peaks)
+    print("PINPOINTED new branch", pinpoint_index)
+    print(len(peaks), peaks)
 
     # Clean up peaks that are too close together
     while True:
