@@ -240,6 +240,9 @@ def test_regression_determine_wavelength_solution(
     """
     caplog.set_level(logging.INFO, logger="geminidr")
 
+    # Set up to allow for specific tolerances
+    tolerance = params.pop("tolerance", None)
+
     with change_working_dir():
         logutils.config(file_name='log_regress_{:s}.txt'.format(ad.data_label()))
         p = GNIRSLongslit([ad])
@@ -277,7 +280,8 @@ def test_regression_determine_wavelength_solution(
 
     indices = np.where(np.logical_and(ref_wavelength > lines.min(),
                                       ref_wavelength < lines.max()))
-    tolerance = 0.5 * (slit_size_in_px * dispersion)
+    if tolerance is None:
+        tolerance = 0.5 * (slit_size_in_px * dispersion)
 
     write_report = request.config.getoption('--do-report', False)
     failed = False
