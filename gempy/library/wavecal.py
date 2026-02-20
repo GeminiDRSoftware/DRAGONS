@@ -960,7 +960,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         #print(f"Pixel={p0:6.1f} p1={p1:6.1f} c0={c0:9.4f} dw={dw:8.4f} {min_lines_this_fit}")
 
         if p1 > 0.25 * len_data and order >= 2:
-            m_init = models.Chebyshev1D(2 if (p1 < 0.75 * len_data) else order, c0=c0, c1=c1,
+            m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
         else:
             m_init = models.Chebyshev1D(1, c0=c0, c1=c1,
