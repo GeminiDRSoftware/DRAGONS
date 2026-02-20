@@ -3,6 +3,7 @@
 from gempy.library import config
 from geminidr.core import parameters_spect
 from geminidr.core import parameters_preprocess
+from geminidr.core import parameters_telluric
 
 
 def list_of_ints_check(value):
@@ -54,3 +55,6 @@ class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
         self.mask_objects = False
         self.dilation = 0.
 
+class telluricCorrectConfig(parameters_telluric.telluricCorrectConfig):
+    def setDefaults(self):
+        self.apply_model = False

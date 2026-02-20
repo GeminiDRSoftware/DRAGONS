@@ -17,6 +17,7 @@ from . import parameters_f2_longslit
 from geminidr.core.primitives_longslit import Longslit
 from .primitives_f2_spect import F2Spect
 from .lookups.MDF_LS import slit_info
+from .lookups.preferred_parameters import preferred_parameters as pp
 
 # -----------------------------------------------------------------------------
 
@@ -138,4 +139,57 @@ class F2Longslit(F2Spect, Longslit):
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
+
+    def fitTelluric(self, adinputs=None, **params):
+        """
+        First set the order parameter from a look-up table.  The sensitivity
+        function appears to be quite sensitive to the order in F2 data.  It is
+        also sensitive to the flat normalization.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            if params['order'] is None:
+                grism = ad.disperser(pretty=True)
+                filter = ad.filter_name(keepID=True)
+                try:
+                    params['order'] = pp[(grism, filter)]['fitTelluric']['order']
+                except KeyError:
+                    log.warning(f"No preferred order found for {grism} and {filter}")
+                    params['order'] = 20
+
+            # call the main normalizeFlat.  It operates in-place; no return
+            # value necessary.
+            super().fitTelluric([ad], **params)
+
+        return adinputs
+
+    def normalizeFlat(self, adinputs=None, **params):
+        """
+        First set the regions parameter from a look-up table.  A lower order
+        is better for the sensitivity function later on.  But given the rapid
+        drop of signal in the flat, a custom region for each configuration is
+        needed for the low order fit to follow the data.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            if params['regions'] == "recommended":
+                grism = ad.disperser(pretty=True)
+                filter = ad.filter_name(keepID=True)
+                try:
+                    params['regions'] = pp[(grism, filter)]['normalizeFlat']['regions']
+                except KeyError:
+                    log.warning(f"No preferred regions found for {grism} and {filter}")
+                    params['regions'] = None
+
+            # call the main normalizeFlat.  It operates in-place; no return
+            # value necessary.
+            super().normalizeFlat([ad], **params)
+
         return adinputs
