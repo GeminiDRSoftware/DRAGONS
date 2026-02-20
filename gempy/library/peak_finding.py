@@ -719,6 +719,8 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     # genuine features
     peaks, values = pinpoint_peaks(wavelet_transformed_data[-1], peaks=peaks, mask=mask,
                                    halfwidth=halfwidth)
+    print("FIRST PINPOINT new branch")
+    print(len(peaks), peaks)
     peaks, values = pinpoint_peaks(pinpoint_data, peaks=peaks, mask=mask,
                                    halfwidth=min(halfwidth, 2))
     print("PINPOINTED new branch", pinpoint_index)

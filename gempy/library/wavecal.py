@@ -960,7 +960,7 @@ def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
         #print(f"Pixel={p0:6.1f} p1={p1:6.1f} c0={c0:9.4f} dw={dw:8.4f} {min_lines_this_fit}")
 
         if p1 > 0.25 * len_data and order >= 2:
-            m_init = models.Chebyshev1D(2, c0=c0, c1=c1,
+            m_init = models.Chebyshev1D(2 if (p1 < 0.75 * len_data) else order, c0=c0, c1=c1,
                                         domain=[p0 - p1, p0 + p1])
         else:
             m_init = models.Chebyshev1D(1, c0=c0, c1=c1,
@@ -1067,7 +1067,7 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
     m_init.linear = False  # supress warning
     m_this = fit_it(m_init, peaks, arc_lines, in_weights=new_in_weights,
                     ref_weights=new_ref_weights, matches=matches,
-                    locally_biased=not first, eps=1e-2,
+                    locally_biased=not first, eps=1e-5,
                     maxfun=80000, maxiter=20000, vol_tol=1e-6 if first else 1e-4)
     m_this.linear = True
     return m_this
