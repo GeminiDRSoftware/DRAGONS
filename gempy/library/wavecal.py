@@ -1067,8 +1067,8 @@ def _fit_region(m_init, peaks, arc_lines, kdsigma, in_weights=None,
     m_init.linear = False  # supress warning
     m_this = fit_it(m_init, peaks, arc_lines, in_weights=new_in_weights,
                     ref_weights=new_ref_weights, matches=matches,
-                    locally_biased=not first, eps=1e-2,
-                    maxfun=80000, maxiter=20000, vol_tol=1e-6 if first else 1e-4)
+                    locally_biased=not first, eps=1e-1,
+                    maxfun=80000, maxiter=20000, vol_tol=1e-4 if first else 1e-4)
     m_this.linear = True
     return m_this
 
