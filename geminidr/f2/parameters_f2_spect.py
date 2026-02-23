@@ -40,6 +40,9 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
         self.min_line_length = 0.8
         self.debug_reject_bad = False
 
+class findAperturesConfig(parameters_spect.findAperturesConfig):
+    def setDefaults(self):
+        self.min_snr = 10.
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     def setDefaults(self):
