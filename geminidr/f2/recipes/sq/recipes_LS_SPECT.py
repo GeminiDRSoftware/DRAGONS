@@ -100,3 +100,17 @@ def  makeWavecalFromSkyEmission(p):
     p.writeOutputs()
 
 _default = reduceScience
+
+def joinSpectra(p):
+    """
+    Join spectra from different configurations, eg JH and HK, or
+    R3K J, H, K.
+
+    Inputs are 1D spectra.  It is recommended to use maskBeyondRegions
+    to mask the diverging signal at the edges of the spectra before
+    sending them here to be joined.
+
+    Scaling is forced.
+    """
+    p.resampleToCommonFrame(conserve=True)
+    p.stackFrames(scale=True, suffix="_1Djoined")

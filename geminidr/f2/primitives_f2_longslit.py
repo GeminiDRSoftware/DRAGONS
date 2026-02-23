@@ -8,6 +8,7 @@ from astropy.table import Table
 import numpy as np
 
 from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
 from recipe_system.utils.decorators import (parameter_override,
                                             capture_provenance)
 from geminidr.gemini.lookups import DQ_definitions as DQ
@@ -166,6 +167,38 @@ class F2Longslit(F2Spect, Longslit):
             super().fitTelluric([ad], **params)
 
         return adinputs
+
+    def maskBeyondRegions(self, adinputs=None, **params):
+        """
+        suffix
+        regions  to keep
+        aperture default 1
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params['suffix']
+        aperture = params['aperture']
+
+        adoutputs = []
+        for ad in adinputs:
+            regions = at.parse_user_regions(params['regions'], dtype=float)
+            ext = ad[aperture-1]
+            waves = ext.wcs(np.arange(ext.data.size))
+            mask = at.create_mask_from_regions(waves, regions=regions)
+            # regions defines what to keep.
+            # mask is False for pixels to keep.  True for pixels to mask.
+            ext.mask[mask] |= DQ.no_data
+
+            if params['regions'] is not None:
+                log.stdinfo(f"Masking pixels outside '{params['regions']}' nm "
+                            f"for aperture {aperture} of {ad.filename}")
+
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(ad)
+
+        return adoutputs
 
     def normalizeFlat(self, adinputs=None, **params):
         """
