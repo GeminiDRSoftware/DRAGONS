@@ -23,7 +23,11 @@ copyright = '2025, IGRINS2 team'
 author = 'leejjoon'
 
 # The full version, including alpha/beta/rc tags
-from _version import __version__ as release
+try:
+    import igrinsdr
+    release = igrinsdr.__version__
+except ImportError:
+    release = "unknown"
 
 
 # -- General configuration ---------------------------------------------------
