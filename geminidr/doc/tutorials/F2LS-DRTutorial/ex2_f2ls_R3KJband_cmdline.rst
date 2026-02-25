@@ -154,6 +154,10 @@ a master dark matching their exposure time.  We need a list of darks
 for each set.   The exposure times are 5s for the flats, 60s for the arcs,
 25s for the telluric frames, and 300s for the science frames.
 
+A dark correction is unfortunately necessary for Flamingos 2 data due to
+strong and bright patterns that can interfere with the reduction if left
+present in the data.
+
 ::
 
     dataselect ../playdata/example2/*.fits --tags DARK --expr='exposure_time==5' -o dark5.lis
@@ -285,8 +289,11 @@ leading to a reasonable fit.  Avoiding a fit that goes negative helps a lot.
 
 Processed Arc - Wavelength Solution
 ===================================
-Obtaining the wavelength solution for Flamingos 2 is fairly straightforward.
-There are usually a sufficient number of lines in the lamp.
+Obtaining the wavelength solution for Flamingos 2 is fairly straightforward
+from the user's perspective. There are usually a sufficient number of lines
+in the lamp.  Note, however, that the lines becomes asymmetric as they move
+away from the center.  There are provisions in the algorithm to account of
+that effect but the precision of the solution is limited.
 
 The recipe for the arc requires a flat as it contains a map of the
 unilluminated areas.   The master dark is required because of the strong

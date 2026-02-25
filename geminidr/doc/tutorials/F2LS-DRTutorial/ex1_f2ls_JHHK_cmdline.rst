@@ -126,6 +126,10 @@ The flats, the arcs, the telluric, and the science observations need
 a master dark matching their exposure time.  We need a list of darks
 for each set, and for both JH and HK gratings.
 
+A dark correction is unfortunately necessary for Flamingos 2 data due to
+strong and bright patterns that can interfere with the reduction if left
+present in the data.
+
 ::
 
     dataselect ../playdata/example1/*.fits --tags DARK --expr='exposure_time==6' -o dark6.lis
@@ -233,8 +237,8 @@ inspect what we have we can use |dataselect| and |showd| together.
 Also, since we had to fix the exposure time for one of the files and we created
 a copy instead of changing the original, we need to make sure only the science
 frame with the correct exposure time of 25 seconds get picked up.  If you had
-fixed the original, mostly likely what you will do with your data, you wouldn't
-need to select on the exposure time.
+fixed the original, mostly likely what you will do with your own data, you
+wouldn't need to select on the exposure time.
 
 ::
 
@@ -279,34 +283,33 @@ For F2, only the overall shape should be fit.  The detailed fitting will be
 taken care of when the sensitivity function is calculated using the telluric
 standard star.
 
-Since both the science and the telluric flat are taken in the same
-configuration, we can run the master flat recipe on one of them using the
-interactive mode, then apply what we find to the other flat without going
-into the interactive mode to save time.  Repeat for the other disperser.
+We have defined appropriate defaults for the order and the region to use to
+normalize the flat for each grism and filter combinations.  You should not
+have to modify them.
 
-Adjust the region in and the order to fit the overall shape while preventing
-the fit from going negative (from pixel 1 to 2048).
+::
 
-For the JH flats::
+    reduce @flatsciJH.lis
+    reduce @flattelJH.lis
 
-    reduce @flatsciJH.lis -p interactive=True
-    reduce @flattelJH.lis -p normalizeFlat:regions="395:1697" normalizeFlat:order=2
+    reduce @flatsciHK.lis
+    reduce @flattelHK.lis
 
-<screenshot of the JH flat fit>
+If you wish to see the fit, you can add ``-p interactive=True`` to the
+commands above. For example, he is now the HK flat fit looks like.
 
-For the HK flats::
+.. image:: _graphics/f2ls_HKflatnorm.png
+   :width: 600
+   :alt: HK flat normalization fit
 
-    reduce @flatsciHK.lis -p interactive=True
-    reduce @flattelHK.lis -p normalizeFlat:regions="280:1820" normalizeFlat:order=1
-
-<screenshot of the HK flat fit>
-<discussion to explain why 1.  To fit the shape, need to go beyond 6 and
-then get flaring. 1 avoids flaring and negative fit>
 
 Processed Arc - Wavelength Solution
 ===================================
-Obtaining the wavelength solution for Flamingos 2 is fairly straightforward.
-There are usually a sufficient number of lines in the lamp.
+Obtaining the wavelength solution for Flamingos 2 is fairly straightforward
+from the user's perspective. There are usually a sufficient number of lines
+in the lamp.  Note, however, that the lines becomes asymmetric as they move
+away from the center.  There are provisions in the algorithm to account of
+that effect but the precision of the solution is limited.
 
 The recipe for the arc requires a flat as it contains a map of the
 unilluminated areas.   The master dark is required because of the strong
@@ -358,7 +361,7 @@ and for HIP 79156::
 Then we can call the ``reduce`` command with the parameter file.  The telluric
 fitting primitive can be run in interactive mode.
 
-Note that the data are recognized by Astrodata as normal GNIRS longslit science
+Note that the data are recognized by Astrodata as normal F2 longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
 recipe (``-r reduceTelluric``), otherwise the default science reduction will be
 run.
@@ -371,9 +374,25 @@ run.
 The WCS for the HK data are incorrect, hence the ``prepare:bad_wcs=new`` option.
 See :ref:`badwcs` for more information.
 
-Fits are bad.  LSF 0.5 limit.
-JH spline3 30 with region: 865:1740  Not very good at the edges
-HK spline3 30 with region: 1286:2503  Not very good at the edges
+The JH fit looks like this:
+
+.. image:: _graphics/f2ls_JHtel.png
+   :width: 600
+   :alt: JH telluric and sensitivity function fit
+
+The flare up on the red end is the second order peeking through.  The sharp
+dip in the blue is due to a large and bright artifact (likely a reflection)
+that is seen in all the JH frames and can be clearly seen in the normalized
+flat field that we produced earlier.  The position of the artifact is stable
+but its strength does not seem to be as it is never completely removed during
+flat fielding.
+
+Similar observations can be made about the HK data.  In the HK data, the
+reflection artifact is softer but present nonetheless.
+
+.. todo:: link to issues and limitations with image of the JH and HK flats.
+
+
 
 Science Observations
 ====================
@@ -398,8 +417,14 @@ adjustment, or try it out, see :ref:`wavzero` to learn how.
 
 This is what the raw images looks like, for JH and for HK.
 
-<raw JH science image>
-<raw HK science image>
+.. image:: _graphics/f2ls_JHraw.png
+   :width: 300
+   :alt: Raw JH science image
+
+.. image:: _graphics/f2ls_HKraw.png
+   :width: 300
+   :alt: Raw HK science image
+
 
 To run the reduction, call |reduce| on the science list.  The calibrations
 will be automatically associated.  It is recommended to run the reduction
@@ -408,19 +433,91 @@ steps.
 
 ::
 
-    reduce @sciJH.lis -p interactive=True prepare:bad_wcs=new findApertures:max_apertures=1 extractSpectra:write_outputs=True telluricCorrect:write_outputs=True telluricCorrect:telluric=S20220617S0073_telluric.fits fluxCalibrate:standard=S20220617S0073_telluric.fits
-    reduce @sciHK.lis -p interactive=True prepare:bad_wcs=new findApertures:max_apertures=1 extractSpectra:write_outputs=True telluricCorrect:write_outputs=True telluricCorrect:telluric=S20220617S0027_telluric.fits fluxCalibrate:standard=S20220617S0027_telluric.fits
+    reduce @sciJH.lis -p interactive=True prepare:bad_wcs=new
+    reduce @sciHK.lis -p interactive=True prepare:bad_wcs=new
 
+The 2D spectrum before extraction looks like this, with blue wavelengths at
+the bottom and the red-end at the top.
 
-JH:  Matches the publish spectrum except below 1.040 um where the continuum starts looking weird and
-    likely exaggerated features show up.  This is the section where the fitTelluric fit struggles.
+.. image:: _graphics/f2ls_JH_2d.png
+   :width: 300
+   :alt: JH 2D spectrum
 
-HK:  Right now, using the data rather than the model for telluricCorrect is far better.  The model leaves
-    wiggles and the Pacshen alpha lines is very noisy.  Very good match to publish spectrum.  Again
-    it's the blue end which is wrong, but not as wrong as for JH.
+.. image:: _graphics/f2ls_HK_2d.png
+   :width: 300
+   :alt: HK 2D spectrum
+
+The 1D extracted spectra before telluric correction or flux calibration,
+obtained with ``-p extractSpectra:write_outputs=True``, look like this.
+
+.. image:: _graphics/f2ls_JH_extracted.png
+   :width: 300
+   :alt: JH 1D extracted spectrum before telluric correction or flux calibration
+
+.. image:: _graphics/f2ls_HK_extracted.png
+   :width: 300
+   :alt: HK 1D extracted spectrum before telluric correction or flux calibration
+
+The 1D extracted spectra after telluric correction but before flux
+calibration, obtained with ``-p telluricCorrect:write_outputs=True``, look
+like this.
+
+.. image:: _graphics/f2ls_JH_telcor.png
+   :width: 300
+   :alt: JH 1D extracted spectrum after telluric correction or before flux calibration
+
+.. image:: _graphics/f2ls_HK_telcor.png
+   :width: 300
+   :alt: HK 1D extracted spectrum after telluric correction or before flux calibration
+
+And the final spectra, corrected for telluric features and flux calibrated.
 
 ::
 
-    reduce -r joinrecipe.joinSpectra *1D.fits -p scale=True
+    dgsplot S20220617S0044_1D.fits 1
+    dgsplot S20220617S0038_1D.fits 1
 
-.. todo:: add that mini recipe to the F2 longslit recipe library.
+.. image:: _graphics/f2ls_JH_1d.png
+   :width: 300
+   :alt: JH 1D extracted spectrum after telluric correction and flux calibration
+
+.. image:: _graphics/f2ls_HK_1d.png
+   :width: 300
+   :alt: HK 1D extracted spectrum after telluric correction and flux calibration
+
+To join the JH and HK spectra into a full range spectrum, we will use the
+``joinSpectra`` recipe.
+
+However, because of the low signal at the red and blue edges, it
+is not unusual for the flux calibration to diverge at the extremities; the
+function is simply not well constrained there.  Therefore, before we join the
+spectra, it is recommended to mask the noisy extremities, and in this case the
+JH second order that was discussed above during the telluric reduction.   We
+can use the
+``dgsplot`` as above to identify the wavelength range we want to **keep**.
+Then we call ``maskBeyondRegions``::
+
+    reduce -r maskBeyondRegions S20220617S0044_1D.fits -p regions="880:1720"
+    reduce -r maskBeyondRegions S20220617S00?38_1D.fits -p regions="1400:2475"
+
+We can now join the two cleaned up spectra.
+
+::
+
+    reduce -r joinSpectra *regionsMasked.fits
+
+::
+
+    dgsplot S20220617S0038_1Djoined.fits 1 --thin
+
+.. image:: _graphics/f2ls_JHK_1d.png
+   :width: 600
+   :alt: JHK 1D joined spectrum
+
+
+.. JH:  Matches the publish spectrum except below 1.040 um where the
+..      continuum starts looking weird and likely exaggerated features show
+..      up.  This is the section where the sensfunc fit struggles.
+..
+.. HK:  Very good match to publish spectrum.  Again it's the blue end which
+..      is not quite right, but not as badly as for JH.
