@@ -379,13 +379,16 @@ class Trace:
     Note that trace_lines() (which creates Trace objects) *always* traces in
     the vertical direction, regardless of the orientation of the image.
     """
-    def __init__(self, starting_point, reverse_returned_coords=False):
+    def __init__(self, starting_point, weight=None,
+                 reverse_returned_coords=False):
         """
         Parameters
         ----------
         starting_point : len-2 iterable of numbers
             The point from which to start the trace, with the tracing axis as
             the first number.
+        weight: float/None
+            the weight to assign to the starting point
         reverse_returned_coords : bool, optional
             Whether to reversed the coordinates when returning them. The default
             is False. This is because Trace keeps track of coordinates with the
@@ -393,7 +396,7 @@ class Trace:
             but it may be preferable to get the output in (x, y) order.
         """
         self.starting_point = self._verify_point(starting_point)
-        self.points = deque([self.starting_point])
+        self.points = deque([self.starting_point + (weight,)])
         self.last_point = self.starting_point
         self.steps_missed = 0
         self.active = True
@@ -436,29 +439,46 @@ class Trace:
     def start_coordinates(self, reverse=None):
         """Return the starting point in the same coordinate order as the
         input_coordinates() and reference_coordinates()"""
-        return self.starting_point[::-1] if (
-                reverse or reverse is None and self.reversed) else self.starting_point
+        return self.starting_point[1::-1] if (
+                reverse or reverse is None and self.reversed) else self.starting_point[:2]
 
     def input_coordinates(self, reverse=None):
         if reverse or reverse is None and self.reversed:
-            return [(x, y) for y, x in self.points]
-        return [(y, x) for y, x in self.points]
+            return [(x, y) for y, x, w in self.points]
+        return [(y, x) for y, x, w in self.points]
 
     def reference_coordinates(self, reference_coord=None, reverse=None):
         xref = reference_coord or self.starting_point[1]
         if reverse or reverse is None and self.reversed:
-            return [(xref, y) for y, _ in self.points]
-        return [(y, xref) for y, _ in self.points]
+            return [(xref, y) for y, _, w in self.points]
+        return [(y, xref) for y, _, w in self.points]
 
-    def add_point(self, point):
+    @property
+    def weights(self):
+        w = [p[2] for p in self.points]
+        if w.count(None):  # all points must have weights
+            return None
+        return np.asarray(w)
+
+    @weights.setter
+    def weights(self, value):
+        try:
+            if len(value) != len(self):
+                raise ValueError("Weights do not match length of trace")
+        except TypeError:  # single value was provided
+            self.points = deque([p[:2] + (value,)] for p in self.points)
+        else:
+            self.points = deque([p[:2] + (w,)] for p, w in zip(self.points, value))
+
+    def add_point(self, point, weight=None):
         """Add a point to the deque, at either end as appropriate"""
         point = self._verify_point(point)
         y = point[0]
 
         if y > self.top_limit:
-            self.points.append(point)
+            self.points.append(point + (weight,))
         elif y < self.bottom_limit:
-            self.points.appendleft(point)
+            self.points.appendleft(point + (weight,))
         else:
             # Should only add points at ends of range
             raise RuntimeError("Trying to insert point in middle of trace,"
@@ -468,7 +488,8 @@ class Trace:
 
     def remove_point(self, point):
         """Remove a point from the deque"""
-        self.points.remove(point)
+        index = [p[:2] for p in self.points].index(point)
+        self.points.remove(self.points[index])
 
     def predict_location(self, row, lookback=4, order=1):
         """Predict where the next peak will be in the tracing direction.
@@ -480,7 +501,6 @@ class Trace:
             include in the fit to predict where it's going.
         order: int
             order of fit function
-
         """
         # Save ourselves some trouble by quickly returning a dummy value if
         # this Trace is inactive
@@ -520,7 +540,7 @@ class Trace:
 
 @unpack_nddata
 def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
-                cwidth=5, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
+                halfwidth=None, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
                 max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None,
                 min_peak_value=None, min_line_length=0.):
     """
@@ -549,8 +569,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         Row/column to start trace (None => middle).
     initial : sequence
         Coordinates of peaks
-    cwidth : int
-        Width of centroid box in pixels.
+    halfwidth : int
+        half-width of centroid box in pixels.
     rwidth : int/None
         width of Ricker filter to apply to each collapsed 1D slice
     nsum : int
@@ -583,6 +603,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     These objects are *always* configured to return coordinates in (x, y) order.
     """
     log = logutils.get_logger(__name__)
+    if halfwidth is None:
+        raise ValueError('trace_lines(): halfwidth cannot be None')
 
     # Make life easier for the poor coder by transposing data if needed,
     # so that we're always tracing along columns
@@ -609,7 +631,6 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                             cwt_ricker(data, widths=[rwidth])[0], 0)
         return np.where(data / np.sqrt(var) > 0.5, data, 0)
 
-    halfwidth = cwidth // 2
     if start is None:
         start = ext_data.shape[0] // 2
         log.stdinfo(f"Starting trace at {direction} {start}")
@@ -812,7 +833,7 @@ def trace_aperture(ext, location, ui_params, viewer=None, apnum=None):
     return trace_lines(
         ext,
         axis=dispaxis,
-        cwidth=5,
+        halfwidth=2,
         initial=[location],
         initial_tolerance=None,
         max_missed=ui_params.values['max_missed'],

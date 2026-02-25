@@ -22,7 +22,6 @@ def makeProcessedFlat(p):
     p.maskBeyondSlit()
     p.normalizeFlat()
     p.thresholdFlatfield()
-    p.makeIRAFCompatible()
     p.storeProcessedFlat()
 
 _default = makeProcessedFlat

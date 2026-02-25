@@ -13,6 +13,7 @@ filter_wavelengths = {
     'Ks'    : 2.1570,
     'K-red' : 2.3100,
     'Klong' : 2.2000,
+    'K-long': 2.2000,
 }
 
 array_properties = {

@@ -909,11 +909,8 @@ class Preprocess(PrimitivesBASE):
 
                 # Ensure we linearize the electrons per exposure
                 coadds = ext.coadds() if ext.is_coadds_summed() else 1
-                conv_factor = np.float32(gain / coadds)
-                # int32 * float32 will become float64, which we don't want
-                dtype = (np.float32 if np.issubdtype(ext.data.dtype, np.integer)
-                         else ext.data.dtype)
-                pixel_data = linearize((ext.data * conv_factor).astype(dtype), coeffs) / conv_factor
+                conv_factor = gain / coadds
+                pixel_data = linearize(ext.data * conv_factor, coeffs) / conv_factor
 
                 # Try to do something useful with the VAR plane, if it exists
                 # Since the data are fairly pristine, VAR will simply be the

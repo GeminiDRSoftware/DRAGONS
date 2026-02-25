@@ -1035,10 +1035,11 @@ class GHOSTSpect(GHOST):
                         abs(flux - median_filter(flux, size=2*radius+1)),
                         size=2*radius+1)
                     variance = nmad * nmad
+                # We send halfwidth=2 to avoid contamination from nearby peaks
                 peaks = peak_finding.find_wavelet_peaks(
                     flux.copy(), widths=np.arange(2.5, 4.5, 0.1),
                     variance=variance, min_snr=min_snr, min_sep=5,
-                    pinpoint_index=None, reject_bad=False)
+                    pinpoint_index=None, reject_bad=False, halfwidth=2)
                 fit_g = fitting.TRFLSQFitter()  # recommended fitter
                 these_peaks = []
                 for x in peaks[0]:
@@ -1411,6 +1412,8 @@ class GHOSTSpect(GHOST):
                     else:
                         log.stdinfo(f"Estimated seeing in the {k} arm: {fwhm:5.3f}"
                                     f" ({apfrac*100:.1f}% aperture throughput)")
+                        kw = 'ESEEING' + k[0].upper()
+                        ad.phu.set(kw, fwhm, f"Estimated seeing in the {k} arm")
 
             if slitflat is None:
                 log.stdinfo("Creating synthetic slitflat image")
@@ -1453,6 +1456,11 @@ class GHOSTSpect(GHOST):
                     apply_centroids=apply_centroids, ftol=ftol,
                     min_flux_frac=min_flux_frac, timing=timing
                 )
+                # Retrieve the numer of CRs found. Fail silently if no can
+                try:
+                    ad.phu.set('NCRSFND', extractor.crsfound, 'Number of CRs found')
+                except AttributeError:
+                    pass
 
                 # Flag pixels with VAR=0 that don't already have a flag
                 extracted_mask |= (extracted_var == 0) & (extracted_mask == 0)

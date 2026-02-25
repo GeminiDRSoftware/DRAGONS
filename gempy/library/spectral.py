@@ -1,9 +1,12 @@
 # Copyright(c) 2019-2025 Association of Universities for Research in Astronomy, Inc.
 #
+
+from typing_extensions import deprecated
+
 from astrodata import AstroData, AstroDataMixin
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
-from specutils import Spectrum1D, SpectralRegion
+from specutils import Spectrum, SpectralRegion
 from astropy import units as u
 from astropy.coordinates import SpectralCoord
 from astropy.nddata import NDData, NDDataRef
@@ -265,10 +268,19 @@ class Spek1D(AstroDataMixin, NDDataRef):
 
         return flux, mask, variance
 
+    @deprecated("Use asSpectrum() instead")
     def asSpectrum1D(self):
+        """Create a :class:`~specutils.Spectrum` object of this spectrum"""
+        kwargs = {}
+        if self.wcs is None:
+            kwargs['spectral_axis'] = self.spectral_axis
+        return Spectrum(flux=self.flux, mask=self.mask, uncertainty=self.uncertainty,
+                          wcs=self.wcs, **kwargs)
+
+    def asSpectrum(self):
         """Create a :class:`~specutils.Spectrum1D` object of this spectrum"""
         kwargs = {}
         if self.wcs is None:
             kwargs['spectral_axis'] = self.spectral_axis
-        return Spectrum1D(flux=self.flux, mask=self.mask, uncertainty=self.uncertainty,
+        return Spectrum(flux=self.flux, mask=self.mask, uncertainty=self.uncertainty,
                           wcs=self.wcs, **kwargs)

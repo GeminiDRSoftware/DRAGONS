@@ -210,8 +210,7 @@ class Spect(Resample):
                 try:
                     input_data = wavecal.get_all_input_data(
                         ext, self, config_dict, linelist=None,
-                        bad_bits=DQ.not_signal, skylines=True,
-                        loglevel=loglevel)
+                        bad_bits=DQ.not_signal)
                 except ValueError:
                     raise ValueError("Something went wrong in finding sky "
                                      "lines - check that the spectrum is being "
@@ -1449,6 +1448,15 @@ class Spect(Resample):
 
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
+                peak_to_centroid_func = self._convert_peak_to_centroid(ext)
+                # The peak-to-centroid function always takes the dispersion
+                # coordinate as its first argument, but in_coords and
+                # ref_coords are always (x, y), so provide a single interface
+                # to handle both orientations
+                if dispaxis == 0:
+                    convert_to_centroid = lambda x, y: (x, peak_to_centroid_func(y, x))
+                else:
+                    convert_to_centroid = lambda x, y: (peak_to_centroid_func(x, y), y)
 
                 # Here's a lot of input-checking
                 extname = f'{ad.filename} extension {ext.id}'
@@ -1474,7 +1482,13 @@ class Spect(Resample):
                     if id_only:
                         try:
                             # Peak locations in pixels are 1-indexed
-                            initial_peaks = (ext.WAVECAL['peaks'] - 1)
+                            # These will already have been converted from
+                            # peak-to-centroid, so we want to convert them
+                            # back, since we're tracing peaks
+                            shifts = (peak_to_centroid_func(
+                                ext.WAVECAL['peaks']-1, start) -
+                                      (ext.WAVECAL['peaks']-1))
+                            initial_peaks = ext.WAVECAL['peaks']-1 - shifts
                         except KeyError:
                             log.warning("Cannot find peak locations in {} "
                                         "- identifying lines in middle {}".
@@ -1516,6 +1530,7 @@ class Spect(Resample):
                     initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
+
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
 
@@ -1550,7 +1565,7 @@ class Spect(Resample):
                             # Only need a single `start` value for all lines.
                             ext, axis=1 - dispaxis,
                             start=start, initial=initial_peaks,
-                            rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
+                            rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
                             nsum=nsum, max_missed=max_missed,
                             max_shift=max_shift * ybin / xbin,
                             viewer=self.viewer if debug else None,
@@ -1566,7 +1581,7 @@ class Spect(Resample):
                             traces.extend(tracing.trace_lines(
                                 ext, axis=1 - dispaxis,
                                 start=start, initial=[peak],
-                                rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
+                                rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
                                 nsum=nsum, max_missed=max_missed,
                                 max_shift=max_shift * ybin / xbin,
                                 viewer=self.viewer if debug else None,
@@ -1623,6 +1638,10 @@ class Spect(Resample):
                 ref_coords = np.array([coord for trace in traces for
                                        coord in trace.reference_coordinates()]).T
 
+                # Convert all coordinates from peaks to centroids
+                in_coords = np.asarray(convert_to_centroid(*in_coords))
+                ref_coords = np.asarray(convert_to_centroid(*ref_coords))
+
                 # If the frame has a rectification model, then we want to
                 # calculate the distortion transform *after* applying this
                 # model. This is important because, if we only have one line
@@ -1661,9 +1680,8 @@ class Spect(Resample):
                 fixed_linear = (spectral_order == 0) or len(traces) == 1
                 model, m_final, m_inverse = am.create_distortion_model(
                     m_init, 1-dispaxis, in_coords, ref_coords, fixed_linear)
-
-                # TODO: Some logging about quality of fit
-                # print(np.min(diff), np.max(diff), np.std(diff))
+                log.stdinfo("Distortion model/inverse rms = "
+                            f"{model.meta['fwd_rms']:.3f}/{model.meta['inv_rms']:.3f} pixels")
 
                 if debug:  # pragma: no cover
                     self.viewer.color = "green"
@@ -2026,7 +2044,7 @@ class Spect(Resample):
                     ext, axis=dispaxis,
                     start=start,
                     initial=initial_peaks[min_trace_pos:max_trace_pos],
-                    rwidth=None, cwidth=max(int(fwidth), 5),
+                    rwidth=None, halfwidth=max(fwidth // 2, 2),
                     step=step, nsum=nsum, max_missed=max_missed,
                     max_shift=max_shift * ybin / xbin,
                     min_line_length=min_line_length,
@@ -2316,7 +2334,6 @@ class Spect(Resample):
                 noise = at.std_from_pixel_variations(
                         convolved_median_slice, subtract_linear_fits=False)
                 min_height = min_snr * noise
-                cwidth = 8
 
                 # TODO: It's unclear whether find_wavelet_peaks() might be
                 # better for this.
@@ -2326,12 +2343,12 @@ class Spect(Resample):
                 # find_peaks returns integer values, so use pinpoint_peaks
                 # to better describe the positions.
                 positions_1, _ = peak_finding.pinpoint_peaks(
-                    median_slice, peaks=positions_1, halfwidth=cwidth//2)
+                    median_slice, peaks=positions_1, halfwidth=4)
                 positions_2, _ = find_peaks(
                     -convolved_median_slice, height=min_height, distance=10,
                     prominence=min_height, wlen=21)
                 positions_2, _ = peak_finding.pinpoint_peaks(
-                    -median_slice, peaks=positions_2, halfwidth=cwidth//2)
+                    -median_slice, peaks=positions_2, halfwidth=4)
 
                 log.fullinfo('Found edge candidates at:\n'
                              f'  {name_edge1.capitalize()}: {positions_1}\n'
@@ -2507,7 +2524,7 @@ class Spect(Resample):
                         max_missed=params['debug_max_missed'],
                         step=params['debug_step'], nsum=params['debug_nsum'],
                         max_shift=params['debug_max_shift'],
-                        min_peak_value=thresh, cwidth=cwidth,
+                        min_peak_value=thresh, halfwidth=4,
                         min_line_length=debug_min_line_length) or [None] if edge else [None]
                         for mult, edge, thresh in zip((1, -1), edges, min_peak_values)))
 
@@ -2808,8 +2825,8 @@ class Spect(Resample):
             log.stdinfo(f"Determining wavelength solution for {ad.filename}")
             uiparams = UIParameters(
                     config, reinit_params=["center", "nsum", "min_snr", "min_sep",
-                                           "fwidth", "central_wavelength", "dispersion",
-                                                       "in_vacuo"])
+                                           "central_wavelength", "dispersion",
+                                           "in_vacuo"])
             if self.generated_linelist is not None:
                 # Add some extra parameters to the UI when the linelist gets generated on-the-fly
                 if self.generated_linelist == "atran":
@@ -2820,16 +2837,6 @@ class Spect(Resample):
 
             uiparams.fields["center"].max = min(
                 ext.shape[ext.dispersion_axis() - 1] for ext in ad)
-
-            # In case when absorption lines are used for wavelength calibration,
-            # we set the data to negative to make absorption lines into emission
-            # lines, and perform all calculations on this negative data.
-            if absorption:
-                calc_ad = deepcopy(ad)
-                for i, data in enumerate(ad.data):
-                   calc_ad[i].data = -data
-            else:
-                calc_ad = ad
 
             # Hold the list of figures to be saved to disk
             figures = []
@@ -2842,8 +2849,8 @@ class Spect(Resample):
                 for ext in ad:
                     axis = 0 if ext.data.ndim == 1 else 2 - ext.dispersion_axis()
                     domains.append([0, ext.shape[axis] - 1])
-                reconstruct_points = partial(wavecal.create_interactive_inputs, calc_ad, p=self,
-                            linelist=linelist, bad_bits=DQ.not_signal)
+                reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
+                            linelist=linelist, bad_bits=DQ.not_signal, absorption=absorption)
 
                 tab_labels = self._make_tab_labels(ad)
 
@@ -2865,12 +2872,13 @@ class Spect(Resample):
                     fit1d.image = image
                     wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
-                for ext, calc_ext in zip(ad, calc_ad):
+                for ext in ad:
                     if len(ad) > 1:
                         log.stdinfo(f"Determining solution for extension {ext.id}")
 
                     input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
-                        calc_ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
+                        ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal,
+                        absorption=absorption)
                     wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
                     if not acceptable_fit:
                         log.warning("No acceptable wavelength solution found")
@@ -4857,7 +4865,7 @@ class Spect(Resample):
                                    else slice(None))
                     for i in range(ext.shape[1 - spataxis]):
                         _slice = i if spataxis == 1 else (slice(None), i)
-                        row = np.ma.masked_array(ext.data[_slice],
+                        row = np.ma.masked_array(ext.data[_slice] - np.median(ext.data[_slice]),
                                                  None if ext.mask is None else
                                                  ext.mask[_slice] & DQ.not_signal)
                         # Without the "maximum" we get a symmetric xcorr array
@@ -4868,12 +4876,20 @@ class Spect(Resample):
                 peak_location = xcorr_sum.argmin()
                 peak_value = -xcorr_sum[peak_location]
 
+                # The default min_snr=3 for get_extrema() so it will find too
+                # many maxima in xcorr_sum. These should be comparable to the
+                # magnitude of the trough, so set a limit (we have to do the
+                # same calculation to esimate the stddev of the profile as
+                # does get_extrema).
+                stddev = at.std_from_pixel_variations(xcorr_sum, subtract_linear_fits=True)
+                min_snr = max(0.01 * peak_value / stddev, 3)
+
                 # The idea here is that we can have one -ve beam if it's as
                 # strong as the +ve beam, or two if they're at least half as
                 # strong, etc. Because of noise, we add 1 to the denominator.
                 possible_beams = np.array(
                     sorted([x[:2] for x in peak_finding.get_extrema(
-                        xcorr_sum, remove_edge_maxima=False) if x[2]],
+                        xcorr_sum, remove_edge_maxima=False, min_snr=min_snr) if x[2]],
                            key=lambda xx: xx[1], reverse=True)).T
                 if possible_beams.size:
                     deep_enough = [x > peak_value / (i + 2)
@@ -5400,6 +5416,28 @@ class Spect(Resample):
 
         return adinputs
 
+    @staticmethod
+    def _convert_peak_to_centroid(ext):
+        """
+        Default no-modification function. See the F2Spect version for
+        details on how this should behave for asymmetric line spread
+        functions.
+
+        Parameters
+        ----------
+        ext: single-slice AstroData
+            the extension for which the shifts are to be calculation
+
+        Returns
+        -------
+        callable:
+            a callable that takes two inputs (pixel location of a peak in
+            dispersion direction, pixel location in spatial direction) and
+            returns the pixel location of the centroid in the dispersion
+            direction.
+        """
+        return models.Mapping((0,), n_inputs=2)
+
     def _get_linelist(self, wave_model=None, *args, **kwargs):
         """
         Returns a list of wavelengths of the arc reference lines used by the
@@ -5603,8 +5641,8 @@ class Spect(Resample):
                 lsf = self._line_spread_function(ext)
             else:
                 spataxis = ext.dispersion_axis() - 1  # python sense
-                _slice = tuple(ext.shape[i] // 2 if i == spataxis else None
-                               for i in range(ext.shape))
+                _slice = tuple(length // 2 if i == spataxis else slice(None)
+                               for i, length in enumerate(ext.shape))
                 lsf = self._line_spread_function(ext.__class__(
                     ext.nddata[_slice], phu=ext.phu, is_single=True))
             return lsf.mean_resolution

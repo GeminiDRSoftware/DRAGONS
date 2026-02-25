@@ -693,8 +693,10 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
     # value of the reference pixel along the dispersion axis
     fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                sigma_clip, sigma=3)
-    m_final, _ = fit_it(m_init, *in_coords, shifts)
-    m_inverse, _ = fit_it(m_init, *ref_coords, -shifts)
+    m_final, fwd_mask = fit_it(m_init, *in_coords, shifts)
+    m_inverse, inv_mask = fit_it(m_init, *ref_coords, -shifts)
+    fwd_rms = np.std((m_final(*in_coords) - shifts)[~fwd_mask])
+    inv_rms = np.std((m_inverse(*ref_coords) + shifts)[~inv_mask])
 
     # Add the linear term: the coordinate perpendicular to the trace direction
     for m in (m_final, m_inverse):
@@ -709,6 +711,8 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
         model = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_final)
         model.inverse = models.Mapping((0, 0, 1)) | (models.Identity(1) & m_inverse)
 
+    # Store this information in case it's wanted
+    model.meta.update({"fwd_rms": fwd_rms, "inv_rms": inv_rms})
     return model, m_final, m_inverse
 
 

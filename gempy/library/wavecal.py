@@ -226,7 +226,7 @@ class LineList:
 
 
 def find_line_peaks(data, mask=None, variance=None, fwidth=None, min_snr=3,
-                    min_sep=2, reject_bad=False, nbright=0):
+                    min_sep=2, reject_bad=False, nbright=0, pinpoint_index=-1):
     """
     Find peaks in a 1D spectrum and return their locations and weights for
     a variety of weighting schemes.
@@ -261,7 +261,7 @@ def find_line_peaks(data, mask=None, variance=None, fwidth=None, min_snr=3,
     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
     peaks, _, peak_snrs = peak_finding.find_wavelet_peaks(
         data, widths=widths, mask=mask, variance=variance, min_snr=min_snr,
-        min_sep=min_sep, reject_bad=reject_bad)
+        min_sep=min_sep, reject_bad=reject_bad, pinpoint_index=pinpoint_index)
     fit_this_peak = peak_snrs > min_snr
     fit_this_peak[np.argsort(peak_snrs)[len(peaks) - nbright:]] = False
     peaks = peaks[fit_this_peak]
@@ -420,11 +420,12 @@ def initial_wavelength_model(ext, central_wavelength=None, dispersion=None,
 
 
 def create_interactive_inputs(ad, ui_params=None, p=None,
-                              linelist=None, bad_bits=0):
+                              linelist=None, bad_bits=0, absorption=False):
     data = {"x": [], "y": [], "meta": []}
     for ext in ad:
         input_data, fit1d, _ = get_automated_fit(
-            ext, ui_params, p=p, linelist=linelist, bad_bits=bad_bits)
+            ext, ui_params, p=p, linelist=linelist, bad_bits=bad_bits,
+            absorption=absorption)
         # peak locations and line wavelengths of matched peaks/lines
         data["x"].append(fit1d.points[~fit1d.mask])
         data["y"].append(fit1d.image[~fit1d.mask])
@@ -455,7 +456,8 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
     return data
 
 
-def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
+def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0,
+                      absorption=False):
     """
     Produces a wavelength fit for a given slice of an AstroData object.
     In non-interactive mode, this is the final result; in interactive mode
@@ -474,6 +476,8 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
         user-supplied linelist filename
     bad_bits : int
         bitwise-and the mask with this to produce the mask
+    absorption: bool
+        if True, invert the spectrum since we're identifying troughts
 
     Returns
     -------
@@ -486,7 +490,8 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0):
         whether this fit is likely to be good
     """
     input_data = get_all_input_data(
-        ext, p, ui_params.toDict(), linelist=linelist, bad_bits=bad_bits)
+        ext, p, ui_params.toDict(), linelist=linelist, bad_bits=bad_bits,
+        absorption=absorption)
     spectrum = input_data["spectrum"]
     init_models = input_data["init_models"]
     peaks, weights = input_data["peaks"], input_data["weights"]
@@ -546,7 +551,7 @@ def create_chebyshev(waves, central_wavelength=None, dispersion=None,
 
 
 def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
-                       skylines=False, loglevel='stdinfo'):
+                       absorption=False, loglevel='stdinfo'):
     """
     There's a specific order needed to do things:
     1) The initial model and 1D spectrum give us the wavelength extrema
@@ -564,9 +569,8 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         bitwise-and the mask with this to produce the mask
     config : dict
         dictionary of parameters
-    skylines : bool
-        True if the reference lines being used are skylines, othewise False if
-        they are arc lines
+    absorption: bool
+        if True, invert the spectrum since we're identifying troughts
     loglevel : str, ('stdinfo', 'fullinfo', 'debug')
         Sets the log level at which to print some output from the function. If
         left at the default 'stdinfo', all information will be printed to the
@@ -631,6 +635,9 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         mask &= bad_bits
         data[mask > 0] = 0.
 
+    if absorption:
+        data *= -1
+
     # FWHM expected from resolution, in case estimation from data fails
     exp_fwidth = ((cenwave or ext.central_wavelength(asNanometers=True))
          / p._get_resolution(ext)
@@ -656,7 +663,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     peaks, weights = find_line_peaks(
         data, mask=mask, variance=variance,
         fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
-        reject_bad=False, nbright=config.get("nbright", 0))
+        reject_bad=False, nbright=config.get("nbright", 0), pinpoint_index=-1)
 
     # Do the second iteration of fwidth estimation and peak finding, this time using the number of peaks
     # found after the first fwidth estimation, in order to get more accurate
@@ -673,11 +680,14 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         peaks, weights = find_line_peaks(
             data, mask=mask, variance=variance,
             fwidth=fwidth, min_snr=config["min_snr"], min_sep=config["min_sep"],
-            reject_bad=False, nbright=config.get("nbright", 0))
+            reject_bad=False, nbright=config.get("nbright", 0), pinpoint_index=-1)
 
     # Determine extent of data in spectrum
-    x1 = mask.astype(bool).argmin()
-    x2 = mask.size - mask.astype(bool)[::-1].argmin()
+    if mask is not None:
+        x1 = mask.astype(bool).argmin()
+        x2 = mask.size - mask.astype(bool)[::-1].argmin()
+    else:
+        x1, x2 = 0, data.size
 
     if dispaxis == 1:
         _slice = (center, slice(None))
@@ -712,8 +722,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
         linelist = p._get_linelist(wave_model=m_init, ext=ext, config=config)
 
     # This wants to be logged even in interactive mode
-    sky_or_arc = 'reference sky' if skylines else 'arc'
-    msg = f"Found {len(peaks)} peaks and {len(linelist)} {sky_or_arc} lines"
+    msg = f"Found {len(peaks)} peaks and {len(linelist)} reference lines"
     p.log.stdinfo(msg) if config["interactive"] == True else logit(msg)
 
     m_init = [m_init]
@@ -732,19 +741,16 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
                     log.warning(f"{i}. Wavelength at middle, and dispersion "
                                 f"(nm/pixel):\n{waves[1]} {dw0:.4f}")
 
-    try:
-        peak_to_centroid_func = p._convert_peak_to_centroid(ext)
-    except AttributeError:
-        peak_to_centroid_func = lambda x: x
-    else:
-        p.log.stdinfo("Applying peak-to-centroid shifts to lines.")
-        peaks = peak_to_centroid_func(peaks)
+    peak_to_centroid_func = p._convert_peak_to_centroid(ext)
+    peaks = peak_to_centroid_func(peaks, center)
 
-    return {"spectrum": np.ma.masked_array(data[x1:x2], mask=mask[x1:x2]),
-            "init_models": m_init, "peaks": peaks, "weights": weights,
-            "linelist": linelist, "fwidth": fwidth, "location": location,
-            "peak_to_centroid_func": peak_to_centroid_func,
-            "bounds_setter": partial(p._wavelength_model_bounds, ext=ext)}
+    return {"spectrum": np.ma.masked_array(
+        data[x1:x2], mask=None if mask is None else mask[x1:x2]),
+        "init_models": m_init, "peaks": peaks, "weights": weights,
+        "linelist": linelist, "fwidth": fwidth, "location": location,
+        "peak_to_centroid_func": peak_to_centroid_func,
+        "bounds_setter": partial(p._wavelength_model_bounds, ext=ext),
+        "extraction_center": center}
 
 def find_solution(init_models, config, peaks=None, peak_weights=None,
                   linelist=None, fwidth=4,

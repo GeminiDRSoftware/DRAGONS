@@ -269,6 +269,30 @@ def test_fitcoord_table_and_gwcs_match(ad, params, change_working_dir):
     np.testing.assert_allclose(model.inverse[2].parameters, fitcoord_inv.parameters)
 
 
+@pytest.mark.f2ls
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("ad", ["S20211216S0177_wavelengthSolutionDetermined.fits"],
+                         indirect=['ad'])
+def test_compare_id_only_values(ad):
+    """
+    Compare the distortion models with and without "id_only" set. They
+    should be the same; however, this does require that the arc lines cover
+    the full extent of the wavelength axis to avoid extrapolation differences.
+    """
+    params = fixed_parameters_for_determine_distortion
+    Y, X = np.mgrid[:ad[0].shape[0], :ad[0].shape[1]]
+    xx, yy = X[ad[0].mask == 0], Y[ad[0].mask == 0]
+    data = []
+    for id_only in (False, True):
+        p = F2Longslit([ad])
+        params["id_only"] = id_only
+        adout = p.determineDistortion(**params).pop()
+        model = adout[0].wcs.get_transform("pixels", "distortion_corrected")
+        data.append(model(xx, yy)[1])  # 1 is y-axis in astropy
+
+    np.testing.assert_allclose(data[0], data[1], atol=1)
+
+
 # Local Fixtures and Helper Functions ------------------------------------------
 @pytest.fixture(scope='function')
 def ad(path_to_inputs, request):

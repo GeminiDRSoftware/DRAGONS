@@ -194,6 +194,8 @@ class AstroDataF2(AstroDataGemini):
                 central_wavelength = 1900.0
 
         if central_wavelength < 0.0:
+            if self.disperser(pretty=True) == "R3K":
+                return {"J": 1250, "H": 1650, "K": 2200}.get(self.filter_name(pretty=True)[0])
             return None
         return central_wavelength
 
