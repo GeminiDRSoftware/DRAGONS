@@ -183,8 +183,8 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
                 fit.notify_listeners()
 
             # Set *all* fits to BAD if we don't have enough points to constrain
-            total_good = np.sum(fit.data.data['mask'].count('good')
-                                for fit in vis.fits)
+            total_good = np.sum([fit.data.data['mask'].count('good')
+                                for fit in vis.fits])
             if total_good < len(m_final.parameters):
                 for fit in self.fits:
                     fit.quality = FitQuality.BAD
