@@ -9,8 +9,6 @@ This primitive applies a bias correction to a set of one or more observed frames
 image values of the specified bias frame(s) are subtracted from the observed frame(s),
 in order to remove the unwanted bias signal arising due to the detector electronics.
 
-*(The above text is subject to final approval).*
-
 Implementations
 ***************
 
@@ -47,12 +45,7 @@ This primitive subtracts the input bias frames from the specified input observat
 frames. The variance and data quality information will be updated accordingly, if
 they exist.
 
-*(The above text is subject to final approval).*
-
 Issues and Limitations
 ----------------------
 The bias and obervation frame should match in terms of detector and array size used.
 
-*(The above text is subject to final approval).*
-
-----

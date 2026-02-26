@@ -7,8 +7,6 @@ Primitives Reference
 ********************
 
 .. toctree::
-    :maxdepth: 1
-    :numbered:
+   :maxdepth: 1
 
-    primitive_createExample
-
+   primitive_createExample
