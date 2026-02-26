@@ -52,8 +52,7 @@ def test_get_fits_table_vizier(catalog, ra, dec, radius, nres, caplog):
     except TypeError:  # ret is None
         for record in caplog.records:
             if (record.levelname == 'WARNING' and
-                    ("returned an error" in record.message or
-                     "Failed to communicate" in record.message)):
+                    "No catalog returned" in record.message):
                 pytest.skip(record.message)
         pytest.skip('Empty catalog response')
 
