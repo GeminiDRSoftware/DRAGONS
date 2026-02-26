@@ -11,9 +11,23 @@ Tips and Tricks
 Using the Lamp-off Flat for the K-band Arc
 ==========================================
 
-Show how to create the dataselect list with arc and lamp-off flats
-and how to make the reduce call.  Explain that both flats will be
-stacked and then subtracted off each arc (as if a dark).
+There is continuum flux in the K-band arcs.  As part of the standard
+calibrations for R3K + K-band filter observations, a lamp-off flat with
+an exposure time equal to the arc's exposure time is taken right before
+or after the arc.  This lamp-off flat is needed when reducing the arc
+with Gemini IRAF.   It is **not** needed with DRAGONS.
+
+Nevertheless, DRAGONS can use it if you think it is necessary.  Here's how.
+
+::
+
+    dataselect ../playdata/example3/*.fits --tags ARC -o arc.lis
+    dataselect ../playdata/example3/*.fits --tags FLAT,LAMPOFF -o lampoff.lis
+
+    reduce @arc.lis @lampoff.lis
+
+The lamp-off flat(s), instead of a dark, will be subtracted from the arc.
+
 
 .. _wavzero:
 

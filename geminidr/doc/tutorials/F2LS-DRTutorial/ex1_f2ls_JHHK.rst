@@ -22,4 +22,4 @@ Evans etal, 2023, MNRAS, 522, 4841.
 
    ex1_f2ls_JHHK_dataset
    ex1_f2ls_JHHK_cmdline
-..   ex1_f2ls_JHHK_api
+   ex1_f2ls_JHHK_api

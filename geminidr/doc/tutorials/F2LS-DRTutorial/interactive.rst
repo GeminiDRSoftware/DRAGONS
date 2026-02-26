@@ -117,7 +117,7 @@ modifications.
 Interactive primitives
 ======================
 
-There are seven primitives with an interactive mode for GNIRS longslit.
+There are seven primitives with an interactive mode for F2 longslit.
 
 * :ref:`determineWavelengthSolution <ui_determinewavelengthsolution>`
 * :ref:`findApertures <ui_findapertures>`
@@ -145,17 +145,13 @@ The interface for the arc lamp:
 
 The interface when using sky features:
 
-.. image:: _graphics/determineWavelengthSolutionFromSky.png
+.. image:: _graphics/determineWavelengthSolutionFromSkyEmission.png
    :width: 600
    :alt: determineWavelengthSolution for sky features
 
 In both cases, the interface allows the user to point to specific lines to
 delete them or to identify them (ie. assign a wavelength).  Modifications to
 the line identification plot will be reflected in the fit below it.
-
-Line identification in GNIRS data can be difficult, particularly in the high
-resolution configurations or when telluric features must be used.  It is
-recommended to visually inspect the solution using this interactive tool.
 
 
 .. _ui_findapertures:

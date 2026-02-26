@@ -43,6 +43,3 @@ See the |RSUserInstall| to install the software if you have not already.
           of your own data and you encounter a problem, please review the
           :ref:`tips_and_tricks` and :ref:`issues_and_limitations` sections.
           They may contain the solution to your problem.
-
-          Also, please use the :ref:`f2ls_wavecal_guide` to help you choose
-          the best way to wavelength calibrate your data.

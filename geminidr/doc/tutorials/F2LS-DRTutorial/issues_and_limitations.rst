@@ -8,15 +8,58 @@ Issues and Limitations
 
 .. _why_darks:
 
-Why are darks used
+Why darks are used
 ==================
+A Flamingos 2 dark looks like this.
+
+.. image:: _graphics/f2ls_dark.png
+   :width: 400
+   :alt: An F2 dark.  No scale stretching, standard zscale.
+
+Not only is the pattern very strong, it is also not stable.  Using a separate
+dark subtraction step helps attenuate the pattern a bit.  Also, for the flats,
+lamp-off flats are not observed and the dark pattern has to be removed with
+same-exposure-time darks to produce a master flat. Also, if that pattern is
+not remove in the lamp arcs, they can interfere with the arc line detection.
 
 
-Show what a dark looks like to convey why a dark correction is required.
-Since no lampoff for flats, we need to dark correct.  Line detection in
-arc lamps would be compromised with those dark lines still in.  And
-for science/telluric, the dark current/features are known to be unstable
-so extra steps can help.  (But I need to try without.)
+.. _flat_artifacts:
+
+Reflections in flats
+====================
+In JH and HK longslit observations, the observations suffer from what looks
+like internal reflections.  The top (blue part) of the array is affected and
+lead to difficulties with the sensitivity function calculation in that part
+of the spectrum.
+
+For references, here is what the JH and HK longslit master flat fields look
+like.
+
+.. image:: _graphics/f2ls_JH_flat.png
+   :width: 300
+   :alt: An F2 JH LS flat.
+
+.. image:: _graphics/f2ls_HK_flat.png
+   :width: 295
+   :alt: An F2 HK LS flat.
+
+
+.. _asymmetric_lines:
+
+Asymmetric lines
+================
+The optics in Flamingos 2 lead to line profiles that are asymmetric, get worse
+with distance from the center.  Here is an illustration.
+
+.. image:: _graphics/f2ls_asymmetric_lines.png
+   :width: 600
+   :alt: An F2 arc with zoom-in showing asymmetric lines.
+
+The DRAGONS wavelength solution and telluric modeling algorithms do their best
+to compensate, but it is not perfect.  The line spread function used in the
+telluric modeling accounts for this asymmetry.
+
+
 
 .. _badwcs:
 
