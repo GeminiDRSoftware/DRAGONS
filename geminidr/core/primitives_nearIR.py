@@ -640,9 +640,12 @@ class NearIR(Bookkeeping):
             only 510 rows but read out synchronously with the "bottom" 510 rows although this "bottom" 
             quad has 512 rows.
         clean: str, Default: "skip"
-            Must be one of "skip" or "default". Note "force" option doesn't exist for this FFT method.
+            Must be one of "skip", "default" or "force".
             skip: Skip this routine entirely when called from a recipe.
             default: Apply the pattern subtraction to each quadrant of the image.
+            force: Force pattern subtraction from every row in each quadrant (irrespective of
+                   sigma_fact).
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -658,7 +661,6 @@ class NearIR(Bookkeeping):
         periodicity = params["periodicity"]
         smoothing_extent = params["smoothing_extent"]
         pad_rows = params["pad_rows"]
-
 
         if clean == "skip":
             log.stdinfo("Skipping cleanFFTReadout since 'clean' is set to 'skip'")
@@ -703,12 +705,11 @@ class NearIR(Bookkeeping):
                             _ind = np.argmin(np.abs(row_freq - 1/periodicity)) ##find the index closest to the principal target frequency
                             a_mean, a_median, a_std = sigma_clipped_stats(amp[_ind-win_size:_ind+win_size], sigma=2.0)
                             amp_threshold = a_mean + sigma_fact * a_std
-
                             mask = []
-                            if np.interp(1/periodicity, row_freq, amp)>amp_threshold: ##if principal target frequency stands out then automatically clean its harmonics
+                            if clean == "force" or np.interp(1/periodicity, row_freq, amp)>amp_threshold: ##if principal target frequency stands out then automatically clean its harmonics
                                 counter = 1
-                                while int(counter*1/periodicity*num_samples) <= (num_samples-1):
-                                    mask.append(int(counter*1/periodicity*num_samples)) 
+                                while int(counter*1/periodicity*num_samples) <= (num_samples//2):
+                                    mask.append(int(counter*1/periodicity*num_samples))
                                     counter += 1
                                 rows_cleaned += 1
 

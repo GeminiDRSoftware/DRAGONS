@@ -1623,10 +1623,11 @@ def resample_from_wcs(ad, frame_name, attributes=None, interpolant="linear",
     AstroData: single-extension AD with suitable WCS
     """
     array_attributes = ['data', 'mask', 'variance']
-    for k, v in ad.nddata[0].meta['other'].items():
-        if isinstance(v, np.ndarray) and v.shape == ad[0].data.shape:
-            array_attributes.append(k)
     is_single = ad.is_single
+    for k, v in ad.nddata[0].meta['other'].items():
+        if (isinstance(v, np.ndarray) and
+                v.shape == (ad if is_single else ad[0]).data.shape):
+            array_attributes.append(k)
 
     # It's not clear how much checking we should do here but at a minimum
     # we should probably confirm that each extension is purely data. It's
