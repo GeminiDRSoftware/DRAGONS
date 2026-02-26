@@ -35,22 +35,42 @@ visual cue is often easier to spot.
 
 When the WCS of the raw data are wrong in an on-target ABBA, to the point that
 it recognize a target-offset_to_sky pattern during sky subtraction rather than
-a ABBA dither patter, the profile in ``findApertures`` will
+a ABBA dither patter, the profile in ``findApertures`` can
 look like this, one positive, one negative:
 
-<screenshot of bad WCS profile>
+.. image:: _graphics/f2ls_badwcs_apertureprofile.png
+   :width: 600
+   :alt: Bad WCS. ABBA detected as offset to sky.
+
+
 
 When the WCS is correct or has been fixed, the standard AB dither pattern
 should lead to a negative-positive-negative profile, like this:
 
-<screenshot of good WCS profile>
+.. image:: _graphics/f2ls_newwcs_apertureprofile.png
+   :width: 600
+   :alt: New WCS. ABBA detected now detected as on-target dither.
+
 
 Another way to notice the WCS problem is to look at the logs for ``separateSky``.
 In a standard ABBA sequence, all the datasets should be recognized as target,
 and all of them should also be recognized as sky: B is sky for A and A is sky
 for B.  If you notice that the list gets separated into only target and only
 sky, when it is an on-target ABBA dither pattern, then the WCS in the raw
-data are wrong.
+data are wrong.  Here is an example of wrongly identified ABBA::
+
+   PRIMITIVE: separateSky
+   ----------------------
+   Identified 3 group(s) of exposures
+   Classifying groups based on target proximity and observation efficiency
+   Science frames:
+     S20190702S0100_wavelengthZeroPointAdjusted.fits
+     S20190702S0101_wavelengthZeroPointAdjusted.fits
+   Sky frames:
+     S20190702S0099_wavelengthZeroPointAdjusted.fits
+     S20190702S0102_wavelengthZeroPointAdjusted.fits
+   .
+
 
 One other tell-tale of a bad WCS in the raw data is in the logs of
 ``adjustWCSToReference``.  The offsets it finds must match the dither pattern.

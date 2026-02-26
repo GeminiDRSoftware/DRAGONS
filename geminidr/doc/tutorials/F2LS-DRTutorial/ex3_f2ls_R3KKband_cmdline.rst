@@ -22,7 +22,7 @@ sequence.  The dither pattern is AABB-AABB.
     telluric observations, the source was going out of the slit when the
     telescope was moved to the B position.  The signal in the B beam can
     be as low as 15% the signal in the A beam.  We do not know what
-    happened on that night to cause that.  The result is a lower
+    happened on that night to cause that.  The consequence is a lower
     signal-to-noise ratio in the final stack than requested.
 
 The dataset
@@ -197,7 +197,8 @@ orientation.  Therefore we need to separate them into two lists.
 There are
 various ways to do that with |dataselect|.  Here we show how to use a
 range of UT times.  Note that we use the tag LAMPON in case the arc LAMPOFF
-was downloaded.  As explained before, we do not use that lamp-off flat.
+was downloaded.  As explained in the "Note" at the bottom of
+:ref:`f2ls_R3KKband_dataset`, we do not use that lamp-off flat.
 
 We first check the times at which the flats were taken.  Then use that
 information to set our selection criteria to separate them.
@@ -317,17 +318,16 @@ into the interactive mode to save time.
 
 ::
 
-    reduce @flatsci.lis -p interactive=True
+    reduce @flatsci.lis
+    reduce @flattel.lis
 
-<insert screenshot of the interactive fit.>
+If you wish to see the fit, you can add ``-p interactive=True`` to the
+commands above. For example, he is now the HK flat fit looks like.
 
-We find that a region going from pixel 225 to 1815 and an order of 6 is leading
-to a reasonable fit.  Avoiding a fit that goes negative helps a lot.  We
-feed that information directly to the reduction of the telluric flat.
+.. image:: _graphics/f2ls_R3KKflatnorm.png
+   :width: 600
+   :alt: R3K-K flat normalization fit
 
-::
-
-    reduce @flattel.lis -p normalizeFlat:regions=225:1815 normalizeFlat:order=6
 
 Processed Arc - Wavelength Solution
 ===================================
@@ -388,9 +388,6 @@ run.
 
     reduce -r reduceTelluric @tel.lis @hip98805.param -p interactive=True prepare:bad_wcs=new
 
-<Right now, using order 20 removes some low frequency wiggles around
-2.3 um>
-
 The ``prepare:bad_wcs=new`` is needed because the WCS in the raw data
 is not quite right and that leads to an incorrect sky subtraction and
 alignment.  See :ref:`badwcs` for more information.
@@ -402,17 +399,22 @@ explain some variations, in this case the two A positions have equal
 flux and the two B have equal flux, but the flux at the B position is
 a fraction of the flux at the A position.
 
-The explanation is that the telescope movement when supposedly moving
-along the slit to the B position was not "along the slit".  Somehow the
+The explanation is that the telescope movement, when supposedly moving
+along the slit to the B position, was not "along the slit".  Somehow the
 slit was misaligned.  It is not understood why.
 
-The result is that the final signal-to-noise is lower than expected.
+The consequence is that the final signal-to-noise is lower than expected.
 That slit misalignment is observed in the science sequence too.
 
-<This one has LSF 0.6 instead of hitting the limit.>
+Using the defaults, the fit and model spectrum look like this:
 
-<screenshot of fit, and any relevant discussion.  Add when we are have
-fixed the LSF problem.>
+.. image:: _graphics/f2ls_R3KK_telfit.png
+   :width: 265
+   :alt: R3K-K telluric fit
+
+.. image:: _graphics/f2ls_R3KK_model.png
+   :width: 335
+   :alt: R3K-K sensitivity function fit
 
 Science Observations
 ====================
@@ -435,17 +437,23 @@ adjustment, or try it out, see :ref:`wavzero` to learn how.
 
 This is what one raw image looks like.
 
-<raw science image>
+.. image:: _graphics/f2ls_R3KK_raw.png
+   :width: 300
+   :alt: Raw R3K-K image
+
 
 To run the reduction, call |reduce| on the science list.  The calibrations
 will be automatically associated.  It is recommended to run the reduction
 in interactive mode to allow inspection of and control over the critical
 steps.
 
+There are many sources along the slit.  We know that we are interested
+only in the brightest one.  Therefore, we set the maximum number of sources
+to find to 1 in ``findApertures``.
 
 ::
 
-    reduce @sci.lis -p interactive=True findApertures:max_apertures=1 telluricCorrect:telluric=S20230606S0097_telluric.fits fluxCalibrate:standard=S20230606S0097_telluric.fits
+    reduce @sci.lis -p interactive=True findApertures:max_apertures=1
 
 As explained above in the telluric section, the slit was misaligned during the
 observation resulting in the source slipping out of the slit when the telescope
@@ -453,38 +461,31 @@ was dithered to the B position.  The flux in the B position is a fraction of
 the flux in the A position.  This can be seen in the uneven negative beams in
 the ``findApertures`` profile.
 
-<Until findApertures is fixed, use findApertures:max_apertures=1>
-<Once we have telluric and specphot association, remove the manual assignment>
-
-.. note:: Processing multiple sources take time.  The source detection
-    algorithm is finding several sources.  In our case, we have only one
-    source of interest, the brightest one and the one assigned "Aperture 1".
-    We can use the ``findApertures:max_apertures=1`` option to limit the
-    automatic detection to only that source.
-
-<TBD if needed.  at the ``telluricCorrect`` step we can adjust the offset to
-``+0.2`` to better remove the telluric features.>
-
-<I think that I have evidence using the bluest line that the asymmetry is
-causing issues at the edges.  If using the data, that line is smooth.
-To get it smooth with the model, I need to shift more than warranted by
-features in the centre of the spectrum.>
+In ``telluricCorrect``, applying a shift of -0.15 helps better remove the
+telluric features in the spectrum.
 
 The 2D spectrum before extraction looks like this, with blue wavelengths at
 the bottom and the red-end at the top.
 
-<image of 2D stack>
+.. image:: _graphics/f2ls_R3KK_2d.png
+   :width: 300
+   :alt: R3K-K 2D spectrum
 
 The 1D extracted spectrum before telluric correction or flux calibration,
 obtained with ``-p extractSpectra:write_outputs=True``, looks like this.
 
-<image of _extracted>
+.. image:: _graphics/f2ls_R3KK_extracted.png
+   :width: 400
+   :alt: R3K-K 1D extracted spectrum before telluric correction or flux calibration
 
 The 1D extracted spectrum after telluric correction but before flux
 calibration, obtained with ``-p telluricCorrect:write_outputs=True``, looks
 like this.
 
-<image of _telluricCorrected>
+.. image:: _graphics/f2ls_R3KK_telcor.png
+   :width: 400
+   :alt: R3K-K 1D extracted spectrum after telluric correction and before flux calibration
+
 
 And the final spectrum, corrected for telluric features and flux calibrated.
 
@@ -492,5 +493,7 @@ And the final spectrum, corrected for telluric features and flux calibrated.
 
     dgsplot S20230606S0083_1D.fits 1
 
-<image of _1D>
+.. image:: _graphics/f2ls_R3KK_1d.png
+   :width: 400
+   :alt: R3K-K 1D extracted spectrum after telluric correction and flux calibration
 

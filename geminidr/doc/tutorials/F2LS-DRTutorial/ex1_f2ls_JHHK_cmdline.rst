@@ -464,11 +464,11 @@ like this.
 
 .. image:: _graphics/f2ls_JH_telcor.png
    :width: 300
-   :alt: JH 1D extracted spectrum after telluric correction or before flux calibration
+   :alt: JH 1D extracted spectrum after telluric correction and before flux calibration
 
 .. image:: _graphics/f2ls_HK_telcor.png
    :width: 300
-   :alt: HK 1D extracted spectrum after telluric correction or before flux calibration
+   :alt: HK 1D extracted spectrum after telluric correction and before flux calibration
 
 And the final spectra, corrected for telluric features and flux calibrated.
 

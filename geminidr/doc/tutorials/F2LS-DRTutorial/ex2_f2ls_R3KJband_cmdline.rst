@@ -276,16 +276,23 @@ For F2, only the overall shape should be fit.  The detailed fitting will be
 taken care of when the sensitivity function is calculated using the telluric
 standard star.
 
+We have defined appropriate defaults for the order and the region to use to
+normalize the flat for each grism and filter combinations.  You should not
+have to modify them.
+
 ::
 
-    reduce @flat.lis -p interactive=True   # using order 29 for now, full region.
-   # also tried order 1 with region limited to the flat area.
+    reduce @flat.lis
+
+If you wish to see the fit, you can add ``-p interactive=True`` to the
+commands above. For example, he is now the HK flat fit looks like.
+
+.. image:: _graphics/f2ls_R3KJflatnorm.png
+   :width: 600
+   :alt: R3K-J flat normalization fit
 
 
-<insert screenshot of the interactive fit>
 
-We find that a region going from pixel 1090 to 1820 and an order of 1 is
-leading to a reasonable fit.  Avoiding a fit that goes negative helps a lot.
 
 Processed Arc - Wavelength Solution
 ===================================
@@ -309,8 +316,8 @@ visually inspect it in interactive mode.
 
 Telluric Standard
 =================
-The telluric standard observed after the science observation is "hip 98805".
-The spectral type of the star is A0.5V.
+The telluric standard observed after the science observation is "hip 63036".
+The spectral type of the star is A0/1V.
 
 To properly calculate and fit a telluric model to the star, we need to know
 its effective temperature.  To properly scale the sensitivity function (to
@@ -320,7 +327,7 @@ magnitude.  Those are inputs to the ``fitTelluric`` primitive.
 In Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
 Temperature Sequence"
 (https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt)
-the effective temperature of an A0.5V star as about 9500 K. The precise
+the effective temperature of an A0/1V star as about 9500 K. The precise
 value has only a small effect on the derived sensitivity and even less
 effect on the telluric correction, so the temperature from any reliable
 source can be used. Using Simbad, we find that the star has a magnitude
@@ -350,18 +357,16 @@ The ``prepare:bad_wcs=new`` is needed because the WCS in the raw data
 is not quite right and that leads to an incorrect sky subtraction and
 alignment.  See :ref:`badwcs` for more information.
 
-<screenshot of the fit, maybe at the edges.  show that order 8 appears to be
-the best compromise.>
+Using the defaults, the fit and model spectrum look like this:
 
-# fitTelluric hits the LSF 0.5 limit.  Need to set order to 25 to get a decent corrected spectrum, and even then it
-# kind of suck at the edges.
-# fitTelluric plot is limited to the valid area.  But I believe that the model goes beyond and that's what I see
-#   in telluricCorrect.
-#
-#  With order 1 flat, fitTelluric looks much better.  Order 8 does a nice job.
+.. image:: _graphics/f2ls_R3KJ_telfit.png
+   :width: 265
+   :alt: R3K-J telluric fit
 
-<screenshot of fit, and any relevant discussion.  Add when we are have
-fixed the LSF problem.>
+.. image:: _graphics/f2ls_R3KJ_model.png
+   :width: 335
+   :alt: R3K-J sensitivity function fit
+
 
 Science Observations
 ====================
@@ -383,19 +388,22 @@ adjustment, or try it out, see :ref:`wavzero` to learn how.
 
 This is what one raw image looks like.
 
-<raw science image>
+.. image:: _graphics/f2ls_R3KJ_raw.png
+   :width: 300
+   :alt: Raw R3K-J image
 
 To run the reduction, call |reduce| on the science list.  The calibrations
 will be automatically associated.  It is recommended to run the reduction
 in interactive mode to allow inspection of and control over the critical
 steps.
 
+There are many sources along the slit.  We know that we are interested
+only in the brightest one.  Therefore, we set the maximum number of sources
+to find to 1 in ``findApertures``.
+
 ::
 
-    reduce @sci.lis -p interactive=True prepare:bad_wcs=new findApertures:max_apertures=1 telluricCorrect:telluric=S20190702S0099_telluric.fits fluxCalibrate:standard=S20190702S0099_telluric.fits
-
-<Until findApertures is fixed, use findApertures:max_apertures=1>
-<Once we have telluric and specphot association, remove the manual assignment>
+    reduce @sci.lis -p interactive=True prepare:bad_wcs=new findApertures:max_apertures=1
 
 The exposure time of each of the four frames is 300 seconds.  The default time
 interval for the sky subtraction association is 600 seconds.  The default
@@ -407,23 +415,53 @@ variability, another solution would be to set ``min_skies`` to 1 and always
 catch the A or B frame closest in time.  Which works best for a given dataset
 is something the users will have to judge for themselves.
 
-<with bad LSF, at ``telluricCorrect`` ``-0.1`` shift is necessary.>
+At the ``telluricCorrect`` step you should focus on the section illustrated
+below.  The redder region is marked as non-illuminated in the flat and masked.
+
+.. image:: _graphics/f2ls_R3KJ_telcorfit.png
+   :width: 400
+   :alt: R3K-J telluricCorrect fit
+
+If you zoom-in on a region where there was a telluric feature, you will notice
+that the fit is not quite aligned.  It happens, that is what the interactive
+tool for ``telluricCorrect`` is for.   You can adjust the shift to get a
+better removal of the telluric feature.
+
+A shift of -0.25 helps.
+
+.. image:: _graphics/f2ls_R3KJ_telcorfit_zoombefore.png
+   :width: 300
+   :alt: R3K-J telluricCorrect fit
+
+.. image:: _graphics/f2ls_R3KJ_telcorfit_zoomafter.png
+   :width: 300
+   :alt: R3K-J telluricCorrect fit
+
 
 The 2D spectrum before extraction looks like this, with blue wavelengths at
-the bottom and the red-end at the top.
+the bottom and the red-end at the top.   Only the bottom half of the frame
+is valid and within the J filter transmission band.
 
-<image of 2D stack>
+.. image:: _graphics/f2ls_R3KJ_2d.png
+   :width: 300
+   :alt: R3K-J 2D spectrum
 
 The 1D extracted spectrum before telluric correction or flux calibration,
 obtained with ``-p extractSpectra:write_outputs=True``, looks like this.
 
-<image of _extracted>
+.. image:: _graphics/f2ls_R3KJ_extracted.png
+   :width: 400
+   :alt: R3K-J 1D extracted spectrum before telluric correction or flux calibration
+
 
 The 1D extracted spectrum after telluric correction but before flux
 calibration, obtained with ``-p telluricCorrect:write_outputs=True``, looks
 like this.
 
-<image of _telluricCorrected>
+.. image:: _graphics/f2ls_R3KJ_telcor.png
+   :width: 400
+   :alt: R3K-J 1D extracted spectrum after telluric correction and before flux calibration
+
 
 And the final spectrum, corrected for telluric features and flux calibrated.
 
@@ -431,12 +469,19 @@ And the final spectrum, corrected for telluric features and flux calibrated.
 
     dgsplot S20190702S0107_1D.fits 1
 
-<image of _1D>
+.. image:: _graphics/f2ls_R3KJ_1d.png
+   :width: 400
+   :alt: R3K-J 1D extracted spectrum after telluric correction and flux calibration
 
-# It appears that the "beyond filter cut off" signal is not being masked.  It shows up in science spectrum.
-# telluricCorrect:  shows the masked pixel area.  It shouldn't.  Over the ** valid ** area, the model
-#   looks ever so slightly better.
-# dgsplot shows only the valid area for the extracted spectrum.
-# For the _1D, it shows all the crap beyond.
+The "notch" in the emission line is where pixels have been masked, in this case
+due to saturation (probably when a bright sky line added to the star's signal
+to push the counts over the limit).  The tool ``dgsplot`` understands the data
+quality plane and plots the spectrum accordingly.
+
+.. It appears that the "beyond filter cut off" signal is not being masked.  It shows up in science spectrum.
+.. telluricCorrect:  shows the masked pixel area.  It shouldn't.  Over the ** valid ** area, the model
+..    looks ever so slightly better.
+.. dgsplot shows only the valid area for the extracted spectrum.
+.. For the _1D, it shows all the crap beyond.
 
 
