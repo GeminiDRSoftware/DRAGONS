@@ -285,7 +285,7 @@ have to modify them.
     reduce @flat.lis
 
 If you wish to see the fit, you can add ``-p interactive=True`` to the
-commands above. For example, he is now the HK flat fit looks like.
+commands above. For example, this is how the HK flat fit looks like.
 
 .. image:: _graphics/f2ls_R3KJflatnorm.png
    :width: 600
@@ -313,6 +313,8 @@ visually inspect it in interactive mode.
 ::
 
     reduce @arc.lis -p interactive=True
+
+The interactive tools are introduced in section :ref:`interactive`.
 
 Telluric Standard
 =================
