@@ -41,8 +41,19 @@ Here is a copy of the table for quick reference.
 | BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
 
+Setting up
+==========
+First navigate to your work directory in the unpacked data package.
+
+::
+
+    cd <path>/gnirsxd_tutorial/playground
+
+The first steps are to import libraries, set up the calibration manager,
+and set the logger.
+
 Configuring the interactive interface
-=====================================
+-------------------------------------
 In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
 
     [interactive]
@@ -53,7 +64,7 @@ the interactive tools using that browser.  The allowed strings are "**safari**",
 "**chrome**", and "**firefox**".
 
 Importing libraries
-===================
+-------------------
 
 .. code-block:: python
     :linenos:
@@ -71,7 +82,7 @@ The ``Reduce`` class is used to set up and run the data
 reduction.
 
 Setting up the logger
-=====================
+---------------------
 We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 .. code-block:: python
@@ -83,7 +94,7 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 
 Set up the Local Calibration Manager
-====================================
+------------------------------------
 
 .. important::  Remember to set up the calibration service.
 
