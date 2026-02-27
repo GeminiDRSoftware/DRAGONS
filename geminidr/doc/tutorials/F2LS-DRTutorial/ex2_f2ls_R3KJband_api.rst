@@ -188,7 +188,7 @@ The telluric sequence::
 
 
 Everything looks good with all the exposure times and read modes matching.
-Had there been discrepancies, you would have fixed them with ``fixheader``
+Had there been discrepancies, you would have fixed them
 as shown in Example 1 and Example 3.
 
 Create file lists
@@ -210,7 +210,7 @@ Let's get a fresh list of all the files in the ``playdata`` directory.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 58
+    :lineno-start: 31
 
     all_files = glob.glob('../playdata/example2/*.fits')
     all_files.sort()
@@ -236,7 +236,7 @@ present in the data.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 60
+    :lineno-start: 33
 
     exposure_times = [5, 25, 60, 300]
     darks = {}
@@ -265,7 +265,7 @@ need to send the filename of the unique flat to a list.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 69
+    :lineno-start: 42
 
     for f in dataselect.select_data(all_files, ['FLAT']):
         ad = astrodata.open(f)
@@ -277,7 +277,7 @@ need to send the filename of the unique flat to a list.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 72
+    :lineno-start: 45
 
     flat = dataselect.select_data(all_files, ['FLAT'])
 
@@ -291,7 +291,7 @@ arc observations in it and they will be processed independently.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 96
+    :lineno-start: 46
 
     arcs = dataselect.select_data(all_files, ['ARC'])
 
@@ -308,7 +308,7 @@ reject flats and arcs.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 97
+    :lineno-start: 47
 
     tellurics = dataselect.select_data(
         all_files,
@@ -329,7 +329,7 @@ inspect what we have we can use |dataselect|.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 110
+    :lineno-start: 53
 
     all_science = dataselect.select_data(
         all_files,
@@ -353,7 +353,7 @@ objects we could add the object name in the expression.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 119
+    :lineno-start: 62
 
     sciframes = dataselect.select_data(
         all_files,
@@ -369,7 +369,7 @@ Now that the lists are created, we just need to run ``Reduce`` on each list.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 131
+    :lineno-start: 68
 
     for exptime in darks.keys():
         reduce_darks = Reduce()
@@ -403,13 +403,14 @@ have to modify them.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 135
+    :lineno-start: 72
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flat)
     reduce_flats.runr()
 
-If you wish to see the fit, you can add ``reduce_flats.uparms = dict([('interactive', True)])`` before the ``runr()``
+If you wish to see the fit, you can add
+``reduce_flats.uparms = dict([('interactive', True)])`` before the ``runr()``
 call. For reference, this is how the flat fit looks like.
 
 .. image:: _graphics/f2ls_R3KJflatnorm.png
@@ -435,7 +436,7 @@ visually inspect it in interactive mode.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 140
+    :lineno-start: 75
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
@@ -466,12 +467,12 @@ of J=7.498, which is the closest waveband to our observation.
 
 Note that the data are recognized by Astrodata as normal F2 longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
-recipe (``-r reduceTelluric``), otherwise the default science reduction will be
+recipe (``reduceTelluric``), otherwise the default science reduction will be
 run.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 144
+    :lineno-start: 79
 
     reduce_telluric = Reduce()
     reduce_telluric.files.extend(tellurics)
@@ -534,7 +535,7 @@ to find to 1 in ``findApertures``.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 164
+    :lineno-start: 89
 
     reduce_science = Reduce()
     reduce_science.files.extend(sciframes)
@@ -597,8 +598,7 @@ obtained by adding ``('extractSpectra:write_outputs', True)`` to the
 
 The 1D extracted spectrum after telluric correction but before flux
 calibration, obtained by adding ``('telluricCorrect:write_outputs', True)`` to
-the ``uparms`` dictionary, looks
-like this.
+the ``uparms`` dictionary, looks like this.
 
 .. image:: _graphics/f2ls_R3KJ_telcor.png
    :width: 400

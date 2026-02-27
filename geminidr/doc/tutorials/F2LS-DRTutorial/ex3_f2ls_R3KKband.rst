@@ -20,7 +20,7 @@ sequence.  The pattern is AABB-AABB.
 
    ex3_f2ls_R3KKband_dataset
    ex3_f2ls_R3KKband_cmdline
-..   ex3_f2ls_R3KKband_api
+   ex3_f2ls_R3KKband_api
 
 
 

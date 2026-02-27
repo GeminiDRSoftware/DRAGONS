@@ -523,7 +523,7 @@ fed to the primitive ``fitTelluric``.
 
 Note that the data are recognized by Astrodata as normal F2 longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
-recipe (``-r reduceTelluric``), otherwise the default science reduction will be
+recipe (``reduceTelluric``), otherwise the default science reduction will be
 run.
 
 .. code-block:: python
