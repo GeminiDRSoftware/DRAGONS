@@ -11,6 +11,7 @@ packages.
 
 * Example 1: `gnirsxd_tutorial_datapkg-SDX32mm-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/gnirsxd_tutorial_datapkg-SDX32mm-v1.tar>`_
 * Example 2: `gnirsxd_tutorial_datapkg-SDX111mm-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/gnirsxd_tutorial_datapkg-SDX111mm-v1.tar>`_
+* Example 3: `gnirsxd_tutorial_datapkg-LDX10mm-v1.tar <https://www.gemini.edu/sciops/data/software/datapkgs/gnirlxd_tutorial_datapkg-LDX10mm-v1.tar>`_
 
 Download the package for the example you wish to run and unpack it somewhere convenient.
 
