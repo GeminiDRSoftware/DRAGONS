@@ -9,7 +9,7 @@ Example 1 - JH and HK Longslit Point Source - Using the "Reduce" class API
 **************************************************************************
 
 We will reduce a Flamingos 2 JH and a HK longslit observation of the 2022
-eruption of the recurrent nova U Sco using using the Python
+eruption of the recurrent nova U Sco using the Python
 programmatic interface.
 
 The 2-pixel slit is used.  The dither sequence is ABBA-ABBA.
@@ -74,7 +74,7 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
     :lineno-start: 7
 
     from gempy.utils import logutils
-    logutils.config(file_name='gnirsls_tutorial.log')
+    logutils.config(file_name='f2ls_tutorial.log')
 
 
 Set up the Calibration Service
@@ -347,7 +347,6 @@ rejection of the ``CAL`` tag to reject flats and arcs.
         all_files,
         [],
         ['CAL'],
-
         dataselect.expr_parser('observation_class=="partnerCal" and disperser=="JH"')
     )
     telluricsHK = dataselect.select_data(
@@ -467,7 +466,7 @@ have to modify them.
 
 If you wish to see the fit, you can add
 ``reduce_flats.uparms = dict([('interactive', True)])`` before the ``runr()``
-call. For example, this is how the HK flat fit looks like.
+call. For reference, this is how the HK flat fit looks like.
 
 .. image:: _graphics/f2ls_HKflatnorm.png
    :width: 600
@@ -607,7 +606,7 @@ This is what the raw images looks like, for JH and for HK.
    :alt: Raw HK science image
 
 
-To run the reduction, call ``Reduce`` class on the science list.  The
+To run the reduction, call the ``Reduce`` class on the science list.  The
 calibrations will be automatically associated.  It is recommended to run the
 reduction in interactive mode to allow inspection of and control over the
 critical steps.

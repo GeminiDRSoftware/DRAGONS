@@ -146,4 +146,20 @@ That should lead to the "good WCS" profile.  If not, the problem is elsewhere.
     even with `prepare:bad_wcs=new`, try to add `adjustWCSToReference:method:wcs`,
     that will bypass the cross-correlation and use the offsets in the headers.
 
-.. todo:: Add screenshot of all the optical and detector issues.
+
+.. _double_messaging:
+
+Double messaging issue
+======================
+If you run ``Reduce`` without setting up a logger, you will notice that the
+output messages appear twice.  To prevent this behaviour set up a logger.
+This will send one of the output stream to a file, keeping the other on the
+screen.  We recommend using the DRAGONS logger located in the
+``logutils`` module and its ``config()`` function:
+
+
+.. code-block:: python
+    :linenos:
+
+    from gempy.utils import logutils
+    logutils.config(file_name='gmosls_tutorial.log')

@@ -21,7 +21,7 @@ Geballe etal, 2019, ApJL, 886, 14.
 
    ex2_f2ls_R3KJband_dataset
    ex2_f2ls_R3KJband_cmdline
-..   ex2_f2ls_R3KJband_api
+   ex2_f2ls_R3KJband_api
 
 
 

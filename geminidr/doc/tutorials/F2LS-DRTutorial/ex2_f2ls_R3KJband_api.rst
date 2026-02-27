@@ -1,17 +1,15 @@
-.. ex2_f2ls_R3KJband_cmdline.rst
+.. ex2_f2ls_R3KJband_api.rst
 
 .. include:: symbols.txt
 
-.. _f2ls_R3KJband_cmdline:
+.. _f2ls_R3KJband_api:
 
-*************************************************************************
-Example 2 - J-band R3K Longslit Point Source - Using the "reduce" command
-*************************************************************************
+***************************************************************************
+Example 2 - J-band R3K Longslit Point Source - Using the "Reduce" class API
+***************************************************************************
 
 We will reduce a F2 R3K 1.25 |um| longslit observation the recurrent nova
-V1047 Cen using the "|reduce|" command that is operated directly from the
-Unix shell  Just open a terminal and load the DRAGONS conda environment to
-get started.
+V1047 Cen using the Python programmatic interface.
 
 This observation uses the 2-pixel slit. The dither pattern is a standard
 ABBA.
@@ -57,9 +55,19 @@ Here is a copy of the table for quick reference.
 | Telluric arc flat          || Same as telluric flat                      |
 +----------------------------+---------------------------------------------+
 
+Setting up
+==========
+First navigate to your work directory in the unpacked data package.
+
+::
+
+    cd <path>/f2ls_tutorial/playground
+
+The first steps are to import libraries, set up the calibration manager,
+and set the logger.
 
 Configuring the interactive interface
-=====================================
+-------------------------------------
 In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
 
     [interactive]
@@ -69,18 +77,50 @@ The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
 the interactive tools using that browser.  The allowed strings are "**safari**",
 "**chrome**", and "**firefox**".
 
-Set up the Local Calibration Manager
-====================================
+Importing libraries
+-------------------
+
+.. code-block:: python
+    :linenos:
+
+    import glob
+
+    import astrodata
+    import gemini_instruments
+    from recipe_system.reduction.coreReduce import Reduce
+    from gempy.adlibrary import dataselect
+
+The ``dataselect`` module will be used to create file lists for the
+biases, the flats, the arcs, the telluric star, and the science observations.
+The ``Reduce`` class is used to set up and run the data
+reduction.
+
+Setting up the logger
+---------------------
+We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 7
+
+    from gempy.utils import logutils
+    logutils.config(file_name='f2ls_tutorial.log')
+
+Set up the Calibration Service
+------------------------------
 
 .. important::  Remember to set up the calibration service.
 
     Instructions to configure and use the calibration service are found in
     :ref:`cal_service`, specifically the these sections:
-    :ref:`cal_service_config` and :ref:`cal_service_cmdline`.
+    :ref:`cal_service_config` and :ref:`cal_service_api`.
 
 We recommend that you clean up your working directory (``playground``) and
-start a fresh calibration database (``caldb init -w``) when you start a new
-example.
+delete the old calibration database before you start.  Create a fresh one.
+
+Start a fresh calibration database (``caldb.init(wipe=True)``) when you
+start a new example.
+
 
 Inspect and fix headers
 =======================
@@ -88,25 +128,52 @@ It is unfortunately too common that the last frame of a science or
 telluric sequence gets some, not all, of its header values from the next
 (yes, future) frame which is normally, in the case of F2, a flat.  The
 key headers to pay attention too are EXPTIME and LNRS.  They are both
-associate with descriptors, so we will use "|showd|" to inspect the data.
-
-First, navigate to the ``playground`` directory in the unpacked data package::
-
-    cd <path>/f2ls_tutorial/playground
+associate with descriptors.
 
 Let's inspect the ``exposure_time`` and the ``read_mode`` for the science
 and the telluric data.  For a given sequence, all the values should match.
 
-::
+First, we create is a list of all the files in the ``playdata``
+directory.
 
-    dataselect ../playdata/example2/*.fits --xtags CAL --expr='observation_class=="science"' | showd -d exposure_time,read_mode
-    dataselect ../playdata/example2/*.fits --xtags CAL --expr='observation_class!="science"' | showd -d exposure_time,read_mode
+.. code-block:: python
+    :linenos:
+    :lineno-start: 9
+
+    all_files = glob.glob('../playdata/example2/*.fits')
+    all_files.sort()
+
+We will select the telluric and science frames and display the values for
+the ``exposure_time`` and ``read_mode`` descriptors.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 11
+
+    sciframes = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class=="science"')
+    )
+    tellurics = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class!="science"')
+    )
+
+    for f in sciframes:
+        ad = astrodata.open(f)
+        print(f"{f}:\t{ad.exposure_time()}\t{ad.read_mode()}")
+
+    for f in tellurics:
+        ad = astrodata.open(f)
+        print(f"{f}:\t{ad.exposure_time()}\t{ad.read_mode()}")
+
 
 The science sequence::
 
-    --------------------------------------------------------------------
-    filename                                   exposure_time   read_mode
-    --------------------------------------------------------------------
     ../playdata/example2/S20190702S0107.fits           300.0           8
     ../playdata/example2/S20190702S0108.fits           300.0           8
     ../playdata/example2/S20190702S0109.fits           300.0           8
@@ -114,9 +181,6 @@ The science sequence::
 
 The telluric sequence::
 
-    --------------------------------------------------------------------
-    filename                                   exposure_time   read_mode
-    --------------------------------------------------------------------
     ../playdata/example2/S20190702S0099.fits            25.0           1
     ../playdata/example2/S20190702S0100.fits            25.0           1
     ../playdata/example2/S20190702S0101.fits            25.0           1
@@ -138,14 +202,26 @@ have to do it.  However, DRAGONS provides tools to help you.
 
 The first step is to create input file lists.  The tool "|dataselect|" helps
 with that.  It uses Astrodata tags and "|descriptors|" to select the files and
-send the filenames to a text file that can then be fed to "|reduce|".  (See the
-|astrodatauser| for information about Astrodata  and for a list
-of |descriptors|.)
+send the filenames to a text file that can then be fed to the ``Reduce``
+class.  (See the |astrodatauser| for information about Astrodata  and for a
+list of |descriptors|.)
 
-Make sure that you are in the ``playground`` directory of the unpacked
-data package::
+Let's get a fresh list of all the files in the ``playdata`` directory.
 
-    cd <path>/f2ls_tutorial/playground
+.. code-block:: python
+    :linenos:
+    :lineno-start: 58
+
+    all_files = glob.glob('../playdata/example2/*.fits')
+    all_files.sort()
+
+We will search that list for files with specific characteristics.  We use
+the ``all_files`` :class:`list` as an input to the function
+``dataselect.select_data()`` .  The function's signature is::
+
+    select_data(inputs, tags=[], xtags=[], expression='True')
+
+
 
 Several lists for the darks
 ---------------------------
@@ -158,12 +234,20 @@ A dark correction is unfortunately necessary for Flamingos 2 data due to
 strong and bright patterns that can interfere with the reduction if left
 present in the data.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 60
 
-    dataselect ../playdata/example2/*.fits --tags DARK --expr='exposure_time==5' -o dark5.lis
-    dataselect ../playdata/example2/*.fits --tags DARK --expr='exposure_time==25' -o dark25.lis
-    dataselect ../playdata/example2/*.fits --tags DARK --expr='exposure_time==60' -o dark60.lis
-    dataselect ../playdata/example2/*.fits --tags DARK --expr='exposure_time==300' -o dark300.lis
+    exposure_times = [5, 25, 60, 300]
+    darks = {}
+    for exptime in exposure_times:
+        darks[exptime] = dataselect.select_data(
+                all_files,
+                ['DARK'],
+                [],
+                dataselect.expr_parser(f'exposure_time=={exptime}')
+        )
+
 
 One list for the flat
 ---------------------
@@ -179,18 +263,24 @@ need to send the filename of the unique flat to a list.
     entire program you will have to apply selection criteria to ensure that
     the flats are sorted adequately.
 
+.. code-block:: python
+    :linenos:
+    :lineno-start: 69
+
+    for f in dataselect.select_data(all_files, ['FLAT']):
+        ad = astrodata.open(f)
+        print(f"{f}\t{ad.ut_time()}\t{ad.disperser()}")
+
 ::
 
-    dataselect ../playdata/example2/*.fits --tags FLAT | showd -d ut_time
-
-    ----------------------------------------------------------
-    filename                                           ut_time
-    ----------------------------------------------------------
     ../playdata/example2/S20190702S0111.fits   01:54:39.300000
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 72
 
-    dataselect ../playdata/example2/*.fits --tags FLAT -o flat.lis
+    flat = dataselect.select_data(all_files, ['FLAT'])
+
 
 A list for the arcs
 -------------------
@@ -199,9 +289,12 @@ sequence.  The recipe to measure the wavelength solution will not stack the
 arcs.  Therefore, we can conveniently create just one list with all the raw
 arc observations in it and they will be processed independently.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 96
 
-    dataselect ../playdata/example2/*.fits --tags ARC -o arc.lis
+    arcs = dataselect.select_data(all_files, ['ARC'])
+
 
 A list for the telluric
 -----------------------
@@ -213,9 +306,17 @@ the ``observation_class`` descriptor can be used to differentiate the telluric
 from the science observations, along with the rejection of the ``CAL`` tag to
 reject flats and arcs.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 97
 
-    dataselect ../playdata/example2/*.fits --xtags CAL --expr='observation_class!="science"' -o tel.lis
+    tellurics = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class!="science"')
+    )
+
 
 A list for the science observations
 -----------------------------------
@@ -224,15 +325,24 @@ class, ``science``, that is how they are differentiated from the telluric
 standards which are ``partnerCal``.
 
 If we had multiple targets, we would need to split them into separate lists. To
-inspect what we have we can use |dataselect| and |showd| together.
+inspect what we have we can use |dataselect|.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 110
+
+    all_science = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class=="science"')
+    )
+    for sci in all_science:
+        ad = astrodata.open(sci)
+        print(sci, '  ', ad.object())
 
 ::
 
-    dataselect ../playdata/example2/*.fits --xtags CAL --expr='observation_class=="science"' | showd -d object
-
-    ----------------------------------------------------
-    filename                                      object
-    ----------------------------------------------------
     ../playdata/example2/S20190702S0107.fits   V1047 Cen
     ../playdata/example2/S20190702S0108.fits   V1047 Cen
     ../playdata/example2/S20190702S0109.fits   V1047 Cen
@@ -241,20 +351,31 @@ inspect what we have we can use |dataselect| and |showd| together.
 Here we only have one object from the same sequence.  If we had multiple
 objects we could add the object name in the expression.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 119
 
-    dataselect ../playdata/example2/*.fits --xtags CAL --expr='observation_class=="science" and object=="V1047 Cen"' -o sci.lis
+    sciframes = dataselect.select_data(
+        all_files,
+        [],
+        ['CAL'],
+        dataselect.expr_parser('observation_class=="science" and object=="V1047 Cen"')
+    )
+
 
 Master Darks
 ============
-Now that the lists are created, we just need to run |reduce| on each list.
+Now that the lists are created, we just need to run ``Reduce`` on each list.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 131
 
-    reduce @dark5.lis
-    reduce @dark25.lis
-    reduce @dark60.lis
-    reduce @dark300.lis
+    for exptime in darks.keys():
+        reduce_darks = Reduce()
+        reduce_darks.files.extend(darks[exptime])
+        reduce_darks.runr()
+
 
 Master Flat Fields
 ==================
@@ -280,18 +401,20 @@ We have defined appropriate defaults for the order and the region to use to
 normalize the flat for each grism and filter combinations.  You should not
 have to modify them.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 135
 
-    reduce @flat.lis
+    reduce_flats = Reduce()
+    reduce_flats.files.extend(flat)
+    reduce_flats.runr()
 
-If you wish to see the fit, you can add ``-p interactive=True`` to the
-commands above. For reference, this is how the flat fit looks like.
+If you wish to see the fit, you can add ``reduce_flats.uparms = dict([('interactive', True)])`` before the ``runr()``
+call. For reference, this is how the flat fit looks like.
 
 .. image:: _graphics/f2ls_R3KJflatnorm.png
    :width: 600
    :alt: R3K-J flat normalization fit
-
-
 
 
 Processed Arc - Wavelength Solution
@@ -310,9 +433,15 @@ line if not removed.
 The solution is normally found automatically, but it does not hurt to
 visually inspect it in interactive mode.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 140
 
-    reduce @arc.lis -p interactive=True
+    reduce_arcs = Reduce()
+    reduce_arcs.files.extend(arcs)
+    reduce_arcs.uparms = dict([('interactive', True),])
+    reduce_arcs.runr()
+
 
 The interactive tools are introduced in section :ref:`interactive`.
 
@@ -335,25 +464,25 @@ effect on the telluric correction, so the temperature from any reliable
 source can be used. Using Simbad, we find that the star has a magnitude
 of J=7.498, which is the closest waveband to our observation.
 
-Instead of typing the values on the command line, we will use a parameter file
-to store them.  In a normal text file (here we name it "hip63036.param"),
-we write::
-
-    -p
-    fitTelluric:bbtemp=9500
-    fitTelluric:magnitude='J=7.498'
-
-Then we can call the ``reduce`` command with the parameter file.  The telluric
-fitting primitive can be run in interactive mode.
-
 Note that the data are recognized by Astrodata as normal F2 longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
 recipe (``-r reduceTelluric``), otherwise the default science reduction will be
 run.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 144
 
-    reduce -r reduceTelluric @tel.lis @hip63036.param -p interactive=True prepare:bad_wcs=new
+    reduce_telluric = Reduce()
+    reduce_telluric.files.extend(tellurics)
+    reduce_telluric.recipename = 'reduceTelluric'
+    reduce_telluric.uparms = dict([
+                ('fitTelluric:bbtemp', 9500),
+                ('fitTelluric:magnitude', 'J=7.498'),
+                ('fitTelluric:interactive', True),
+                ('prepare:bad_wcs', 'new')
+                ])
+    reduce_telluric.runr()
 
 The ``prepare:bad_wcs=new`` is needed because the WCS in the raw data
 is not quite right and that leads to an incorrect sky subtraction and
@@ -394,18 +523,27 @@ This is what one raw image looks like.
    :width: 300
    :alt: Raw R3K-J image
 
-To run the reduction, call |reduce| on the science list.  The calibrations
-will be automatically associated.  It is recommended to run the reduction
-in interactive mode to allow inspection of and control over the critical
-steps.
+To run the reduction, call the ``Reduce`` class on the science list.  The
+calibrations will be automatically associated.  It is recommended to run the
+reduction in interactive mode to allow inspection of and control over the
+critical steps.
 
 There are many sources along the slit.  We know that we are interested
 only in the brightest one.  Therefore, we set the maximum number of sources
 to find to 1 in ``findApertures``.
 
-::
+.. code-block:: python
+    :linenos:
+    :lineno-start: 164
 
-    reduce @sci.lis -p interactive=True prepare:bad_wcs=new findApertures:max_apertures=1
+    reduce_science = Reduce()
+    reduce_science.files.extend(sciframes)
+    reduce_science.uparms = dict([
+            ('interactive', True),
+            ('prepare:bad_wcs', 'new'),
+            ('findApertures:max_apertures', 1)
+            ])
+    reduce_science.runr()
 
 The exposure time of each of the four frames is 300 seconds.  The default time
 interval for the sky subtraction association is 600 seconds.  The default
@@ -449,7 +587,8 @@ is valid and within the J filter transmission band.
    :alt: R3K-J 2D spectrum
 
 The 1D extracted spectrum before telluric correction or flux calibration,
-obtained with ``-p extractSpectra:write_outputs=True``, looks like this.
+obtained by adding ``('extractSpectra:write_outputs', True)`` to the
+``uparms`` dictionary, looks like this.
 
 .. image:: _graphics/f2ls_R3KJ_extracted.png
    :width: 400
@@ -457,7 +596,8 @@ obtained with ``-p extractSpectra:write_outputs=True``, looks like this.
 
 
 The 1D extracted spectrum after telluric correction but before flux
-calibration, obtained with ``-p telluricCorrect:write_outputs=True``, looks
+calibration, obtained by adding ``('telluricCorrect:write_outputs', True)`` to
+the ``uparms`` dictionary, looks
 like this.
 
 .. image:: _graphics/f2ls_R3KJ_telcor.png
@@ -469,7 +609,9 @@ And the final spectrum, corrected for telluric features and flux calibrated.
 
 ::
 
-    dgsplot S20190702S0107_1D.fits 1
+   from gempy.adlibrary import plotting
+   ad = astrodata.open(reduce_science.output_filenames[0])
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={})
 
 .. image:: _graphics/f2ls_R3KJ_1d.png
    :width: 400
