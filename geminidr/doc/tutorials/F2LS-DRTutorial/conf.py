@@ -6,19 +6,19 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'Tutorial Series - GNIRS Longslit Data Reduction with DRAGONS'
-copyright = '2025, Association of Universities for Research in Astronomy'
+project = 'Tutorial Series - Flamingos 2 Longslit Data Reduction with DRAGONS'
+copyright = '2025, Association of University for Research in Astronomy'
 author = 'DRAGONS Team'
 
-# The full version, including alpha/beta/rc tags
-version = '4.2_dev'
+release = '4.2_dev'
 #release = '4.1.0'
 #rtdurl = 'v'+release
-#release = '4.1.x'
-#rtdurl = 'release-'+release
-rtdurl = 'latest'
+#release = '4.x'
+rtdurl = 'release-'+release
+#rtdurl = 'latest'
 
-today = 'October 2025'
+today = 'April 2026'
+
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -43,7 +43,6 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
-
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
@@ -51,7 +50,7 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'TutorialSeries-GNIRSLSDRDRAGONS'
+htmlhelp_basename = 'TutorialSeries-F2LSDRDRAGONS'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -77,7 +76,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'TutorialSeries-GNIRSLSDRDRAGONS.tex', 'Tutorial Series - GNIRS Longslit Data Reduction with DRAGONS Documentation',
+    (master_doc, 'TutorialSeries-F2LSDRDRAGONS.tex', 'Tutorial Series - Flamingos 2 Longslit Data Reduction with DRAGONS Documentation',
      'DRAGONS Team', 'manual'),
 ]
 
@@ -90,7 +89,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'tutorialseries-gnirslsdrdragons', 'Tutorial Series - GNIRS Longslit Data Reduction with DRAGONS Documentation',
+    (master_doc, 'tutorialseries-f2lsdrdragons', 'Tutorial Series - Flamingos 2 Longslit Data Reduction with DRAGONS Documentation',
      [author], 1)
 ]
 
@@ -119,8 +118,7 @@ rst_epilog = """
 .. |atfile| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>`
 .. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/usermanual/index.html" target="_blank">Astrodata User Manual</a>`
 
-.. |GNIRSImgTut| replace:: :raw-html:`<a href="http://GNIRSImg-DRTutorial.readthedocs.io/en/{v}">GNIRS Imaging Data Reduction Tutorial</a>`
-.. |GNIRSXDTut| replace:: :raw-html:`<a href="http://GNIRSXD-DRTutorial.readthedocs.io/en/{v}">GNIRS Cross-Dispersed Data Reduction Tutorial</a>`
+.. |F2ImgTut| replace:: :raw-html:`<a href="http://F2Img-DRTutorial.readthedocs.io/en/{v}">Flamingos 2 Imaging Data Reduction Tutorial</a>`
 .. |DRAGONS| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/en/{v}/" target="_blank">DRAGONS</a>`
 
 .. |RSUserInstall| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/{v}/install.html" target="_blank">DRAGONS Installation Instructions</a>`

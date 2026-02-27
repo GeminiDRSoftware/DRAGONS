@@ -39,8 +39,19 @@ Here is a copy of the table for quick reference.
 | BPM                 || bpm_20100716_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
 
+Setting up
+==========
+First navigate to your work directory in the unpacked data package.
+
+::
+
+    cd <path>/gnirsls_tutorial/playground
+
+The first steps are to import libraries, set up the calibration manager,
+and set the logger.
+
 Configuring the interactive interface
-=====================================
+-------------------------------------
 In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
 
     [interactive]
