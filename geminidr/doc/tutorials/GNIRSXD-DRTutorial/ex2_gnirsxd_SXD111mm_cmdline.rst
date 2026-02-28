@@ -373,10 +373,13 @@ For each central wavelength setting:
 2. Produce a wavelength solution from the sky emission lines in the science
    data.
 3. Launch the telluric star reduction in interactive mode.
+
   a. First using the arc lamp solution.   Inspect each order.  Identify
      which one works, which one does not.
+
   b. Then using the sky lines solution.  Inspect each order.  Identify
      which one works, which one does not.
+
 4. Piece together the best solutions for each order and add this "processed arc"
    to the calibration database.
 5. Clean up the calibration database of the arc and sky lines solutions, leaving

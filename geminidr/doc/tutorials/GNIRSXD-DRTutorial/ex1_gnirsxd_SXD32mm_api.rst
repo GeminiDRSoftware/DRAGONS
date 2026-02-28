@@ -602,7 +602,7 @@ you can use the ``combineOrders`` primitive.
    plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
 
 .. image:: _graphics/gnirsxd_SXD32mm_ordersCombined.png
-   :width: 600q
+   :width: 600
    :alt: Combined orders. Full range 1D spectrum.
 
 

@@ -42,6 +42,8 @@ The tutorials are:
 * :ref:`XD with Short-Blue + 32 l/mm grating  <gnirsxd_SXD32mm_example>`
 * :ref:`XD with Short-Blue + 111 l/mm grating <gnirsxd_SXD111mm_example>`
 
+.. todo:: add example 3 if keeping it
+
 See the |RSUserInstall| to install the software if you have not already.
 
 .. tip:: If you are using the tutorials to guide you through the reduction

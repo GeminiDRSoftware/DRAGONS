@@ -24,17 +24,16 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`ex3_gnirsxd_LXD10mm_dataset`
+    :ref:`gnirsxd_LX10mm_dataset`
 
 Here is a copy of the table for quick reference.
-
 
 +---------------------+----------------------------------------------+
 | Science             || N20170219S0341-352                          |
 +---------------------+----------------------------------------------+
-| Science flats       || N20170219S0380-387                          |
+| Science flats       || N20170219S0355-364                          |
 +---------------------+----------------------------------------------+
-| Pinholes            || N20170219S0562                              |
+| Pinholes            || N20170219S0562-563                          |
 +---------------------+----------------------------------------------+
 | Science arcs        || N20170219S0353-354                          |
 +---------------------+----------------------------------------------+
@@ -42,6 +41,7 @@ Here is a copy of the table for quick reference.
 +---------------------+----------------------------------------------+
 | BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
+
 
 Configuring the interactive interface
 =====================================
@@ -305,7 +305,7 @@ to if flat fielding is critical to your program.
 
 The interactive tools are introduced in section :ref:`interactive`.
 
-.. image:: _graphics/gnirsxd_interflat.png
+.. image:: _graphics/gnirsxd_LXD10mm_flat.png
    :width: 600
    :alt: Interactive flat field inspection.
 
@@ -371,25 +371,13 @@ The interactive tools are introduced in section :ref:`interactive`.
 
 Each order can be inspected individually by selecting the tabs above the plot.
 
-The general shape of the fit for each order should look like this:
+The general shape of the fit for each order should look like on the plot
+below.  Note that for Order 3, it helps to add a few of the lines that were
+not automatically identified.
 
 .. image:: _graphics/gnirsxd_LXD10mm_arc_order3.png
    :width: 600
    :alt: Arc line identifications and fit for Order 3
-
-.. MGR: THIS NEEDS TO BE UPDATED! For this dataset, the fit for Order 7 is much improved by deleting ('d') the
-.. blue-most identification. Below are the plots before and after the deletion
-.. of the misidentified line.
-
-.. .. image:: _graphics/gnirsxd_SXD32mm_arc_order7_before.png
-..    :width: 325
-..    :alt: Arc line identifications and fit for Order 7 before deletion of
-..          blue-most line.
-
-.. .. image:: _graphics/gnirsxd_SXD32mm_arc_order7_after.png
-..    :width: 325
-..    :alt: Arc line identifications and fit for Order 7 after deletion of
-..          blue-most line.
 
 
 Telluric Standard
@@ -490,50 +478,28 @@ To run the reduction with all the interactive tools activated, set the
 
 ----
 
-**skyCorrectFromSlit**
-
-MGR: THIS NEEDS UPDATING: At the ``skyCorrectFromSlit`` step, you will notice that the fit for Order 8
-is not very good.  The row being sampled is in the middle of the image.  If
-you look at the raw image, you will see that there is not much signal for
-Order 8 in the middle row.  Increase the row number (the data has been resampled
-and flipped at this point) using the slider at the top-left of the tool and
-you will see that when there is signal the fit is good.  Bottom line: where
-there is signal, the fit is good, that's what we wish to verify.
-
-.. image:: _graphics/gnirsxd_LXD10mm_skycor_order8_middle.png
-   :width: 600
-   :alt: skyCorrectFromSlit fit to the middle, no signal, row.
-
-.. image:: _graphics/gnirsxd_LXD10mm_tellfit_order8_withsignal.png
-   :width: 600
-   :alt: skyCorrectFromSlit fit to a row with signal
-
-**telluricCorrect**
-
-When you get to the ``telluricCorrect`` step, you can experiment with the
-shift between the telluric standard and the target.  Both need to be well
-aligned in wavelength to optimize the correction.  In this case, we find
-that a shift of MGR: UPDATE THIS: 0.55 pixels significantly improves the correction.
-
 .. image:: _graphics/gnirsxd_LXD10mm_2d.png
    :align: right
    :width: 200
    :alt: 2D spectrum
 
-----
-
 A section of 2D spectrum before extraction is shown on the right, with blue wavelengths at
 the bottom and the red-end at the top.  Note that each order has been rectified
 and is being stored in separate extensions in the MEF file.  Here they are
-displayed together, side by side.  (``reduce -r display N20170219S0341_2D.fits``,
-launch DS9 first.)
+displayed together, side by side.
+
+::
+
+    disp = Reduce()
+    disp.files = ['N20170219S0341_2D.fits']
+    disp.recipename = 'display'
+    disp.runr()
 
 Each order is extracted separately and stored in separate extensions in the
 MEF file.  The 1D extracted spectrum before telluric correction or flux
 calibration, obtained by adding the option
-``-p extractSpectra:write_outputs=True`` to the ``reduce`` call.  You can
-plot all the orders on a common plot with ``dgsplot``. (The ``--thin`` option
-simply plots a thinner line than the default width.)
+``('extractSpectra:write_outputs', True)`` to the ``reduce_science.uparms``
+dictionary.  You can plot all the orders on a common plot with ``dgsplot``.
 
 ::
 
@@ -546,7 +512,7 @@ simply plots a thinner line than the default width.)
    :alt: 1D extracted spectrum before telluric correction or flux calibration
 
 The 1D extracted spectrum after telluric correction but before flux
-calibration, obtained with ``-p telluricCorrect:write_outputs=True``, looks
+calibration, obtained with ``('telluricCorrect:write_outputs', True)``, looks
 like this.
 
 ::
@@ -577,15 +543,31 @@ In the final spectrum, the orders are remain separated.  Here they are simply
 plotted one after the other on a common plot.
 
 If you need to stitch the order and stack the common wavelength ranges,
-you can use the ``combineOrders`` primitive.
+you can use the ``combineOrders`` primitive.  In this case, a better result
+can be obtained by using ``maskBeyondRegions`` to mask out the noisy sections
+in some orders.  Here we mask the big drop in order 6 (red), and the extra
+noisy section of order 5 (green).
 
 .. code-block:: python
     :linenos:
     :lineno-start: 70
 
+    reduce_mask = Reduce()
+    reduce_mask.recipename = 'maskBeyondRegions'
+    reduce_mask.files.extend([reduce_science.output_filenames[0]])
+    reduce_mask.uparms = dict([
+            ('regions5', "1180:"),
+            ('regions6', "1050:"),
+            ])
+    reduce_mask.runr()
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 78
+
     reduce_combine = Reduce()
     reduce_combine.recipename = 'combineOrders'
-    reduce_combine.files.extend([reduce_science.output_filenames[0]])
+    reduce_combine.files.extend(['N20170219S0341_regionsMasked.fits'])
     reduce_combine.runr()
 
 ::

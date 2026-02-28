@@ -25,6 +25,8 @@ Download the package for the example you wish to run and unpack it somewhere con
     bunzip2 playdata/example*/*.bz2
     rm gnirsxd_tutorial_datapkg-*.tar
 
+.. todo:: add example 3 if keeping
+
 The datasets are found in the subdirectory ``gnirsxd_tutorial/playdata/example#``, and
 we will work in the subdirectory named ``gnirsxd_tutorial/playground``.
 

@@ -24,16 +24,16 @@ Refer to :ref:`datasetup` for the links and simple instructions.
 
 The dataset specific to this example is described in:
 
-    :ref:`ex3_gnirsxd_LXD10mm_dataset`
+    :ref:`gnirsxd_LX10mm_dataset`
 
 Here is a copy of the table for quick reference.
 
 +---------------------+----------------------------------------------+
 | Science             || N20170219S0341-352                          |
 +---------------------+----------------------------------------------+
-| Science flats       || N20170219S0380-387                          |
+| Science flats       || N20170219S0355-364                          |
 +---------------------+----------------------------------------------+
-| Pinholes            || N20170219S0562                              |
+| Pinholes            || N20170219S0562-563                          |
 +---------------------+----------------------------------------------+
 | Science arcs        || N20170219S0353-354                          |
 +---------------------+----------------------------------------------+
@@ -41,6 +41,7 @@ Here is a copy of the table for quick reference.
 +---------------------+----------------------------------------------+
 | BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
+
 
 Configuring the interactive interface
 =====================================
@@ -217,7 +218,7 @@ to if flat fielding is critical to your program.
 
 The interactive tools are introduced in section :ref:`interactive`.
 
-.. image:: _graphics/gnirsxd_interflat.png
+.. image:: _graphics/gnirsxd_LXD10mm_flat.png
    :width: 600
    :alt: Interactive flat field inspection.
 
@@ -245,8 +246,8 @@ Obtaining the wavelength solution for GNIRS cross-dispersed data can be a
 complicated topic.  The quality of the results and what to use depend greatly
 on the wavelength regime and the grating.
 
-Our configuration in this example is cross-dispersed with short-blue camera
-and the 32 l/mm grating.  This configuration generally has a sufficient number
+Our configuration in this example is cross-dispersed with long-blue camera
+and the 10 l/mm grating.  This configuration generally has a sufficient number
 of lines available in all the orders.
 
 For more information about wavelength calibration, see the
@@ -270,25 +271,14 @@ The interactive tools are introduced in section :ref:`interactive`.
 
 Each order can be inspected individually by selecting the tabs above the plot.
 
-The general shape of the fit for each order should look like this:
+The general shape of the fit for each order should look like on the plot
+below.  Note that for Order 3, it helps to add a few of the lines that were
+not automatically identified.
 
 .. image:: _graphics/gnirsxd_LXD10mm_arc_order3.png
    :width: 600
    :alt: Arc line identifications and fit for Order 3
 
-.. MGR: THIS NEEDS UPDATING: For this dataset, the fit for Order 7 is much improved by deleting ('d') the
-.. blue-most identification. Below are the plots before and after the deletion
-.. of the misidentified line.
-
-.. .. image:: _graphics/gnirsxd_LXD10mm_arc_order7_before.png
-..    :width: 325
-..    :alt: Arc line identifications and fit for Order 7 before deletion of
-..          blue-most line.
-
-.. .. image:: _graphics/gnirsxd_LXD10mm_arc_order7_after.png
-..    :width: 325
-..    :alt: Arc line identifications and fit for Order 7 after deletion of
-..          blue-most line.
 
 
 Telluric Standard
@@ -338,35 +328,6 @@ The fit for Order 3 looks like this:
    :width: 600
    :alt: fit to the telluric standard
 
-.. MGR: THIS NEEDS UPDATING: Order 8 needs some discussion.  You will notice many rejected data points marked
-   as light blue triangle.  The software by default rejects those points because
-   the stellar features in that part of the spectrum are notoriouly difficult to
-   model.
-
-.. .. image:: _graphics/gnirsxd_LXD10mm_tellfit_order8.png
-   :width: 325
-   :alt: fit to the telluric standard
-
-.. .. image:: _graphics/gnirsxd_LXD10mm_tellfit_order8_model.png
-   :width: 325
-   :alt: telluric absorption model fit
-
-.. MGR: THIS MAY NEED UPDATING: In our case, the model and the star do fit remarkably well, so we can
-   reactivate those points and give the software more points to fit.  On the top
-   plot, use the
-   box selection tool (the dotted line square) to include the blue triangles and
-   type "u" to unmask them and reactivate them.
-
-.. .. image:: _graphics/gnirsxd_LXD10mm_tellfit_order8_after.png
-   :width: 325
-   :alt: fit to the telluric standard
-
-.. .. image:: _graphics/gnirsxd_LXD10mm_tellfit_order8_model_after.png
-   :width: 325
-   :alt: telluric absorption model fit
-
-
-
 Science Observations
 ====================
 The science target is a bright HD star.  The sequence
@@ -408,37 +369,11 @@ To run the reduction with all the interactive tools activated, set the
 
 ----
 
-**skyCorrectFromSlit**
-
-MGR: THIS MAY NEED UPDATING: At the ``skyCorrectFromSlit`` step, you will notice that the fit for Order 8
-is not very good.  The row being sampled is in the middle of the image.  If
-you look at the raw image, you will see that there is not much signal for
-Order 8 in the middle row.  Increase the row number (the data has been resampled
-and flipped at this point) using the slider at the top-left of the tool and
-you will see that when there is signal the fit is good.  Bottom line: where
-there is signal, the fit is good, that's what we wish to verify.
-
-.. image:: _graphics/gnirsxd_LXD10mm_skycor_order8_middle.png
-   :width: 600
-   :alt: skyCorrectFromSlit fit to the middle, no signal, row.
-
-.. image:: _graphics/gnirsxd_LXD10mm_tellfit_order8_withsignal.png
-   :width: 600
-   :alt: skyCorrectFromSlit fit to a row with signal
-
-**telluricCorrect**
-
-When you get to the ``telluricCorrect`` step, you can experiment with the
-shift between the telluric standard and the target.  Both need to be well
-aligned in wavelength to optimize the correction.  In this case, we find
-that a shift of MGR: UPDATE THIS: 0.55 pixels significantly improves the correction.
-
 .. image:: _graphics/gnirsxd_LXD10mm_2d.png
    :align: right
    :width: 200
    :alt: 2D spectrum
 
-----
 
 A section of 2D spectrum before extraction is shown on the right, with blue wavelengths at
 the bottom and the red-end at the top.  Note that each order has been rectified
@@ -488,11 +423,18 @@ In the final spectrum, the orders are remain separated.  Here they are simply
 plotted one after the other on a common plot.
 
 If you need to stitch the order and stack the common wavelength ranges,
-you can use the ``combineOrders`` primitive.
+you can use the ``combineOrders`` primitive.  In this case, a better result
+can be obtained by using ``maskBeyondRegions`` to mask out the noisy sections
+in some orders.  Here we mask the big drop in order 6 (red), and the extra
+noisy section of order 5 (green).
 
 ::
 
-    reduce -r combineOrders N20170219S0341_1D.fits
+    reduce -r maskBeyondRegions N20170219S0341_1D.fits -p regions5="1180:" regions6="1050:"
+
+::
+
+    reduce -r combineOrders N20170219S0341_regionsMasked.fits
 
 ::
 
