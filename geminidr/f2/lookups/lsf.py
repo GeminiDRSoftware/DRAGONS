@@ -61,5 +61,5 @@ class F2LineSpreadFunction(LineSpreadFunction):
                                 fwhm=fwhm*lsf_scaling, trunc=fwhm)
         convolutions = [(partial(self.skew_normal, scale=1), 20 * self.orig_dispersion),
                         (gaussian_func, fwhm)]
-        print("CONVOLUTIONS", convolutions)
+        #print("CONVOLUTIONS", convolutions)
         return convolutions
