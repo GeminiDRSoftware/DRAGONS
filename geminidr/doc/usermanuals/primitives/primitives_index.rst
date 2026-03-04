@@ -13,6 +13,7 @@ Primitives Reference
    primitive_darkCorrect
    primitive_determineSlitEdges
    primitive_flatCorrect
+   primitive_normalizeFlat
    primitive_recordPixelStats
    primitive_stackBiases
    primitive_stackDarks

@@ -5,12 +5,12 @@
 ***********
 flatCorrect
 ***********
-This primitive applies a flat field correction to a set of one or more observed frames. The
-image values of the specified observed frame(s) are divided through by the flat field frame
+This primitive applies a flat-field correction to a set of one or more observed frames. The
+image values of the specified observed frame(s) are divided through by the flat-field frame
 values in order to generate flat-fielded data. If no flat field frames are provided then the
 calibration database is queried.
 
-If the flatfield has had a QE correction applied, this information is copied into the
+If the flat field has had a QE correction applied, this information is copied into the
 header iof the resultant frames, to prevent the correction being applied twice.
 
 Implementations
@@ -45,9 +45,9 @@ Generic Implementation - core.primitive_preprocess module
 
 Algorithm
 ---------
-This primitive divides the specified input observation frame by the flat field frames. The
+This primitive divides the specified input observation frame by the flat-field frames. The
 variance and data quality information will be updated accordingly, if they exist. If no flat-field
-frames provided then the calibration database is queried.
+frames are provided then the calibration database is queried.
 
 Issues and Limitations
 ----------------------
