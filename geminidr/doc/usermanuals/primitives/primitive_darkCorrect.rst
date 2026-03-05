@@ -18,7 +18,7 @@ Implementations
 .. _primitive_darkCorrect_core.preprocess:
 
 Generic Implementation - core.primitive_preprocess module
-===================================================
+=========================================================
 .. generated with `utility_scripts/generate_primdoc.py`
 ..    contains:
 ..      Top description from docstring
