@@ -52,5 +52,5 @@ Standard NumPy mean, std and median functions are used.
 Issues and Limitations
 ----------------------
 The calculated parameters will only be added to the header if they are numerical
-values. Non-numerical value, such as "NaN", etc. will not be added to the header.
+values. Non-numerical values, such as "NaN", etc. will not be added to the header.
 

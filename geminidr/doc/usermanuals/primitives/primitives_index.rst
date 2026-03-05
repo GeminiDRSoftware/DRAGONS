@@ -13,6 +13,7 @@ Primitives Reference
    primitive_darkCorrect
    primitive_determineSlitEdges
    primitive_flatCorrect
+   primitive_measureBG
    primitive_normalizeFlat
    primitive_recordPixelStats
    primitive_scaleByExposureTime
