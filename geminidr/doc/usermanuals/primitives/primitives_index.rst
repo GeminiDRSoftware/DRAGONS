@@ -15,6 +15,7 @@ Primitives Reference
    primitive_flatCorrect
    primitive_normalizeFlat
    primitive_recordPixelStats
+   primitive_scaleByExposureTime
    primitive_stackBiases
    primitive_stackDarks
    primitive_stackFlats
