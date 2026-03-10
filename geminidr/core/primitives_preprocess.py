@@ -130,7 +130,9 @@ class Preprocess(PrimitivesBASE):
                         continue
                     if kw in ext.hdr:
                         new_value = np.mean(
-                            gain * gt.array_from_descriptor_value(ext, desc))
+                            gain * gt.array_from_descriptor_value(ext, desc),
+                            dtype=np.float64
+                        ).astype(np.float32)  # float() gives excessive digits
                         # Make sure we update the comment too!
                         new_comment = ext.hdr.comments[kw].replace('ADU', 'electron')
                         ext.hdr[kw] = (new_value, new_comment)
