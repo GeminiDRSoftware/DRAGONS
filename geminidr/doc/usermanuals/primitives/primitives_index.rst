@@ -14,6 +14,7 @@ Primitives Reference
    primitive_determineSlitEdges
    primitive_flatCorrect
    primitive_measureBG
+   primitive_measureCC
    primitive_normalizeFlat
    primitive_recordPixelStats
    primitive_scaleByExposureTime
