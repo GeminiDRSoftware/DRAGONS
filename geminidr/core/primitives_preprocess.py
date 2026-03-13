@@ -132,10 +132,13 @@ class Preprocess(PrimitivesBASE):
                         new_value = np.mean(
                             gain * gt.array_from_descriptor_value(ext, desc),
                             dtype=np.float64
-                        ).astype(np.float32)  # float() gives excessive digits
+                        )
                         # Make sure we update the comment too!
                         new_comment = ext.hdr.comments[kw].replace('ADU', 'electron')
-                        ext.hdr[kw] = (new_value, new_comment)
+                        ext.hdr[kw] = (
+                            float(np.round(new_value, 3)),
+                            new_comment
+                        )
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
@@ -932,7 +935,9 @@ class Preprocess(PrimitivesBASE):
                         current_value = getattr(ext, desc)()
                         new_value = linearize(
                             [current_value * conv_factor], coeffs)[0] / conv_factor
-                        ext.hdr[ad._keyword_for(desc)] = np.round(new_value, 3)
+                        ext.hdr[ad._keyword_for(desc)] = float(
+                            np.round(new_value, 3)
+                        )
 
             # Timestamp the header and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
