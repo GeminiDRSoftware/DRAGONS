@@ -105,6 +105,7 @@ setup(name='dragons',
           'specutils>=1.10',
           'sqlalchemy>=2.0.0',
           'tornado>=6.3',
+          'typing_extensions>=4.9',
       ],
       extras_require={
           'all': ['ginga', 'imexam'],
