@@ -76,7 +76,7 @@ we are using at this time for the `master` branch and the `release/4.x`
 branches.
 
 ```
-$ conda create -n dgdev3.12_20260401 python=3.12 "astropy>=7" astroquery matplotlib psutil pytest python-dateutil requests scikit-image scipy sextractor "sqlalchemy>=2.0.0" "gwcs>=0.25,<1.0" specutils "bokeh>=3" holoviews cython future "astroscrappy>=1.2" fitsverify jsonschema ds9 jupyter ipympl imexam sphinx sphinx_rtd_theme objgraph
+$ conda create -n dgdev3.12_20260401 python=3.12 "astropy>=7" astroquery matplotlib psutil pytest python-dateutil requests scikit-image scipy sextractor "sqlalchemy>=2.0.0" "gwcs>=0.25,<1.0" "specutils>=2.0" "bokeh>=3" holoviews cython future "astroscrappy>=1.2" fitsverify jsonschema ds9 jupyter ipympl imexam sphinx sphinx_rtd_theme objgraph
 $ conda activate dgdev3.12_20260401
 $ pip install git+https://github.com/GeminiDRSoftware/FitsStorage.git@v3.6.2
 ```
