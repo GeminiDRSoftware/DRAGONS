@@ -7,18 +7,18 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Tutorial Series - GNIRS Cross-dispersed Data Reduction with DRAGONS'
-copyright = '2025, DRAGONS Team'
+copyright = '2026, DRAGONS Team'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
-version = '4.2_dev'
-#release = '4.1.0'
+version = '4.2'
+#release = '4.2.0'
 #rtdurl = 'v'+release
-#release = '4.1.x'
-#rtdurl = 'release-'+release
-rtdurl = 'latest'
+release = '4.2.x'
+rtdurl = 'release-'+release
+#rtdurl = 'latest'
 
-today = 'October 2025'
+today = 'April 2026'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

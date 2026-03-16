@@ -8,6 +8,16 @@
 Release Notes
 *************
 
+V4.2.0
+======
+
+This release includes new support for Flamingos 2 longslit data.  Full
+support from raw data to telluric and flux calibrated data is available. All
+Flamingos 2 configurations are supported.
+
+Improvements to various algorithms, especially wavelength calibration, have
+been made.  Various bug fixes and documentation improvements are also included.
+
 V4.1.0
 ======
 

@@ -18,18 +18,18 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Tutorial Series - GHOST Data Reduction with DRAGONS'
-copyright = '2025, Association of University for Research in Astronomy'
+copyright = '2026, Association of University for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
-version = '4.2_dev'
-#release = '4.1.0'
+version = '4.2'
+#release = '4.2.0'
 #rtdurl = 'v'+release
-#release = '4.1.x'
-#rtdurl = 'release-'+release
-rtdurl = 'latest'
+release = '4.2.x'
+rtdurl = 'release-'+release
+#rtdurl = 'latest'
 
-today = 'October 2025'
+today = 'April 2026'
 
 # -- General configuration ---------------------------------------------------
 
