@@ -295,7 +295,7 @@ rst_epilog = """
 .. |GSAOIImgTut| replace:: :raw-html:`<a href="http://GSAOIImg-DRTutorial.readthedocs.io/en/{v}">GSAOI Imaging Data Reduction Tutorial</a>`
 .. |GNIRSImgTut| replace:: :raw-html:`<a href="http://GNIRSImg-DRTutorial.readthedocs.io/en/{v}">GNIRS Keyhole Imaging Data Reduction Tutorial</a>`
 
-.. |F2LSTut| replace:: :raw-html:`<a href="http://F2LS-DRTutorial.readthedocs.io/en/{v}">Flamingos 2 ongsllit Data Reduction Tutorial</a>`
+.. |F2LSTut| replace:: :raw-html:`<a href="http://F2LS-DRTutorial.readthedocs.io/en/{v}">Flamingos 2 Longsllit Data Reduction Tutorial</a>`
 .. |GMOSLSTut| replace:: :raw-html:`<a href="http://GMOSLS-DRTutorial.readthedocs.io/en/{v}">GMOS Longslit Data Reduction Tutorial</a>`
 .. |GHOSTTut| replace:: :raw-html:`<a href="http://GHOST-DRTutorial.readthedocs.io/en/{v}">GHOST Data Reduction Tutorial</a>`
 .. |GNIRSLSTut| replace:: :raw-html:`<a href="http://GNIRSLS-DRTutorial.readthedocs.io/en/{v}">GNIRS Longslit Data Reduction Tutorial</a>`
