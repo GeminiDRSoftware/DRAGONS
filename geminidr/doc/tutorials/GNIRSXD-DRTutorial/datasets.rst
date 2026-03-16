@@ -21,7 +21,7 @@ Download the package for the example you wish to run and unpack it somewhere con
     cd <somewhere convenient>
     tar xvf gnirsxd_tutorial_datapkg-SDX32mm-v1.tar
     tar xvf gnirsxd_tutorial_datapkg-SDX111mm-v1.tar
-    bunzip2 playdata/example*/*.bz2
+    bunzip2 gnirsxd_tutorial/playdata/example*/*.bz2
     rm gnirsxd_tutorial_datapkg-*.tar
 
 The datasets are found in the subdirectory ``gnirsxd_tutorial/playdata/example#``, and

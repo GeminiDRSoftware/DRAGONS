@@ -20,10 +20,10 @@ Download the package for the example you wish to run and unpack it somewhere con
 ::
 
     cd <somewhere convenient>
-    tar xvf gf2ls_tutorial_datapkg-JHHK-v1.tar
+    tar xvf f2ls_tutorial_datapkg-JHHK-v1.tar
     tar xvf f2ls_tutorial_datapkg-R3KJband-v1.tar
     tar xvf f2ls_tutorial_datapkg-R3KKband-v1.tar
-    bunzip2 playdata/example*/*.bz2
+    bunzip2 f2ls_tutorial/playdata/example*/*.bz2
     rm f2ls_tutorial_datapkg-*.tar
 
 The datasets are found in the subdirectory ``f2ls_tutorial/playdata/example#``, and

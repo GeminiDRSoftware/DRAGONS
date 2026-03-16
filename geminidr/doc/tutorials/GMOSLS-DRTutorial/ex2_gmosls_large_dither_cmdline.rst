@@ -400,8 +400,8 @@ The interactive tools are introduced in section :ref:`interactive`.
 For the standard star observation at central wavelength 795 nm in this
 dataset, ``calculateSensitivity`` with its default parameter values yields a suboptimal number 
 of data points to constrain its sensitivity curve (see the left plot below; click the panel to enlarge). 
-There is a conspicuous gap between 820 and 980 nm -- a result of the amplifier #5 issue and compounded 
-by the presence of telluric absorption redward of around 880 nm. 
+There is a conspicuous gap between 820 and 880 nm -- a result of the amplifier #5 issue and compounded 
+by the presence of telluric absorption redward of around 930 nm. 
 
 To deal with this, we can consider interpolating the (reference) data of the spectrophotometric standard, 
 given that it has a smooth spectrum,  
