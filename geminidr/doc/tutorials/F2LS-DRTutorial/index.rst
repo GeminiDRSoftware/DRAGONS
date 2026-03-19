@@ -10,6 +10,7 @@ Tutorial Series - Flamingos 2 Longslit Data Reduction with DRAGONS
 
    PIPE-USER-122_F2LS-DRTutorial
 
+[Return to the main |DRAGONS| page.]
 
 .. toctree::
    :maxdepth: 1
