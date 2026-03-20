@@ -571,6 +571,40 @@ class GHOSTSpect(GHOST):
 
         return adinputs
 
+    def captureWfitInstMon(self, adinputs=None, **params):
+        """
+        Captures a subset of values from the .WFIT into headers for the
+        instrument monitoring system to pick up.
+
+        The values captured are the coefficients of the polynomial that converts
+        (scaled) pixel location to wavelength for the reference order, which
+        (after some investigation) turn out to be .WFIT[:, 5] (ie the last
+        vector for 6th degree polynomials), with the 0-th
+        order (constant) term last.
+
+        :param adinputs:
+        :return:
+        """
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            for ext in ad:
+                if not hasattr(ext, 'WFIT'):
+                    log.warning("Ext has no WFIT attribute - skipping")
+                    ad.info()
+                    continue
+
+                coeffs = ext.WFIT[:, -1]
+                # They are in reverse order - 0th power coefficient is last
+                for i in range(len(coeffs)):
+                    j = len(coeffs) - 1 - i
+                    keyword = f'WFITCO{j}'
+                    ext.hdr[keyword] = (coeffs[i], 'Wavelength Fit Polynomial Coefficient')
+
+        return adinputs
+
     def combineOrders(self, adinputs=None, **params):
         """
         Combine the independent orders from the input ADs into one or more
