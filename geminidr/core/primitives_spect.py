@@ -2497,12 +2497,13 @@ class Spect(Resample):
                 # to help ensure valid points are all considered in the
                 # trace without over-relying on bright points.
                 model_fits = []
-                weights = np.log(np.where(collapsed < 1, 1, collapsed))
+                #weights = np.log(np.where(collapsed < 1, 1, collapsed))
                 for slit_num, (mdf_row, *edges) in enumerate(zip(mdf, edges_1, edges_2)):
                     if slit_name == "order" and 'specorder' in mdf.colnames:
                         this_slit = f"order {mdf_row['specorder']}"
                     else:
                         this_slit = f"{slit_name} {mdf_row['slit_id']}"
+
                     # Trace the edges individually. This isn't the most
                     # efficient way, but MOS masks may not all have the same
                     # starting location. Will need to address this in future.
@@ -2534,6 +2535,15 @@ class Spect(Resample):
                                     "be no SLITEDGE entries.")
                         continue
 
+                    # This is used to calculate the weights to apply when
+                    # fitting the trace.  More weight were there is more signal.
+                    # For XD and MOS, we cannot use the whole image, we need
+                    # to focus where the flux is and it has to be done for
+                    # each slit.
+                    buffer = 3
+                    slit_faredge1 = int(np.array(traces[0].input_coordinates(reverse=False)).T[1].min()) - buffer
+                    slit_faredge2 = int(np.array(traces[1].input_coordinates(reverse=False)).T[1].max()) + buffer
+
                     both_edges = True
                     for edge_id, (loc, edge_name, trace) in enumerate(
                             zip(edges, (name_edge1, name_edge2), traces)):
@@ -2556,7 +2566,25 @@ class Spect(Resample):
                                          f"{loc+1:.0f} traced from "
                                          f"{row_or_col}s {_min+1:.0f} to {_max+1:.0f}.")
 
+                            # Estimate weights to apply during the fit of the
+                            # the trace.
+                            # First, make the data array "uniform" regardless of dispaxis
+                            data = ext.data if dispaxis == 0 else ext.data.T
+
+                            # Ensure edges are within the image
+                            slit_faredge1 = 0 if slit_faredge1 < 0 else slit_faredge1
+                            slit_faredge2 = data.shape[1] if slit_faredge2 > data.shape[1] else slit_faredge2
+
+                            # get the flux distribution along the dispersion axis
+                            collapsed_slit = np.median(
+                                data[:, slit_faredge1:slit_faredge2], axis=1)
+
+                            # Use log - weighting
+                            # to help ensure valid points are all considered in the
+                            # trace without over-relying on bright points.
+                            weights = np.log(np.where(collapsed_slit < 1, 1, collapsed_slit))
                             wt = weights[np.round(in_coords[0]).astype(int)]
+
                             # Create a plot of weights for inspection.
                             if debug_plots:
                                 plt.plot(in_coords[0], wt, label='Weights')
