@@ -2541,8 +2541,13 @@ class Spect(Resample):
                     # to focus where the flux is and it has to be done for
                     # each slit.
                     buffer = 3
-                    slit_faredge1 = int(np.array(traces[0].input_coordinates(reverse=False)).T[1].min()) - buffer
-                    slit_faredge2 = int(np.array(traces[1].input_coordinates(reverse=False)).T[1].max()) + buffer
+                    slit_faredge1 = None
+                    slit_faredge2 = None
+                    if traces[0] is not None:
+                        slit_faredge1 = int(np.array(traces[0].input_coordinates(reverse=False)).T[1].min()) - buffer
+                    if traces[1] is not None:
+                        slit_faredge2 = int(np.array(traces[1].input_coordinates(reverse=False)).T[1].max()) + buffer
+
 
                     both_edges = True
                     for edge_id, (loc, edge_name, trace) in enumerate(
@@ -2572,8 +2577,11 @@ class Spect(Resample):
                             data = ext.data if dispaxis == 0 else ext.data.T
 
                             # Ensure edges are within the image
-                            slit_faredge1 = 0 if slit_faredge1 < 0 else slit_faredge1
-                            slit_faredge2 = data.shape[1] if slit_faredge2 > data.shape[1] else slit_faredge2
+                            slit_faredge1 = 0 if (slit_faredge1 < 0 or slit_faredge1 is None) \
+                                              else slit_faredge1
+                            slit_faredge2 = data.shape[1] \
+                                if (slit_faredge2 > data.shape[1] or slit_faredge2 is None) \
+                                else slit_faredge2
 
                             # get the flux distribution along the dispersion axis
                             collapsed_slit = np.median(
