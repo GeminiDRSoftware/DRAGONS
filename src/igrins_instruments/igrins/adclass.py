@@ -565,7 +565,7 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
             utdatetime = hdr.get('UTSTART', None)
 
         if utdatetime is None:
-            raise KeyError("The header needs UTDATETIME or UTSART")
+            raise KeyError("The header needs UTDATEI or UTSART")
 
         dt = datetime.datetime.fromisoformat(utdatetime)
 
@@ -580,7 +580,7 @@ class AstroDataIGRINS2(AstroDataIGRINSBase):
     def ut_datetime(self, strict=False, dateonly=False, timeonly=False):
         # FIXME To workaround an issue in dragons4, which try to do
         # ad.phu['UTSTART'] (primitive_gemini.py:244), we have a primitive that
-        # temporarily rename UTSTART to UTDATETIME. This is a work around for thos cases.
+        # rename UTSTART to UTDATEI. This is a work around for thos cases.
 
         if self.is_single:
             return self._get_udatetime(self.hdr, dateonly=dateonly, timeonly=timeonly)

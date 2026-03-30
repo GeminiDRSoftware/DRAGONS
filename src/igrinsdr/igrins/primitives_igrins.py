@@ -1016,23 +1016,37 @@ class Igrins(Gemini, NearIR):
 
         return adinputs
 
-    def fixIgrinsHeader(self, adinputs, **params):
-        # ad = adinputs[0]
+    def standardizeInstrumentHeaders(self, adinputs=None, **params):
+        # this is being called as a part of the "prepare" primitive.
+
+        self.log.debug(gt.log_message("primitive",
+                                      "standardizeInstrumentHeaders from IGRINSDR",
+                                      "starting"))
+
+        adinputs = self._fixIgrinsHeader(adinputs, **params)
+
+        return adinputs
+
+    def _fixIgrinsHeader(self, adinputs, **params):
+        log = self.log
 
         for ad in adinputs:
             for ext in ad:
                 for desc in ('saturation_level', 'non_linear_level'):
                     kw = ad._keyword_for(desc)
                     if kw not in ext.hdr:
-                        ext.hdr[kw] = (1.e5, "Test")
-                        # print ("FIX", kw, ext.hdr.comments[kw])
+                        log.debug(f"Adding {kw} in the header {ext}")
+                        ext.hdr[kw] = (1.e5, "A bogus value added to avoid error")
 
                 if "UTSTART" in ext.hdr and "UTDATETI" not in ext.hdr:
+                    log.debug(f"Rename UTSTART to UTDATEI in the header {ext}")
+
                     ext.hdr["UTDATETI"] = ext.hdr["UTSTART"]
                     del ext.hdr["UTSTART"]
 
-            # if "UTDATE"
             if "UTSTART" in ad.phu and "UTDATETI" not in ad.phu:
+                log.debug(f"Rename UTSTART to UTDATEI in the header {ext}")
+
                 ad.phu["UTDATETI"] = ad.phu["UTSTART"]
                 del ad.phu["UTSTART"]
 
