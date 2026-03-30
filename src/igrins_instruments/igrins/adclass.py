@@ -7,7 +7,8 @@ metadata handling and data descriptors for IGRINS and IGRINS-2 data.
 
 import astropy.units as u
 from astrodata import (astro_data_tag, astro_data_descriptor,
-                       TagSet)
+                       returns_list, TagSet)
+from gemini_instruments.common import Section
 from gemini_instruments import igrins
 
 
@@ -338,5 +339,58 @@ class AstroDataIGRINS2(igrins.AstroDataIgrins):
                 if len(self):
                     return self._get_udatetime(self[0].hdr,
                                                dateonly=dateonly, timeonly=timeonly)
+
+    @returns_list
+    @astro_data_descriptor
+    def array_section(self, pretty=False):
+        """
+        Returns the rectangular section that includes the pixels that would be
+        exposed to light.  If pretty is False, a tuple of 0-based coordinates
+        is returned with format (x1, x2, y1, y2).  If pretty is True, a keyword
+        value is returned without parsing as a string.  In this format, the
+        coordinates are generally 1-based.
+
+        One tuple or string is return per extension/array, in a list. If the
+        method is called on a single slice, the section is returned as a tuple
+        or a string.
+
+        Parameters
+        ----------
+        pretty : bool
+         If True, return the formatted string found in the header.
+
+        Returns
+        -------
+        tuple of integers or list of tuples
+            Location of the pixels exposed to light using Python slice values.
+
+        string or list of strings
+            Location of the pixels exposed to light using an IRAF section
+            format (1-based).
+        """
+        # Since none of the parent class defines array_section, we simply skip.
+        # if 'PREPARED' in self.tags:
+        #     return super().array_section(pretty=pretty)
+
+        value_filter = (str if pretty else Section.from_string)
+        return value_filter('[1:2048,1:2048]')
+
+    # copied from f2
+    @returns_list
+    @astro_data_descriptor
+    def data_section(self, pretty=False):
+
+        value_filter = (str if pretty else Section.from_string)
+        return value_filter('[1:2048,1:2048]')
+
+    # copied from f2
+    @returns_list
+    @astro_data_descriptor
+    def detector_section(self, pretty=False):
+
+        value_filter = (str if pretty else Section.from_string)
+        return value_filter('[1:2048,1:2048]')
+
+
 
 

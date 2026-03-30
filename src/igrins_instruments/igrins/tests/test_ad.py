@@ -1,11 +1,13 @@
 import pytest
 
+from importlib.resources import files
+
 import astrodata
 import igrins_instruments
+from gemini_instruments.common import Section
 
 # from igrins_instruments.igrins.tests import test_data
 from . import test_data
-from importlib.resources import files
 
 dataroot = files(test_data)
 sample_mef = list((dataroot / "sample_mef").glob("N*.fits"))
@@ -113,3 +115,9 @@ def test_exposure_time(ad_sky):
     "We test if exposure_time is correctly read."
     assert ad_sky.exposure_time() == 300.
     assert ad_sky[0].exposure_time() == 300.
+
+def test_datasec(ad_sky):
+    ad = ad_sky[0]
+    assert ad.data_section() == (0, 2048, 0, 2048)
+    assert ad.array_section() == (0, 2048, 0, 2048)
+    assert ad.detector_section() == (0, 2048, 0, 2048)
