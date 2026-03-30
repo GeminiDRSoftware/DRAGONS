@@ -1,15 +1,17 @@
-import datetime
 """
 This module defines AstroData classes for IGRINS instruments, extending
 `gemini_instruments.igrins.AstroDataIgrins` to provide instrument-specific
 metadata handling and data descriptors for IGRINS and IGRINS-2 data.
 """
+import datetime
 
+import numpy as np
 import astropy.units as u
 from astrodata import (astro_data_tag, astro_data_descriptor,
                        returns_list, TagSet)
 from gemini_instruments.common import Section
 from gemini_instruments import igrins
+from . import lookup
 
 
 class AstroDataIGRINS2(igrins.AstroDataIgrins):
@@ -339,6 +341,29 @@ class AstroDataIGRINS2(igrins.AstroDataIgrins):
                 if len(self):
                     return self._get_udatetime(self[0].hdr,
                                                dateonly=dateonly, timeonly=timeonly)
+
+    @returns_list
+    @astro_data_descriptor
+    def read_noise(self):
+        """
+        Returns the read noise in electrons.
+
+        Returns
+        -------
+        float/list
+            readnoise
+        """
+        if self.is_single:
+            fowler_samp =self.hdr.get('NSAMP') 
+            read_noise_fit = lookup.array_properties.get("read_noise_fit")[self.band()]
+            read_noise = np.polyval(read_noise_fit, 1/fowler_samp)
+        else:
+            read_noise = [ext.read_noise() for ext in self]
+
+        return read_noise
+
+    # FIXME We are hardcoding array_section, detector_section, data_section.
+    # Not sure if this is wise thing to do.
 
     @returns_list
     @astro_data_descriptor

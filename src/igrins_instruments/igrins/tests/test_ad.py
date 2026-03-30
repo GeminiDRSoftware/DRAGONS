@@ -121,3 +121,10 @@ def test_datasec(ad_sky):
     assert ad.data_section() == (0, 2048, 0, 2048)
     assert ad.array_section() == (0, 2048, 0, 2048)
     assert ad.detector_section() == (0, 2048, 0, 2048)
+
+def test_readnoise(ad_sky):
+    ad = ad_sky[0]
+    # assert isinstance(ad.read_noise(), float)
+
+    assert ad.read_noise() == 4.6
+    # for now we used hardcoded value of 4.6
