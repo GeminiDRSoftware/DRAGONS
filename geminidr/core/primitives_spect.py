@@ -2577,10 +2577,10 @@ class Spect(Resample):
                             data = ext.data if dispaxis == 0 else ext.data.T
 
                             # Ensure edges are within the image
-                            slit_faredge1 = 0 if (slit_faredge1 < 0 or slit_faredge1 is None) \
+                            slit_faredge1 = 0 if (slit_faredge1 is None or slit_faredge1 < 0) \
                                               else slit_faredge1
                             slit_faredge2 = data.shape[1] \
-                                if (slit_faredge2 > data.shape[1] or slit_faredge2 is None) \
+                                if (slit_faredge2 is None or slit_faredge2 > data.shape[1]) \
                                 else slit_faredge2
 
                             # get the flux distribution along the dispersion axis
