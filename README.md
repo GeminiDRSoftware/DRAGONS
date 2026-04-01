@@ -85,3 +85,10 @@ or cause problems when conda tries to find a solution for the dependencies.
 This not guaranteed to work flawlessly, you might have to adjust version
 requirements.
 
+---
+
+The primary reference to be cited by users of DRAGONS and the current DOI are:
+
+[K. Labrie et al. 2023, RNAAS, v7, Issue 10, id.214](https://iopscience.iop.org/article/10.3847/2515-5172/ad0044)
+
+[DRAGONS DOI](https://doi.org/10.5281/zenodo.19373829)
