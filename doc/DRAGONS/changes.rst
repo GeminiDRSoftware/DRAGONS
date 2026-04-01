@@ -8,6 +8,23 @@
 Change Logs
 ***********
 
+4.2.1
+=====
+
+Hardware support
+----------------
+This release includes updated GHOST look-up table to account for the
+movement of the slit viewer camera during a recent issue and associated
+work on the hardware.
+
+Improvements
+------------
+More robust algorithm to fit the slit edges in GNIRS XD flats.
+
+Documentation
+-------------
+Minor fixes to the documentations
+
 4.2.0
 =====
 

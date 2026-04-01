@@ -8,6 +8,14 @@
 Release Notes
 *************
 
+V4.2.1
+======
+
+This release includes updated GHOST look-up table to account for the
+movement of the slit viewer camera during a recent issue and associated
+work on the hardware.
+
+
 V4.2.0
 ======
 

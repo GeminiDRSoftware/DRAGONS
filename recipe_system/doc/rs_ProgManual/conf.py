@@ -44,7 +44,7 @@ author = 'DRAGONS Team'
 # built documents.
 #
 version = '4.2'  # The short X.Y version.
-release = '4.2.0'  # The full version, including alpha/beta/rc tags.
+release = '4.2.1'  # The full version, including alpha/beta/rc tags.
 rtdurl = 'v'+release
 #release = '4.2.x'
 #rtdurl = 'release-'+release

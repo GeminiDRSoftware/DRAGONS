@@ -11,13 +11,13 @@
 </table>
 
 # Current Status
-**The stable version is v4.2.0.**  
+**The stable version is v4.2.1.**  
 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19055103.svg)](https://doi.org/10.5281/zenodo.19055103) DRAGONS is distributed as a conda package, *dragons*, and it is 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19373829.svg)](https://doi.org/10.5281/zenodo.19373829) DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
-Version 4.2 is recommend for the reduction of **imaging** data from Gemini's
+Version 4.2.1 is recommend for the reduction of **imaging** data from Gemini's
 current facility instruments: GMOS, NIRI, Flamingos-2, and GSAOI, for the
 reduction of GMOS, GNIRS, and Flamingos 2 **longslit spectroscopy** data, 
 for the reduction of GNIRS cross-dispersed data, and the reduction 
@@ -53,9 +53,9 @@ reduction of Gemini data.
 ---
 
 # Documentation
-Documentation on DRAGONS v4.2 is available on "readthedocs" at:
+Documentation on DRAGONS v4.2.1 is available on "readthedocs" at:
 
-* https://dragons.readthedocs.io/en/v4.2.0/
+* https://dragons.readthedocs.io/en/v4.2.1/
 
 There your will find manuals for Astrodata and the Recipe System, and hands-on
 tutorials on reducing Gemini imaging, longslit, and cross-dispersed data
