@@ -71,9 +71,9 @@ convenient.
 ::
 
     cd <somewhere convenient>
-    tar xvf f2img_tutorial_datapkg-ontarget-v1.tar
-    tar xvf f2img_tutorial_datapkg-ultradeep-v1.tar
-    bunzip2 f2img_tutorial/playdata/example*/*.bz2
+    tar xvf f2im_tutorial_datapkg-ontarget-v1.tar
+    tar xvf f2im_tutorial_datapkg-ultradeep-v1.tar
+    bunzip2 f2im_tutorial/playdata/example*/*.bz2
 
 The datasets are found in the subdirectory ``f2img_tutorial/playdata/example#``, and we
 will work in the subdirectory named ``f2img_tutorial/playground``.
