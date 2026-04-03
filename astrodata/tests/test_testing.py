@@ -9,6 +9,8 @@ import numpy as np
 import pytest
 from astrodata.testing import assert_same_class, download_from_archive
 
+import astropy
+
 
 def test_download_from_archive_raises_ValueError_if_envvar_does_not_exists():
     with pytest.raises(ValueError):
@@ -27,10 +29,12 @@ def test_download_from_archive(monkeypatch, tmpdir):
 
     def mock_download(remote_url, **kwargs):
         nonlocal ncall
-        ncall += 1
-        fname = remote_url.split('/')[-1]
-        tmpdir.join(fname).write('')  # create fake file
-        return str(tmpdir.join(fname))
+
+        # We have to download *something* to check the md5, even if the file
+        # is on disk. So we only do that if the *file* download is requested
+        if 'file' in remote_url:
+            ncall += 1
+            return astropy.utils.data.download_file(remote_url, cache=False)
 
     monkeypatch.setattr("astrodata.testing.download_file", mock_download)
     monkeypatch.setenv("DRAGONS_TEST", str(tmpdir))
