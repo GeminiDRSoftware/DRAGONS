@@ -24,6 +24,19 @@ class addVARConfig(config.Config):
     poisson_noise = config.Field("Add Poisson noise?", bool, False)
 
 
+class fixHeaderConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, None, optional=True)
+    filename = config.Field("Filename to fix", str, None, optional=True)
+    keyword = config.Field("Keyword to fix", str, None, optional=False)
+    value = config.Field("Value to fix", str, None, optional=False)
+    dtype = config.ChoiceField("Datatype of value", str,
+                               allowed={"int": "integer",
+                                        "float": "floating point",
+                                        "str": "string"},
+                               default=None, optional=True)
+    add = config.Field("Add keyword (required if keyword is not present)?", bool, False)
+
+
 class makeIRAFCompatibleConfig(config.Config):
     delvar = config.Field("Delete the VAR plane of the first extension", bool, False, optional=True)
     deldq = config.Field("Delete the DQ plane of the first extension", bool, False, optional=True)
