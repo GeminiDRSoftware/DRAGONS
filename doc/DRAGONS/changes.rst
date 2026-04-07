@@ -21,6 +21,11 @@ Improvements
 ------------
 More robust algorithm to fit the slit edges in GNIRS XD flats.
 
+**geminidr.core**
+
+  * A new ``fixHeader()`` primitive has been created to provide the same
+    functionality as the ``fixheader.py`` script but within a bespoke recipe.
+
 Documentation
 -------------
 Minor fixes to the documentations
