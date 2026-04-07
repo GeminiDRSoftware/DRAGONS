@@ -20,10 +20,8 @@ from argparse import ArgumentParser
 import textwrap
 
 import astrodata, gemini_instruments
+from gempy.adlibrary.fixheader import modify_header
 from gempy import __version__
-
-
-DTYPES = {'int': int, 'float': float, 'str': str}
 
 
 def main(args=None):
@@ -48,77 +46,8 @@ def main(args=None):
 
 
 def update_header(filename, extid, keyword, value, add, dtype=None):
-
-    def coerce(value, dtype):
-        if dtype is not None:
-            if isinstance(dtype, str):
-                dtype = DTYPES[dtype]
-            return dtype(value)
-        try:
-            v = int(value)
-        except ValueError:
-            try:
-                v = float(value)
-            except ValueError:
-                return value
-            else:
-                return v
-        return v
-
     ad = astrodata.open(filename)
-    if extid is None:  # PHU
-        if keyword in ad.phu or add:
-            if keyword in ad.phu:
-                if dtype is None:
-                    dtype = type(ad.phu[keyword])
-                print(f"Updating {keyword}={ad.phu[keyword]} -> {value} in PHU")
-            else:
-                print(f"Adding {keyword}={value} in PHU")
-            ad.phu[keyword] = coerce(value, dtype)
-        elif ad.hdr.get(keyword).count(None) == 0:  # try all extensions
-            extid = ''
-        else:
-            raise KeyError(f"{keyword} is not present in all extensions")
-    elif extid:  # one header only
-        try:
-            index = [ext.id for ext in ad].index(int(extid))
-        except ValueError:
-            raise ValueError(f"{extid} not a valid extension id in {filename}")
-        if keyword in ad[index].hdr or add:
-            if keyword in ad[index].hdr:
-                if dtype is None:
-                    dtype = type(ad[index].hdr[keyword])
-                print(f"Updating {keyword}={ad[index].hdr[keyword]} -> {value} "
-                      f"in extension {extid}")
-            else:
-                print(f"Adding {keyword}={value} in extension {extid}")
-
-            ad[index].hdr[keyword] = coerce(value, dtype)
-        else:
-            raise KeyError(f"{keyword} not found in {filename}:{extid} and "
-                           "'--add' not selected")
-    if extid == '':  # all headers
-        already_values = ad.hdr.get(keyword)
-        if 0 < already_values.count(None) < len(ad) and not add:
-            print(f"{keyword} exists only in extensions "+
-                  ", ".join([str(ext.id) for ext in ad if keyword in ext.hdr]))
-        if not add:
-            for ext, already in zip(ad, already_values):
-                if already is not None:
-                    print(f"Updating {keyword}={ext.hdr[keyword]} -> {value} "
-                          f"in extension {ext.id}")
-                    ext.hdr[keyword] = coerce(value, type(ext.hdr[keyword])
-                                              if dtype is None else dtype)
-        else:
-            if dtype is not None:
-                ad.hdr[keyword] = coerce(value, dtype)
-            else:
-                dtypes = set([type(ext.hdr[keyword]) for ext in ad]) - {type(None)}
-                if len(dtypes) > 1:
-                    raise ValueError(f"{keyword} does not have a unique datatype; "
-                                     "please specify on the command line")
-                ad.hdr[keyword] = coerce(value, dtypes.pop())
-            print(f"Add {keyword}={value} in all extensions")
+    modify_header(ad, extid=extid, keyword=keyword, value=value, add=add, dtype=dtype)
     ad.write(overwrite=True)
 
 
