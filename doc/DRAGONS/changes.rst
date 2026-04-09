@@ -8,6 +8,68 @@
 Change Logs
 ***********
 
+4.2.1
+=====
+
+Hardware support
+----------------
+This release includes updated GHOST look-up table to account for the
+movement of the slit viewer camera during a recent issue and associated
+work on the hardware.
+
+Improvements
+------------
+**geminidr.core**
+
+  * More robust algorithm to fit the slit edges in GNIRS XD flats.
+  * A new ``fixHeader()`` primitive has been created to provide the same
+    functionality as the ``fixheader.py`` script but within a bespoke recipe.
+
+Documentation
+-------------
+Minor fixes to the documentation
+
+4.2.0
+=====
+
+This release includes new support for reducing Flamingos 2 near-infrared
+longslit spectroscopic data.  This version of the software is now compatible
+with Numpy 2.
+
+New Features
+------------
+
+Full support for the reduction of Flamingos 2 longslit spectroscopy data.
+    F2 longslit data reduction can now be performed in DRAGONS.  Full
+    support from raw data to telluric and flux calibrated data is available. All
+    F2 longslit configurations are supported.
+
+Compatibility
+-------------
+
+Numpy 2
+    The software is now compatible with Numpy 2.  For now, it is still
+    compatible with Numpy 1.  However, support for Numpy 1 will be phased out
+    at some point.  We encourage users to complete their conversion to v2.
+
+Improvements
+------------
+
+There were some modifications made to the wavelength calibration algorithm.
+Those were needed to better support the F2 data.  Some very minor changes might
+be seen in the wavelength calibration of the other supported instruments.
+
+The robustness of the distortion measurement and correction has been improved
+for the longslit and cross-dispersed data.
+
+Documentation
+-------------
+
+New tutorials for Flamingos 2 longslit reduction have been added.  Also,
+API versions of the GNIRS XD 111 l/mm example and the GHOST example have been
+added.  Various other fixes to the tutorials were made.
+
+
 4.1.0
 =====
 

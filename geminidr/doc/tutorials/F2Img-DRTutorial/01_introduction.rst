@@ -7,8 +7,11 @@ Introduction
 ************
 
 This tutorial covers the basics of reducing
-`Flamingos-2 <https://www.gemini.edu/sciops/instruments/flamingos2/>`_  data
-using |DRAGONS|.
+`Flamingos-2 <https://www.gemini.edu/sciops/instruments/flamingos2/>`_
+imaging data using |DRAGONS|.
+
+For Flamingos 2 longslit spectroscopy data, see |F2LSTut|.
+
 
 The reduction can be done in two different ways:
 

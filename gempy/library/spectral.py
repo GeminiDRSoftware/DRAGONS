@@ -1,4 +1,4 @@
-# Copyright(c) 2019-2025 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2019-2026 Association of Universities for Research in Astronomy, Inc.
 #
 
 from typing_extensions import deprecated

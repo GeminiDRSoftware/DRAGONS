@@ -7,14 +7,17 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Tutorial Series - Flamingos 2 Longslit Data Reduction with DRAGONS'
-copyright = '2025, Association of University for Research in Astronomy'
+copyright = '2026, Association of University for Research in Astronomy'
 author = 'DRAGONS Team'
 
-release = '4.2_dev'
-#release = '4.1.0'
-#rtdurl = 'v'+release
-#release = '4.x'
-rtdurl = 'release-'+release
+# The short X.Y version
+version = '4.2'
+
+# The full version, including alpha/beta/rc tags
+release = '4.2.1'
+rtdurl = 'v'+release
+#release = '4.2.x'
+#rtdurl = 'release-'+release
 #rtdurl = 'latest'
 
 today = 'April 2026'

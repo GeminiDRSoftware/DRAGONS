@@ -36,6 +36,7 @@ Tutorials - Reducing data with DRAGONS
 
 **Spectroscopy**
 
+* |F2LSTut|
 * |GHOSTTut|
 * |GMOSLSTut|
 * |GNIRSLSTut|

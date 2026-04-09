@@ -31,20 +31,20 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial - Flamingos-2 Data Reduction'
-copyright = '2025, Association of Universities for Research in Astronomy'
+copyright = '2026, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The short X.Y version
 #version = astrodata.version(short=True)
-version = '4.2_dev'
+version = '4.2'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-#release = '4.1.0'
-#rtdurl = 'v'+release
-#release = '4.1.x'
+release = '4.2.1'
+rtdurl = 'v'+release
+#release = '4.2.x'
 #rtdurl = 'release-'+release
-rtdurl = 'latest'
+#rtdurl = 'latest'
 
 # -- General configuration ---------------------------------------------------
 
@@ -87,7 +87,7 @@ language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'October 2025'
+today = 'April 2026'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 

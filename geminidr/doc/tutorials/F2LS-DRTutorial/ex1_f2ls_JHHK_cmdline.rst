@@ -348,7 +348,7 @@ fed to the primitive ``fitTelluric``.
 
 Instead of typing the values on the command line, we will use a parameter file
 to store them.  In normal text files (here we name the "hip83920.param" and
-hip79156.param), we write for HIP 83920::
+"hip79156.param"), we write for HIP 83920::
 
     -p
     fitTelluric:bbtemp=9700
@@ -387,13 +387,11 @@ dip in the blue is due to a large and bright artifact (likely a reflection)
 that is seen in all the JH frames and can be clearly seen in the normalized
 flat field that we produced earlier.  The position of the artifact is stable
 but its strength does not seem to be as it is never completely removed during
-flat fielding.
+flat fielding. 
 
 Similar observations can be made about the HK data.  In the HK data, the
-reflection artifact is softer but present nonetheless.
-
-.. todo:: link to issues and limitations with image of the JH and HK flats.
-
+reflection artifact is softer but present nonetheless.  Screenshots are
+available here: :ref:`flat_artifacts`
 
 
 Science Observations

@@ -399,9 +399,9 @@ So pick one, **remove** the other.
     :linenos:
     :lineno-start: 55
 
-    caldb.remove_cal(reduce_arcs.output_filenames[0])
+    caldb.remove_cal(reduce_arcs.output_filenames[0])  # remove the lamp solution
     ... or ...
-    caldb.remove_cal(reduce_sky.output_filenames[0])
+    caldb.remove_cal(reduce_sky.output_filenames[0])  # remove the sky line solution
 
 In this tutorial, we remove the lamp solution.
 

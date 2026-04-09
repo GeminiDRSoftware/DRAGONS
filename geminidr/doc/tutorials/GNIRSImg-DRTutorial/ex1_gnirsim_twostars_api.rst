@@ -74,7 +74,7 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 8
+    :lineno-start: 7
 
     from gempy.utils import logutils
     logutils.config(file_name='gnirsim_tutorial.log')
@@ -103,7 +103,7 @@ directory.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 12
+    :lineno-start: 9
 
     all_files = glob.glob('../playdata/example1/*.fits')
     all_files.sort()
@@ -124,7 +124,7 @@ list, one simply need to select on the ``DARK`` tag:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 14
+    :lineno-start: 11
 
     darks60 = dataselect.select_data(all_files, ['DARK'])
 
@@ -133,7 +133,7 @@ command would use the ``exposure_time`` descriptor:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 15
+    :lineno-start: 12
 
     darks60 = dataselect.select_data(
         all_files,
@@ -152,7 +152,7 @@ of them to one list.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 21
+    :lineno-start: 18
 
     flats = dataselect.select_data(all_files, ['FLAT'])
 
@@ -166,7 +166,7 @@ examples; of course, just one is required.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 22
+    :lineno-start: 19
 
     target = dataselect.select_data(all_files, ['IMAGE'], ['FLAT'])
 
@@ -211,7 +211,7 @@ name of a file on disk.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 39
+    :lineno-start: 36
 
     reduce_darks = Reduce()
     reduce_darks.files.extend(darks60)
@@ -253,7 +253,7 @@ To add the BPM included in the data package to the local calibration database:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 42
+    :lineno-start: 39
 
     for bpm in dataselect.select_data(all_files, ['BPM']):
         caldb.add_cal(bpm)
@@ -270,7 +270,7 @@ follows:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 44
+    :lineno-start: 41
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(flats)
@@ -303,7 +303,7 @@ retrieved automatically.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 47
+    :lineno-start: 44
 
     reduce_target = Reduce()
     reduce_target.files.extend(target)
