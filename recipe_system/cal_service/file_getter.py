@@ -9,6 +9,8 @@ from ..config import globalConf
 from gempy.utils.logutils import get_logger
 from .calrequestlib import generate_md5_digest
 
+from recipe_system import version
+
 # get_file_itterator is the only function in this module called externally
 # (from calrequestlib.py)
 
@@ -60,8 +62,10 @@ class CachedFileGetter(object):
         :param filepath: file to store contents in
         :return: None
         """
+
+        user_agent = {"User-Agent": 'GeminiDRAGONS '+version()}
         with open(filepath, 'wb') as fp:
-            r = requests.get(url, stream=True, timeout=10.0)
+            r = requests.get(url, stream=True, timeout=10.0, headers=user_agent)
             try:
                 r.raise_for_status()
                 for chunk in r.iter_content(chunk_size=None):

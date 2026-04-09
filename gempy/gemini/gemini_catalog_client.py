@@ -201,13 +201,15 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr, verbose=False):
         table = scs_srv.search(pos=SkyCoord(ra, dec, unit="deg"),
                                radius=sr, verb=3).to_table()
     except pyvo.DALFormatError as e:
-        log.warning(f"Malformed return query - {e}")
+        log.warning(f"No catalog returned due to malformed return query:\n{e}")
         return
     except pyvo.DALQueryError as e:
-        log.warning(f"Server {server} returned an error - {e}")
+        log.warning(f"No catalog returned as server {server} returned an "
+                    f"error:\n{e}")
         return
     except pyvo.DALServiceError as e:
-        log.warning(f"Failed to communicate with server {server} - {e}")
+        log.warning(f"No catalog returned due to failure to communicate "
+                    f"with server {server}:\n{e}")
         return
     else:
         if not table:

@@ -39,8 +39,19 @@ Here is a copy of the table for quick reference.
 | BPM                 || bpm_20100716_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
 
+Setting up
+==========
+First navigate to your work directory in the unpacked data package.
+
+::
+
+    cd <path>/gnirsls_tutorial/playground
+
+The first steps are to import libraries, set up the calibration manager,
+and set the logger.
+
 Configuring the interactive interface
-=====================================
+-------------------------------------
 In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
 
     [interactive]
@@ -388,7 +399,7 @@ run.
                 ])
     reduce_telluric.runr()
 
-Using a Chebyshev polynomial of order 10 leads to a fit that better follows
+Using a spline3 of order 10 leads to a fit that better follows
 the continuum without being too wavy.  The fit might look a bit high in the
 blue but remember that this is a region where the telluric absorption becomes
 important.
@@ -396,6 +407,11 @@ important.
 .. image:: _graphics/gnirsls_Kband32mm_tellfit.png
    :width: 600
    :alt: fit to the telluric standard
+
+.. image:: _graphics/gnirsls_Kband32mm_tellfitmodel.png
+   :width: 600
+   :alt: the corrected spectrum using the fitTelluric model.
+
 
 Science Observations
 ====================
@@ -446,13 +462,12 @@ spectrum.
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
-The primitive ``findApertures`` finds the real source and a couple spurious
-ones on the left.  They won't affect the extraction of the real source. But
-since we are in interactive mode, we can remove the spurious sources by
-pointing the cursor to them and pressing ``d``.
+The primitive ``findApertures`` finds the source automatically. If it were
+to find spurious sources, or sources you are simply not interested in, you
+can remove them by pointing the cursor on them and by pressing ``d``.
 
 It does not make a big difference in this case but at the ``fitTelluric``
-step we can adjust the offset to ``0.2`` to better remove the telluric features.
+step we can adjust the offset to ``0.1`` to better remove the telluric features.
 
 
 .. code-block:: python

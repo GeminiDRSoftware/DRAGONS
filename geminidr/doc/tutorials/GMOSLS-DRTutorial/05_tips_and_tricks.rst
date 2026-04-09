@@ -139,7 +139,7 @@ do it.
 
     import astrodata
     import gemini_instruments
-    from gemini.library import astromodels as am
+    from gempy.library import astromodels as am
 
     ad = astrodata.open('S20170826S0160_standard.fits')
 

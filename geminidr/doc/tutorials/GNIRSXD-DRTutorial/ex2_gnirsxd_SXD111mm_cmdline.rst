@@ -141,9 +141,9 @@ the flats.
 
 Note that we have downloaded only the October data from that program.  If
 the September data were also in our raw data directory, we would have to add
-a date constraint to the expression, like this:
+a date constraint to the expression, like this::
 
-    ``dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.55e-6 and ut_date=="2019-10-13"' -o flatSep155.lis``
+    dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.55e-6 and ut_date=="2019-10-13"' -o flatSep155.lis
 
 
 A list for the pinholes
@@ -726,7 +726,7 @@ experiment with it if you want to see how it affects the fit.
 
 The big drop in signal in blue end of Order 3 of central wavelength 1.81 |um|
 is not fit well at all with the default spline order.  It is an extreme case
-that seems to be best modeled with a spline order of 30!  Play with it to see
+that seems to be best modeled with a spline order of 30.  Play with it to see
 the effect on each plot of the interactive tool.
 
 Science Observations

@@ -258,7 +258,7 @@ The Bad Pixel Mask is created as follows:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 46
+    :lineno-start: 44
 
     reduce_bpm = Reduce()
     reduce_bpm.files.extend(list_of_flats_Y)
@@ -292,7 +292,7 @@ We create the master flat field and add it to the calibration manager as follows
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 53
+    :lineno-start: 51
 
     reduce_flats = Reduce()
     reduce_flats.files.extend(list_of_flats_Y)
@@ -322,7 +322,7 @@ science data:
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 59
+    :lineno-start: 55
 
     reduce_target = Reduce()
     reduce_target.files.extend(list_of_science_images)

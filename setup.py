@@ -25,7 +25,7 @@ except ImportError:
 else:
     use_cython = True
 
-VERSION = '4.2_dev'
+VERSION = '4.2.1'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages()
@@ -68,7 +68,7 @@ setup(name='dragons',
       scripts=SCRIPTS,
       ext_modules=EXTENSIONS,
       classifiers=[
-          'Development Status :: 4 - Beta',
+          'Development Status :: 4',
           'Intended Audience :: Gemini Ops',
           'Intended Audience :: Science/Research',
           'License :: OSI Approved :: BSD License',
@@ -82,7 +82,7 @@ setup(name='dragons',
       ],
       install_requires=[
           'asdf>=2.15',
-          'astropy>=6.0,!=6.1.5,!=6.1.6',
+          'astropy>=7.1.2',
           'astroscrappy>=1.1',
           'bokeh>=3.0',
           'bottleneck>=1.2',
@@ -102,9 +102,10 @@ setup(name='dragons',
           'requests>=2.22',
           'scikit-image>=0.21',
           'scipy>=1.15',
-          'specutils>=1.10',
+          'specutils>=2.0',
           'sqlalchemy>=2.0.0',
           'tornado>=6.3',
+          'typing_extensions>=4.9',
       ],
       extras_require={
           'all': ['ginga', 'imexam'],

@@ -38,6 +38,8 @@ class calculateSensitivityConfig(config.Config):
     debug_plots = config.Field("Show response-fitting plots for each order?",
                                bool, False)
 
+class captureWfitInstMonConfig(config.Config):
+    pass
 
 class darkCorrectConfig(parameters_preprocess.darkCorrectConfig):
     def setDefaults(self):

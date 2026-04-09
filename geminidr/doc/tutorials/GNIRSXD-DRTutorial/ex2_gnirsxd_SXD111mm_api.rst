@@ -53,9 +53,19 @@ Here is a copy of the table for quick reference.
 | BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
 
+Setting up
+==========
+First navigate to your work directory in the unpacked data package.
+
+::
+
+    cd <path>/gnirsxd_tutorial/playground
+
+The first steps are to import libraries, set up the calibration manager,
+and set the logger.
 
 Configuring the interactive interface
-=====================================
+-------------------------------------
 In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
 
     [interactive]
@@ -66,7 +76,7 @@ the interactive tools using that browser.  The allowed strings are "**safari**",
 "**chrome**", and "**firefox**".
 
 Importing libraries
-===================
+-------------------
 
 .. code-block:: python
     :linenos:
@@ -84,7 +94,7 @@ The ``Reduce`` class is used to set up and run the data
 reduction.
 
 Setting up the logger
-=====================
+---------------------
 We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 .. code-block:: python
@@ -96,7 +106,7 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 
 Set up the Local Calibration Manager
-====================================
+------------------------------------
 
 .. important::  Remember to set up the calibration service.
 
@@ -1019,7 +1029,7 @@ experiment with it if you want to see how it affects the fit.
 
 The big drop in signal in blue end of Order 3 of central wavelength 1.81 |um|
 is not fit well at all with the default spline order.  It is an extreme case
-that seems to be best modeled with a spline order of 30!  Play with it to see
+that seems to be best modeled with a spline order of 30.  Play with it to see
 the effect on each plot of the interactive tool.
 
 Science Observations

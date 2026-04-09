@@ -1,5 +1,10 @@
 .. ex1_gnirsim_twostars_cmdline.rst
 
+.. role:: raw-html(raw)
+   :format: html
+
+.. |verticalpadding| replace:: :raw-html:`<br>`
+
 .. _twostars_cmdline:
 
 ***************************************************************************************
@@ -189,6 +194,7 @@ This can be seen by using "|showpars|"::
 .. image:: _graphics/showpars_associateSky.png
    :scale: 100%
    :align: center
+
 
 |verticalpadding|
 

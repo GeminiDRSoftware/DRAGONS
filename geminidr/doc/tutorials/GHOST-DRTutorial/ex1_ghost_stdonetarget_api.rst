@@ -967,7 +967,7 @@ combined later if you wish by running the following command:
 
 ::
 
-    red_not_stacked = glob.glob('S20230416S0079_red00?_dragons.fits')
+    red_not_stacked = glob.glob('S20230416S0079_red00?_calibrated.fits')
     red_not_stacked.sort()
 
     reduce_red_not_stacked = Reduce()

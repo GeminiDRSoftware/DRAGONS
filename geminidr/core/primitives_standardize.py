@@ -10,9 +10,12 @@ from importlib import import_module
 from scipy import ndimage
 from copy import deepcopy
 
+from fnmatch import fnmatch
+
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
+from gempy.adlibrary.fixheader import modify_header
 from gempy.adlibrary.manipulate_ad import rebin_data
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
@@ -309,6 +312,58 @@ class Standardize(PrimitivesBASE):
                 self._addPoissonNoise(ad)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
+
+    def fixHeader(self, adinputs=None, **params):
+        """
+
+        Parameters
+        ----------
+        suffix: str/None
+            suffix to be added to output files
+        filename: str/None
+            filename wildcard (or comma-separated list) of filenames to fix
+        keyword: str
+            name of header keyword to modify/add
+        value: int/str/float
+            new value of header keyword
+        dtype: "int"/"str"/"float"/None
+            datatype of header keyword if being added or not the same as
+            existing datatype
+        add: bool
+            add the keyword? This is required if the keyword does not exist
+        """
+        log = self.log
+        suffix = params['suffix']
+        filename = params['filename']
+        keyword = params['keyword']
+        value = params['value']
+        dtype = params['dtype']
+        add = params['add']
+
+        filenames = filename.split(',') if filename else "*"
+
+        for ad in adinputs:
+            extid = None  # PHU
+            for f in filenames:
+                try:
+                    fname, extid = f.split(":")
+                except ValueError:
+                    fname, extid = f, None
+                if (fnmatch(ad.filename, fname) or
+                        fnmatch(os.path.splitext(ad.filename)[0], fname)):
+                    if extid:
+                        extid = int(extid)
+                    break
+            else:
+                continue
+
+            modify_header(ad, extid=extid, keyword=keyword, value=value, dtype=dtype,
+                          add=add, logfn=log.stdinfo)
+
+            # Only if it's been modified
+            ad.update_filename(suffix=suffix, strip=True)
+
         return adinputs
 
     def makeIRAFCompatible(self, adinputs=None, **params):

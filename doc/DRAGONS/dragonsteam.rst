@@ -16,7 +16,6 @@ Current DRAGONS Team
 ====================
 (Alphabetical order)
 
-* Dan Avner
 * Paul Hirst
 * Kathleen Labrie
 * Mark Rawlings
@@ -31,6 +30,7 @@ Past DRAGONS Team Members
 (Alphabetical order)
 
 * Ken Anderson
+* Dan Avner
 * Daniel Berke
 * Ricardo Cárdenes
 * Simon Conseil

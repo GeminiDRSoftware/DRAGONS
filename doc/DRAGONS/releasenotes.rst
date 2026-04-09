@@ -8,6 +8,26 @@
 Release Notes
 *************
 
+V4.2.1
+======
+
+This release includes updated GHOST look-up table to account for the
+movement of the slit viewer camera during a recent issue and associated
+work on the hardware.
+
+
+V4.2.0
+======
+
+This release includes new support for Flamingos 2 longslit data.  Full
+support from raw data to telluric and flux calibrated data is available. All
+Flamingos 2 longslit configurations are supported.
+
+The software is now compatible with Numpy 2.
+
+Improvements to various algorithms, especially wavelength calibration, have
+been made.  Various bug fixes and documentation improvements are also included.
+
 V4.1.0
 ======
 
@@ -96,11 +116,6 @@ Science Quality reduction
 For imaging and GMOS longslit spectroscopy, this software should be used
 instead of the Gemini IRAF package.
 
-To install DRAGONS, please follow the installation guide provided in the
-Recipe System User Manual:
-
-  |RSUserInstall|.
-
 
 
 V3.1.0
@@ -132,11 +147,6 @@ Science Quality reduction
 
 For imaging and GMOS longslit spectroscopy, this software should be used
 instead of the Gemini IRAF package.
-
-To install DRAGONS, please follow the installation guide provided in the
-Recipe System User Manual:
-
-  |RSUserInstall|.
 
 
 V3.0.4
@@ -195,8 +205,5 @@ We are working on a science quality package for GMOS longslit but it is not
 ready yet.  We believe that releasing what we have for quicklook inspection
 will nevertheless be useful to our users.
 
-Installation instructions can be found in the Recipe System User Manual at:
-
- |RSUserShow|
 
 

@@ -689,7 +689,7 @@ object, you can do this within a python session as follows:
   import astrodata, gemini_instruments
   from gempy.library.spectral import Spek1D
   ad = astrodata.open("S20230416S0079_blue001_full.fits")
-  spectrum1d = Spek1D(ad[0]).asSpectrum1D()
+  spectrum1d = Spek1D(ad[0]).asSpectrum()
 
 Note that you need to specify ``ad[0]`` to obtain the first aperture
 (the target).

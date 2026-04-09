@@ -25,7 +25,7 @@ Download the package for the example you wish to run and unpack it somewhere con
     tar xvf gnirsls_tutorial_datapkg-Jband111mm-v2.tar
     tar xvf gnirsls_tutorial_datapkg-Lband10mm-v2.tar
     tar xvf gnirsls_tutorial_datapkg-Kband111mm_red-v2.tar
-    bunzip2 playdata/example*/*.bz2
+    bunzip2 gnirsls_tutorial/playdata/example*/*.bz2
     rm gnirsls_tutorial_datapkg-*.tar
 
 The datasets are found in the subdirectory ``gnirsls_tutorial/playdata/example#``, and
