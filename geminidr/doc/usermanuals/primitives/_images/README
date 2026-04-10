@@ -1,0 +1,12 @@
+This folder is for figure images associated with the user reference documentation for DRAGONS primitives only.
+
+All images should have a filename consistent with the general DRAGONs file name conventions,
+
+e.g.
+
+geminidr.core.primitives_ccd.CCD.biasCorrect_biasImageExample01.png
+
+The image can then be included in the relevant documentation page by including a line in the relevant main
+.rst file of the primitive, (e.g. primitive_biasCorrect.rst) as follows:
+
+.. image:: ./images/geminidr.core.primitives_ccd.CCD.biasCorrect_biasImageExample01.png
