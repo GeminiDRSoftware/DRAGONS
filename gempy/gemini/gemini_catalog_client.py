@@ -17,13 +17,12 @@ priority ordered list of servers if the primary server appears to be down.
 question in a different format to the primary.
 
 """
-import warnings
-
 import numpy as np
 
+from astropy.coordinates import SkyCoord
+import pyvo
+
 from astrodata import add_header_to_table
-from astroquery.vo_conesearch.conesearch import conesearch
-from astroquery.exceptions import NoResultsWarning
 
 from ..utils import logutils
 
@@ -91,7 +90,7 @@ SERVER_COLMAP = {
                   'h_m', 'h_cmsig', 'k_m', 'k_cmsig'],
     '2mass_cpo': ['designation', 'ra', 'decl', 'j_m', 'j_cmsig',
                   'h_m', 'h_cmsig', 'k_m', 'k_cmsig'],
-    '2mass_vizier': ['_2MASS', 'RAJ2000', 'DEJ2000', 'Jmag', 'Jcmsig',
+    '2mass_vizier': ['2MASS', 'RAJ2000', 'DEJ2000', 'Jmag', 'Jcmsig',
                      'Hmag', 'Hcmsig', 'Kmag', 'Kcmsig'],
     'ukidss9_mko': ['id', 'raj2000', 'dej2000', 'y_mag', 'y_mag_err',
                     'z_mag', 'z_mag_err', 'j_mag', 'j_mag_err',
@@ -197,30 +196,26 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr, verbose=False):
     # turn on verbose for debug to stdout.
     # Need verb=3 to get the right cols from vizier
 
-    # Another change is that conesearch returns None and issue of
-    # NoResultsWarning if no results are found, instead of raising a
-    # VOSError: https://github.com/astropy/astroquery/pull/1528
-    with warnings.catch_warnings(record=True) as warning_list:
-        table = conesearch((ra, dec), sr, verb=3, catalog_db=url,
-                           return_astropy_table=True, verbose=False)
-
-    # Did we get any results?
-    if not table:
-        try:
-            warning = warning_list[0]
-        except IndexError:
+    scs_srv = pyvo.dal.SCSService(url)
+    try:
+        table = scs_srv.search(pos=SkyCoord(ra, dec, unit="deg"),
+                               radius=sr, verb=3).to_table()
+    except pyvo.DALFormatError as e:
+        log.warning(f"No catalog returned due to malformed return query:\n{e}")
+        return
+    except pyvo.DALQueryError as e:
+        log.warning(f"No catalog returned as server {server} returned an "
+                    f"error:\n{e}")
+        return
+    except pyvo.DALServiceError as e:
+        log.warning(f"No catalog returned due to failure to communicate "
+                    f"with server {server}:\n{e}")
+        return
+    else:
+        if not table:
             log.stdinfo(f"No results returned from {server} but no warning "
                         "issued")
-        else:
-            if warning.category == NoResultsWarning:
-                log.stdinfo(f"No results returned from {server}")
-            elif ("retries" in str(warning.message) or
-                  "timed out" in str(warning.message)):
-                log.warning(f"Server {server} appears to be down")
-            else:
-                log.warning(f"Unexpected warning from {server}: "
-                            f"{warning.message}")
-        return
+            return
 
     if server == 'sdss9_vizier':
         # Vizier uses the photoObj table from SDSS9, whereas the internal

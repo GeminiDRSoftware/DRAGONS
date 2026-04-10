@@ -121,3 +121,29 @@ and offsetting should be turned off (``skyCorrect:scale_sky=False`` and
 ``skyCorrect:offset_sky=False``).  There is no sky to measure in the target
 frame, any attempts at scaling or offsetting will result in an over subtraction
 of the sky.
+
+
+Useful parameters
+=================
+
+skip_primitive
+--------------
+I might happen that you will want or need to not run a primitive in a recipe.
+You could copy the recipe over and edit it.  Or you could invoke the
+``skip_primitive`` parameter to tell DRAGONS to completely skip that step.
+
+Let's say that you want the data aligned but not stacked.  You would do::
+
+    reduce @sci.lis -p stackFrames:skip_primitive=True
+
+
+write_outputs
+-------------
+When debugging or when there's a need to inspect intermediate products, you
+might want to write the output of a specific primitive to disk.  This is done
+with the ``write_outputs`` parameter.
+
+For example, to write the sky subtracted frames before alignment and stacking,
+you would do::
+
+    reduce @sci.lis -p skyCorrect:write_outputs=True

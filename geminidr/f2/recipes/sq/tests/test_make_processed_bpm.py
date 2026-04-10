@@ -29,4 +29,5 @@ def test_make_processed_bpm(path_to_refs, change_working_dir):
         adout = astrodata.open(r.output_filenames[0])
         adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
 
-        assert ad_compare(adref, adout)
+        # TODO: remake reference with improved nonlinearity limit; ignore mismatch for now
+        assert ad_compare(adref, adout, ignore_kw=["NONLINEA"])

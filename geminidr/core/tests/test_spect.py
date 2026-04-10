@@ -441,6 +441,27 @@ def test_sky_correct_from_slit_negative_beams(caplog):
     assert passing
 
 @pytest.mark.preprocessed_data
+def test_sky_correct_from_slit_negative_beams_gnirsxd_nobeam(path_to_inputs, caplog):
+
+    ad = astrodata.open(os.path.join(path_to_inputs, 'N20191013S0006_aperturesFound.fits'))
+
+    caplog.set_level(logging.DEBUG)
+    p = primitives_spect.Spect([])
+    ad_out = p.skyCorrectFromSlit([ad], function="chebyshev", order=1,
+                                  grow=1, niter=3, lsigma=3, hsigma=3,
+                                  aperture_growth=1)[0]
+
+    passing = True
+    for record in caplog.records:
+        if 'beam offsets' in record.message:
+            passing = False
+            # There should be no negative beams found for this dataseet
+
+    assert passing
+
+
+
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize('in_shift', [0, -1.2, 2.75])
 def test_adjust_wavelength_zero_point_shift(in_shift, change_working_dir,
                                             path_to_inputs):

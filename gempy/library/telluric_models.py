@@ -230,8 +230,14 @@ class SingleTelluricModel(Fittable1DModel):
     def place_knots(self, mask):
         # Space the knots equally among the *unmasked* pixels
         ngood = (~mask.astype(bool)).sum()
-        knot_pixels = np.linspace(0, ngood - 1, self.order + 1)
-        knot_waves = np.interp(knot_pixels, np.arange(ngood), sorted(self.waves[~mask.astype(bool)]))
+        if self.order < ngood + 3:
+            knot_pixels = np.linspace(0, ngood - 1, self.order + 1)
+            knot_waves = np.interp(knot_pixels, np.arange(ngood),
+                                   sorted(self.waves[~mask.astype(bool)]))
+        else:
+            knot_pixels = np.linspace(0, mask.size, self.order + 1)
+            knot_waves = np.interp(knot_pixels, np.arange(mask.size),
+                                   sorted(self.waves))
         self.knots = np.r_[[knot_waves[0]] * 3, knot_waves, [knot_waves[-1]] * 3]
 
     def continuum(self, x):

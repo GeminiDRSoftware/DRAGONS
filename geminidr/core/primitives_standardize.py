@@ -10,9 +10,12 @@ from importlib import import_module
 from scipy import ndimage
 from copy import deepcopy
 
+from fnmatch import fnmatch
+
 from astrodata.provenance import add_provenance
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import irafcompat
+from gempy.adlibrary.fixheader import modify_header
 from gempy.adlibrary.manipulate_ad import rebin_data
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from geminidr import PrimitivesBASE
@@ -195,10 +198,20 @@ class Standardize(PrimitivesBASE):
                 log.warning("addLatencyToDQ() not defined in primitivesClass "
                             + self.__class__.__name__)
 
-        # Add the illumination mask if requested
+        # Add the illumination mask if requested. Only for illuminated frames
         if params['add_illum_mask']:
-            adinputs = self.addIllumMaskToDQ(
-                adinputs, **self._inherit_params(params, "addIllumMaskToDQ"))
+            needs_illum = [not ad.tags.intersection({'DARK', 'BIAS'})
+                           for ad in adinputs]
+            modified = self.addIllumMaskToDQ(
+                [ad for doit, ad in zip(needs_illum, adinputs) if doit],
+                **self._inherit_params(params, "addIllumMaskToDQ"))
+
+            # Insert the modified files into the "adinputs" list
+            j = 0
+            for i in range(len(adinputs)):
+                if needs_illum[i]:
+                    adinputs[i] = modified[j]
+                    j += 1
 
         # Timestamp and update filenames
         for ad in adinputs:
@@ -301,11 +314,75 @@ class Standardize(PrimitivesBASE):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def makeIRAFCompatible(self, adinputs=None):
+    def fixHeader(self, adinputs=None, **params):
+        """
+
+        Parameters
+        ----------
+        suffix: str/None
+            suffix to be added to output files
+        filename: str/None
+            filename wildcard (or comma-separated list) of filenames to fix
+        keyword: str
+            name of header keyword to modify/add
+        value: int/str/float
+            new value of header keyword
+        dtype: "int"/"str"/"float"/None
+            datatype of header keyword if being added or not the same as
+            existing datatype
+        add: bool
+            add the keyword? This is required if the keyword does not exist
+        """
+        log = self.log
+        suffix = params['suffix']
+        filename = params['filename']
+        keyword = params['keyword']
+        value = params['value']
+        dtype = params['dtype']
+        add = params['add']
+
+        filenames = filename.split(',') if filename else "*"
+
+        for ad in adinputs:
+            extid = None  # PHU
+            for f in filenames:
+                try:
+                    fname, extid = f.split(":")
+                except ValueError:
+                    fname, extid = f, None
+                if (fnmatch(ad.filename, fname) or
+                        fnmatch(os.path.splitext(ad.filename)[0], fname)):
+                    if extid:
+                        extid = int(extid)
+                    break
+            else:
+                continue
+
+            modify_header(ad, extid=extid, keyword=keyword, value=value, dtype=dtype,
+                          add=add, logfn=log.stdinfo)
+
+            # Only if it's been modified
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def makeIRAFCompatible(self, adinputs=None, **params):
         """
         Add keywords to make the pipeline-processed file compatible
         with the tasks in the Gemini IRAF package. For Hamamatsu data, also
         trim off the 48/binning rows and 1 column that IRAF trims off.
+
+        Parameters
+        ----------
+
+        delvar : Bool
+            If True, delete the VAR extension from the first extension of the ad
+
+        deldq: Bool
+            If True, delete the DQ extension from the first extension of the ad
+
+        delobjmask: Book
+            If True, delete the OBJMASK from the first extension of the ad
         """
         log = self.log
         log.debug(gt.log_message('primitive', self.myself(), 'starting'))
@@ -313,6 +390,16 @@ class Standardize(PrimitivesBASE):
 
         for ad in adinputs:
             irafcompat.pipeline2iraf(ad)
+
+            if params['delvar']:
+                ad[0].variance = None
+
+            if params['deldq']:
+                ad[0].mask = None
+
+            if params['delobjmask'] and hasattr(ad[0], 'OBJMASK'):
+                del ad[0].OBJMASK
+
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
 
         return adinputs

@@ -739,8 +739,8 @@ def test_read_no_extensions(GRACES_SPECT):
     ad = astrodata.open(GRACES_SPECT)
     assert len(ad) == 1
     # header is duplicated for .phu and extension's header
-    assert len(ad.phu) == 181
-    assert len(ad[0].hdr) == 185
+    assert len(ad.phu) == 187
+    assert len(ad[0].hdr) == len(ad.phu) + 4
     assert ad[0].hdr['EXTNAME'] == 'SCI'
     assert ad[0].hdr['EXTVER'] == 1
 

@@ -57,6 +57,9 @@ class getProcessedSlitIllumConfig(config.Config):
 class getProcessedTelluricConfig(config.Config):
     pass
 
+class getProcessedTelluricConfig(config.Config):
+    pass
+
 class getBPMConfig(config.Config):
     pass
 

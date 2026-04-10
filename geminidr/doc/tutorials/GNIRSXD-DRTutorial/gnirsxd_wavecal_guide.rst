@@ -56,6 +56,15 @@ add more configurations as we study them.
 |             |            |              | a set of three central wavelengths with the 111/mm |br|                       |
 |             |            |              | grating.                                                                      |
 +-------------+------------+--------------+-------------------------------------------------------------------------------+
+| Long Blue   | 10/mm      |  ~1.65 |um|  | **most likely**: The arcs will normally have enough lines and |br|            |
+|             |            |              | reasonable coverage. |br| |br|                                                |
+|             |            |              | **possible improvement**: If the OH and O\ :sub:`2`\  emission |br|           |
+|             |            |              | lines are visible in all orders, they can be used instead of |br|             |
+|             |            |              | the arc. |br| |br|                                                            |
+|             |            |              | **unlikely**: If emission lines are not visible (short exposures), |br|       |
+|             |            |              | and the arc is not sufficient, the telluric absorption lines  |br|            |
+|             |            |              | can be used (from the telluric or the science observation).                   |
++-------------+------------+--------------+-------------------------------------------------------------------------------+
 
 
 Usage

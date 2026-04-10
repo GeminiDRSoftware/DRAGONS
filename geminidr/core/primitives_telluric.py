@@ -36,8 +36,6 @@ from geminidr.interactive.fit.telluric import TelluricCorrectVisualizer, Telluri
 from . import parameters_telluric
 from geminidr import CalibrationNotFoundError
 
-from datetime import datetime
-
 
 # geminidr.gemini.lookups
 LOOKUPS_PATH = os.path.split(qa_constraints.__file__)[0]
@@ -59,6 +57,73 @@ class Telluric(Spect):
             pass
         else:
             self._line_spread_function = lsf_module.lsf_factory(self.__class__.__name__)
+
+    def divideByTelluric(self, adinputs=None, **params):
+        """
+        Temporary primitive to do crude telluric correction and flux
+        calibration by dividing by the telluric spectrum
+        """
+        from gempy.library.telluric_models import Planck
+
+        log = self.log
+        sfx = params["suffix"]
+        telluric = params["telluric"]
+        manual_shift = params["pixel_shift"] or 0
+
+        # Get a suitable standard (should have a TELLFIT table)
+        if telluric is None:
+            telluric_list = self.caldb.get_processed_telluric(adinputs)
+        else:
+            telluric_list = (telluric, None)
+
+        for ad, telluric, origin in zip(*gt.make_lists(adinputs, *telluric_list,
+                                    force_ad=(1,))):
+
+            if 'LS' not in ad.tags:
+                log.warning(f"No changes will be made to {ad.filename}, "
+                            "as it's not a longslit spectrum")
+                continue
+
+            if telluric is None:
+                log.warning(f"No changes will be made to {ad.filename}, "
+                            "since no processed telluric was specified")
+                continue
+
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the processed telluric {telluric.filename}"
+                        f"{origin_str}")
+
+            tellpix = np.arange(telluric[0].data.size)
+            telldata = np.interp(tellpix + manual_shift, tellpix, telluric[0].data,
+                                 left=np.nan, right=np.nan)
+
+            row = list(telluric.HISTORY["primitive"]).index("fitTelluric")
+            # needed to evaluate the stringified version of the args
+            false, true, null = False, True, None
+            fitting_args = eval(telluric.HISTORY["args"][row])
+            magnitude = fitting_args["magnitude"]
+            bbtemp = fitting_args["bbtemp"]
+            abmag = fitting_args["abmag"]
+            w0, f0 = at.Magnitude(magnitude, abmag=abmag).properties()
+            abstr = " (AB)" if abmag else ""
+            log.stdinfo(f"Adopting {magnitude}{abstr} and Teff={bbtemp}K")
+            fluxden_in_flam_units = f0.to(u.W / (u.m ** 2 * u.nm),
+                                          equivalencies=u.spectral_density(w0))
+
+            planck = Planck(temperature=bbtemp)
+            wtelluric = telluric[0].wcs(tellpix)
+            bbspek = (planck(wtelluric) * fluxden_in_flam_units /
+                      planck(w0.to(u.nm).value))
+            correction = telldata / bbspek * telluric.exposure_time() / ad.exposure_time()
+
+            for ext in ad:
+                wsci = ext.wcs(np.arange(ext.nddata.size))
+                this_corr = np.interp(wsci, wtelluric, correction, left=np.nan, right=np.nan)
+                ext.divide(this_corr.astype(np.float32))
+
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
 
     def fitTelluric(self, adinputs=None, **params):
         """
@@ -136,7 +201,6 @@ class Telluric(Spect):
                     tspek_list = []
                     spectral_indices = []
                     spectral_order_names = []
-                    start = datetime.now()
                     for i, ext in enumerate(ad):
                         if (len(ext.shape) == 1 and
                                 ext.hdr.get('APERTURE') == aperture_to_use):
@@ -172,12 +236,10 @@ class Telluric(Spect):
                             try:
                                 spectral_order_names.append(f"Order {ext.hdr['SPECORDR']}")
                             except KeyError:
-                                spectral_order_names.append(f"Extension {i}")
-                    # print(datetime.now() - start, "Making Calibrator() object")
+                                spectral_order_names.append(f"Extension {i+1}")
                     if not tspek_list:
                         raise ValueError(f"No 1D spectra found in {ad.filename}")
                     tcal = TelluricCalibrator(tspek_list, ui_params=uiparams)
-                    # print(datetime.now() - start, "Made Calibrator() object")
 
                 if inter:
                     visualizer = TelluricVisualizer(
@@ -1086,6 +1148,10 @@ class LineSpreadFunction(ABC):
         assert len(ext.shape) == 1, "Input is not 1-dimensional"
         npix = ext.shape[0]
         self.all_waves = ext.wcs(np.arange(npix))
+        # Handle the case where we have a 1D slice of a higher-dimension
+        # image, which will return additional axes
+        if isinstance(self.all_waves, tuple):
+            self.all_waves = self.all_waves[0]
         self.dispersion = abs(np.median(np.diff(self.all_waves)))
         # For lack of any better estimate, but these should get overridden
         # in the relevant subclass

@@ -342,6 +342,11 @@ class AstroDataGemini(AstroData):
         if 'EXTRACT' in self.phu:
             return TagSet(['EXTRACTED'])
 
+    @astro_data_tag
+    def _type_telluric(self):
+        if self.phu.get('PROCTELL'):
+            return TagSet(['TELLURIC', 'CAL'])
+
     def _ra(self):
         """
         Parse RA from header.

@@ -25,7 +25,7 @@ except ImportError:
 else:
     use_cython = True
 
-VERSION = '4.2_dev'
+VERSION = '5.0_dev'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages()
@@ -37,10 +37,11 @@ SCRIPTS = [
 ]
 SCRIPTS += [
     os.path.join('gempy', 'scripts', name)
-    for name in ('dataselect', 'dgsplot', 'fwhm_histogram', 'gmosn_fix_headers',
-                 'gmoss_fix_HAM_BPMs.py', 'gmoss_fix_headers.py',
-                 'pipeline2iraf', 'profile_all_obj', 'psf_plot', 'showrecipes',
-                 'showd', 'showpars', 'typewalk', 'zp_histogram')
+    for name in ('dataselect', 'dgsplot', 'fixheader', 'fwhm_histogram',
+                 'gmosn_fix_headers', 'gmoss_fix_HAM_BPMs.py',
+                 'gmoss_fix_headers.py', 'pipeline2iraf', 'profile_all_obj',
+                 'psf_plot', 'showrecipes', 'showd', 'showpars', 'typewalk',
+                 'zp_histogram')
 ]
 
 # EXTENSIONS
@@ -67,7 +68,7 @@ setup(name='dragons',
       scripts=SCRIPTS,
       ext_modules=EXTENSIONS,
       classifiers=[
-          'Development Status :: 4 - Beta',
+          'Development Status :: 5 - Beta',
           'Intended Audience :: Gemini Ops',
           'Intended Audience :: Science/Research',
           'License :: OSI Approved :: BSD License',
@@ -81,8 +82,7 @@ setup(name='dragons',
       ],
       install_requires=[
           'asdf>=2.15',
-          'astropy>=6.0,!=6.1.5,!=6.1.6',
-          'astroquery>=0.4',
+          'astropy>=7.1.2',
           'astroscrappy>=1.1',
           'bokeh>=3.0',
           'bottleneck>=1.2',
@@ -98,12 +98,14 @@ setup(name='dragons',
           'psutil>=5.6',
           'pyerfa>=1.7',
           'python-dateutil>=2.8',
+          'pyvo>=1.8.1',
           'requests>=2.22',
           'scikit-image>=0.21',
           'scipy>=1.15',
-          'specutils>=1.10',
+          'specutils>=2.0',
           'sqlalchemy>=2.0.0',
           'tornado>=6.3',
+          'typing_extensions>=4.9',
       ],
       extras_require={
           'all': ['ginga', 'imexam'],

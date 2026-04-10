@@ -963,7 +963,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 try:
                     orig_peak = pinpoint_peaks(pinpoint_data, [pixel - xmin],
                                                None)[0][0]
-                    peak = self.model.meta["peak_to_centroid_func"](orig_peak + xmin)
+                    peak = self.model.meta["peak_to_centroid_func"](orig_peak + xmin,
+                                                                    self.model.meta["extraction_center"])
                 except IndexError:  # no peak
                     print("Couldn't find a peak")
                     return
@@ -1274,6 +1275,9 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
     def reconstruct_points_additional_work(self, data):
         """Reconstruct the initial points to work with."""
         super().reconstruct_points_additional_work(data)
+        for fit in self.fits:
+            fit.meta["location"] = (f"{fit.meta['location'].split()[0]} "
+                                    f"{self.widgets['center'].value}")
 
         if data is not None:
             for i, _ in enumerate(self.fits):

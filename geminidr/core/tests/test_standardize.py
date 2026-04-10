@@ -15,10 +15,13 @@ To run:
 import os
 import pytest
 
+from copy import deepcopy
+
 import astrodata
 from gempy.utils import logutils
 from astrodata.testing import ad_compare, download_from_archive
 
+from geminidr.core.primitives_standardize import Standardize
 from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from geminidr.f2.primitives_f2_longslit import F2Longslit
 from geminidr.niri.primitives_niri_image import NIRIImage
@@ -165,3 +168,54 @@ class TestStandardize:
             for kw in ['PROCSOFT', 'PROCSVER', 'PROCMODE']:
                 assert kw in adout.phu
             assert adout.phu['PROCSOFT'] == 'DRAGONS'
+
+
+@pytest.fixture
+def p_fixheader():
+    # Some 4x2 Central Spectrum biases. We serve deepcopies so that
+    # the tests all use the same original data.
+    filenames = [download_from_archive(f"N20200105S{i:04d}.fits")
+                 for i in range(57, 64)]
+    p = Standardize([deepcopy(astrodata.open(f)) for f in filenames])
+    return p
+
+
+def test_fix_header_phu_all_files(p_fixheader):
+    adoutputs = p_fixheader.fixHeader(keyword="OBJECT", value="Ball")
+    assert all(ad.phu["OBJECT"] == "Ball" for ad in adoutputs)
+
+
+def test_fix_header_phu_single_file(p_fixheader):
+    adoutputs = p_fixheader.fixHeader(filename="N20200105S0057", keyword="OBJECT",
+                            value="Ball")
+    assert adoutputs[0].phu["OBJECT"] == "Ball"
+    assert all(ad.phu["OBJECT"] == "Bias" for ad in adoutputs[1:])
+
+
+def test_fix_header_phu_multiple_files(p_fixheader):
+    adoutputs = p_fixheader.fixHeader(filename="N20200105S005?", keyword="OBJECT",
+                            value="Ball")
+    assert all(ad.phu["OBJECT"] == "Ball" for ad in adoutputs[:3])
+    assert all(ad.phu["OBJECT"] == "Bias" for ad in adoutputs[3:])
+
+
+def test_fix_header_phu_add_keyword(p_fixheader):
+    adoutputs = p_fixheader.fixHeader(keyword="NEWKW", value="3", add=True)
+    assert all(ad.phu["NEWKW"] == 3 for ad in adoutputs)
+
+
+def test_fix_header_phu_add_keyword_force_dtype(p_fixheader):
+    adoutputs = p_fixheader.fixHeader(keyword="NEWKW", value="3", add=True, dtype="str")
+    assert all(ad.phu["NEWKW"] == "3" for ad in adoutputs)
+
+
+def test_fix_header_phu_keyword_missing(p_fixheader):
+    with pytest.raises(KeyError):
+        adoutputs = p_fixheader.fixHeader(keyword="NEWKW", value="new")
+
+
+def test_fix_header_add_keyword_all_extensions(p_fixheader):
+    adoutputs = p_fixheader.fixHeader(filename="N20200105S0057:", keyword="NEWKW",
+                            value="new", add=True)
+    assert adoutputs[0].hdr['NEWKW'].count("new") == len(adoutputs[0])
+
