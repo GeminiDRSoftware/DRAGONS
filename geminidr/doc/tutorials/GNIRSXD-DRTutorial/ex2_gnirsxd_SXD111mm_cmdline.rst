@@ -6,7 +6,7 @@
 
    <br />
 
-.. _gnirsxd_SXD32mm_cmdline:
+.. _gnirsxd_SXD111mm_cmdline:
 
 ******************************************************************
 Example 2 - SXD+111 Point Source - Using the "reduce" command line
@@ -141,9 +141,9 @@ the flats.
 
 Note that we have downloaded only the October data from that program.  If
 the September data were also in our raw data directory, we would have to add
-a date constraint to the expression, like this:
+a date constraint to the expression, like this::
 
-    ``dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.55e-6 and ut_date=="2019-10-13"' -o flatSep155.lis``
+    dataselect ../playdata/example2/*.fits --tags FLAT --expr='central_wavelength==1.55e-6 and ut_date=="2019-10-13"' -o flatSep155.lis
 
 
 A list for the pinholes
@@ -427,7 +427,7 @@ orders at most H-band settings, especially if you do not need Order 7 and 8.
     reduce -r makeWavecalFromSkyEmission @sci168.lis -p interactive=True @nopinhole.param
     reduce -r makeWavecalFromSkyEmission @sci181.lis -p interactive=True @nopinhole.param
 
-For the 1.55 |um| setting, beware that the automatic soluion for Order 7 is
+For the 1.55 |um| setting, beware that the automatic solution for Order 7 is
 completely wrong.  Delete all the lines and identify them manually.  Remember
 to set the fit order to 3 once you have identified a few lines.  Order 8 has
 no solution since there are no lines.  It will use an approximate linear solution
@@ -726,7 +726,7 @@ experiment with it if you want to see how it affects the fit.
 
 The big drop in signal in blue end of Order 3 of central wavelength 1.81 |um|
 is not fit well at all with the default spline order.  It is an extreme case
-that seems to be best modeled with a spline order of 30!  Play with it to see
+that seems to be best modeled with a spline order of 30.  Play with it to see
 the effect on each plot of the interactive tool.
 
 Science Observations

@@ -14,15 +14,14 @@ def makeProcessedFlat(p):
     """
     p.prepare()
     p.addDQ()
-    p.nonlinearityCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.makeLampFlat()
     p.determineSlitEdges()
     p.maskBeyondSlit()
     p.normalizeFlat()
     p.thresholdFlatfield()
-    p.makeIRAFCompatible()
     p.storeProcessedFlat()
 
 _default = makeProcessedFlat

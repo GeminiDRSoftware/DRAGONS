@@ -16,6 +16,11 @@ class associateSkyConfig(parameters_gnirs.associateSkyConfig):
         self.min_skies = 2
 
 
+class attachWavelengthSolutionConfig(parameters_spect.attachWavelengthSolutionConfig):
+    def setDefaults(self):
+        self.use_same_arc = True
+
+
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     spectral_order = config.RangeField("Fitting order in spectral direction", int, None, min=1, optional=True)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",

@@ -432,7 +432,7 @@ class GMOSImage(GMOS, Image, Photometry):
             stat_region = stat_region[stat_region>0]
 
             # Find the mode and standard deviation
-            hist,edges = np.histogram(stat_region,
+            hist,edges = np.histogram(stat_region.astype(np.float64),
                                       bins=int(np.max(ext.data)/ 0.1))
             mode = edges[np.argmax(hist)]
             std = np.std(stat_region)

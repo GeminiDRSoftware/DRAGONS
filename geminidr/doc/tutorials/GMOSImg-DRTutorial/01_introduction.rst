@@ -71,8 +71,8 @@ convenient.
 ::
 
     cd <somewhere convenient>
-    tar xvf gmosimg_tutorial_datapkg-starfield-v1.tar
-    tar xvf gmosimg_tutorial_datapkg-separateCCD-v1.tar
+    tar xvf gmosim_tutorial_datapkg-starfield-v1.tar
+    tar xvf gmosim_tutorial_datapkg-separateCCDs-v1.tar
     bunzip2 gmosimg_tutorial/playdata/example*/*.bz2
 
 The datasets are found in the subdirectory ``gmosimg_tutorial/playdata/example#``, and we

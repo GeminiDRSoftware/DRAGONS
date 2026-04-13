@@ -9,6 +9,8 @@ from ..config import globalConf
 from gempy.utils.logutils import get_logger
 from .calrequestlib import generate_md5_digest
 
+from recipe_system import version
+
 # get_file_itterator is the only function in this module called externally
 # (from calrequestlib.py)
 
@@ -40,11 +42,18 @@ class CachedFileGetter(object):
     """
     def __init__(self):
         self.cachedir = None
+        self.cachegbs = None
         self.log = get_logger(__name__)
 
         calconf = globalConf['calibs']
         if calconf:
             self.cachedir = calconf.get('system_calcache_dir')
+            self.cachegbs = calconf.get('system_calcache_gbs')
+            if self.cachedir:
+                try:
+                    self.cachegbs = float(self.cachegbs)
+                except (ValueError, TypeError):
+                    self.log.error("Cannot parse system_calcache_gbs")
 
     def _fetchurltofile(self, url, filepath):
         """
@@ -53,8 +62,10 @@ class CachedFileGetter(object):
         :param filepath: file to store contents in
         :return: None
         """
+
+        user_agent = {"User-Agent": 'GeminiDRAGONS '+version()}
         with open(filepath, 'wb') as fp:
-            r = requests.get(url, stream=True, timeout=10.0)
+            r = requests.get(url, stream=True, timeout=10.0, headers=user_agent)
             try:
                 r.raise_for_status()
                 for chunk in r.iter_content(chunk_size=None):
@@ -104,6 +115,37 @@ class CachedFileGetter(object):
         self._fetchurltofile(url, cachefilename)
         # And copy it out to the destination
         shutil.copyfile(cachefilename, filename)
+
+        # Now check if the cache has grown too big
+        if self.cachegbs and self.cachegbs > 0.0001:  # float(0) means unlimited
+            # Get a list of files in the cache
+            dirents = os.scandir(self.cachedir)
+            # Make a list of (atime, path, bytes) tuples. atime first for sorting
+            # Also calculate total bytes
+            tuples = []
+            total_bytes = 0
+            for dirent in dirents:
+                statobj = dirent.stat()  # To avoid multiple stat calls
+                tuples.append((statobj.st_atime,
+                                      dirent.path,
+                                      statobj.st_size))
+                total_bytes += statobj.st_size
+            # Sort list by increasing atime (ie oldest first)
+            tuples.sort()
+            while total_bytes > (1E9 * self.cachegbs):
+                try:
+                    atime, path, size = tuples.pop(0)
+                except IndexError:
+                    self.log.error("IndexError purging old calcache files")
+                    break
+                self.log.debug(f"Deleting calcache file {path} - {size} bytes")
+                try:
+                    os.unlink(path)
+                except Exception:
+                    self.log.error(f"Failed to delete {path} from calcache")
+                    break
+                total_bytes -= size
+            self.log.debug(f"Calcache size {total_bytes/1E9} GB, max: {self.cachegbs}")
 
 
 class GetterError(Exception):

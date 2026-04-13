@@ -41,8 +41,19 @@ Here is a copy of the table for quick reference.
 | BPM                 || bpm_20121101_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
 
+Setting up
+==========
+First navigate to your work directory in the unpacked data package.
+
+::
+
+    cd <path>/gnirsxd_tutorial/playground
+
+The first steps are to import libraries, set up the calibration manager,
+and set the logger.
+
 Configuring the interactive interface
-=====================================
+-------------------------------------
 In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
 
     [interactive]
@@ -53,7 +64,7 @@ the interactive tools using that browser.  The allowed strings are "**safari**",
 "**chrome**", and "**firefox**".
 
 Importing libraries
-===================
+-------------------
 
 .. code-block:: python
     :linenos:
@@ -71,7 +82,7 @@ The ``Reduce`` class is used to set up and run the data
 reduction.
 
 Setting up the logger
-=====================
+---------------------
 We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 .. code-block:: python
@@ -83,7 +94,7 @@ We recommend using the DRAGONS logger.  (See also :ref:`double_messaging`.)
 
 
 Set up the Local Calibration Manager
-====================================
+------------------------------------
 
 .. important::  Remember to set up the calibration service.
 
@@ -92,10 +103,7 @@ Set up the Local Calibration Manager
     :ref:`cal_service_config` and :ref:`cal_service_api`.
 
 We recommend that you clean up your working directory (``playground``) and
-start a fresh calibration database (``caldb init -w``) when you start a new
-example.
-
-Start a fresh calibration database (``caldb.init(wipe=True)``) when you
+create a fresh calibration database (``caldb.init(wipe=True)``) when you
 start a new example.
 
 Create file lists
@@ -271,7 +279,7 @@ processed flat is constructed from two sets of stacked lamp-on flats, each
 illuminated
 differently to ensure that all orders in the reassembled flat are well
 illuminated.  You do not have to worry about the details, as long as you
-pass the two sets of raw flats as input to the ``reduce`` command, the software will take
+pass the two sets of raw flats as input to the ``Reduce`` instance, the software will take
 care of the assembly.
 
 The processed flat will also contain the illumination mask that identify the location
@@ -529,9 +537,10 @@ launch DS9 first.)
 Each order is extracted separately and stored in separate extensions in the
 MEF file.  The 1D extracted spectrum before telluric correction or flux
 calibration, obtained by adding the option
-``-p extractSpectra:write_outputs=True`` to the ``reduce`` call.  You can
-plot all the orders on a common plot with ``dgsplot``. (The ``--thin`` option
-simply plots a thinner line than the default width.)
+``('extractSpectra:write_outputs', True)`` to the ``uparms`` dictionary.
+
+You can
+plot all the orders on a common plot with ``dgsplot``.
 
 ::
 

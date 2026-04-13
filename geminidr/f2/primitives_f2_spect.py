@@ -13,11 +13,9 @@ from astropy.modeling import models
 from geminidr.core import Spect, Telluric
 from .primitives_f2 import F2
 from . import parameters_f2_spect
-from gemini_instruments.f2.lookup import dispersion_offset_mask, resolving_power
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import transform, wavecal
-from gemini_instruments import gmu
 from geminidr import CalibrationNotFoundError
 
 from recipe_system.utils.decorators import parameter_override, capture_provenance
@@ -38,76 +36,55 @@ class F2Spect(Telluric, Spect, F2):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_f2_spect)
 
-    def makeLampFlat(self, adinputs=None, **params):
+    def darkCorrect(self, adinputs=None, **params):
         """
-        This produces an appropriate stacked F2 spectroscopic flat, based on
-        the inputs. For F2 spectroscopy, lamp-on flats have the dark current
-        removed by subtracting darks.
+        This primitive performs dark subtraction on F2 spectroscopic data.
+        It differs from the generic version in that it will look for a
+        lamp-off flat in the list of inputs and use that to subtract the
+        dark and thermal components instead of looking for a processed
+        dark.  This case happens in HK-HK and R3K-Klong configurations as
+        far as we know.
 
         Parameters
         ----------
         suffix: str
             The suffix to be added to the output file.
+        dark: list of :class:`~astrodata.AstroData` or None
+            List of dark frames to be used for the correction. If None,
+            the calibration database will be searched for an appropriate
+            dark frame.
+        do_cal: str
+            Whether to search for calibration frames in the calibration
+            database. Options are 'yes', 'no', and 'procmode'. In the last
+            case, calibration frames will be searched for only if the input
+            frames are processed.
         """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        suffix = params["suffix"]
+        to_correct = []
+        if 'ARC' in adinputs[0].tags and params['dark'] is None:
+            lampoffs = []
+            for ad in adinputs:
+                if 'LAMPOFF' in ad.tags:
+                    lampoffs.append(ad)
+                else:
+                    to_correct.append(ad)
+            if lampoffs:
+                log = self.log
+                log.fullinfo("Using lamp-off flat(s) for dark correction.")
+                # Check that all exposure times match
+                exptimes = [ad.exposure_time() for ad in adinputs]
+                if not all(abs(et - exptimes[0]) < 0.01 for et in exptimes[1:]):
+                    raise ValueError("Lamp-off flats and arcs do not have the same exposure time")
+                # Stack lamp-offs
+                stack_params = self._inherit_params(params, "stackFrames")
+                stack_params.update({'zero': False, 'scale': False})
+                self.showInputs(lampoffs, purpose='lamp-off flats for dark correction')
+                lampoff_stack = self.stackFrames(lampoffs, **stack_params)
+                params['dark'] = [lampoff_stack[0]]
+        else:
+            to_correct = adinputs
 
-        # Since this primitive needs a reference, it must no-op without any
-        if not adinputs:
-            return adinputs
-
-        # This is basically the generic makeLampFlat code, but altered to
-        # distinguish between FLATs and DARKs, not LAMPONs and LAMPOFFs
-        flat_list = self.selectFromInputs(adinputs, tags='FLAT')
-        dark_list = self.selectFromInputs(adinputs, tags='DARK')
-        stack_params = self._inherit_params(params, "stackFrames")
-        if dark_list:
-            self.showInputs(dark_list, purpose='darks')
-            dark_list = self.stackDarks(dark_list, **stack_params)
-        self.showInputs(flat_list, purpose='flats')
-        stack_params.update({'zero': False, 'scale': False})
-        flat_list = self.stackFrames(flat_list, **stack_params)
-
-        if flat_list and dark_list:
-            log.fullinfo("Subtracting stacked dark from stacked flat")
-            flat = flat_list[0]
-            flat.subtract(dark_list[0])
-            flat.update_filename(suffix=suffix, strip=True)
-            return [flat]
-
-        elif flat_list:  # No darks were passed.
-            # Look for dark in calibration manager; if not found, crash.
-            log.fullinfo("Only had flats to stack. Calling darkCorrect.")
-            flat_list = self.darkCorrect(flat_list, suffix=suffix,
-                                         dark=None, do_cal='procmode')
-            if flat_list[0].phu.get('DARKIM') is None:
-                # No dark was subtracted by darkCorrect:
-                raise CalibrationNotFoundError(
-                    "No processed dark found in calibration database. Please "
-                    "either provide one, or include a list of darks as input.")
-            return flat_list
-
-    def standardizeWCS(self, adinputs=None, **params):
-        """
-        This primitive updates the WCS attribute of each NDAstroData extension
-        in the input AstroData objects. For spectroscopic data, it means
-        replacing an imaging WCS with an approximate spectroscopic WCS.
-
-        This is an F2-specific primitive due to the need to apply an offset to the
-        central wavelength derived from image header, which for F2 is specified for the middle of
-        the grism+filter transmission window, not for the central row.
-
-        Parameters
-        ----------
-        suffix: str/None
-            suffix to be added to output files
-        """
-        super().standardizeWCS(adinputs, **params)
-        for ad in adinputs:
-            self._add_longslit_wcs(ad, pointing="center")
-        return adinputs
+        return super().darkCorrect(to_correct, **params)
 
     def determineDistortion(self, adinputs=None, **params):
         """
@@ -180,6 +157,11 @@ class F2Spect(Telluric, Spect, F2):
         adoutputs = []
         for ad in adinputs:
             these_params = params.copy()
+
+            # The peak locations are slightly dependent on the width of the
+            # Ricker filter used in the peak finding, so control that
+            these_params["fwidth"] = self._change_fwidth(ad, these_params["fwidth"])
+
             if these_params["max_missed"] is None:
                 if "ARC" in ad.tags:
                     # In arcs with few lines tracing strong horizontal noise pattern can
@@ -191,7 +173,7 @@ class F2Spect(Telluric, Spect, F2):
                     # otherwise the line might be abandoned when crossing a bright object spectrum.
                     these_params["max_missed"] = 5
                 self.log.stdinfo(f'Parameter "max_missed" is set to None. '
-                f'Using max_missed={these_params["max_missed"]} for {ad.filename}')
+                                 f'Using max_missed={these_params["max_missed"]} for {ad.filename}')
             adoutputs.extend(super().determineDistortion([ad], **these_params))
         return adoutputs
 
@@ -279,20 +261,14 @@ class F2Spect(Telluric, Spect, F2):
             Updated objects with a `.WAVECAL` attribute and improved wcs for
             each slice
         """
-        log=self.log
+        log = self.log
         adoutputs = []
         for ad in adinputs:
             these_params = params.copy()
 
             # The peak locations are slightly dependent on the width of the
             # Ricker filter used in the peak finding, so control that
-            try:
-                slitwidth = int(ad.focal_plane_mask().replace('pix-slit', ''))
-            except AttributeError:  # fpm() is returning None
-                log.warning(f"Cannot determine slit width for {ad.filename}")
-            else:
-                these_params["fwidth"] = 2 + 0.5 * slitwidth
-                log.stdinfo(f"Setting fwidth={these_params['fwidth']}")
+            these_params["fwidth"] = self._change_fwidth(ad, these_params["fwidth"])
 
             min_snr_isNone = True if these_params["min_snr"] is None else False
 
@@ -317,9 +293,107 @@ class F2Spect(Telluric, Spect, F2):
                 log.stdinfo('Parameter "min_snr" is set to None. '
                             f'Using min_snr={these_params["min_snr"]} '
                             f'for {ad.filename}')
-            
+
             adoutputs.extend(super().determineWavelengthSolution([ad], **these_params))
         return adoutputs
+
+    def makeLampFlat(self, adinputs=None, **params):
+        """
+        This produces an appropriate stacked F2 spectroscopic flat, based on
+        the inputs. For F2 spectroscopy, lamp-on flats have the dark current
+        removed by subtracting darks, but lamp-off flats are also allowed.
+
+        Parameters
+        ----------
+        suffix: str
+            The suffix to be added to the output file.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        suffix = params["suffix"]
+
+        # Since this primitive needs a reference, it must no-op without any
+        if not adinputs:
+            return adinputs
+
+        def check_exposure_times(adlist):
+            return all(abs(ad.exposure_time() - adlist[0].exposure_time()) < 0.01
+                       for ad in adlist[1:])
+
+        flat_list = self.selectFromInputs(adinputs, tags='FLAT')
+        flat_on_list = self.selectFromInputs(flat_list, tags='LAMPON')
+        flat_off_list = self.selectFromInputs(flat_list, tags='LAMPOFF')
+        dark_list = self.selectFromInputs(adinputs, tags='DARK')
+        if not flat_on_list:
+            raise ValueError("No lamp-on flats have been provided")
+        if dark_list and flat_on_list and flat_off_list:
+            log.warning("Darks have been provided as well as lamp-on and "
+                        "lamp-off flats. Ignoring the darks.")
+            dark_list = []
+        stack_params = self._inherit_params(params, "stackFrames")
+        if dark_list:
+            self.showInputs(dark_list, purpose='darks')
+            dark_list = self.stackDarks(dark_list, **stack_params)
+        stack_params.update({'zero': False, 'scale': False})
+        if flat_off_list:
+            self.showInputs(flat_off_list, purpose='lamp-off flats')
+            if not check_exposure_times(flat_off_list):
+                raise ValueError("Lamp-off flats are not of equal exposure time")
+            flat_off_list = self.stackFrames(flat_off_list, **stack_params)
+        self.showInputs(flat_on_list, purpose='lamp-on flats')
+        if not check_exposure_times(flat_on_list):
+            raise ValueError("Lamp-on flats are not of equal exposure time")
+        flat_on_list = self.stackFrames(flat_on_list, **stack_params)
+
+        if flat_off_list or dark_list:
+            if dark_list:
+                subtype = "dark"
+                sublist = dark_list
+                if not check_exposure_times(flat_on_list + dark_list):
+                    log.warning("Lamp-on flats and darks do not have the same exposure time.")
+            else:
+                subtype = "lamp-off flat"
+                sublist = flat_off_list
+                if not check_exposure_times(flat_on_list + flat_off_list):
+                    log.warning("Lamp-on and lamp-off flats do not have the same exposure time.")
+            log.stdinfo(f"Subtracting stacked {subtype} from stacked lamp-on flat")
+            flat = flat_on_list.pop()
+            flat.subtract(sublist.pop())
+            flat.update_filename(suffix=suffix, strip=True)
+            return [flat]
+
+        else:  # Only lamp-on flats were passed.
+            # Look for dark in calibration manager; if not found, crash.
+            log.fullinfo("Only had flats to stack. Calling darkCorrect.")
+            flat_on_list = self.darkCorrect(flat_on_list, suffix=suffix,
+                                         dark=None, do_cal='procmode')
+            if flat_on_list[0].phu.get('DARKIM') is None:
+                # No dark was subtracted by darkCorrect:
+                raise CalibrationNotFoundError(
+                    "No processed dark found in calibration database. Please "
+                    "either provide one, or include a list of darks as input.")
+            return flat_on_list
+
+    def standardizeWCS(self, adinputs=None, **params):
+        """
+        This primitive updates the WCS attribute of each NDAstroData extension
+        in the input AstroData objects. For spectroscopic data, it means
+        replacing an imaging WCS with an approximate spectroscopic WCS.
+
+        This is an F2-specific primitive due to the need to apply an offset to the
+        central wavelength derived from image header, which for F2 is specified for the middle of
+        the grism+filter transmission window, not for the central row.
+
+        Parameters
+        ----------
+        suffix: str/None
+            suffix to be added to output files
+        """
+        super().standardizeWCS(adinputs, **params)
+        for ad in adinputs:
+            self._add_longslit_wcs(ad, pointing="center")
+        return adinputs
 
     def _get_linelist(self, wave_model=None, ext=None, config=None):
         lookup_dir = os.path.dirname(import_module('.__init__',
@@ -340,6 +414,21 @@ class F2Spect(Telluric, Spect, F2):
         linelist = wavecal.LineList(os.path.join(lookup_dir, filename))
 
         return linelist
+
+    def _change_fwidth(self, ad, fwidth):
+        try:
+            slitwidth = int(ad.focal_plane_mask().replace('pix-slit', ''))
+        except AttributeError:  # fpm() is returning None
+            self.log.warning(f"Cannot determine slit width for {ad.filename}")
+        else:
+            new_fwidth = 1.8 + 0.8 * slitwidth
+            if fwidth not in (None, new_fwidth):
+                self.log.warning(f"{ad.filename}: recommended fwidth="
+                            f"{new_fwidth:.1f} not {fwidth}")
+                return fwidth  # User knows best!
+            else:
+                self.log.stdinfo(f"{ad.filename}: setting fwidth={new_fwidth:.1f}")
+                return new_fwidth
 
     @staticmethod
     def _convert_peak_to_centroid(ext):
@@ -367,31 +456,37 @@ class F2Spect(Telluric, Spect, F2):
         Returns
         -------
         callable:
-            a callable that modifies a pixel value (or array thereof) of a
-            line peak to the centroid
+            a callable that takes two inputs (pixel location of a peak in
+            dispersion direction, pixel location in spatial direction) and
+            returns the pixel location of the centroid in the dispersion
+            direction.
         """
-        # (c1, c2, c3) Chebyshev coefficients for each slit width
-        coefficients = {1: (4.471281214, -0.062329556, 1.324079642),
-                        2: (4.138404874, -0.054101213, 1.306253510),
-                        3: (3.739663083, -0.048616217, 1.248004911),
-                        4: (3.328556440, -0.042899206, 1.166940684),
-                        6: (2.595923451, -0.029713970, 0.990172698),
-                        8: (1.966203933, -0.017133596, 0.801233150),
-                        }
+        # (c1, c3) Chebyshev coefficients for each slit width
+        # These are fits to the shift between the location of an
+        # unresolved line, convolved with the F2 LSF and measured using
+        # the wavecal code with fwidth=1.8+0.8*slit_width_pix and
+        # pinpoint_index=-1 (as with the other instruments), and the true
+        # line centroid.
+        coefficients = {1: (4.309429645269278, 1.4215076588261364),
+                        2: (3.8252658159110338, 1.3565459243416835),
+                        3: (3.3065208213214574, 1.2363939258483094),
+                        4: (2.81683754466264, 1.0929178225519682),
+                        6: (2.006171620922528, 0.8219621814458382),
+                        8: (1.467492569585536, 0.6206906225418647),
+                        }  # 1.8+0.8w, new intrinsic (4.8+4.2)
         try:
             slitwidth = int(ext.focal_plane_mask().replace('pix-slit', ''))
         except AttributeError:  # fpm() is returning None
             raise ValueError(f"Cannot determine slit width for {ext.filename}")
         try:
-            c1, c2, c3 = coefficients[slitwidth]
+            c1, c3 = coefficients[slitwidth]
         except KeyError:
             raise ValueError(f"Slit width {slitwidth} for {ext.filename}"
                              "unknown")
 
-        # c0=c2 because the function must evaluate to 0 at the domain midpoint
         # Domain is (0, 2122) since slit projects on row 1061
         # The 1061 values are so the model returns the new pixel location
         # and not the shift (so we don't need to wrap the model)
-        m_tweak = models.Chebyshev1D(degree=3, c0=c2+1061, c1=c1+1061,
-                                     c2=c2, c3=c3, domain=(0, 2122))
+        m_tweak = models.Mapping((0,), n_inputs=2) | models.Chebyshev1D(
+            degree=3, c0=1061, c1=c1+1061, c2=0, c3=c3, domain=(0, 2122))
         return m_tweak

@@ -64,8 +64,10 @@ class Calibrator(ABC):
             self.user_mask = np.zeros_like(x, dtype=bool)
 
         try:
-            regions = ui_params['regions']
-        except (TypeError, KeyError):
+            regions = ui_params.regions
+        except (TypeError, AttributeError):
+            return
+        if regions is None:
             return
 
         # Effectively the code from fit_1D
@@ -259,12 +261,10 @@ class TelluricCalibrator(Calibrator):
             masked points (including sigma-clipped points)
         """
         data = self.concatenate('data')
-        mask = self.concatenate('mask').astype(bool)
         original_masks = [tspek.mask.copy() for tspek in self.spectra]
         for tspek, user_mask in zip(self.spectra, self.user_mask):
             tspek.nddata.mask |= user_mask
-        log.debug("MASKED PIXEL TOTALS", [tspek.mask.astype(bool).sum()
-                                          for tspek in self.spectra])
+        mask = self.concatenate('mask').astype(bool)
         m_init = MultipleTelluricModels(
             self.spectra, function=self.fit_params["function"],
             order=self.fit_params["order"])

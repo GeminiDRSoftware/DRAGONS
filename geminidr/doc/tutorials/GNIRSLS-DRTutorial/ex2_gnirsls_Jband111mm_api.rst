@@ -38,8 +38,19 @@ Here is a copy of the table for quick reference.
 | BPM                 || bpm_20100716_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
 
+Setting up
+==========
+First navigate to your work directory in the unpacked data package.
+
+::
+
+    cd <path>/gnirsls_tutorial/playground
+
+The first steps are to import libraries, set up the calibration manager,
+and set the logger.
+
 Configuring the interactive interface
-=====================================
+-------------------------------------
 In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
 
     [interactive]
@@ -388,9 +399,9 @@ So pick one, **remove** the other.
     :linenos:
     :lineno-start: 55
 
-    caldb.remove_cal(reduce_arcs.output_filenames[0])
+    caldb.remove_cal(reduce_arcs.output_filenames[0])  # remove the lamp solution
     ... or ...
-    caldb.remove_cal(reduce_sky.output_filenames[0])
+    caldb.remove_cal(reduce_sky.output_filenames[0])  # remove the sky line solution
 
 In this tutorial, we remove the lamp solution.
 

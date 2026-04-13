@@ -67,7 +67,7 @@ class cleanReadoutConfig(config.Config):
 class cleanFFTReadoutConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_readoutFFTCleaned", optional=True)
     win_size = config.RangeField("Window size for Fourier amplitude spectrum thresholding", int, 9, min=3)
-    periodicity = config.Field("Periodicity of the pattern noise (pixels)", int, 8)
+    periodicity = config.Field("Periodicity of the pattern noise (pixels)", float, 8.)
     sigma_fact = config.RangeField("Sigma factor used for the Fourier amplitude threshold", float, 4., min=0)
     pat_thres = config.RangeField("Standardized pattern strength threshold", float, -0.3, max=1.0)
     lquad = config.Field("Level the bias offset across (sub-)quads accompanying pattern noise?", bool, True)
@@ -77,6 +77,7 @@ class cleanFFTReadoutConfig(config.Config):
     pad_rows = config.Field("Number of dummy rows to append to the top quads of the image", int, 0)
     clean = config.ChoiceField("Cleaning behavior", str,
                                allowed={"default": "perform pattern removal if pattern in strong enough",
+                                        "force": "force pattern removal in every row",
                                         "skip": "skip primitive"},
                                default="skip", optional=False)
     

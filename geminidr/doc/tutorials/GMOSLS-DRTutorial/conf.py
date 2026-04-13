@@ -18,18 +18,18 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS'
-copyright = '2025, Association of Universities for Research in Astronomy'
+copyright = '2026, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
-version = '4.2_dev'
-#release = '4.1.0'
+version = '5.0_dev'
+#release = '4.2.1'
 #rtdurl = 'v'+release
-#release = '4.1.x'
+#release = '4.2.x'
 #rtdurl = 'release-'+release
 rtdurl = 'latest'
 
-today = 'October 2025'
+today = 'April 2026'
 
 # -- General configuration ---------------------------------------------------
 

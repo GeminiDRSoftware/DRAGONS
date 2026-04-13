@@ -3,6 +3,7 @@
 from gempy.library import config
 from geminidr.core import parameters_spect
 from geminidr.core import parameters_preprocess
+from geminidr.core import parameters_telluric
 
 
 def list_of_ints_check(value):
@@ -13,6 +14,11 @@ def list_of_ints_check(value):
 class associateSkyConfig(parameters_preprocess.associateSkyConfig):
     def setDefaults(self):
         self.min_skies = 2
+
+
+class attachWavelengthSolutionConfig(parameters_spect.attachWavelengthSolutionConfig):
+    def setDefaults(self):
+        self.use_same_arc = True
 
 
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
@@ -31,9 +37,12 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     def setDefaults(self):
         self.spectral_order = 3
         self.min_snr = 7.
-        self.min_line_length = 0.3
+        self.min_line_length = 0.8
         self.debug_reject_bad = False
 
+class findAperturesConfig(parameters_spect.findAperturesConfig):
+    def setDefaults(self):
+        self.min_snr = 10.
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     def setDefaults(self):
@@ -49,3 +58,6 @@ class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
         self.mask_objects = False
         self.dilation = 0.
 
+class telluricCorrectConfig(parameters_telluric.telluricCorrectConfig):
+    def setDefaults(self):
+        self.apply_model = False

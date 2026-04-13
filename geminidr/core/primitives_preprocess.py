@@ -900,7 +900,6 @@ class Preprocess(PrimitivesBASE):
                             f"{ad.filename}")
                 continue
 
-            in_adu = ad.is_in_adu()
             # It's impossible to do this cleverly with a string of ad.mult()s
             # so use regular maths
             log.status(f"Applying nonlinearity correction to {ad.filename}")

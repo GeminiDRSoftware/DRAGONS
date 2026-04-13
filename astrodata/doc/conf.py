@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Astrodata Manual'
-copyright = '2025, Association of Universities for Research in Astronomy'
+copyright = '2026, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -57,11 +57,11 @@ author = 'DRAGONS Team'
 # built documents.
 #
 # The short X.Y version.
-version = '4.2_dev'
+version = '5.0_dev'
 # The full version, including alpha/beta/rc tags.
-#release = '4.1.0'
+#release = '4.2.1'
 #rtdurl = 'v'+release
-#release = '4.1.x'
+#release = '4.2.x'
 #rtdurl = 'release-'+release
 rtdurl = 'latest'
 
@@ -76,7 +76,7 @@ language = "en"
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
 #
-today = 'October 2025'
+today = 'April 2026'
 #
 # Else, today_fmt is used as the format for a strftime call.
 #

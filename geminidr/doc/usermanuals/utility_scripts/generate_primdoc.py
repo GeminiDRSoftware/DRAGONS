@@ -28,7 +28,7 @@ from gempy.library import config
 
 SHORT_DESCRIPTION = "Generate primitive doc from docstrings and pex.config class definitions."
 
-DOCUMENTED_INSTPKG = {'core', 'f2', 'gemini', 'gmos', 'gnirs', 'gsaoi', 'niri'}
+DOCUMENTED_INSTPKG = {'core', 'f2', 'gemini', 'ghost', 'gmos', 'gnirs', 'gsaoi', 'niri'}
 DRPKG = 'geminidr'
 
 PARAMHEADER = 'Parameter defaults and options\n' \
@@ -218,8 +218,8 @@ def write_parameters_rst(paramclass, destination, module):
                                                        'primitives')
     associated_primname = paramclass.__name__.split('Config')[0]
 
-    print("KLDEBUG: associated_primodulename=", associated_primodulename)
-    print("KLDEBUG: associated_primname=", associated_primname)
+    #print("KLDEBUG: associated_primodulename=", associated_primodulename)
+    #print("KLDEBUG: associated_primname=", associated_primname)
 
     primmod = import_module(associated_primodulename)
     for name, clss in inspect.getmembers(primmod, inspect.isclass):

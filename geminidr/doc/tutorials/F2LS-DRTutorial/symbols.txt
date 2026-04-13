@@ -1,0 +1,2 @@
+.. |um| replace:: :math:`{\mu}`\ m
+.. |O2| replace:: O\ :sub:`2`

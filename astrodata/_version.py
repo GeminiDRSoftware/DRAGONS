@@ -5,8 +5,8 @@ and to be used in the documentation.
 """
 
 # --- Setup Version Here ---
-API = 4
-FEATURE = 2
+API = 5
+FEATURE = 0
 BUG = 0
 TAG = 'dev'
 

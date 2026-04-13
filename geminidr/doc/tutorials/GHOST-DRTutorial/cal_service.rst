@@ -75,27 +75,27 @@ the database content with ``caldb list``, and ``caldb remove <filename>`` to
 remove a file from the database (it will **not** remove the file on disk.)
 
 
-.. .. _cal_service_api:
+.. _cal_service_api:
 
-.. Usage from the API
-.. .. ==================
+Usage from the API
+==================
 
-.. From the API, the calibration database is initialized as follows:
+From the API, the calibration database is initialized as follows:
 
-.. .. code-block:: python
+.. code-block:: python
 
-..     from recipe_system import cal_service
+    from recipe_system import cal_service
 
-..     caldb = cal_service.set_local_database()
-..     caldb.init()
+    caldb = cal_service.set_local_database()
+    caldb.init()
 
 
-.. The calibration service is now ready to use.
+The calibration service is now ready to use.
 
-.. To delete the existing database and start fresh, use the "wipe"
-.. option: ``caldb.init(wipe=True)``.
+To delete the existing database and start fresh, use the "wipe"
+option: ``caldb.init(wipe=True)``.
 
-.. You can manually add processed calibrations with ``caldb.add_cal(<filename>)``,
-  list the database content with ``caldb.list_files()``, and
-  ``caldb.remove_cal(<filename>)`` to remove a file from the database (it will
-  **not** remove the file on disk.)
+You can manually add processed calibrations with ``caldb.add_cal(<filename>)``
+list the database content with ``caldb.list_files()``, and
+``caldb.remove_cal(<filename>)`` to remove a file from the database (it will
+**not** remove the file on disk.)

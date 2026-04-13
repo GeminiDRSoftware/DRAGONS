@@ -288,7 +288,7 @@ run.
 
     reduce @telluric.lis -r reduceTelluric @hip78649.param -p fitTelluric:interactive=True
 
-Using a Chebyshev polynomial of order 10 leads to a fit that better follows
+Using a spline3 of order 10 leads to a fit that better follows
 the continuum without being too wavy.  The fit might look a bit high in the
 blue but remember that this is a region where the telluric absorption becomes
 important.
@@ -297,17 +297,9 @@ important.
    :width: 600
    :alt: fit to the telluric standard
 
-.. top plot.  Need legend for the blue line, the red dots, and revise the legend
-     for the black dot ("good" does not tell me what it is)
-.. bottom plot.  need legend for blue line and red line.
-
-.. I have no idea what to do with the stuff on the left.
-.. The Help pop up needs to be adapted to this tool.
-.. Reset does not reset the BB text box.
-.. BB slider does not seem to change the model, even at the extremes.
-.. the magnitude box is ignored.  I can set it to whatever and on the
-   screen logs, it keeps saying K=10.
-.. the Reset button on the left does not reset LSF.
+.. image:: _graphics/gnirsls_Kband32mm_tellfitmodel.png
+   :width: 600
+   :alt: the corrected spectrum using the fitTelluric model.
 
 
 Science Observations
@@ -353,13 +345,12 @@ to call |reduce| on the science frames to get an extracted spectrum.
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
-The primitive ``findApertures`` finds the real source and a couple spurious
-ones on the left.  They won't affect the extraction of the real source. But
-since we are in interactive mode, we can remove the spurious sources by
-pointing the cursor to them and pressing ``d``.
+The primitive ``findApertures`` finds the source automatically. If it were
+to find spurious sources, or sources you are simply not interested in, you
+can remove them by pointing the cursor on them and by pressing ``d``.
 
 It does not make a big difference in this case but at the ``fitTelluric``
-step we can adjust the offset to ``0.2`` to better remove the telluric features.
+step we can adjust the offset to ``0.1`` to better remove the telluric features.
 
 ::
 

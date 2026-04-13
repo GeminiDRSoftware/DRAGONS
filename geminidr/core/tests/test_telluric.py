@@ -61,7 +61,7 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename, mag, bbtemp):
     p = pclass([ad])
     adout = p.fitTelluric(magnitude=mag, bbtemp=bbtemp,
                           shift_tolerance=None,
-                          debug_stellar_mask_threshold=0.9).pop()
+                          debug_stellar_mask_threshold=0.).pop()
 
     adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
     assert ad_compare(adout, adref)
@@ -183,7 +183,8 @@ def test_gaussian_line_spread_function_convolve_and_resample(ext, resolution):
 @pytest.mark.parametrize("filename,model_params",
                          # GNIRS L-band, sky emission
                          [('N20100820S0214_wavelengthSolutionDetermined.fits',
-                           {"absorption": False, "num_lines": 100}),
+                           {"absorption": False, "num_lines": 100,
+                            "resolution": 1759.0}),
                           # GNIRS J-band, sky absorption in object spectrum
                           ('N20121221S0199_aperturesFound.fits',
                            {"absorption": True, "num_lines": 50}),
@@ -238,7 +239,8 @@ def test_get_airglow_linelist(path_to_inputs, path_to_refs):
 
     p = F2Longslit([])
     linelist = p._get_airglow_linelist(wave_model=wave_model, ext=ad_f2[0],
-                                       config={"absorption": False, "num_lines": 100})
+                                       config={"absorption": False, "num_lines": 100,
+                                               "resolution": 620.0})
     refplot_data_f2 = linelist.reference_spectrum
     ref_refplot_spec_f2 = np.loadtxt(
         os.path.join(path_to_refs, "S20180114S0104_refplot_spec.dat"))

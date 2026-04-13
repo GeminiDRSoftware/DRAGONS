@@ -134,31 +134,54 @@ do it.
 .. code-block:: python
     :linenos:
 
-    from scipy.interpolate import BSpline
     import numpy as np
     import matplotlib.pyplot as plt
 
     import astrodata
     import gemini_instruments
+    from gempy.library import astromodels as am
 
     ad = astrodata.open('S20170826S0160_standard.fits')
 
-    sensfunc = ad[0].SENSFUNC
+    sensfunc = am.table_to_model(ad[0].SENSFUNC)
 
-    order = sensfunc.meta['header'].get('ORDER', 3)
-    func = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, order)
-    std_wave_unit = sensfunc['knots'].unit
-    std_flux_unit = sensfunc['coefficients'].unit
+    w = ad[0].wcs(np.arange(ad[0].data.size))
 
-    w1 = ad[0].wcs(0)
-    w2 = ad[0].wcs(ad[0].data.size)
+    std_wave_unit = ad[0].SENSFUNC['knots'].unit
+    std_flux_unit = ad[0].SENSFUNC['coefficients'].unit
 
-    x = np.arange(w1, w2)
     plt.xlabel(f'Wavelength ({std_wave_unit})')
     plt.ylabel(f'{std_flux_unit}')
-    plt.plot(x, func(x))
+    plt.plot(w, sensfunc(w))
     plt.show()
 
+
+.. _useful_parameters:
+
+Useful parameters
+=================
+
+skip_primitive
+--------------
+I might happen that you will want or need to not run a primitive in a recipe.
+You could copy the recipe over and edit it.  Or you could invoke the
+``skip_primitive`` parameter to tell DRAGONS to completely skip that step.
+
+Let's say that you want the data aligned but not stacked.  You would do::
+
+    reduce @sci.lis -p stackFrames:skip_primitive=True
+
+
+write_outputs
+-------------
+When debugging or when there's a need to inspect intermediate products, you
+might want to write the output of a specific primitive to disk.  This is done
+with the ``write_outputs`` parameter.
+
+For example, to write the extracted spectrum before it is flux calibrated,
+you would do::
+
+    reduce @sci.lis -p extractSpectra:write_outputs=True
 
 
 

@@ -217,3 +217,31 @@ From the API:
 
     reduce_science.suffix = "newsuffix"
     reduce_science.runr()
+
+.. _useful_parameters:
+
+Useful parameters
+=================
+
+skip_primitive
+--------------
+I might happen that you will want or need to not run a primitive in a recipe.
+You could copy the recipe over and edit it.  Or you could invoke the
+``skip_primitive`` parameter to tell DRAGONS to completely skip that step.
+
+Let's say that you want the data aligned but not stacked.  You would do::
+
+    reduce @sci.lis -p stackFrames:skip_primitive=True
+
+
+write_outputs
+-------------
+When debugging or when there's a need to inspect intermediate products, you
+might want to write the output of a specific primitive to disk.  This is done
+with the ``write_outputs`` parameter.
+
+For example, to write the mosaiced frames before alignment and stacking,
+you would do::
+
+    reduce @sci.lis -p mosaicDetectors:write_outputs=True
+

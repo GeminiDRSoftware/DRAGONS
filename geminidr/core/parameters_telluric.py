@@ -12,6 +12,14 @@ def validate_magstr(value):
     return True
 
 
+class divideByTelluricConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_telluricDivided", optional=True)
+    telluric = config.ListField("File with telluric model", (AstroData, str), None,
+                                optional=True, single=True)
+    pixel_shift = config.RangeField("Shift in pixels", float, None, min=-5, max=5,
+                                     inclusiveMin=True, inclusiveMax=True, optional=True)
+
+
 class fitTelluricConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_telluricFitted", optional=True)
     bbtemp = config.RangeField("Stellar blackbody temperature", float, 9650,
@@ -23,6 +31,8 @@ class fitTelluricConfig(config.core_1Dfitting_config):
                                     min=0.5, max=2.0, optional=True)
     regions = config.Field("Wavelength sample regions (nm)", str, None, optional=True,
                            check=parameters_spect.validate_regions_float)
+    order = config.RangeField("Order of fitting function", int, 6, min=1, max=30,
+                       inclusiveMax=True)
     interactive = config.Field("Display interactive fitter?", bool, False)
     weighting = config.ChoiceField("Weighting scheme", str,
                                    allowed={"variance": "Inverse variance",
@@ -35,13 +45,12 @@ class fitTelluricConfig(config.core_1Dfitting_config):
     debug_lsf_sampling = config.RangeField("Number of sample points for each LSF parameter",
                                            int, 5, min=3, optional=False)
     debug_stellar_mask_threshold = config.RangeField(
-        "Absorption threshold for stellar mask", float, 0.5, min=0.5, max=1.0)
+        "Absorption threshold for stellar mask", float, 0.5, min=0., max=1.0)
     debug_stellar_mask_max_extent = config.RangeField(
         "Maximum extent of a stellar mask region (nm)", float, 40., min=0.)
 
     def setDefaults(self):
         self.niter = 1
-        self._fields['order'].max = 30
 
 
 class telluricCorrectConfig(parameters_generic.calRequirementConfig):

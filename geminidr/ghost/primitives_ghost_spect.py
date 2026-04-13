@@ -571,6 +571,40 @@ class GHOSTSpect(GHOST):
 
         return adinputs
 
+    def captureWfitInstMon(self, adinputs=None, **params):
+        """
+        Captures a subset of values from the .WFIT into headers for the
+        instrument monitoring system to pick up.
+
+        The values captured are the coefficients of the polynomial that converts
+        (scaled) pixel location to wavelength for the reference order, which
+        (after some investigation) turn out to be .WFIT[:, 5] (ie the last
+        vector for 6th degree polynomials), with the 0-th
+        order (constant) term last.
+
+        :param adinputs:
+        :return:
+        """
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        for ad in adinputs:
+            for ext in ad:
+                if not hasattr(ext, 'WFIT'):
+                    log.warning("Ext has no WFIT attribute - skipping")
+                    ad.info()
+                    continue
+
+                coeffs = ext.WFIT[:, -1]
+                # They are in reverse order - 0th power coefficient is last
+                for i in range(len(coeffs)):
+                    j = len(coeffs) - 1 - i
+                    keyword = f'WFITCO{j}'
+                    ext.hdr[keyword] = (coeffs[i], 'Wavelength Fit Polynomial Coefficient')
+
+        return adinputs
+
     def combineOrders(self, adinputs=None, **params):
         """
         Combine the independent orders from the input ADs into one or more
@@ -874,7 +908,7 @@ class GHOSTSpect(GHOST):
 
         dark = params.get("dark")
         if dark is None:
-            dark_list = self.caldb.get_processed_slitflat(adinputs)
+            dark_list = self.caldb.get_processed_dark(adinputs)
         else:
             dark_list = (dark, None)
 
@@ -1035,10 +1069,11 @@ class GHOSTSpect(GHOST):
                         abs(flux - median_filter(flux, size=2*radius+1)),
                         size=2*radius+1)
                     variance = nmad * nmad
+                # We send halfwidth=2 to avoid contamination from nearby peaks
                 peaks = peak_finding.find_wavelet_peaks(
                     flux.copy(), widths=np.arange(2.5, 4.5, 0.1),
                     variance=variance, min_snr=min_snr, min_sep=5,
-                    pinpoint_index=None, reject_bad=False)
+                    pinpoint_index=None, reject_bad=False, halfwidth=2)
                 fit_g = fitting.TRFLSQFitter()  # recommended fitter
                 these_peaks = []
                 for x in peaks[0]:
@@ -1411,6 +1446,8 @@ class GHOSTSpect(GHOST):
                     else:
                         log.stdinfo(f"Estimated seeing in the {k} arm: {fwhm:5.3f}"
                                     f" ({apfrac*100:.1f}% aperture throughput)")
+                        kw = 'ESEEING' + k[0].upper()
+                        ad.phu.set(kw, fwhm, f"Estimated seeing in the {k} arm")
 
             if slitflat is None:
                 log.stdinfo("Creating synthetic slitflat image")
@@ -1453,6 +1490,11 @@ class GHOSTSpect(GHOST):
                     apply_centroids=apply_centroids, ftol=ftol,
                     min_flux_frac=min_flux_frac, timing=timing
                 )
+                # Retrieve the numer of CRs found. Fail silently if no can
+                try:
+                    ad.phu.set('NCRSFND', extractor.crsfound, 'Number of CRs found')
+                except AttributeError:
+                    pass
 
                 # Flag pixels with VAR=0 that don't already have a flag
                 extracted_mask |= (extracted_var == 0) & (extracted_mask == 0)

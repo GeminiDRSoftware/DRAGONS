@@ -311,6 +311,11 @@ class CalReturn:
     def __getitem__(self, value):
         return self.items()[value]
 
+    def __setitem__(self, key, value):
+        if len(value) != 2:
+            raise ValueError("You must provide a 2-tuple (file, origin)")
+        self.files[key], self.origins[key] = value
+
     def items(self):
         return list((file, origin) for file, origin in zip(self.files,
                                                            self.origins))

@@ -19,7 +19,7 @@ def makeProcessedFlat(p):
     p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
