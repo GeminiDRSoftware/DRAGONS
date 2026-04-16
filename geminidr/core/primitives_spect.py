@@ -3991,6 +3991,49 @@ class Spect(Resample):
 
         return adinputs
 
+    def monitorWavelengthSolution(self, adinputs=None, **params):
+        """
+        This captures some info from the wavelength solution for the GOA
+        instrument monitoring system into various MWS_ headers for the instrument
+        monitoring system to pick up.
+
+        Values Captured include the polynomial coefficients and RMS from the
+        .WAVECAL table, the central wavelength from both the WCS and central_wavlength()
+        descriptor and the difference between them.
+        :return:
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        tocapture = ('c0', 'c1', 'c2', 'c3', 'rms')
+
+        for ad in adinputs:
+            for ext in ad:
+                wavecal = getattr(ext, 'WAVECAL', None)
+                if wavecal is None:
+                    continue
+
+                for row in wavecal:
+                    if row['name'] in tocapture:
+                        keyword = 'MWS_' + row['name'].upper()
+                        ext.hdr[keyword] = (row['coefficients'],
+                                            f'WAVECAL {row['name']} coefficient')
+
+                # Get the wavelength of the central pixel
+                cp_x = ext.shape[0] / 2
+                cp_y = ext.shape[1] / 2
+
+                wcs_cent_nm = ext.wcs.pixel_to_world(cp_y, cp_x)[0].nm
+                hdr_cent_nm = ad.central_wavelength(asNanometers=True)
+                ext.hdr['MWS_WCS'] = (wcs_cent_nm, 'WCS solution central wavelength [nm]')
+                ext.hdr['MWS_HDR'] = (hdr_cent_nm, 'Header central wavelength [nm]')
+                ext.hdr['MWS_DIFF'] = (hdr_cent_nm - wcs_cent_nm,
+                                      'Difference between header and WCS central wavelengths')
+
+
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
 
     def normalizeFlat(self, adinputs=None, **params):
         """

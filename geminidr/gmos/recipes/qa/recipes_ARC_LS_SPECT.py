@@ -19,5 +19,14 @@ def makeProcessedArc(p):
     p.storeProcessedArc()
     p.writeOutputs()
 
+def checkProcessedArc(p):
+    """
+    Extracts some values from the .WAVECAL extension for instrument monitoring
+    :param p:
+    :return:
+    """
+
+    p.monitorWavelengthSolution()
+    p.writeOutputs()
 
 _default = makeProcessedArc
