@@ -16,6 +16,7 @@ import itertools
 from importlib import import_module
 
 import matplotlib
+import numpy
 import numpy as np
 from astropy import units as u
 from astropy.io.ascii.core import InconsistentTableError
@@ -4005,7 +4006,7 @@ class Spect(Resample):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        tocapture = ('c0', 'c1', 'c2', 'c3', 'rms')
+        tocapture = ('c0', 'c1', 'c2', 'c3', 'rms', 'fwidth')
 
         for ad in adinputs:
             for ext in ad:
@@ -4015,21 +4016,34 @@ class Spect(Resample):
 
                 for row in wavecal:
                     if row['name'] in tocapture:
-                        keyword = 'MWS_' + row['name'].upper()
+                        keyword = 'MWS_' + row['name'].upper()[:4]
                         ext.hdr[keyword] = (row['coefficients'],
                                             f'WAVECAL {row['name']} coefficient')
+                        if row['name'] == 'c0':
+                            # compare c0 with central_wavelength
+                            c0init = ext.central_wavelength(asNanometers=True)
+                            ext.hdr['MWS_C0DE'] = (row['coefficients'] - c0init,
+                                                   'Delta between c0 and central_wavelength')
+                        elif row['name'] == 'c1':
+                            # compare c1 with dispersion
 
-                # Get the wavelength of the central pixel
-                cp_x = ext.shape[0] / 2
-                cp_y = ext.shape[1] / 2
+                            # following waveval.py get_all_input_data
+                            dispaxis = 2 - ext.dispersion_axis()  # python sense
+                            center = int(0.5 * (ext.shape[1 - dispaxis] - 1))
+                            if dispaxis == 1:
+                                _slice = (center, slice(None))
+                            else:
+                                _slice = (slice(None), center)
+                            ndd = ext.nddata[_slice]
+                            npix = ndd.shape[0]
 
-                wcs_cent_nm = ext.wcs.pixel_to_world(cp_y, cp_x)[0].nm
-                hdr_cent_nm = ad.central_wavelength(asNanometers=True)
-                ext.hdr['MWS_WCS'] = (wcs_cent_nm, 'WCS solution central wavelength [nm]')
-                ext.hdr['MWS_HDR'] = (hdr_cent_nm, 'Header central wavelength [nm]')
-                ext.hdr['MWS_DIFF'] = (hdr_cent_nm - wcs_cent_nm,
-                                      'Difference between header and WCS central wavelengths')
+                            c1init = 0.5 * (npix - 1) * ext.dispersion(asNanometers=True)
+                            ext.hdr['MWS_C1DE'] = (row['coefficients'] - c1init,
+                                                   'Delta between c1 and 0.5*dispersion')
 
+                # Count the number of arc lines in the wavecal table
+                ext.hdr['MWS_NUML'] = (numpy.count_nonzero(wavecal['peaks']),
+                                       'Number of non-zero peaks in the WAVECAL table')
 
             ad.update_filename(suffix=params["suffix"], strip=True)
 
