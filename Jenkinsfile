@@ -21,6 +21,7 @@ def runtests_f2          = 1
 def runtests_niri        = 1
 def runtests_gsaoi       = 1
 def runtests_gnirs       = 1
+def runtests_igrins2     = 1
 def runtests_wavecal     = 1
 def runtests_ghost       = 1
 def runtests_gmos        = 1
@@ -385,6 +386,43 @@ pipeline {
                                 testResults: '.tmp/py312-gmos/reports/*_results.xml'
                             )
                             echo "Deleting GMOS Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
+                        }  // end always
+                    }  // end post
+                }  // end stage
+                stage('IGRINS2 Tests') {
+                    when {
+                        expression { runtests_igrins2 == 1 }
+                    }
+
+                    agent { label "master" }
+                    environment {
+                        MPLBACKEND = "agg"
+                        DRAGONS_TEST_OUT = "igrins2_tests_outputs"
+                        TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TMPDIR = "${env.WORKSPACE}/.tmp/igrins2/"
+                    }
+                    steps {
+                        echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
+                        checkout scm
+                        sh '.jenkins/scripts/setup_dirs.sh'
+                        echo "Running tests"
+                        sh 'tox -e py312-igrins2 -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/igrins2_results.xml ${TOX_ARGS}'
+                        echo "Reporting coverage"
+                        sh 'tox -e codecov -- -F igrins2'
+                    }  // end steps
+                    post {
+                        always {
+                            echo "Running 'archivePlots' from inside IGRINS2 Tests"
+                            archiveArtifacts artifacts: "plots/*", allowEmptyArchive: true
+                            junit (
+                                allowEmptyResults: true,
+                                testResults: '.tmp/py312-igrins2/reports/*_results.xml'
+                            )
+                            echo "Deleting IGRINS2 Tests workspace ${env.WORKSPACE}"
                             cleanWs()
                             dir("${env.WORKSPACE}@tmp") {
                               deleteDir()
