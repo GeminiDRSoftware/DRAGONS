@@ -29,4 +29,23 @@ def checkProcessedArc(p):
     p.monitorWavelengthSolution()
     p.writeOutputs()
 
+def checkArc(p):
+    """
+    Reduce an arc, extract some values from the .WAVECAL extension for
+    instrument monitoring
+    :param p:
+    :return:
+    """
+    p.prepare(require_wcs=False)
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.mosaicDetectors()
+    p.determineWavelengthSolution()
+    p.determineDistortion()
+    p.monitorWavelengthSolution()
+    p.writeOutputs()
+
 _default = makeProcessedArc
