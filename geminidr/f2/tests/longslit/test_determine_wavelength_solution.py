@@ -322,6 +322,9 @@ associated_calibrations = {
 }
 
 # Tests Definitions ------------------------------------------------------------
+# Here in release/4.1.x, F2 longslit is not supported.  adding mark.skip
+#   (Stopped working between Feb 2026 and April 2026, must be a dependency.)
+@pytest.mark.skip
 @pytest.mark.f2ls
 @pytest.mark.wavecal
 @pytest.mark.preprocessed_data
