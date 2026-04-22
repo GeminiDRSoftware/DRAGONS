@@ -21,7 +21,7 @@ def runtests_f2          = 0
 def runtests_niri        = 0
 def runtests_gsaoi       = 0
 def runtests_gnirs       = 0
-def runtests_wavecal     = 0
+def runtests_wavecal     = 1
 def runtests_ghost       = 0
 def runtests_gmos        = 0
 def runtests_ghost_integ = 0
@@ -69,7 +69,7 @@ pipeline {
                 sh 'tox -e py312-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
                 echo "HERE IS CONDA"
                 sh 'which conda'
-                sh """conda env export -p "${env.WORKSPACE}/.tox/py312" --no-builds > jenkins_env.yaml"""
+                sh """conda env export -p "${env.WORKSPACE}/.tox/py312-noop" --no-builds | grep -v "^prefix:" > jenkins_env.yaml"""
                 stash name: 'conda-yaml', includes: 'jenkins_env.yaml'
                 sh 'pwd; ls -l jenkins_env.yaml; cat jenkins_env.yaml'
             }
@@ -99,6 +99,7 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "unit_tests_outputs/"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
+                        TOX_CONDA_ENV = "jenkins_env.yaml"  # use stashed env
                         TMPDIR = "${env.WORKSPACE}/.tmp/unit/"
                     }
                     steps {
