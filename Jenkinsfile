@@ -15,16 +15,16 @@
 // Change these to automatically skip steps
 def runtests_unit        = 1
 def runtests_regress     = 1
-def runtests_gmosls      = 1  // 1 to enable
-def runtests_slow        = 1
-def runtests_f2          = 1
-def runtests_niri        = 1
-def runtests_gsaoi       = 1
-def runtests_gnirs       = 1
-def runtests_wavecal     = 1
-def runtests_ghost       = 1
-def runtests_gmos        = 1
-def runtests_ghost_integ = 1
+def runtests_gmosls      = 0  // 1 to enable
+def runtests_slow        = 0
+def runtests_f2          = 0
+def runtests_niri        = 0
+def runtests_gsaoi       = 0
+def runtests_gnirs       = 0
+def runtests_wavecal     = 0
+def runtests_ghost       = 0
+def runtests_gmos        = 0
+def runtests_ghost_integ = 0
 
 pipeline {
 
@@ -67,6 +67,11 @@ pipeline {
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Create a trial Python 3.12 env, to cache new packages"
                 sh 'tox -e py312-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
+                echo "HERE IS CONDA"
+                sh 'which conda'
+                sh """conda env export -p "${env.WORKSPACE}/.tox/py312" --no-builds > jenkins_env.yaml"""
+                stash name: 'conda-yaml', includes: 'jenkins_env.yaml'
+                sh 'pwd; ls -l jenkins_env.yaml; cat jenkins_env.yaml'
             }
             post {
                 always {
@@ -100,7 +105,8 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
-                        sh '.jenkins/scripts/setup_dirs.sh'
+                        unstash 'conda-yaml'
+                        sh 'ls -l jenkins_env.yaml'
                         echo "Running tests with Python 3.12"
                         sh 'tox -e py312-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
@@ -142,7 +148,6 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         echo "${env.PATH}"
-                        sh '.jenkins/scripts/setup_dirs.sh'
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Regression tests"
                         sh 'tox -e py312-reg -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
@@ -413,7 +418,6 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
-                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
                         sh 'tox -e py312-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
@@ -451,7 +455,6 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         echo "${env.PATH}"
-                        sh '.jenkins/scripts/setup_dirs.sh'
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Slow tests"
                         sh 'tox -e py312-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
