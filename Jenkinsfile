@@ -99,7 +99,7 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "unit_tests_outputs/"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        TOX_CONDA_ENV = "jenkins_env.yaml" // re-use from stash
+                        CONDA_ENV_YAML = "jenkins_env.yaml" // from pre-install
                         TMPDIR = "${env.WORKSPACE}/.tmp/unit/"
                     }
                     steps {
