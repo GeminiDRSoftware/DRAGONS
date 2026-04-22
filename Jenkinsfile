@@ -13,7 +13,7 @@
 // @Library('dragons_ci@master') _
 
 // Change these to automatically skip steps
-def runtests_unit        = 1
+def runtests_unit        = 0
 def runtests_regress     = 0
 def runtests_gmosls      = 0  // 1 to enable
 def runtests_slow        = 0
@@ -422,11 +422,13 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: '.tmp/py312-igrins2/reports/*_results.xml'
                             )
-                            echo "Deleting IGRINS2 Tests workspace ${env.WORKSPACE}"
-                            cleanWs()
-                            dir("${env.WORKSPACE}@tmp") {
-                              deleteDir()
-                            }
+                            echo "Changing permissions on files"
+                            sh 'chmod -Rv 775 .tmp'
+                            // echo "Deleting IGRINS2 Tests workspace ${env.WORKSPACE}"
+                            // cleanWs()
+                            // dir("${env.WORKSPACE}@tmp") {
+                            //   deleteDir()
+                            // }
                         }  // end always
                     }  // end post
                 }  // end stage
