@@ -45,7 +45,7 @@ pipeline {
     environment {
         MPLBACKEND = "agg"
         PATH = "$JENKINS_CONDA_HOME/bin:$PATH"
-        TOX_ENV = "${env.WORKSPACE}/tox_env"
+        SHARED_TOX_DIR = "${env.WORKSPACE}/tox_shared"
     }
 
     stages {
@@ -67,11 +67,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Create a trial Python 3.12 env, to cache new packages"
-                sh 'echo TOX ENV: "${TOX_ENV}"'
-                sh 'tox --workdir "${TOX_ENV}" -e py312-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
-                sh 'pwd; ls -lrt'
-                echo "TOX_WORK_DIR"
-                sh 'ls -lrt $TOX_WORK_DIR/'
+                sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
             }
             post {
                 always {
