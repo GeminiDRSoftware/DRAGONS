@@ -14,6 +14,18 @@ sed -i.bak \
     -e "s|^\(${item}\)pytest-dragons=.*|\1${pytest_dragons}|" \
     jenkins_env.yaml
 
-# Override the deps in tox.ini using the above YAML spec:
+# Replace the deps in tox.ini with the above YAML spec:
+python -c '
+import configparser as cp
+conf = cp.ConfigParser()
+conf.read("tox.ini")
+try:
+    del conf["testenv"]["conda_deps"], conf["testenv"]["deps"]
+except:
+    pass
+else:
+    with open("tox.ini", "w") as cf:
+        conf.write(cf)
+'
 sed -i '/\[testenv\]/a\conda_env = jenkins_env.yaml' tox.ini
 
