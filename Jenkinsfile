@@ -100,7 +100,6 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
-                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests with Python 3.12"
                         sh 'tox -e py312-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
@@ -142,7 +141,6 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         echo "${env.PATH}"
-                        sh '.jenkins/scripts/setup_dirs.sh'
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Regression tests"
                         sh 'tox -e py312-reg -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
@@ -413,7 +411,6 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
-                        sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
                         sh 'tox -e py312-gmosls -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
@@ -451,7 +448,6 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         echo "${env.PATH}"
-                        sh '.jenkins/scripts/setup_dirs.sh'
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Slow tests"
                         sh 'tox -e py312-slow -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
