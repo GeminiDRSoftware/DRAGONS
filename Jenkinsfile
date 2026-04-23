@@ -69,8 +69,9 @@ pipeline {
                 sh 'tox -e py312-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
                 echo "HERE IS CONDA"
                 sh 'which conda'
-                sh """conda env export -p "${env.WORKSPACE}/.tox/py312-noop" --no-builds | grep -v "^prefix:" > jenkins_env.yaml"""
-                sh "sed -i '/\\[testenv\\]/a\\conda_env = jenkins_env.yaml' tox.ini"
+                // Edit+stash pre-installed env's package spec for later use:
+                sh """conda env export -p "${env.WORKSPACE}/.tox/py312-noop" --no-builds > jenkins_env.yaml"""
+                sh '.jenkins/scripts/mod_env_yaml.sh'
                 stash name: 'conda-yaml', includes: 'jenkins_env.yaml, tox.ini'
                 sh 'pwd; ls -l jenkins_env.yaml; cat jenkins_env.yaml; cat tox.ini'
             }
