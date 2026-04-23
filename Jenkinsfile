@@ -70,8 +70,9 @@ pipeline {
                 echo "HERE IS CONDA"
                 sh 'which conda'
                 sh """conda env export -p "${env.WORKSPACE}/.tox/py312-noop" --no-builds | grep -v "^prefix:" > jenkins_env.yaml"""
-                stash name: 'conda-yaml', includes: 'jenkins_env.yaml'
-                sh 'pwd; ls -l jenkins_env.yaml; cat jenkins_env.yaml'
+                sh "sed -i '/\\[testenv\\]/a\conda_env = jenkins_env.yaml' tox.ini"
+                stash name: 'conda-yaml', includes: 'jenkins_env.yaml, tox.ini'
+                sh 'pwd; ls -l jenkins_env.yaml; cat jenkins_env.yaml; cat tox.ini'
             }
             post {
                 always {
@@ -106,8 +107,8 @@ pipeline {
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
-                        unstash 'conda-yaml'
-                        sh 'ls -l jenkins_env.yaml'
+                        unstash 'conda-yaml' // override deps from pre-install
+                        sh 'ls -l jenkins_env.yaml; cat tox.ini'
                         echo "Running tests with Python 3.12"
                         sh 'tox -e py312-unit -v -r -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
