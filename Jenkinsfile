@@ -406,6 +406,7 @@ pipeline {
                         TMPDIR = "${env.WORKSPACE}/.tmp/igrins2/"
                     }
                     steps {
+                        cleanWs()
                         echo "Running build #${env.BUILD_ID} on ${env.NODE_NAME}"
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
@@ -424,11 +425,11 @@ pipeline {
                             )
                             echo "Changing permissions on files"
                             sh 'chmod -Rv 775 .tmp'
-                            // echo "Deleting IGRINS2 Tests workspace ${env.WORKSPACE}"
-                            // cleanWs()
-                            //  dir("${env.WORKSPACE}@tmp") {
-                            //  deleteDir()
-                            // }
+                            echo "Deleting IGRINS2 Tests workspace ${env.WORKSPACE}"
+                            cleanWs(patterns: [[pattern: '.tmp', type: EXCLUDE]], deleteDirs: true)
+                            dir("${env.WORKSPACE}@tmp") {
+                              deleteDir()
+                            }
                         }  // end always
                     }  // end post
                 }  // end stage
