@@ -61,14 +61,14 @@ pipeline {
             agent { label "conda" }
             environment {
                 TMPDIR = "${env.WORKSPACE}/.tmp/conda/"
-                TOX_WORK_DIR="${env.TOX_ENV}"
             }
             steps {
                 echo "Update the Conda base install for all on-line nodes"
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Create a trial Python 3.12 env, to cache new packages"
-                sh 'tox -e py312-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
+                sh """mkdir -p "${env.TOX_ENV}" """
+                sh """tox -e py312-noop -v -r -- --workdir "${env.TOX_ENV}" --basetemp="${DRAGONS_TEST_OUT}" ${TOX_ARGS}"""
                 sh 'pwd; ls -lrt'
                 echo "TOX_WORK_DIR"
                 sh 'ls -lrt $TOX_WORK_DIR/'
