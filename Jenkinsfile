@@ -422,13 +422,13 @@ pipeline {
                                 allowEmptyResults: true,
                                 testResults: '.tmp/py312-igrins2/reports/*_results.xml'
                             )
-                            echo "Changing permissions on files"
-                            sh 'chmod -Rv 775 .tmp'
-                            // echo "Deleting IGRINS2 Tests workspace ${env.WORKSPACE}"
-                            // cleanWs()
-                            // dir("${env.WORKSPACE}@tmp") {
-                            //   deleteDir()
-                            // }
+                            // echo "Changing permissions on files"
+                            // sh 'chmod -Rv 775 .tmp'
+                            echo "Deleting IGRINS2 Tests workspace ${env.WORKSPACE}"
+                            cleanWs()
+                             dir("${env.WORKSPACE}@tmp") {
+                             deleteDir()
+                            }
                         }  // end always
                     }  // end post
                 }  // end stage
