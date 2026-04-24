@@ -2918,6 +2918,7 @@ class Spect(Resample):
                     wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
                     if not acceptable_fit:
                         log.warning("No acceptable wavelength solution found")
+                        raise RuntimeError("No acceptable wavelength solution found")
                     else:
                         figures.append(wavecal.create_pdf_plot(
                             input_data, fit1d.points[~fit1d.mask],

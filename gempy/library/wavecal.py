@@ -889,7 +889,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         best_fit1d.image = np.array([])
         best_fit1d.points = np.array([])
         best_fit1d.mask = np.array([], dtype=bool)
-    return best_fit1d, True
+    return best_fit1d, False
 
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,
