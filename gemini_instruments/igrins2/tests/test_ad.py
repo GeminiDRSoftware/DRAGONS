@@ -2,11 +2,10 @@ import pytest
 
 from importlib.resources import files
 
-import astrodata
-import igrins_instruments
+import astrodata, gemini_instruments
 from gemini_instruments.common import Section
 
-# from igrins_instruments.igrins.tests import test_data
+# from gemini_instruments.igrins.tests import test_data
 from . import test_data
 
 dataroot = files(test_data)

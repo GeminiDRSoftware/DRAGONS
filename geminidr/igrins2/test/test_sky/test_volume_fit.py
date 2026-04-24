@@ -3,8 +3,7 @@ import numpy as np
 import pandas as pd
 
 from astropy.table import Table
-import astrodata
-import igrins_instruments
+import astrodata, gemini_instruments
 
 if True:
         linefit = Table.read("fit_master.fits", format="fits")

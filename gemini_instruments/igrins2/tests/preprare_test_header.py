@@ -1,8 +1,7 @@
 from pathlib import Path
 from astropy.io import fits
 
-import astrodata
-import igrins_instruments
+import astrodata, gemini_instruments
 
 
 def prepare_mef():

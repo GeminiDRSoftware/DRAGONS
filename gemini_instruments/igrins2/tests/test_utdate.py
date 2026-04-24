@@ -2,8 +2,7 @@ from pathlib import Path
 from astropy.io import fits
 import datetime
 
-import astrodata
-import igrins_instruments
+import astrodata, gemini_instruments
 
 from . import test_data
 from importlib.resources import files
