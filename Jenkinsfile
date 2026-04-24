@@ -103,6 +103,7 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests with Python 3.12"
+                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-unit --showconfig | grep -E "envdir|toxworkdir|passenv"'
                         sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-unit --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
                         sh 'tox -e codecov -- -F unit'
