@@ -124,9 +124,9 @@ if __name__ == "__main__":
     fn = "SDCH_20240425_0067_arc.fits"
     import astrodata
     ad_sky = astrodata.open(fn)
-    from igrinsdr.igrins.procedures.apertures import Apertures
+    from geminidr.igrins2.procedures.apertures import Apertures
     ap = Apertures(ad_sky[0].SLITEDGE)
-    from igrinsdr.igrins.procedures.shifted_images import ShiftedImages
+    from geminidr.igrins2.procedures.shifted_images import ShiftedImages
 
     data = ad_sky[0].data
     # data = ad_sky[0].WVLCOR

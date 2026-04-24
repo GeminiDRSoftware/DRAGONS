@@ -1,4 +1,4 @@
-from igrinsdr.igrins.primitives_igrins import Igrins
+from geminidr.igrins2.primitives_igrins import Igrins
 
 recipe_tags = {'IGRINS', 'SIDEREAL'}
 

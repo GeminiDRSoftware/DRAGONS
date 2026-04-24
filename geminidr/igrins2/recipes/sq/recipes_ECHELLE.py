@@ -2,7 +2,7 @@
 Recipes available to data with tags ['IGRINS', 'ECHELLE']
 Default is "reduce".
 """
-from igrinsdr.igrins.primitives_igrins import Igrins
+from geminidr.igrins2.primitives_igrins import Igrins
 
 recipe_tags = {'IGRINS', 'ECHELLE'}
 

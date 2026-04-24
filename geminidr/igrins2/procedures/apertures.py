@@ -4,8 +4,8 @@ import scipy.ndimage as ni
 
 from .image_combine import image_median
 
-from igrinsdr.igrins.procedures.trace_flat import table_to_poly
-from igrinsdr.igrins.procedures.iter_order import iter_order
+from geminidr.igrins2.procedures.trace_flat import table_to_poly
+from geminidr.igrins2.procedures.iter_order import iter_order
 from .correct_distortion import ShiftX
 from scipy.interpolate import UnivariateSpline
 

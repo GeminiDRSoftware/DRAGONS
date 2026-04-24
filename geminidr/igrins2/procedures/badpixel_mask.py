@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.ndimage as ni
 
-# from igrinsdr.igrins.procedures.trace_flat import get_flat_mask_auto
+# from geminidr.igrins2.procedures.trace_flat import get_flat_mask_auto
 from .trace_flat import get_flat_mask_auto
 
 

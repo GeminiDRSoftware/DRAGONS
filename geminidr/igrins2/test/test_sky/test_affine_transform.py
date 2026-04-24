@@ -3,18 +3,19 @@
 # import astropy.io.fits as pyfits
 import numpy as np
 
+from matplotlib import pyplot as plt
+
 from astropy.table import Table
-import astrodata
-import igrins_instruments
+import astrodata, gemini_instruments
 
-from igrinsdr.igrins.primitives_igrins import get_ref_spectra, get_ref_data
+from geminidr.igrins2.primitives_igrins import get_ref_spectra, get_ref_data
 
-# from igrinsdr.igrins.procedures.procedures_register import _get_offset_transform_between_2spec
+# from geminidr.igrins2.procedures.procedures_register import _get_offset_transform_between_2spec
 
-from igrinsdr.igrins.procedures.identified_lines import IdentifiedLines
-from igrinsdr.igrins.procedures.apertures import Apertures
-from igrinsdr.igrins.procedures.echellogram import Echellogram
-# from igrinsdr.igrins.primitives_igrins import _get_wavelength_solutions
+from geminidr.igrins2.procedures.identified_lines import IdentifiedLines
+from geminidr.igrins2.procedures.apertures import Apertures
+from geminidr.igrins2.procedures.echellogram import Echellogram
+# from geminidr.igrins2.primitives_igrins import _get_wavelength_solutions
 
 # %%
 
@@ -34,9 +35,9 @@ adinputs = [adout]
 
 # %%
 
-# from igrinsdr.igrins.primitives_igrins import IdentifiedLines, getInitialWvlsol
+# from geminidr.igrins2.primitives_igrins import IdentifiedLines, getInitialWvlsol
 
-from igrinsdr.igrins.procedures.procedures_register import get_offset_transform_between_two_specs
+from geminidr.igrins2.procedures.procedures_register import get_offset_transform_between_two_specs
 
 # snippets from identifyLines
 
@@ -76,8 +77,8 @@ plt.plot(df_tgt[msk]["xpos"], df_tgt[msk]["order"], "o")
 # %%
 
 
-from igrinsdr.igrins.primitives_igrins import get_xy_of_ref_n_tgt, get_wvlsol_from_transformed_echellogram
-from igrinsdr.igrins.procedures.fit_affine import fit_affine_clip
+from geminidr.igrins2.primitives_igrins import get_xy_of_ref_n_tgt, get_wvlsol_from_transformed_echellogram
+from geminidr.igrins2.procedures.fit_affine import fit_affine_clip
 
 # snippets from getInitialWvlsol
 

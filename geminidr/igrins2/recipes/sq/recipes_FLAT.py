@@ -1,7 +1,7 @@
 """
 Recipes available to data with tags ['IGRINS', 'CAL', 'FLAT'].
 """
-from igrinsdr.igrins.primitives_igrins import Igrins
+from geminidr.igrins2.primitives_igrins import Igrins
 
 recipe_tags = {'IGRINS', 'FLAT'}
 

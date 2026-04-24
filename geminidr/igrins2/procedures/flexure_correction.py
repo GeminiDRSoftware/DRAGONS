@@ -160,7 +160,7 @@ def estimate_flexure(adlist, ad_sky, exptime):
 
     band = get_band(adlist)
     mskname = f'{band}-band_sky_mask_igrins2.fits'
-    mask_path = resources.files('igrinsdr.igrins.lookups.ref_data').joinpath(mskname)
+    mask_path = resources.files('..lookups.ref_data').joinpath(mskname)
     with resources.as_file(mask_path) as p:
         mask = (fits.getdata(p) == 1.0)
     refframe[~mask] = np.nan

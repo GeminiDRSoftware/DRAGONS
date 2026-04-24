@@ -2,8 +2,7 @@
 
 # import astropy.io.fits as pyfits
 import numpy as np
-import astrodata
-import igrins_instruments
+import astrodata, gemini_instruments
 import matplotlib.pyplot as plt
 
 # %%
@@ -21,8 +20,8 @@ fnroot = "N20240429S0204"
 fnout = f"../../test_i2/{fnroot}_{band}_arc.fits"
 adout = astrodata.open(fnout)
 
-from igrinsdr.igrins.primitives_igrins import get_ref_spectra, get_ref_data
-from igrinsdr.igrins.procedures.match_orders import match_specs_w_shift, match_specs
+from geminidr.igrins2.primitives_igrins import get_ref_spectra, get_ref_data
+from geminidr.igrins2.procedures.match_orders import match_specs_w_shift, match_specs
 
 orders_ref, s_list_ref = get_ref_spectra(band)
 

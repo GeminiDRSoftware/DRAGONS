@@ -3,8 +3,7 @@ import numpy as np
 import pandas as pd
 
 from astropy.table import Table
-import astrodata
-import igrins_instruments
+import astrodata, gemini_instruments
 
 # fn = "N20240429S0204_K.fits"
 band = "H"
@@ -24,7 +23,7 @@ adinputs = [adout]
 if True:
         from operator import itemgetter
         from scipy.interpolate import interp1d
-        from igrinsdr.igrins.primitives_igrins import get_ref_path
+        from geminidr.igrins2.primitives_igrins import get_ref_path
 
         ad = adinputs[0]
 
