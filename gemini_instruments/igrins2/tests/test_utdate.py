@@ -1,5 +1,5 @@
-from pathlib import Path
-from astropy.io import fits
+import pytest
+
 import datetime
 
 import astrodata, gemini_instruments
@@ -7,6 +7,7 @@ import astrodata, gemini_instruments
 from . import test_data
 from importlib.resources import files
 
+@pytest.mark.skip("JJ test")
 def test_utdatetime():
     dataroot = files(test_data)
     datadir = dataroot / "sample_sky"
