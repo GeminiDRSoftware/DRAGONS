@@ -5,8 +5,6 @@ import astrodata, gemini_instruments
 from astrodata.testing import ad_compare
 from recipe_system.reduction.coreReduce import Reduce
 
-import igrins_instruments
-
 
 FLAT_INPUTS = [
     [f"N20260228S{i:04d}_K.fits" for i in range(540, 546)],
@@ -26,7 +24,6 @@ def test_make_processed_bpm(input_files, change_working_dir, path_to_refs):
     r = Reduce()
     r.files = input_files
     r.recipename = "makeProcessedBPM"
-    r.drpkg = "igrinsdr"
     with change_working_dir():
         r.runr()
         output_filename = r._output_filenames.pop()
@@ -41,7 +38,6 @@ def test_make_processed_bpm(input_files, change_working_dir, path_to_refs):
 def test_make_processed_flat(input_files, change_working_dir, path_to_refs):
     r = Reduce()
     r.files = input_files
-    r.drpkg = "igrinsdr"
     with change_working_dir():
         r.runr()
         output_filename = r._output_filenames.pop()

@@ -5,8 +5,6 @@ import pytest
 import astrodata, gemini_instruments
 from astrodata.testing import download_from_archive
 
-import igrins_instruments
-
 
 TAGS_FIXTURE_DATA = {('IGRINS-2', 'N20260303S0289.fits'):  # arc
                          ['IGRINS-2', 'IGRINS', 'GEMINI', 'NORTH', 'RAW', 'UNPREPARED', 'BUNDLE', 'LAMPOFF'],

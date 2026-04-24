@@ -5,8 +5,7 @@ import pytest
 import astrodata, gemini_instruments
 from astrodata.testing import download_from_archive
 
-import igrins_instruments
-from igrinsdr.igrins.primitives_igrins_bundle import IgrinsBundle
+from geminidr.igrins2.primitives_igrins_bundle import IgrinsBundle
 
 
 def test_split_bundle():
