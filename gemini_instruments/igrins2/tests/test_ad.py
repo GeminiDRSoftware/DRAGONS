@@ -1,0 +1,130 @@
+import pytest
+
+from importlib.resources import files
+
+import astrodata
+import igrins_instruments
+from gemini_instruments.common import Section
+
+# from igrins_instruments.igrins.tests import test_data
+from . import test_data
+
+dataroot = files(test_data)
+sample_mef = list((dataroot / "sample_mef").glob("N*.fits"))
+
+samples = dict((kind, list((dataroot / f"sample_{kind.lower()}").glob("N*.fits")))
+               for kind in ["TGT", "STD", "SKY", "FLATOFF", "FLATON"])
+
+allfiles = [fn
+            for fnlist in samples.values()
+            for fn in fnlist]
+
+def get_ad(request):
+    return astrodata.open(request.param)
+
+ad_mef = pytest.fixture(scope="module", params=sample_mef)(get_ad)
+ad_any = pytest.fixture(scope="module", params=allfiles)(get_ad)
+ad_tgt = pytest.fixture(scope="module", params=samples["TGT"])(get_ad)
+ad_std = pytest.fixture(scope="module", params=samples["STD"])(get_ad)
+ad_sky = pytest.fixture(scope="module", params=samples["SKY"])(get_ad)
+ad_flaton = pytest.fixture(scope="module", params=samples["FLATON"])(get_ad)
+ad_flatoff = pytest.fixture(scope="module", params=samples["FLATOFF"])(get_ad)
+
+def _check_tags(ad, expected_tags, unexpected_tags):
+
+    assert not set(expected_tags).difference(ad.tags), f"expected tag NOT found in {ad.filename}"
+    assert not set(unexpected_tags).intersection(ad.tags), f"UNexpected tag found in {ad.filename}"
+
+
+def test_tags_tgt(ad_tgt):
+    expected_tags = ['SIDEREAL']
+    unexpected_tags = ['STANDARD', 'SKY', 'FLAT']
+
+    _check_tags(ad_tgt, expected_tags, unexpected_tags)
+
+
+def test_tags_std(ad_std):
+    expected_tags = ['SIDEREAL', 'STANDARD']
+    unexpected_tags = ['SKY', 'FLAT']
+
+    _check_tags(ad_std, expected_tags, unexpected_tags)
+
+
+def test_tags_sky(ad_sky):
+    expected_tags = ['SIDEREAL', 'SKY']
+    unexpected_tags = ['STANDARD', 'FLAT']
+
+    _check_tags(ad_sky, expected_tags, unexpected_tags)
+
+
+def test_tags_flaton(ad_flaton):
+    expected_tags = ['CAL', 'FLAT', 'GCALFLAT', 'LAMPON']
+    unexpected_tags = ['SIDEREAL', 'SKY', 'STANDARD', 'LAMPOFF']
+
+    _check_tags(ad_flaton, expected_tags, unexpected_tags)
+
+
+def test_tags_flatoff(ad_flatoff):
+    expected_tags = ['CAL', 'FLAT', 'GCALFLAT', 'LAMPOFF']
+    unexpected_tags = ['SIDEREAL', 'SKY', 'STANDARD', 'LAMPON']
+
+    _check_tags(ad_flatoff, expected_tags, unexpected_tags)
+
+
+def test_tags_common(ad_any):
+    expected_tags = ['GEMINI', 'IGRINS', 'IGRINS-2', 'NORTH', 'UNPREPARED']
+    unexpected_tags = ['BUNDLE']
+
+    _check_tags(ad_any, expected_tags, unexpected_tags)
+
+
+def test_tags_mef(ad_mef):
+    expected_tags = {'GEMINI', 'IGRINS', 'IGRINS-2', 'NORTH', 'RAW', 'BUNDLE'}
+    unexpected_tags = []
+
+    _check_tags(ad_mef, expected_tags, unexpected_tags)
+
+
+def test_tgt(ad_tgt):
+    assert ad_tgt.observation_class() == "science"
+    assert ad_tgt.observation_type() == "OBJECT"
+
+
+def test_std(ad_std):
+    assert ad_std.observation_class() == "partnerCal"
+    assert ad_std.observation_type() == "OBJECT"
+
+
+def test_sky(ad_sky):
+    # FIXME some sky files have obclass of partnerCal, some have science.
+    # So we do not test it for now.
+    # assert ad_sky.observation_class() == "science"
+    assert ad_sky.observation_type() == "OBJECT"
+
+
+def test_flaton(ad_flaton):
+    assert ad_flaton.observation_class() == "dayCal"
+    assert ad_flaton.observation_type() == "FLAT_ON"
+
+
+def test_flatoff(ad_flatoff):
+    assert ad_flatoff.observation_class() == "dayCal"
+    assert ad_flatoff.observation_type() == "FLAT_OFF"
+
+def test_exposure_time(ad_sky):
+    "We test if exposure_time is correctly read."
+    assert ad_sky.exposure_time() == 300.
+    assert ad_sky[0].exposure_time() == 300.
+
+def test_datasec(ad_sky):
+    ad = ad_sky[0]
+    assert ad.data_section() == (0, 2048, 0, 2048)
+    assert ad.array_section() == (0, 2048, 0, 2048)
+    assert ad.detector_section() == (0, 2048, 0, 2048)
+
+def test_readnoise(ad_sky):
+    ad = ad_sky[0]
+    # assert isinstance(ad.read_noise(), float)
+
+    assert ad.read_noise() == 4.6
+    # for now we used hardcoded value of 4.6
