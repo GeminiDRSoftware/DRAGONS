@@ -66,8 +66,10 @@ pipeline {
                 echo "Update the Conda base install for all on-line nodes"
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
-                echo "Create a trial Python 3.12 env, to cache new packages"
+                echo "Create a shared Python 3.12 env"
                 sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
+                echo "Install DRAGONS checkout, to build cython_utils"
+                sh '${SHARED_TOX_DIR}/shared_env/bin/python -m pip install . --no-deps --ignore-installed --no-cache-dir -v'
             }
             post {
                 always {
@@ -95,7 +97,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "unit_tests_outputs/"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/unit/"
                     }
                     steps {
@@ -138,7 +139,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "regression_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/regr/"
                     }
                     steps {
@@ -176,7 +176,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "wavecal_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/wavecal/"
                     }
                     steps {
@@ -220,7 +219,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "f2_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/f2/"
                     }
                     steps {
@@ -258,7 +256,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "gsaoi_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/gsaoi/"
                     }
                     steps {
@@ -296,7 +293,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "niri_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/niri/"
                     }
                     steps {
@@ -334,7 +330,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "gnirs_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/gnirs/"
                     }
                     steps {
@@ -372,7 +367,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "gmos_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/gmos/"
                     }
                     steps {
@@ -415,7 +409,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "gmosls_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/gmosls/"
                     }
                     steps {
@@ -453,7 +446,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "slow_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/slow/"
                     }
                     steps {
@@ -491,7 +483,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "ghost_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/ghost/"
                     }
                     steps {
@@ -529,7 +520,6 @@ pipeline {
                         MPLBACKEND = "agg"
                         DRAGONS_TEST_OUT = "ghost_integ_tests_outputs"
                         TOX_ARGS = "astrodata geminidr gemini_instruments gempy recipe_system"
-                        PYTHONPATH = "${env.WORKSPACE}"
                         TMPDIR = "${env.WORKSPACE}/.tmp/ghost_integ/"
                     }
                     steps {
