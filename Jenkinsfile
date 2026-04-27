@@ -69,7 +69,7 @@ pipeline {
                 echo "Create a shared Python 3.12 env"
                 sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-noop,codecov -v -r --notest'
                 echo "Install DRAGONS checkout to env, with cython_utils built"
-                sh '${SHARED_TOX_DIR}/shared_env/bin/python -m pip install . --no-deps --ignore-installed --no-cache-dir -v'
+                sh '${SHARED_TOX_DIR}/shared_test_env/bin/python -m pip install . --no-deps --ignore-installed --no-cache-dir -v'
             }
             post {
                 always {
