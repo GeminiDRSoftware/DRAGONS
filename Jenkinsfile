@@ -68,8 +68,10 @@ pipeline {
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Create a shared Python 3.12 env"
                 sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-noop -v -r -- --basetemp=${DRAGONS_TEST_OUT} ${TOX_ARGS}'
-                echo "Install DRAGONS checkout, to build cython_utils"
+                echo "Install DRAGONS checkout to env, with cython_utils built"
                 sh '${SHARED_TOX_DIR}/shared_env/bin/python -m pip install . --no-deps --ignore-installed --no-cache-dir -v'
+                echo "Initialize codecov in the shared env"
+                sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --notest'
             }
             post {
                 always {
