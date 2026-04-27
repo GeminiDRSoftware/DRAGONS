@@ -4014,32 +4014,67 @@ class Spect(Resample):
                 if wavecal is None:
                     continue
 
+                # We capture the coeffs into a dict for later use
+                coeffs = {}
                 for row in wavecal:
                     if row['name'] in tocapture:
                         keyword = 'MWS_' + row['name'].upper()[:4]
                         ext.hdr[keyword] = (row['coefficients'],
                                             f'WAVECAL {row['name']} coefficient')
-                        if row['name'] == 'c0':
-                            # compare c0 with central_wavelength
-                            c0init = ext.central_wavelength(asNanometers=True)
-                            ext.hdr['MWS_C0DE'] = (row['coefficients'] - c0init,
-                                                   'Delta between c0 and central_wavelength')
-                        elif row['name'] == 'c1':
-                            # compare c1 with dispersion
+                        m = re.match(r'^c(\d+)$', row['name'])
+                        if m:
+                            coeffs[int(m.groups()[0])] = row['coefficients']
 
-                            # following waveval.py get_all_input_data
-                            dispaxis = 2 - ext.dispersion_axis()  # python sense
-                            center = int(0.5 * (ext.shape[1 - dispaxis] - 1))
-                            if dispaxis == 1:
-                                _slice = (center, slice(None))
-                            else:
-                                _slice = (slice(None), center)
-                            ndd = ext.nddata[_slice]
-                            npix = ndd.shape[0]
+                # compare model with central_wavelength
+                # Per Chris, central wavelength of the model is c0-c2+c4-c6...
+                # Alternatively, we could evaluate the WCS at the central pixel.
+                # Calculate the model central wavelength from the coefficients
+                i=0
+                sign = 1
+                model_central_wlen = 0
+                while(True):
+                    try:
+                        model_central_wlen += sign * coeffs[i]
+                    except KeyError:
+                        break
+                    sign *= -1
+                    i += 2
 
-                            c1init = 0.5 * (npix - 1) * ext.dispersion(asNanometers=True)
-                            ext.hdr['MWS_C1DE'] = (row['coefficients'] - c1init,
-                                                   'Delta between c1 and 0.5*dispersion')
+                header_central_wlen = ext.central_wavelength(asNanometers=True)
+
+                ext.hdr['MWS_CWLE'] = (model_central_wlen - header_central_wlen,
+                                                   'Delta between model and header central_wavelength')
+
+                # The initial estimate of c0 is the central wavelength (because
+                # the initial estimate of c2 is 0). Record the change
+                try:
+                    ext.hdr['MWS_C0DE'] = (coeffs[0] - ext.central_wavelength(asNanometers=True),
+                                           'Delta between c0 and central_wavelength')
+                except KeyError:
+                    pass
+
+                # compare c1 with dispersion
+                # following waveval.py get_all_input_data
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                center = int(0.5 * (ext.shape[1 - dispaxis] - 1))
+                if dispaxis == 1:
+                    _slice = (center, slice(None))
+                else:
+                    _slice = (slice(None), center)
+                ndd = ext.nddata[_slice]
+                npix = ndd.shape[0]
+
+                try:
+                    model_dispersion = 0.5 * (npix - 1) / coeffs[1]
+                    header_dispersion = ext.dispersion(asNanometers=True)
+                    ext.hdr['MWS_DISE'] = (model_dispersion - header_dispersion,
+                                                       'Delta model and header dispersion')
+
+                    c1init = 0.5 * (npix - 1) * ext.dispersion(asNanometers=True)
+                    ext.hdr['MWS_C1DE'] = (coeffs[1] - c1init,
+                                           'Delta between c1 and 0.5*dispersion')
+                except KeyError:
+                    pass
 
                 # Count the number of arc lines in the wavecal table
                 ext.hdr['MWS_NUML'] = (numpy.count_nonzero(wavecal['peaks']),
