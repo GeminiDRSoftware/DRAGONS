@@ -67,7 +67,7 @@ pipeline {
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
                 echo "Create a shared Python 3.12 env"
-                sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-noop,codecov -v -r --notest'
+                sh 'tox -e py312-noop,codecov --workdir "${SHARED_TOX_DIR}" -v -r --notest'
                 echo "Install DRAGONS checkout to env, with cython_utils built"
                 sh '${SHARED_TOX_DIR}/test_env/bin/python -m pip install . --no-deps --ignore-installed --no-cache-dir -v'
             }
@@ -104,9 +104,9 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests with Python 3.12"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-unit --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-unit --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/unittests_results.xml ${TOX_ARGS}'
                         echo "Reportint coverage to CodeCov"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F unit'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F unit'
                     }
                     post {
                         always {
@@ -146,9 +146,9 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Regression tests"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-reg --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-reg --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/regression_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F regression'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F regression'
                     } // end steps
                     post {
                         always {
@@ -182,9 +182,9 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-wavecal --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-wavecal --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/wavecal_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F wavecal'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F wavecal'
                     }  // end steps
                     post {
                         always {
@@ -225,9 +225,9 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-f2 --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/f2_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-f2 --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/f2_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F f2'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F f2'
                     }  // end steps
                     post {
                         always {
@@ -262,9 +262,9 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-gsaoi --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gsaoi_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-gsaoi --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gsaoi_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F gsaoi'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F gsaoi'
                     }  // end steps
                     post {
                         always {
@@ -299,9 +299,9 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-niri --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/niri_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-niri --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/niri_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F niri'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F niri'
                     }  // end steps
                     post {
                         always {
@@ -336,9 +336,9 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-gnirs --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gnirs_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-gnirs --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gnirs_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F gnirs'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F gnirs'
                     }  // end steps
                     post {
                         always {
@@ -373,9 +373,9 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-gmos --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmos_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-gmos --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmos_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F gmos'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F gmos'
                     }  // end steps
                     post {
                         always {
@@ -415,9 +415,9 @@ pipeline {
                         checkout scm
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Running tests"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-gmosls --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-gmosls --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/gmosls_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F gmosls'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F gmosls'
                     }  // end steps
                     post {
                         always {
@@ -453,9 +453,9 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "Slow tests"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-slow --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-slow --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/slow_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F slow'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F slow'
                     } // end steps
                     post {
                         always {
@@ -490,9 +490,9 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "GHOST tests"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-ghost --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/ghost_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-ghost --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/ghost_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F ghost'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F ghost'
                     } // end steps
                     post {
                         always {
@@ -527,9 +527,9 @@ pipeline {
                         echo "${env.PATH}"
                         sh '.jenkins/scripts/setup_dirs.sh'
                         echo "GHOST tests"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e py312-ghost_integ --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/ghost_integ_results.xml ${TOX_ARGS}'
+                        sh 'tox -e py312-ghost_integ --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -v -- --basetemp=${DRAGONS_TEST_OUT} --junit-xml reports/ghost_integ_results.xml ${TOX_ARGS}'
                         echo "Reporting coverage"
-                        sh 'tox --workdir "${SHARED_TOX_DIR}" -e codecov --skip-pkg-install -- -F ghost_integ'
+                        sh 'tox -e codecov --workdir "${SHARED_TOX_DIR}" --skip-pkg-install -- -F ghost_integ'
                     } // end steps
                     post {
                         always {
