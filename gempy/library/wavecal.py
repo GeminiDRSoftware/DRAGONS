@@ -809,14 +809,14 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             # we've made. This allows a high polynomial order to be
             # used without the risk of it going off the rails
             matched = np.where(matches > -1)[0]
-            fit_it = fitting.LinearLSQFitter()
+            fit_it = fitting.TRFLSQFitter()
             if len(matched) > 1:  # need at least 2 lines, right?
                 m_init = models.Chebyshev1D(degree=min(config["order"], len(matched)-1),
                                             domain=domain)
                 for p, v in zip(model.param_names, model.parameters):
                     if p in m_init.param_names:
                         setattr(m_init, p, v)
-                #bounds_setter(m_init)
+                bounds_setter(m_init)
                 #for i in range(len(matched), m_init.degree + 1):
                 #    m_init.fixed[f"c{i}"] = True
                 matched_peaks = peaks[matched]
