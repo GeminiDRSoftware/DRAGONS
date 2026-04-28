@@ -2914,7 +2914,7 @@ class Spect(Resample):
                         ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal,
                         absorption=absorption)
                     wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
-                    if fit1d.image:
+                    if fit1d.image.size:
                         figures.append(wavecal.create_pdf_plot(
                             input_data, fit1d.points[~fit1d.mask],
                             fit1d.image[~fit1d.mask],
