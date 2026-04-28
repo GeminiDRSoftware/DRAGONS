@@ -66,10 +66,15 @@ pipeline {
                 echo "Update the Conda base install for all on-line nodes"
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
-                echo "Create a shared Python 3.12 env"
-                sh 'tox -e py312-noop,codecov --workdir "${SHARED_TOX_DIR}" -v -r --notest'
-                echo "Install DRAGONS checkout to env, with cython_utils built"
-                sh '${SHARED_TOX_DIR}/test_env/bin/python -m pip install . --no-deps --ignore-installed --no-cache-dir -v'
+                echo "Create a shared Python 3.12 env & build+install DRAGONS"
+                sh '''
+                  flock --exclusive --timeout 900 /tmp/jenkins_conda.lock -c \
+                    "tox -e py312-noop,codecov \
+                         --workdir \\"${SHARED_TOX_DIR}\\" -v -r --notest \
+                     && \\"${SHARED_TOX_DIR}/test_env/bin/python\\" \
+                         -m pip install . --no-deps --ignore-installed \
+                         --no-cache-dir -v"
+                '''
             }
             post {
                 always {
