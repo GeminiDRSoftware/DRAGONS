@@ -423,7 +423,7 @@ def create_interactive_inputs(ad, ui_params=None, p=None,
                               linelist=None, bad_bits=0, absorption=False):
     data = {"x": [], "y": [], "meta": []}
     for ext in ad:
-        input_data, fit1d, _ = get_automated_fit(
+        input_data, fit1d = get_automated_fit(
             ext, ui_params, p=p, linelist=linelist, bad_bits=bad_bits,
             absorption=absorption)
         # peak locations and line wavelengths of matched peaks/lines
@@ -486,8 +486,6 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0,
     fit1d : a fit_1D object
         containing the wavelength solution, plus an "image" attribute that
         lists the matched arc line wavelengths
-    acceptable_fit : bool
-        whether this fit is likely to be good
     """
     input_data = get_all_input_data(
         ext, p, ui_params.toDict(), linelist=linelist, bad_bits=bad_bits,
@@ -499,14 +497,14 @@ def get_automated_fit(ext, ui_params, p=None, linelist=None, bad_bits=0,
     dw = np.diff(init_models[0](np.arange(spectrum.size))).mean()
     kdsigma = fwidth * abs(dw)
     k = 1 if kdsigma < 3 else 2
-    fit1d, acceptable_fit = find_solution(
+    fit1d = find_solution(
         init_models, ui_params.toDict(), peaks=peaks,
         peak_weights=weights[ui_params.weighting],
         linelist=input_data["linelist"], fwidth=fwidth, kdsigma=kdsigma, k=k,
         bounds_setter=input_data["bounds_setter"], filename=ext.filename)
 
     input_data["fit"] = fit1d
-    return input_data, fit1d, acceptable_fit
+    return input_data, fit1d
 
 
 def create_chebyshev(waves, central_wavelength=None, dispersion=None,
@@ -773,9 +771,9 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
 
     Returns
     -------
-    length-2 tuple
-        A tuple of the best-fit model and a boolean denoting whether or not it
-        is an acceptable fit.
+    fit_1D:
+        the best-fit model or the original model, of no acceptable fit is
+        found. The "image" attribute will be empty if no fit is found.
     """
     log = logutils.get_logger(__name__)
     min_lines = [int(x) for x in str(config["debug_min_lines"]).split(',')]
@@ -809,14 +807,14 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
             # we've made. This allows a high polynomial order to be
             # used without the risk of it going off the rails
             matched = np.where(matches > -1)[0]
-            fit_it = fitting.TRFLSQFitter()
+            fit_it = fitting.LinearLSQFitter()
             if len(matched) > 1:  # need at least 2 lines, right?
                 m_init = models.Chebyshev1D(degree=min(config["order"], len(matched)-1),
                                             domain=domain)
                 for p, v in zip(model.param_names, model.parameters):
                     if p in m_init.param_names:
                         setattr(m_init, p, v)
-                bounds_setter(m_init)
+                model_bounds = bounds_setter(m_init)
                 #for i in range(len(matched), m_init.degree + 1):
                 #    m_init.fixed[f"c{i}"] = True
                 matched_peaks = peaks[matched]
@@ -857,6 +855,16 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                 nmatched = np.sum(~fit1d.mask)
                 logit(f"{filename} {repr(fit1d.model)} {nmatched} {fit1d.rms}")
 
+                # A posteriori check that the fit is within the bounds
+                # (LinearLSQFitter does not allow bounds so we can't force
+                # the model to be bounded).
+                try:
+                    for p, v in zip(fit1d.model.param_names, fit1d.model.parameters):
+                        bounds = model_bounds.get(p, (-np.inf, np.inf))
+                        assert bounds[0] <= v <= bounds[1]
+                except AssertionError:
+                    continue
+
                 # Wavelength solution models need to be monotonic. Make that check.
                 waves = fit1d.evaluate(np.arange(len_data))
                 if not (np.all(np.diff(waves) > 0) or np.all(np.diff(waves) < 0)):
@@ -870,7 +878,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
                 # Trial and error suggests this criterion works well
                 if fit1d.rms < 0.8 / config["order"] * fwidth * abs(dw) and nmatched >= min_matches_required:
                     #print("RETURNING", fit1d.model.parameters)
-                    return fit1d, True
+                    return fit1d
 
                 # This seems to be a reasonably ranking for poor models
                 if nmatched > config["order"] + 1:
@@ -889,7 +897,7 @@ def find_solution(init_models, config, peaks=None, peak_weights=None,
         best_fit1d.image = np.array([])
         best_fit1d.points = np.array([])
         best_fit1d.mask = np.array([], dtype=bool)
-    return best_fit1d, True
+    return best_fit1d
 
 
 def perform_piecewise_fit(model, peaks, arc_lines, pixel_start, kdsigma,

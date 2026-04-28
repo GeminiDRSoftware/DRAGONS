@@ -2908,22 +2908,32 @@ class Spect(Resample):
                     fit1d.image = image
                     wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
+                bad_solutions = []
                 for ext in ad:
-                    if len(ad) > 1:
-                        log.stdinfo(f"Determining solution for extension {ext.id}")
-
-                    input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
+                    input_data, fit1d = wavecal.get_automated_fit(
                         ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal,
                         absorption=absorption)
                     wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
-                    if not acceptable_fit:
-                        log.warning("No acceptable wavelength solution found")
-                    else:
+                    if fit1d.image:
                         figures.append(wavecal.create_pdf_plot(
                             input_data, fit1d.points[~fit1d.mask],
                             fit1d.image[~fit1d.mask],
                             title=f"{ad.filename}:{ext.id}",
                             absorption=absorption))
+                        any_good = True
+                    else:  # no line matches so not an acceptable solution
+                        bad_solutions.append(ext.id)
+
+                if bad_solutions:
+                    msg = f"{ad.filename}: failed to find an acceptable wavelength solution"
+                    if len(ad) > 1:
+                        if len(ad) > len(bad_solutions):
+                            msg += "in extensions " + ", ".join(str(i) for i in bad_solutions)
+                        else:
+                            msg += " in any extensions"
+                    if self.mode == 'sq' and len(ad) == len(bad_solutions):
+                        raise RuntimeError(msg)
+                    log.warning(msg)
 
             ad.update_filename(suffix=sfx, strip=True)
             if figures:
