@@ -4027,7 +4027,8 @@ class Spect(Resample):
                     # Central Wavelength check
                     center = np.mean(model.domain)
                     model_central_wlen = model(center)
-                    header_central_wlen = ext.central_wavelength(asNanometers=True)
+                    # We want actual_central_wavelength rather than central_wavelength
+                    header_central_wlen = ext.actual_central_wavelength(asNanometers=True)
 
                     ext.hdr['MWS_DCWL'] = (model_central_wlen - header_central_wlen,
                                            'Delta between model and header central_wavelength')
