@@ -16,6 +16,7 @@ import itertools
 from importlib import import_module
 
 import matplotlib
+import numpy
 import numpy as np
 from astropy import units as u
 from astropy.io.ascii.core import InconsistentTableError
@@ -3991,6 +3992,61 @@ class Spect(Resample):
 
         return adinputs
 
+    def monitorWavelengthSolution(self, adinputs=None, **params):
+        """
+        This captures some info from the wavelength solution for the GOA
+        instrument monitoring system into various MWS_ headers for the instrument
+        monitoring system to pick up.
+
+        Values Captured include the polynomial coefficients and RMS from the
+        .WAVECAL table, the central wavelength from both the WCS and central_wavlength()
+        descriptor and the difference between them.
+        :return:
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        tocapture = ('c0', 'c1', 'c2', 'c3', 'rms', 'fwidth')
+
+        for ad in adinputs:
+            for ext in ad:
+                wavecal = getattr(ext, 'WAVECAL', None)
+                if wavecal is None:
+                    continue
+
+                for row in wavecal:
+                    # Capture values from WAVEVAL table into monitoring headers
+                    if row['name'] in tocapture:
+                        keyword = 'MWS_' + row['name'].upper()[:4]
+                        ext.hdr[keyword] = (row['coefficients'],
+                                            f'WAVECAL {row['name']} coefficient')
+
+                # Get the model and evaluate it at the mean of its domain
+                model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+                if model:
+                    # Central Wavelength check
+                    center = np.mean(model.domain)
+                    model_central_wlen = model(center)
+                    # We want actual_central_wavelength rather than central_wavelength
+                    header_central_wlen = ext.actual_central_wavelength(asNanometers=True)
+
+                    ext.hdr['MWS_DCWL'] = (model_central_wlen - header_central_wlen,
+                                           'Delta between model and header central_wavelength')
+
+                    # Dispersion check
+                    model_dispersion = model(center+0.5) - model(center-0.5)
+                    header_dispersion = ext.dispersion(asNanometers=True)
+                    ext.hdr['MWS_DDIS'] = (model_dispersion - header_dispersion,
+                                           'Delta between model and header dispersion')
+
+
+                # Count the number of arc lines in the wavecal table
+                ext.hdr['MWS_NUML'] = (numpy.count_nonzero(wavecal['peaks']),
+                                       'Number of non-zero peaks in the WAVECAL table')
+
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
 
     def normalizeFlat(self, adinputs=None, **params):
         """
