@@ -40,7 +40,7 @@ $ conda config --add channels http://astroconda.gemini.edu/public
 ```
 
 
-A list of changes since 4.1 can be found in the [Change Logs](https://dragons.readthedocs.io/en/v4.2.0/changes.html).
+A list of changes since 4.1 can be found in the [Change Logs](https://dragons.readthedocs.io/en/v4.2.1/changes.html).
 
 ---
 # What is DRAGONS

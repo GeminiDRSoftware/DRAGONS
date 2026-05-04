@@ -25,7 +25,7 @@ except ImportError:
 else:
     use_cython = True
 
-VERSION = '4.2.1'
+VERSION = '5.0_dev'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages()
@@ -68,7 +68,7 @@ setup(name='dragons',
       scripts=SCRIPTS,
       ext_modules=EXTENSIONS,
       classifiers=[
-          'Development Status :: 4',
+          'Development Status :: 5 - Beta',
           'Intended Audience :: Gemini Ops',
           'Intended Audience :: Science/Research',
           'License :: OSI Approved :: BSD License',
