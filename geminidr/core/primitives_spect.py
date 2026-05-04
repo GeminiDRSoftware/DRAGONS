@@ -4006,7 +4006,7 @@ class Spect(Resample):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
-        tocapture = ('c0', 'c1', 'c2', 'c3', 'rms', 'fwidth')
+        tocapture = ('c0', 'c1', 'c2', 'c3', 'rms', 'inv_rms', 'fwidth')
 
         for ad in adinputs:
             for ext in ad:
@@ -4018,6 +4018,8 @@ class Spect(Resample):
                     # Capture values from WAVEVAL table into monitoring headers
                     if row['name'] in tocapture:
                         keyword = 'MWS_' + row['name'].upper()[:4]
+                        if row['name'] == 'inv_rms':
+                            keyword = 'MWS_IRMS'
                         ext.hdr[keyword] = (row['coefficients'],
                                             f'WAVECAL {row['name']} coefficient')
 
