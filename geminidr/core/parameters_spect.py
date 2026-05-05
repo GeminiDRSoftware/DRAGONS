@@ -579,6 +579,8 @@ class maskBeyondSlitConfig(config.Config):
         "Minimum fraction of pixel that must be illuminated to not be masked",
         float, 0.9, min=0., max=1., inclusiveMax=True)
 
+class monitorWavelengthSolutionConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_wavelengthSolutionMonitoring", optional=True)
 
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
