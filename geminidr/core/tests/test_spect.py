@@ -582,7 +582,7 @@ def test_determine_wavelength_solution_exits_with_no_solution_in_sq(path_to_inpu
     p = GMOSLongslit([ad])
     p.mode = "sq"  # it's the default, but just to be sure
     with pytest.raises(RuntimeError):
-        p.determine_wavelength_solution()
+        p.determineWavelengthSolution()
 
 
 @pytest.mark.preprocessed_data
@@ -591,7 +591,7 @@ def test_determine_wavelength_solution_continues_with_no_solution_in_qa(path_to_
     ad = astrodata.open(os.path.join(path_to_inputs, "S20260331S0149_mosaic.fits"))
     p = GMOSLongslit([ad])
     p.mode = "qa"
-    p.determine_wavelength_solution()
+    p.determineWavelengthSolution()
     assert any(record.levelname == 'WARNING' for record in caplog.records)
 
 
