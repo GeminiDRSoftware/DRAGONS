@@ -44,11 +44,12 @@ from gwcs.wcs import WCS as gWCS
 from specutils.utils.wcs_utils import air_to_vac
 
 import astrodata, gemini_instruments
-from astrodata.testing import ad_compare, assert_most_close
+from astrodata.testing import ad_compare, assert_most_close, download_from_archive
 from gempy.library import astromodels as am
 from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
 from geminidr.f2.primitives_f2_longslit import F2Longslit
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.niri.primitives_niri_longslit import NIRILongslit
 from geminidr.gnirs import primitives_gnirs_longslit
@@ -572,6 +573,26 @@ def test_adjust_wavelength_zero_point_controlled(filename, center, shift,
 
     new_waves = ad_out[0].wcs([center] * pixels.size, pixels - shift)[0]
     np.testing.assert_allclose(waves, new_waves, atol=0.1*dw)
+
+
+@pytest.mark.preprocessed_data
+def test_determine_wavelength_solution_exits_with_no_solution_in_sq(path_to_inputs):
+    """Primitive should crash in SQ mode without a solution"""
+    ad = astrodata.open(os.path.join(path_to_inputs, "S20260331S0149_mosaic.fits"))
+    p = GMOSLongslit([ad])
+    p.mode = "sq"  # it's the default, but just to be sure
+    with pytest.raises(RuntimeError):
+        p.determine_wavelength_solution()
+
+
+@pytest.mark.preprocessed_data
+def test_determine_wavelength_solution_continues_with_no_solution_in_qa(path_to_inputs, caplog):
+    """Primitive should crash in SQ mode without a solution"""
+    ad = astrodata.open(os.path.join(path_to_inputs, "S20260331S0149_mosaic.fits"))
+    p = GMOSLongslit([ad])
+    p.mode = "qa"
+    p.determine_wavelength_solution()
+    assert any(record.levelname == 'WARNING' for record in caplog.records)
 
 
 @pytest.mark.preprocessed_data
