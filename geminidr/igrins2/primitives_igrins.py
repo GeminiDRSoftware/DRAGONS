@@ -4,6 +4,7 @@
 #                                                         primitives_igrins.py
 # ------------------------------------------------------------------------------
 
+from datetime import datetime
 import json
 import numpy as np
 import pandas as pd
@@ -22,6 +23,7 @@ from astropy.io import fits
 from astropy.table import Table
 
 import astrodata
+from astrodata import Section
 from gempy.gemini import gemini_tools as gt
 
 from geminidr.gemini.primitives_gemini import Gemini
@@ -1017,39 +1019,54 @@ class Igrins(Gemini, NearIR):
         return adinputs
 
     def standardizeInstrumentHeaders(self, adinputs=None, **params):
-        # this is being called as a part of the "prepare" primitive.
-
-        self.log.debug(gt.log_message("primitive",
-                                      "standardizeInstrumentHeaders from IGRINSDR",
-                                      "starting"))
-
-        adinputs = self._fixIgrinsHeader(adinputs, **params)
-
-        return adinputs
-
-    def _fixIgrinsHeader(self, adinputs, **params):
         log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         for ad in adinputs:
-            for ext in ad:
+            rn_kw = ad._keyword_for('read_noise')
+            for index, (ext, read_noise) in enumerate(zip(ad, ad.read_noise())):
                 for desc in ('saturation_level', 'non_linear_level'):
                     kw = ad._keyword_for(desc)
                     if kw not in ext.hdr:
-                        log.debug(f"Adding {kw} in the header {ext}")
+                        log.debug(f"Adding {kw} in the header {ext.id}")
                         ext.hdr[kw] = (1.e5, "A bogus value added to avoid error")
 
-                if "UTSTART" in ext.hdr and "UTDATETI" not in ext.hdr:
-                    log.debug(f"Rename UTSTART to UTDATEI in the header {ext}")
+                # Tidy up timing keywords to make consistent with the FITS
+                # standard and other Gemini instruments. The PHU should have
+                # a date-only DATE-OBS and time-only UTSTART and UTEND.
+                if index == 0:
+                    try:
+                        utstart = datetime.fromisoformat(ext.hdr.get('UTSTART', ''))
+                    except ValueError:
+                        log.warning(f"Cannot parse UTSTART from {ext.id}")
+                    else:
+                        ad.phu['DATE-OBS'] = utstart.date().isoformat()
+                        ad.phu['UTSTART'] = utstart.time().isoformat()
 
-                    ext.hdr["UTDATETI"] = ext.hdr["UTSTART"]
-                    del ext.hdr["UTSTART"]
+                if index == len(ad) - 1:
+                    try:
+                        utend = datetime.fromisoformat(ext.hdr.get('UTEND', ''))
+                    except ValueError:
+                        log.warning(f"Cannot parse UTEND from {ext.id}")
+                    else:
+                        ad.phu['DATE-OBS'] = utend.date().isoformat()
+                        ad.phu['UTEND'] = utend.time().isoformat()
 
-            if "UTSTART" in ad.phu and "UTDATETI" not in ad.phu:
-                log.debug(f"Rename UTSTART to UTDATEI in the header {ext}")
+                ext.hdr[rn_kw] = (read_noise, "Read Noise in electrons")
 
-                ad.phu["UTDATETI"] = ad.phu["UTSTART"]
-                del ad.phu["UTSTART"]
+                shape_str = Section.from_shape(ext.shape).asIRAFSection()
+                ext.hdr[ad._keyword_for('array_section')] = shape_str
+                ext.hdr[ad._keyword_for('data_section')] = shape_str
+                ext.hdr[ad._keyword_for('detector_section')] = shape_str
 
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
+
+    def standardizeWCS(self, adinputs=None, **params):
+        """No-ops because there are no WCS issues with IGRINS-2"""
         return adinputs
 
     def readoutPatternCorrectSky(self, adinputs, **params):

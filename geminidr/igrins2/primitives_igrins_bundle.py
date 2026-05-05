@@ -54,6 +54,13 @@ class IgrinsBundle(Igrins):
                     # Add filter to PHU
                     adout.phu[kw] = band
 
+                    # Each arm can have a different exposure time, so update
+                    # the PHU with the appropriate one for this arm.
+                    try:
+                        adout.phu['DATE-OBS'] = ext.hdr['UTSTART']
+                    except KeyError:
+                        log.warning(f"No UTSTART key in {band}-band extension")
+
                     gt.mark_history(adout, primname=self.myself(),
                                     keyword=timestamp_key)
                     adoutputs[band].append(adout)

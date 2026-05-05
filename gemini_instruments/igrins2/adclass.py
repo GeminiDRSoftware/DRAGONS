@@ -10,11 +10,11 @@ import astropy.units as u
 from astrodata import (astro_data_tag, astro_data_descriptor,
                        returns_list, TagSet)
 from gemini_instruments.common import Section
-from gemini_instruments import igrins
+from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from . import lookup
 
 
-class AstroDataIGRINS2(igrins.AstroDataIgrins):
+class AstroDataIGRINS2(AstroDataGemini):
     """
     AstroData class for the IGRINS-2 instrument.
 
@@ -186,33 +186,30 @@ class AstroDataIGRINS2(igrins.AstroDataIgrins):
 
         return otype
 
+    #@use_keyword_if_prepared
     @astro_data_descriptor
     def exposure_time(self):
-        if self.is_single:
-            exptime = self.phu.get("EXPTIME", None)
-            exptime0 = self.hdr.get("EXPTIME", None)
-        else:
-            exptime = self.phu.get("EXPTIME", None)
-            exptime0 = self[0].hdr.get("EXPTIME", None)
-
-        return exptime0 if exptime is None else exptime
-
-    @astro_data_tag
-    def _tag_bundle(self):
-        # Gets blocked by tags created by split files
-        return TagSet(['BUNDLE'])
+        exptimes = list(set(self.hdr.get('EXPTIME')) - {None})
+        if len(exptimes) == 1:
+            return exptimes.pop()
+        raise ValueError("Exposure times are not identical: "
+                         ",".join(exptimes))
 
     @staticmethod
     def _matches_data(source):
         igrins = source[0].header.get('INSTRUME', '').upper() == 'IGRINS-2'
         if not igrins:
             igrins = source[1].header.get('INSTRUME', '').upper() == 'IGRINS-2'
-
         return igrins
 
     @astro_data_tag
+    def _tag_bundle(self):
+        # Gets blocked by tags created by split files
+        return TagSet(['BUNDLE'])
+
+    @astro_data_tag
     def _tag_instrument(self):
-        return TagSet(['IGRINS', 'IGRINS-2'])
+        return TagSet(['IGRINS-2'])
 
     @astro_data_tag
     def _tag_arc(self):
@@ -252,7 +249,7 @@ class AstroDataIGRINS2(igrins.AstroDataIgrins):
             return TagSet(['SKY', 'CAL'], blocked_by=['PROCESSED'])
 
     @astro_data_tag
-    def _tag_std(self):
+    def _tag_standard(self):
         if (self.phu.get("OBSTYPE") == "OBJECT" and
                 self.phu.get("OBSCLASS") == "partnerCal" and
                 not "sky" in self.phu.get('OBJECT', '').lower()):
@@ -286,86 +283,15 @@ class AstroDataIGRINS2(igrins.AstroDataIgrins):
         if band:
             return TagSet([band, 'SPECT'], blocks=['BUNDLE'])
 
-    @astro_data_descriptor
-    def instrument(self, generic=False):
-        """
-        Returns the name of the instrument making the observation
-
-        Parameters
-        ----------
-        generic: boolean
-            If set, don't specify the specific instrument if there are clones
-            (e.g., return "IGRINS" rather than "IGRINS-2")
-
-        Returns
-        -------
-        str
-            instrument name
-        """
-        return 'IGRINS' if generic else self.phu.get('INSTRUME')
 
     @astro_data_descriptor
-    def band(self):
-        return self.phu.get('FILTER')
-
-    @staticmethod
-    def _get_udatetime(hdr, dateonly=False, timeonly=False):
-        utdatetime = hdr.get('UTDATETI', None)
-        if utdatetime is None:
-            utdatetime = hdr.get('UTSTART', None)
-
-        if utdatetime is None:
-            raise KeyError("The header needs UTDATEI or UTSART")
-
-        dt = datetime.datetime.fromisoformat(utdatetime)
-
-        if dateonly:
-            return dt.date()
-        elif timeonly:
-            return dt.time()
-        else:
-            return dt
-
-    @astro_data_descriptor
-    def ut_datetime(self, strict=False, dateonly=False, timeonly=False):
-        # FIXME To workaround an issue in dragons4, which try to do
-        # ad.phu['UTSTART'] (primitive_gemini.py:244), we have a primitive that
-        # rename UTSTART to UTDATEI. This is a work around for thos cases.
-
+    def array_name(self):
         if self.is_single:
-            return self._get_udatetime(self.hdr, dateonly=dateonly, timeonly=timeonly)
-        else:
-            try:
-                return self._get_udatetime(self.phu, dateonly=dateonly, timeonly=timeonly)
-            except KeyError:
-                if len(self):
-                    return self._get_udatetime(self[0].hdr,
-                                               dateonly=dateonly, timeonly=timeonly)
+            return list(self.hdr.get('DETECT_?').values()).pop()
+        return [h[0] if h else None for h in self.hdr.get('DETECT_?')]
 
     @returns_list
-    @astro_data_descriptor
-    def read_noise(self):
-        """
-        Returns the read noise in electrons.
-
-        Returns
-        -------
-        float/list
-            readnoise
-        """
-        if self.is_single:
-            fowler_samp =self.hdr.get('NSAMP') 
-            read_noise_fit = lookup.array_properties.get("read_noise_fit")[self.band()]
-            read_noise = np.polyval(read_noise_fit, 1/fowler_samp)
-        else:
-            read_noise = [ext.read_noise() for ext in self]
-
-        return read_noise
-
-    # FIXME We are hardcoding array_section, detector_section, data_section.
-    # Not sure if this is wise thing to do.
-
-    @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def array_section(self, pretty=False):
         """
@@ -400,22 +326,102 @@ class AstroDataIGRINS2(igrins.AstroDataIgrins):
         value_filter = (str if pretty else Section.from_string)
         return value_filter('[1:2048,1:2048]')
 
-    # copied from f2
+    @astro_data_descriptor
+    def band(self):
+        return self.phu.get('FILTER')
+
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def data_section(self, pretty=False):
-
         value_filter = (str if pretty else Section.from_string)
         return value_filter('[1:2048,1:2048]')
 
-    # copied from f2
+    @astro_data_descriptor
+    def detector_name(self):
+        return "IGRINS-2"
+
     @returns_list
+    @use_keyword_if_prepared
     @astro_data_descriptor
     def detector_section(self, pretty=False):
-
         value_filter = (str if pretty else Section.from_string)
         return value_filter('[1:2048,1:2048]')
 
+    @use_keyword_if_prepared
+    @astro_data_descriptor
+    def filter_name(self):
+        return "|".join(sorted(set(self.hdr.get('FILTER')) - {None}))
 
+    @astro_data_descriptor
+    def instrument(self, generic=False):
+        """
+        Returns the name of the instrument making the observation
 
+        Parameters
+        ----------
+        generic: boolean
+            If set, don't specify the specific instrument if there are clones
+            (e.g., return "IGRINS" rather than "IGRINS-2")
 
+        Returns
+        -------
+        str
+            instrument name
+        """
+        return 'IGRINS' if generic else 'IGRINS-2'
+
+    # @staticmethod
+    # def _get_udatetime(hdr, dateonly=False, timeonly=False):
+    #     utdatetime = hdr.get('UTDATETI', None)
+    #     if utdatetime is None:
+    #         utdatetime = hdr.get('UTSTART', None)
+    #
+    #     if utdatetime is None:
+    #         raise KeyError("The header needs UTDATEI or UTSART")
+    #
+    #     dt = datetime.datetime.fromisoformat(utdatetime)
+    #
+    #     if dateonly:
+    #         return dt.date()
+    #     elif timeonly:
+    #         return dt.time()
+    #     else:
+    #         return dt
+    #
+    # @astro_data_descriptor
+    # def ut_datetime(self, strict=False, dateonly=False, timeonly=False):
+    #     # FIXME To workaround an issue in dragons4, which try to do
+    #     # ad.phu['UTSTART'] (primitive_gemini.py:244), we have a primitive that
+    #     # rename UTSTART to UTDATEI. This is a work around for thos cases.
+    #
+    #     if self.is_single:
+    #         return self._get_udatetime(self.hdr, dateonly=dateonly, timeonly=timeonly)
+    #     else:
+    #         try:
+    #             return self._get_udatetime(self.phu, dateonly=dateonly, timeonly=timeonly)
+    #         except KeyError:
+    #             if len(self):
+    #                 return self._get_udatetime(self[0].hdr,
+    #                                            dateonly=dateonly, timeonly=timeonly)
+
+    @returns_list
+    @use_keyword_if_prepared
+    @astro_data_descriptor
+    def read_noise(self):
+        """
+        Returns the read noise in electrons.
+
+        Returns
+        -------
+        float/list
+            readnoise
+        """
+        if self.is_single:
+            fowler_samp =self.hdr.get('NSAMP') 
+            read_noise_fit = lookup.array_properties.get("read_noise_fit")[self.band()]
+            read_noise = np.polyval(read_noise_fit, 1/fowler_samp)
+        else:
+            read_noise = [ext.read_noise() for ext in self]
+
+        return read_noise

@@ -353,13 +353,13 @@ fixture_data = {
     ('GHOST', 'S20230214S0025_slit.fits'): ['SLIT', 'GHOST', 'SIDEREAL', 'SLITV', 'UNPREPARED', 'SOUTH', 'IMAGE', 'RAW', 'GEMINI'],
 
     ('IGRINS-2', 'N20260303S0289.fits'):  # arc
-        ['IGRINS-2', 'IGRINS', 'GEMINI', 'NORTH', 'RAW', 'UNPREPARED', 'BUNDLE', 'LAMPOFF'],
+        ['IGRINS-2', 'GEMINI', 'NORTH', 'RAW', 'UNPREPARED', 'BUNDLE', 'LAMPOFF'],
     ('IGRINS-2', 'N20260303S0290.fits'):  # flat
-        ['IGRINS-2', 'IGRINS', 'GEMINI', 'NORTH', 'RAW', 'UNPREPARED', 'BUNDLE', 'LAMPOFF', 'CAL', 'FLAT', 'GCALFLAT'],
+        ['IGRINS-2', 'GEMINI', 'NORTH', 'RAW', 'UNPREPARED', 'BUNDLE', 'LAMPOFF', 'CAL', 'FLAT', 'GCALFLAT'],
     ('IGRINS-2', 'N20260228S0506.fits'):  # dark (no DARK?)
-        ['IGRINS-2', 'IGRINS', 'GEMINI', 'NORTH', 'RAW', 'UNPREPARED', 'BUNDLE', 'LAMPOFF'],
+        ['IGRINS-2', 'GEMINI', 'NORTH', 'RAW', 'UNPREPARED', 'BUNDLE', 'LAMPOFF'],
     ('IGRINS-2', 'N20260228S0200.fits'):  # telluric standard
-        ['IGRINS-2', 'IGRINS', 'GEMINI', 'NORTH', 'RAW', 'UNPREPARED', 'BUNDLE', 'LAMPOFF', 'CAL', 'SIDEREAL', 'STANDARD'],
+        ['IGRINS-2', 'GEMINI', 'NORTH', 'RAW', 'UNPREPARED', 'BUNDLE', 'LAMPOFF', 'CAL', 'SIDEREAL', 'STANDARD'],
     ('IGRINS-2', 'N20260303S0044.fits'):  # blank sky
-        ['IGRINS-2', 'IGRINS', 'GEMINI', 'NORTH', 'RAW', 'UNPREPARED', 'BUNDLE', 'LAMPOFF', 'CAL', 'SIDEREAL', 'SKY']
+        ['IGRINS-2', 'GEMINI', 'NORTH', 'RAW', 'UNPREPARED', 'BUNDLE', 'LAMPOFF', 'CAL', 'SIDEREAL', 'SKY']
 }
