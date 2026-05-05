@@ -2,7 +2,7 @@
 Recipe for raw IGRINS bundles, to split the into separate H and K files.
 There's only one recipe.
 """
-recipe_tags = set(['IGRINS', 'BUNDLE', 'RAW', 'UNPREPARED'])
+recipe_tags = {'IGRINS-2', 'BUNDLE', 'RAW', 'UNPREPARED'}
 
 def processBundle(p):
     """

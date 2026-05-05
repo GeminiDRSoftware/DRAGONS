@@ -2,8 +2,7 @@
 """
 from geminidr.igrins2.primitives_igrins import Igrins
 
-recipe_tags = {'IGRINS', 'SKY'}
-# recipe_tags = {'IGRINS'}
+recipe_tags = {'IGRINS-2', 'SKY'}
 
 
 def makeProcessedArc(p: Igrins):

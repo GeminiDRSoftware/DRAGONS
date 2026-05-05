@@ -2,7 +2,7 @@
 """
 from geminidr.igrins2.primitives_igrins import Igrins
 
-recipe_tags = {'IGRINS', 'STANDARD'}
+recipe_tags = {'IGRINS-2', 'STANDARD'}
 
 def makeStellar(p: Igrins):
     """

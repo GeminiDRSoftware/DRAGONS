@@ -4,7 +4,7 @@ Default is "reduce".
 """
 from geminidr.igrins2.primitives_igrins import Igrins
 
-recipe_tags = {'IGRINS', 'ECHELLE'}
+recipe_tags = {'IGRINS-2', 'ECHELLE'}
 
 def reduceScience(p: Igrins):
     """
