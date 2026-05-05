@@ -43,12 +43,12 @@ author = 'DRAGONS Team'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-version = '5.0_dev'  # The short X.Y version.
-#release = '4.2.1'  # The full version, including alpha/beta/rc tags.
-#rtdurl = 'v'+release
+version = '4.2'  # The short X.Y version.
+release = '4.2.1'  # The full version, including alpha/beta/rc tags.
+rtdurl = 'v'+release
 #release = '4.2.x'
 #rtdurl = 'release-'+release
-rtdurl = 'latest'
+#rtdurl = 'latest'
 
 
 # -- General configuration -----------------------------------------------------

@@ -22,12 +22,12 @@ copyright = '2026, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
-version = '5.0_dev'
-#release = '4.2.1'
-#rtdurl = 'v'+release
+version = '4.2'
+release = '4.2.1'
+rtdurl = 'v'+release
 #release = '4.2.x'
 #rtdurl = 'release-'+release
-rtdurl = 'latest'
+#rtdurl = 'latest'
 
 today = 'April 2026'
 

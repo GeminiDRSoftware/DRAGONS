@@ -5,10 +5,10 @@ and to be used in the documentation.
 """
 
 # --- Setup Version Here ---
-API = 5
-FEATURE = 0
-BUG = 0
-TAG = 'dev'
+API = 4
+FEATURE = 2
+BUG = 1
+TAG = ''
 
 
 def version(short=False, tag=TAG):

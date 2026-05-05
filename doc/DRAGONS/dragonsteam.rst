@@ -18,6 +18,7 @@ Current DRAGONS Team
 
 * Paul Hirst
 * Kathleen Labrie
+* Mark Rawlings
 * Chris Simpson
 * Olesja Smirnova
 * Monika Soraisam
@@ -35,7 +36,6 @@ Past DRAGONS Team Members
 * Simon Conseil
 * Oliver Oberdorf
 * Bruno Quint
-* Mark Rawlings
 * D.J. Teal
 * Joanna Thomas-Osip
 
