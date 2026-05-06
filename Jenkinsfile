@@ -66,10 +66,17 @@ pipeline {
                 echo "Update the Conda base install for all on-line nodes"
                 checkout scm
                 sh '.jenkins/scripts/setup_agent.sh'
-                echo "Create a shared Python 3.12 env"
-                sh 'tox -e py312-noop,codecov --workdir "${SHARED_TOX_DIR}" -v -r --notest'
-                echo "Install DRAGONS checkout to env, with cython_utils built"
-                sh '"${SHARED_TOX_DIR}/test_env/bin/python" -m pip install . --no-deps --ignore-installed --no-cache-dir -v'
+                // Install using a lock file (via file descriptor 200) to avoid
+                // different Jenkins runs updating conda's pkg cache at once:
+                echo "Create a shared Python 3.12 env & build+install DRAGONS"
+                sh '''
+                  LOCK_FILE="/tmp/jenkins_conda.lock"
+                  (
+                    flock --exclusive --timeout 900 200 || { echo "Failed to acquire lock after 900s"; exit 1; }
+                    tox -e py312-noop,codecov --workdir "${SHARED_TOX_DIR}" -v -r --notest
+                    "${SHARED_TOX_DIR}/test_env/bin/python" -m pip install . --no-deps --ignore-installed --no-cache-dir -v
+                  ) 200>"$LOCK_FILE"
+                '''
             }
             post {
                 always {
