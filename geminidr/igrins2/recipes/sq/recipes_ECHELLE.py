@@ -2,11 +2,11 @@
 Recipes available to data with tags ['IGRINS', 'ECHELLE']
 Default is "reduce".
 """
-from geminidr.igrins2.primitives_igrins import Igrins
+from geminidr.igrins2.primitives_igrins import IGRINS
 
 recipe_tags = {'IGRINS-2', 'ECHELLE'}
 
-def reduceScience(p: Igrins):
+def reduceScience(p: IGRINS):
     """
     This recipe processes IGRINS science data.
 

@@ -667,7 +667,7 @@ def _get_slices(n_slice_one_direction):
 
 
 @parameter_override
-class Igrins(Gemini, NearIR):
+class IGRINS(Gemini, NearIR):
     """
     This class inherits from the level above.  Any primitives specific
     to IGRINS can go here.
@@ -1055,7 +1055,7 @@ class Igrins(Gemini, NearIR):
 
                 ext.hdr[rn_kw] = (read_noise, "Read Noise in electrons")
 
-                shape_str = Section.from_shape(ext.shape).asIRAFSection()
+                shape_str = Section.from_shape(ext.shape).asIRAFsection()
                 ext.hdr[ad._keyword_for('array_section')] = shape_str
                 ext.hdr[ad._keyword_for('data_section')] = shape_str
                 ext.hdr[ad._keyword_for('detector_section')] = shape_str

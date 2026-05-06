@@ -1,4 +1,4 @@
-from geminidr.igrins2.primitives_igrins import Igrins, NdPolyNamed
+from geminidr.igrins2.primitives_igrins import IGRINS, NdPolyNamed
 
 import astrodata, geminii_instruments
 
@@ -23,7 +23,7 @@ if True: # FIXME The code below needs to be reviewed.
 
     tbl_linefit = ad[0].LINEFIT
 
-    dft = Igrins._prepareVolumFit(tbl_linefit)
+    dft = IGRINS._prepareVolumFit(tbl_linefit)
     dd = dft[dft["badmask"] == 0].reset_index()
     # dd = dft.reset_index()
 

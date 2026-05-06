@@ -189,6 +189,8 @@ class AstroDataIGRINS2(AstroDataGemini):
     #@use_keyword_if_prepared
     @astro_data_descriptor
     def exposure_time(self):
+        if self.is_single:
+            return self.hdr.get('EXPTIME')
         exptimes = list(set(self.hdr.get('EXPTIME')) - {None})
         if len(exptimes) == 1:
             return exptimes.pop()

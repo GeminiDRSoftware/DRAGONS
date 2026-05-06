@@ -1,10 +1,10 @@
 """
 """
-from geminidr.igrins2.primitives_igrins import Igrins
+from geminidr.igrins2.primitives_igrins import IGRINS
 
 recipe_tags = {'IGRINS-2', 'STANDARD'}
 
-def makeStellar(p: Igrins):
+def makeStellar(p: IGRINS):
     """
 
     Parameters
@@ -38,7 +38,7 @@ def makeStellar(p: Igrins):
 
     return
 
-def makeStd(p: Igrins):
+def makeStd(p: IGRINS):
     """
 
     Parameters
