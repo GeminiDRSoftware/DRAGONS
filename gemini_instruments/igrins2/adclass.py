@@ -352,7 +352,9 @@ class AstroDataIGRINS2(AstroDataGemini):
 
     @use_keyword_if_prepared
     @astro_data_descriptor
-    def filter_name(self):
+    def filter_name(self, pretty=True):
+        """IGRINS-2 doesn't have physical filters, so there's no component
+        number and pretty does nothing."""
         return "|".join(sorted(set(self.hdr.get('FILTER')) - {None}))
 
     @astro_data_descriptor
@@ -427,3 +429,8 @@ class AstroDataIGRINS2(AstroDataGemini):
             read_noise = [ext.read_noise() for ext in self]
 
         return read_noise
+
+    @astro_data_descriptor
+    def wavelength_band(self):
+        """Avoids the round-the-houses calculation of AstroDataGemini"""
+        return self.filter_name(pretty=True)
