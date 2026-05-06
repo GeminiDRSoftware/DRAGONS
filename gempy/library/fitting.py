@@ -613,3 +613,32 @@ class fit_1D:
         if "grow" in params:
             new_params["grow"] = params["grow"]
         return new_params
+
+    @classmethod
+    def create_with_model(cls, model, image, points):
+        """
+        Create a fit_1D object with an already-defined model and an array
+        of points.
+
+        Parameters
+        ----------
+        model : callable
+            A model that
+
+        image : array-like
+            N-dimensional input array containing the values to be fitted. If
+            it is a `numpy.ma.MaskedArray`, any masked points are ignored when
+            fitting.
+
+        points : `~numpy.ndarray`, optional
+            1-dimensional input array with the x-values of each 1D slice being
+            fitted, If not given, the independent variable will be treated as
+            a sequence of integers starting at zero.
+            model
+        """
+        fit1d = cls(np.arange(5), function="chebyshev", order=1, niter=0)
+        fit1d._models = model
+        fit1d.image = np.asarray(image)
+        fit1d.points = np.asarray(points)
+        fit1d.mask = np.zeros_like(fit1d.image, dtype=bool)
+        return fit1d
