@@ -17,7 +17,7 @@ class IgrinsBundle(Igrins):
     """
     Primitives for unpacking IGRINS observation bundle files.
     """
-    tagset = set(["GEMINI", "IGRINS", "BUNDLE"])
+    tagset = set(["GEMINI", "IGRINS-2", "BUNDLE"])
 
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)

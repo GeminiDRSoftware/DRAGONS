@@ -673,7 +673,7 @@ class Igrins(Gemini, NearIR):
     to IGRINS can go here.
     """
 
-    tagset = {"GEMINI", "IGRINS"}
+    tagset = {"GEMINI", "IGRINS-2"}
 
     def _initialize(self, adinputs, **kwargs):
         self.inst_lookups = 'geminidr.igrins.lookups'
