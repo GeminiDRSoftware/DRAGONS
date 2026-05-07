@@ -123,7 +123,8 @@ class Visualize(PrimitivesBASE):
                         threshold = None
                     else:
                         # addDQ operates in place so deepcopy to preserve input
-                        ad = self.addDQ([deepcopy(ad)])[0]
+                        ad = self.addDQ([deepcopy(ad)],
+                                add_illum_mask=False, static_bpm = None)[0]
                         copied = True
 
             if remove_bias:
