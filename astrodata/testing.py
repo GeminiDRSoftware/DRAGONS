@@ -256,15 +256,18 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
     download_it = True
     local_path = os.path.join(cache_path, filename)
     if os.path.exists(local_path):
-        # Get the md5 of the file on disk
-        with open(local_path, 'rb') as filep:
-            digest = hashlib.file_digest(filep, "md5")
-        file_md5 = digest.hexdigest()
-        # Get the md5 from GOA
-        fileinfourl = url.replace('/file/', '/jsonfilelist/present/')
-        fileinfo = requests.get(fileinfourl, headers={"User-Agent": "astropy"}).json()
-        goa_md5 = fileinfo[0].get('data_md5')
-        download_it = (file_md5 != goa_md5)
+        if url.startswith(URL):  # Gemini archive
+            # Get the md5 of the file on disk
+            with open(local_path, 'rb') as filep:
+                digest = hashlib.file_digest(filep, "md5")
+            file_md5 = digest.hexdigest()
+            # Get the md5 from GOA
+            fileinfourl = url.replace('/file/', '/jsonfilelist/present/')
+            fileinfo = requests.get(fileinfourl, headers={"User-Agent": "astropy"}).json()
+            goa_md5 = fileinfo[0].get('data_md5')
+            download_it = (file_md5 != goa_md5)
+        else:
+            download_it = False
 
     if download_it:
         tmp_path = download_file(url, cache=False)
