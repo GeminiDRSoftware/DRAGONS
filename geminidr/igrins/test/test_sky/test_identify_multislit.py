@@ -5,14 +5,14 @@ import pandas as pd
 from astropy.table import Table
 import astrodata, gemini_instruments
 
-from geminidr.igrins2.primitives_igrins import get_ref_spectra, get_ref_data
+from geminidr.igrins.primitives_igrins import get_ref_spectra, get_ref_data
 
-# from geminidr.igrins2.procedures.procedures_register import _get_offset_transform_between_2spec
+# from geminidr.igrins.procedures.procedures_register import _get_offset_transform_between_2spec
 
-from geminidr.igrins2.procedures.identified_lines import IdentifiedLines
-from geminidr.igrins2.procedures.apertures import Apertures
-from geminidr.igrins2.procedures.echellogram import Echellogram
-# from geminidr.igrins2.primitives_igrins import _get_wavelength_solutions
+from geminidr.igrins.procedures.identified_lines import IdentifiedLines
+from geminidr.igrins.procedures.apertures import Apertures
+from geminidr.igrins.procedures.echellogram import Echellogram
+# from geminidr.igrins.primitives_igrins import _get_wavelength_solutions
 
 # fn = "N20240429S0204_K.fits"
 band = "H"
@@ -31,7 +31,7 @@ adinputs = [adout]
 from collections import namedtuple
 Spec = namedtuple("Spec", ["s_map", "wvl_map"])
 
-from geminidr.igrins2.procedures.reidentify import reidentify
+from geminidr.igrins.procedures.reidentify import reidentify
 from scipy.interpolate import interp1d
 
 def flatten(l):
@@ -342,7 +342,7 @@ def fitted_lines_init(ref_lines):
 
 
 if True:
-        from geminidr.igrins2.primitives_igrins import (get_ref_path,
+        from geminidr.igrins.primitives_igrins import (get_ref_path,
                                                        identify_lines_from_spec)
         ad = adinputs[0]
 
@@ -463,9 +463,9 @@ Out[74]:
 
 if True:
         #
-        from geminidr.igrins2.primitives_igrins import (get_ref_path,
+        from geminidr.igrins.primitives_igrins import (get_ref_path,
                                                        identify_lines_from_spec)
-        # from geminidr.igrins2.procedures.ref_lines_db import SkyLinesDB
+        # from geminidr.igrins.procedures.ref_lines_db import SkyLinesDB
 
         ad = adinputs[0]
 

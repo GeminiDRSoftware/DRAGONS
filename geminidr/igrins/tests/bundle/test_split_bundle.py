@@ -5,7 +5,7 @@ import pytest
 import astrodata, gemini_instruments
 from astrodata.testing import download_from_archive
 
-from geminidr.igrins2.primitives_igrins_bundle import IGRINSBundle
+from geminidr.igrins.primitives_igrins_bundle import IGRINS2Bundle
 
 
 def test_split_bundle():
@@ -14,7 +14,7 @@ def test_split_bundle():
     ad = astrodata.open(download_from_archive("N20260228S0200.fits"))
     orig_filename = ad.filename
     orig_tags = ad.tags
-    p = IGRINSBundle([ad])
+    p = IGRINS2Bundle([ad])
     p.splitBundle()
     assert len(p.adinputs) == 2
     assert p.adinputs[0].filename == orig_filename.replace(".", "_H.")

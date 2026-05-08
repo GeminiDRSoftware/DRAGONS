@@ -82,7 +82,7 @@ from .procedures.slit_profile import (extract_slit_profile,
                                       _get_norm_profile,
                                       _get_profile_func_from_dict,
                                       make_slitprofile_map)
-# from geminidr.igrins2.json_helper import dict_to_table
+# from geminidr.igrins.json_helper import dict_to_table
 
 from .procedures.spec_extract_w_profile import extract_spec_using_profile
 
@@ -667,7 +667,7 @@ def _get_slices(n_slice_one_direction):
 
 
 @parameter_override
-class IGRINS(Gemini, NearIR):
+class IGRINS2(Gemini, NearIR):
     """
     This class inherits from the level above.  Any primitives specific
     to IGRINS can go here.
@@ -1544,7 +1544,7 @@ class IGRINS(Gemini, NearIR):
         """
         from operator import itemgetter
         from scipy.interpolate import interp1d
-        from geminidr.igrins2.primitives_igrins import get_ref_path
+        from geminidr.igrins.primitives_igrins import get_ref_path
 
         ad = adinputs[0]
         band = ad[0].band()

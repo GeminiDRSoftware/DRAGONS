@@ -23,7 +23,7 @@ adinputs = [adout]
 if True:
         from operator import itemgetter
         from scipy.interpolate import interp1d
-        from geminidr.igrins2.primitives_igrins import get_ref_path
+        from geminidr.igrins.primitives_igrins import get_ref_path
 
         ad = adinputs[0]
 

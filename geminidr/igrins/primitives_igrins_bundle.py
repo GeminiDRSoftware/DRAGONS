@@ -3,7 +3,7 @@
 #                                                    primitives_igrins_bundle.py
 # ------------------------------------------------------------------------------
 import astrodata, gemini_instruments
-from .primitives_igrins import IGRINS
+from .primitives_igrins import IGRINS2
 from . import parameters_igrins_bundle
 from .lookups.timestamp_keywords import timestamp_keys
 
@@ -13,7 +13,7 @@ from recipe_system.utils.decorators import parameter_override, capture_provenanc
 
 @parameter_override
 @capture_provenance
-class IGRINSBundle(IGRINS):
+class IGRINS2Bundle(IGRINS2):
     """
     Primitives for unpacking IGRINS observation bundle files.
     """

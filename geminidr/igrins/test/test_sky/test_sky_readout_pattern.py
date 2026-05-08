@@ -28,7 +28,7 @@ data_list = [ad[0].data for ad in adlist]
 ext = ad[0]
 band = ext.band()
 
-from geminidr.igrins2.procedures.readout_pattern.readout_pattern_helper import pipes, apply_pipe
+from geminidr.igrins.procedures.readout_pattern.readout_pattern_helper import pipes, apply_pipe
 
 p = [pipes["p64_global_median"]]
 data_list2 = [apply_pipe(d, p) for d in data_list]

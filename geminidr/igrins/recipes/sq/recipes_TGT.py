@@ -1,10 +1,10 @@
-from geminidr.igrins2.primitives_igrins import IGRINS
+from geminidr.igrins.primitives_igrins import IGRINS2
 
 recipe_tags = {'IGRINS-2', 'SIDEREAL'}
 
 from .recipe_STD import makeStellar
 
-def makeTgt(p: IGRINS):
+def makeTgt(p: IGRINS2):
     """
 
     Parameters

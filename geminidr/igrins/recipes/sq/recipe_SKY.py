@@ -1,11 +1,11 @@
 """
 """
-from geminidr.igrins2.primitives_igrins import IGRINS
+from geminidr.igrins.primitives_igrins import IGRINS2
 
 recipe_tags = {'IGRINS-2', 'SKY'}
 
 
-def makeProcessedArc(p: IGRINS):
+def makeProcessedArc(p: IGRINS2):
     """
     This recipe performs the standardization and corrections needed to convert
     the raw input dark images into a single stacked dark image. This output
