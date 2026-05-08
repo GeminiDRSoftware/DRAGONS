@@ -14,7 +14,7 @@ from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from . import lookup
 
 
-class AstroDataIGRINS2(AstroDataGemini):
+class AstroDataIgrins2(AstroDataGemini):
     """
     AstroData class for the IGRINS-2 instrument.
 
