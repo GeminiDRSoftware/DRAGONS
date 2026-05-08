@@ -45,5 +45,9 @@ def test_make_processed_flat(input_files, change_working_dir, path_to_refs):
         assert r.recipename == "makeProcessedFlat"
         adout = astrodata.open(os.path.join("calibrations", "processed_flat", output_filename))
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        ad_compare(adout, adref, ignore_kw=['PROCFLAT', 'UTEND', 'UTSTART', 'SDZWCS', 'SDZHDRSI',
-                                            'ARRAYSEC', 'DETSEC', 'DATASEC', 'UTDATETI', 'DATE-OBS'])
+        # A large tolerance is needed here because significant numerical
+        # differences arise on different architectures with the Savitzky-Golay
+        # smoothing in normalizeFlat()
+        ad_compare(adout, adref, rtol=2e-4,
+                   ignore_kw=['PROCFLAT', 'UTEND', 'UTSTART', 'SDZWCS', 'SDZHDRSI',
+                              'ARRAYSEC', 'DETSEC', 'DATASEC', 'UTDATETI', 'DATE-OBS'])
