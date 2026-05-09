@@ -675,117 +675,12 @@ class IGRINS2(Gemini, NearIR):
 
     tagset = {"GEMINI", "IGRINS-2"}
 
-    def _initialize(self, adinputs, **kwargs):
+    def _initialize(self, adinputs=None, **kwargs):
         self.inst_lookups = 'geminidr.igrins.lookups'
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_igrins)
         # Add IGRINS specific timestamp keywords
         self.timestamp_keys.update(igrins_stamps.timestamp_keys)
-
-    def selectFrame(self, adinputs=None, **params):
-        """Filter the adinputs by its FRMTYPE value in the header.
-        """
-        frmtype = params["frmtype"]
-        adoutputs = [ad for ad in adinputs
-                     if frmtype in ad.hdr['FRMTYPE']]
-        return adoutputs
-
-    def streamPatternCorrected(self, adinputs=None, **params):
-        """
-        make images with Readout pattern corrected. And add them to streams.
-
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        rpc_mode = params.get("rpc_mode")
-        assert rpc_mode == "full"
-        # FIXME: only 'full' mode is supported for now, which will create
-        # images using the methods of ['guard', 'level2', 'level3']
-
-        dlist = [ad[0].data for ad in adinputs]
-        hdu_list = make_guard_n_bg_subtracted_images(dlist,
-                                                     rpc_mode=rpc_mode,
-                                                     bias_mask=None,
-                                                     log=log)
-        for (name, dlist) in hdu_list:
-            # name: the name of the correction method applied. One of ["GUARD",
-            # "LEVEL2", "LEVEL3"]
-            # dlist : list of numpy images
-            adoutputs = []
-            for ad0, d in zip(adinputs, dlist):
-                # we create new astrodata object based on the input's header.
-                hdu = fits.ImageHDU(data=d, header=ad0[0].hdr,
-                                    name='SCI')
-                ad = astrodata.create(ad0.phu, [hdu])
-                gt.mark_history(ad, primname=self.myself(),
-                                keyword="RPC")
-
-                adoutputs.append(ad)
-
-            self.streams[f"RPC_{name}"] = adoutputs
-
-        return adinputs
-
-    # For the unclear reason (we need to check with K.Kaplan),
-    # setReferenceFrame primitive uses first frame data if individual exposure
-    # time is larger than 100. For now, we make a separate stream for the first
-    # frame. After this primitive, the main stream will be stacked.
-    def streamFirstFrame(self, adinputs=None, **params):
-        self.streams["first_frame"] = [adinputs[0]]
-
-        return adinputs
-
-    def setReferenceFrame(self, adinputs, **params):
-        ad_first = self.streams["first_frame"][0]
-        exptime = ad_first[0].exposure_time()
-        #Grab sky frame data.  If exposures are short, stack them, otherwise just use first frame
-        if exptime >= 100.0:
-            print('Sky frames exp time > 30 s.  Using the first frame.')
-            data = ad_first[0].data
-        else:
-            print('Sky frames exp time <= 30 s.  Use combined sky.')
-            # This primitive will be called after stacking, so the adinputs
-            # should contain stacked data.
-            data = adinputs[0][0].data
-
-        ref_data = isolate_sky_lines(data/exptime)
-        adinputs[0][0].FLEXCORR = ref_data
-
-        return adinputs
-
-
-    def estimateNoise(self, adinputs=None, **params):
-        """Estimate the noise characteriscs for images in each streams. The resulting
-        table is added to a 'ESTIMATED_NOISE' stream
-        """
-
-        # filenames that will be used in the table.
-        filenames = [ad.filename for ad in adinputs]
-
-        kdlist = [(k[4:], [ad[0].data for ad in adlist])
-                  for k, adlist in self.streams.items()
-                  if k.startswith("RPC_")]
-
-        df = estimate_amp_wise_noise(kdlist, filenames=filenames)
-        # df : pandas datafrome object.
-
-        # Convert it to astropy.Table and then to an astrodata object.
-        tbl = Table.from_pandas(df)
-        phu = fits.PrimaryHDU()
-        ad = astrodata.create(phu)
-
-        astrodata.add_header_to_table(tbl)
-        ad.EST_NOISE = tbl
-        # ad.append(tbl, name='EST_NOISE')
-
-        self.streams["ESTIMATED_NOISE"] = [ad]
-
-        return adinputs
-
-    def selectStream(self, adinputs=None, **params):
-        stream_name = params["stream_name"]
-        return self.streams[stream_name]
 
     def addNoiseTable(self, adinputs=None, **params):
         """
@@ -793,58 +688,88 @@ class IGRINS2(Gemini, NearIR):
         """
         # adinputs should contain a single ad of stacked dark. We attach table
         # to the stacked dark.
-
-        ad = adinputs[0]
-
-        ad_noise_table = self.streams["ESTIMATED_NOISE"][0]
-        del self.streams["ESTIMATED_NOISE"]
-
-        ad.EST_NOISE = ad_noise_table.EST_NOISE
-        # ad.append(ad_noise_table.EST_NOISE, name="EST_NOISE")
-
-        return adinputs
-
-    def setSuffix(self, adinputs=None, **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
         suffix = params["suffix"]
 
-        # Doing this also makes the output files saved.
-        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
-                                           primname=self.myself(),
-                                           keyword="NOISETABLE")
+        for ad in adinputs:
+            ad_noise_table = self.streams["ESTIMATED_NOISE"][0]
+            del self.streams["ESTIMATED_NOISE"]
+
+            ad.EST_NOISE = ad_noise_table.EST_NOISE
+            # ad.append(ad_noise_table.EST_NOISE, name="EST_NOISE")
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
-    def someStuff(self, adinputs=None, **params):
+    def attachWatTable(self, adinputs=None, **params):
         """
-        Write message to screen.  Test primitive.
+        Attach Wavelength Transformation (WAT) header cards to the data.
+
+        This method generates and attaches Wavelength Transformation (WAT) header
+        cards to the input data. These cards are used to describe the wavelength
+        solution in a format compatible with the FITS WCS standard.
+
+        The method performs the following steps:
+        1. Retrieves wavelength fitting results from the 'WVLFIT_RESULTS' attribute
+        2. Generates WAT header cards using the fitting results
+        3. Stores the WAT cards in the 'WAT_HEADER' attribute
 
         Parameters
         ----------
-        adinputs
-        params
+        adinputs : list of AstroData
+            Input data containing wavelength fitting results in the 'WVLFIT_RESULTS'
+            attribute. The input should have gone through wavelength calibration.
+        **params : dict
+            Additional parameters (not currently used, but maintained for API
+            compatibility).
 
         Returns
         -------
+        list of AstroData
+            The input list with the first image updated to include the WAT header
+            cards in the 'WAT_HEADER' attribute.
 
+        Notes
+        -----
+        - The WAT cards follow the FITS WCS standard for describing non-linear
+          wavelength solutions.
+        - These cards are essential for tools that need to interpret the wavelength
+          solution of the data.
+        - The method is typically one of the final steps in the wavelength
+          calibration process.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
 
         for ad in adinputs:
-            log.status('I see '+ad.filename)
+            for ext in ad:
+                fit_results_tbl = ext.WVLFIT_RESULTS
 
-            gt.mark_history(ad, primname=self.myself(), keyword="TEST")
-            ad.update_filename(suffix=params['suffix'], strip=True)
+                cards = get_wat_cards(fit_results_tbl)
+                tbl = Table([[c.image for c in cards]], names=["cards"])
+
+                ext.WAT_HEADER = tbl
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
+    def checkCALDB(self, adinputs=None, **params):
+        for caltype in params["caltypes"]:
+            calibrations = self.caldb.get_calibrations(adinputs, caltype)
+            if calibrations.files[0] is None:
+                raise RuntimeError(f"calibration file of {caltype} need to be specified")
 
-    @staticmethod
-    def _has_valid_extensions(ad):
-        """ Check that the AD has a valid number of extensions. """
-
-        # this needs to be updated at appropriate.
-        return len(ad) in [1]
+        return adinputs
 
     def determineSlitEdges(self, adinputs=None, **params):
         """
@@ -871,20 +796,1086 @@ class IGRINS2(Gemini, NearIR):
             The input list with the first image updated to include SLITEDGE tables
             in each extension.
         """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        for ad in adinputs:
+            for ext in ad:
+                ll = trace_flat_edges(ext.data)
+                tbl = Table(ll)
+                ext.SLITEDGE = tbl
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def estimateNoise(self, adinputs=None, **params):
+        """Estimate the noise characteriscs for images in each streams. The resulting
+        table is added to a 'ESTIMATED_NOISE' stream
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        # filenames that will be used in the table.
+        filenames = [ad.filename for ad in adinputs]
+
+        kdlist = [(k[4:], [ad[0].data for ad in adlist])
+                  for k, adlist in self.streams.items()
+                  if k.startswith("RPC_")]
+
+        df = estimate_amp_wise_noise(kdlist, filenames=filenames)
+        # df : pandas datafrome object.
+
+        # Convert it to astropy.Table and then to an astrodata object.
+        tbl = Table.from_pandas(df)
+        phu = fits.PrimaryHDU()
+        ad = astrodata.create(phu)
+
+        astrodata.add_header_to_table(tbl)
+        ad.EST_NOISE = tbl
+        # ad.append(tbl, name='EST_NOISE')
+
+        self.streams["ESTIMATED_NOISE"] = [ad]
+
+        # Timestamp and update filename
+        #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+        ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def estimateSlitProfile(self, adinputs=None, **params):
+        """
+        Estimate the slit profile function for the spectrograph.
+
+        This method calculates the spatial profile of the slit as a function of
+        spectral order, pixel position, and slit position. The profile can be
+        used to model and correct for variations in the slit illumination.
+
+        The method supports different calculation methods controlled by the
+        'slit_profile_method' parameter:
+        - 'full': Uses a single profile across the full detector
+        - 'per_order': Calculates separate profiles for each order
+        - 'per_pixel': Calculates a profile for each pixel position
+
+        Parameters
+        ----------
+        slit_profile_range : tuple (x1, x2)
+            The pixel range in the dispersion direction to use for profile
+            calculation.
+        slit_profile_method : str
+            Method to use for profile calculation. One of: 'full', 'per_order',
+            or 'per_pixel'.
+
+        Returns
+        -------
+        function
+            A profile function with the signature:
+                profile(order, x_pixel, y_slit_pos) -> profile_value
+            where:
+            - order : int
+                The spectral order number
+            - x_pixel : int
+                The pixel position in the dispersion direction
+            - y_slit_pos : float
+                The relative position in the slit (0-1)
+            - profile_value : float
+                The normalized intensity at the specified position
+
+        Notes
+        -----
+        - The method uses flat field and sky data to estimate the slit profile.
+        - The profile is normalized such that the maximum value is 1.0.
+        - The input data should be flat-field corrected before using this method.
+        - The method requires the 'ORDERMAP' and 'SLITPOSMAP' attributes to be
+          present in the input data.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        x1, x2 = params["slit_profile_range"]
+        method = params["slit_profile_method"]
+
+        for ad in adinputs:
+            ad_flat = self._get_ad_flat(ad)
+            ad_sky = self._get_ad_sky(ad)
+
+            orderflat = ad_flat[0].data
+
+            data_minus = ad[0].data
+            data_minus_flattened = data_minus / orderflat
+
+            ap = Apertures(ad_sky[0].SLITEDGE)
+            # from .aperture_helper import get_aperture_from_obsset
+            # orders = helper.get("orders")
+            # ap = get_aperture_from_obsset(obsset, orders=orders)
+
+            ordermap = ad_sky[0].ORDERMAP
+            # ordermap_bpixed = helper.get("ordermap_bpixed")
+            slitpos_map = ad_sky[0].SLITPOSMAP
+
+            ordermap_bpixed = np.ma.array(ordermap, mask=ad_flat[0].mask > 0).filled(0)
+
+
+            if method == 'full': #Old method that used a single profile for the full detector
+
+                _ = extract_slit_profile(ap,
+                                         ordermap_bpixed, slitpos_map,
+                                         data_minus_flattened,
+                                         x1=x1, x2=x2,
+                                         mode="biweight_location"
+                                         )
+                bins, hh0, slit_profile_list = _
+
+                if params["do_ab"]:
+                    profile_x, profile_y = _get_norm_profile_ab(bins, hh0)
+                    # profile = get_profile_func_ab(profile_x, profile_y)
+                else:
+                    profile_x, profile_y = _get_norm_profile(bins, hh0)
+                    # profile = get_profile_func(profile_x, profile_y)
+
+                slit_profile_dict = dict(orders=ap.orders,
+                                         ab_mode=params["do_ab"],
+                                         slit_profile_list=slit_profile_list,
+                                         profile_x=profile_x,
+                                         profile_y=profile_y)
+
+                tbl = dict_to_table(slit_profile_dict)
+                ad[0].SLITPROFILE = tbl
+
+                profile = _get_profile_func_from_dict(slit_profile_dict)
+                profile_map = make_slitprofile_map(ap, profile,
+                                                   ordermap, slitpos_map,
+                                                   frac_slit_list=params["frac_slit"]
+                                                   )
+
+                ad[0].SLITPROFILE_MAP = profile_map
+
+            elif method == 'column': #New method that uses a running median to find the profile per column
+                profile_map = np.zeros([2048, 2048])
+
+                for i in range(2048):
+                    x1 = i - 64 #Range +/-
+                    x2 = i + 64
+                    if x1 < 0: x1 = 0
+                    if x2 > 2048: x2 = 2048
+
+                    bins, hh0, slit_profile_list = extract_slit_profile(ap,
+                                             ordermap_bpixed, slitpos_map,
+                                             data_minus_flattened,
+                                             x1=x1, x2=x2,
+                                             mode='median',
+                                             #mode = 'biweight_location',
+                                             )
+                    if params["do_ab"]:
+                        profile_x, profile_y = _get_norm_profile_ab(bins, hh0)
+                    else:
+                        profile_x, profile_y = _get_norm_profile(bins, hh0)
+                        # profile = get_profile_func(profile_x, profile_y)
+                    slit_profile_dict = dict(orders=ap.orders_to_extract,
+                                             ab_mode=params["do_ab"],
+                                             slit_profile_list=slit_profile_list,
+                                             profile_x=profile_x,
+                                             profile_y=profile_y)
+                    profile = _get_profile_func_from_dict(slit_profile_dict)
+
+                    profile_map[:,i] = ap.make_profile_column(ordermap, slitpos_map,
+                                                              profile, slice_index=i)
+
+                ad[0].SLITPROFILE_MAP = profile_map
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def extractSimpleSpec(self, adinputs=None, **params):
+        """
+        Extract simple 1D spectra from 2D spectral data using predefined apertures.
+
+        This primitive performs a basic spectral extraction by summing flux within
+        predefined slit edges. It uses the SLITEDGE information from a processed
+        flat field to define the extraction apertures.
+
+        The extracted spectra are stored in the 'SPEC1D' attribute as an Astropy
+        Table containing the order numbers and corresponding 1D spectra.
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include the extracted
+            spectra in the 'SPEC1D' attribute and the slit edge information in
+            the 'SLITEDGE' attribute.
+
+        Notes
+        -----
+        - This is a simple extraction method that performs a straight sum of
+          pixels within the defined apertures.
+        - The extraction uses a fractional range of 0.1 to 0.9 of the slit height
+          to avoid edge effects.
+        - The input data should be flat-field corrected before using this method.
+        - The mask from the flat field is applied to the science data.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        # from recipe_system import cal_service
+        # caldb = cal_service.set_local_database()
+        # procmode = 'sq' if self.mode == 'sq' else None
+        # c = caldb.get_calibrations(adinputs, caltype="processed_flat", procmode=procmode)
+
+        for ad in adinputs:
+            ad_flat = self._get_ad_flat(ad)
+
+            tbl = ad_flat[0].SLITEDGE
+            ap = Apertures(tbl)
+
+            # FIXME we simply apply mask from ad_flat. Maybe we should we have flatCorrect prmitive?
+            d = np.ma.array(ad[0].data, mask=(ad[0].mask | ad_flat[0].mask) > 0).filled(np.nan)
+            s = ap.extract_spectra_simple(d, f1=0.1, f2=0.9)
+
+            # t = Table(s,
+            #           names=(f"{o}" for o in ap.orders_to_extract))
+            ss = [np.array(s1, dtype='float32') for s1 in s]
+            t = Table([ap.orders_to_extract, ss], names=['orders_initial', 'specs'])
+
+            ad[0].SPEC1D = t
+            ad[0].SLITEDGE = tbl
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def extractSpectraMulti(self, adinputs=None, **params):
+        """
+        Extract multiple 1D spectra at different positions along the slit.
+
+        This method extracts spectra at multiple positions across the slit to capture
+        spatial information. It creates a series of extractions centered on the slit
+        and at positions above and below the center.
+
+        The extraction is performed at multiple slit positions defined by the
+        `n_slice_one_direction` parameter, which determines how many slices to take
+        on either side of the center. The results are stored in a table with
+        'orders', 'multispec', and 'slit_centers' columns.
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include the multi-slit
+            extractions in the 'SPEC1D_MULTI' attribute. This is an Astropy Table
+            with the following columns:
+            - 'orders': The order numbers
+            - 'multispec': Extracted spectra at different slit positions
+            - 'slit_centers': The relative slit positions of each extraction
+
+        Notes
+        -----
+        - The method currently uses a fixed number of slices (2) on each side of
+          the center.
+        - The extracted spectra can be used for analysis of spatial variations
+          along the slit.
+        - The 'slit_centers' are given in fractional slit height from bottom to top.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        n_slice_one_direction = 2
+        slice_center, slice_up, slice_down = _get_slices(n_slice_one_direction)
+        slices = slice_down[::-1] + [slice_center] + slice_up
+        slit_centers = [0.5 * (s1 + s2) for (s1, s2) in slices]
+
+        for ad in adinputs:
+            for ext in ad:
+                data = ext.data
+                ap = Apertures(ext.SLITEDGE)
+
+                ss = []
+                for s1, s2 in slices:
+                    s = ap.extract_spectra_simple(data, s1, s2)
+                    ss.append(s)
+                ss = np.array(ss)
+
+                orders = ap.orders_to_extract
+                tbl = Table([orders, [ss[:, i, :] for i in range(ss.shape[1])], [slit_centers]*len(orders)],
+                            names=["orders", "multispec", "slit_centers"])
+
+                ext.SPEC1D_MULTI = tbl
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def extractStellarSpec(self, adinputs=None, **params):
+        """
+        Extract 1D stellar spectra from 2D spectral data using optimal extraction.
+
+        This method performs optimal extraction of stellar spectra from 2D
+        spectral data, taking into account the spatial profile of the star
+        and the noise characteristics of the detector. The extraction can be
+        performed using different methods and parameters to optimize the
+        signal-to-noise ratio.
+
+        The method performs the following steps:
+        1. Loads flat field and sky data for calibration
+        2. Applies flat field correction
+        3. Performs optimal extraction using the specified method
+        4. Calculates wavelength solution and signal-to-noise ratios
+        5. Returns the extracted 1D spectrum with associated metadata
+
+        Returns
+        -------
+        AstroData
+            A new AstroData object containing the extracted 1D spectrum with
+            the following extensions:
+            - Primary HDU: The extracted 1D spectrum
+            - Variance array: The variance of the extracted spectrum
+            - Wavelengths: The wavelength solution for the spectrum
+            - SN_PER_RESEL: Signal-to-noise ratio per resolution element
+
+        Notes
+        -----
+        - The method requires flat field and sky data to be available through
+          the `_get_ad_flat` and `_get_ad_sky` methods.
+        - The extraction uses the SLITEDGE information to define the extraction
+          apertures.
+        - The wavelength solution is taken from the WVLFIT_RESULTS attribute
+          of the sky data.
+        - The output spectrum includes WCS information in the header for
+          wavelength calibration.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        extraction_mode = params["extraction_mode"]
+        pixel_per_res_element = params["pixel_per_res_element"]
+
+        adoutputs = []
+        for ad in adinputs:
+            ad_flat = self._get_ad_flat(ad)
+            ad_sky = self._get_ad_sky(ad)
+
+            ap = Apertures(ad_sky[0].SLITEDGE)
+
+            orderflat = ad_flat[0].data
+            data_minus = ad[0].data
+            data_minus_flattened = data_minus / orderflat
+
+            # if False:
+            #     variance_map = obsset.load_fits_sci_hdu("combined_variance1",
+            #                                             postfix=postfix).data
+            #     variance_map0 = obsset.load_fits_sci_hdu("combined_variance0",
+            #                                              postfix=postfix).data
+
+            variance_map = ad[0].variance + 2**2 # FIXME figure out the readout
+                                                 # noize and properly update it
+            variance_map0 = None # FIXME original plp used this to update variance
+                                 # while doing the iterationin optima extraction. We
+                                 # simply ignore this by setting it to NaN.
+
+            ordermap = ad_sky[0].ORDERMAP
+            # ordermap_bpixed = helper.get("ordermap_bpixed")
+            slitpos_map = ad_sky[0].SLITPOSMAP
+
+            ordermap_bpixed = np.ma.array(ordermap, mask=ad_flat[0].mask > 0).filled(0)
+
+            slitoffset_map = ad_sky[0].SLITOFFSETMAP
+            # slitoffset_map = helper.get("slitoffsetmap")
+
+            # ordermap = helper.get("ordermap")
+            # ordermap_bpixed = helper.get("ordermap_bpixed")
+            # slitpos_map = helper.get("slitposmap")
+
+            # gain = float(obsset.rs.query_ref_value("gain"))
+            gain = 1.
+
+            profile_map = ad[0].SLITPROFILE_MAP
+
+            # profile_map = obsset.load_fits_sci_hdu("slitprofile_fits",
+            #                                        postfix=postfix).data
+
+            _ = extract_spec_using_profile(ap, profile_map,
+                                           variance_map,
+                                           variance_map0,
+                                           data_minus_flattened,
+                                           orderflat,
+                                           ordermap, ordermap_bpixed,
+                                           slitpos_map,
+                                           slitoffset_map,
+                                           gain,
+                                           extraction_mode=extraction_mode,
+                                           debug=False)
+
+            s_list, v_list, cr_mask, aux_images = _
+
+            wvl_solutions_map = dict(zip(ad_sky[0].WVLSOL["orders"], ad_sky[0].WVLSOL["wavelengths"]))
+
+            wvl_solutions = []
+            sn_list = []
+            for o, s, v in zip(ap.orders_to_extract,
+                               s_list, v_list):
+                wvl = wvl_solutions_map[o]
+                # if pixel_per_res_element is None:
+                if pixel_per_res_element == 0.:
+                    dw = np.gradient(wvl)
+                    _pixel_per_res_element = (wvl/40000.)/dw
+                else:
+                    _pixel_per_res_element = float(pixel_per_res_element)
+
+                # print pixel_per_res_element[1024]
+                # len(pixel_per_res_element) = 2047. But we ignore it.
+
+                with np.errstate(invalid="ignore"):
+                    sn = (s/v**.5)*(_pixel_per_res_element**.5)
+
+                sn_list.append(sn)
+                wvl_solutions.append(wvl)
+
+            from astropy.table import Table
+            tbl = Table([ap.orders_to_extract, wvl_solutions, s_list, v_list, sn_list],
+                        names=["orders", "wavelengths", "spec", "variance", "sn_per_res_element"])
+
+            ad[0].SPEC1D = tbl
+
+            shifted = aux_images["shifted"]
+            tbl = Table([shifted._fields, list(shifted)],
+                        names=["type", "array"])
+
+            ad[0].WVLCOR = tbl
+            adout = self._get_spec1d(ad, ad_sky)
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            adout.update_filename(suffix=suffix, strip=True)
+            adoutputs.append(adout)
+
+        self.streams["debug"] = adinputs
+
+        return adoutputs
+
+    def fixHeader(self, adinputs=None, **params):
+        for ad in adinputs:
+            forced_tags = set(ad.phu.get("TAG_FORCED", "").split())
+            for tag in params["tags"]:
+                if tag not in forced_tags:
+                    forced_tags.add(tag)
+            ad.phu["TAG_FORCED"] = " ".join(forced_tags)
+
+            gt.mark_history(ad, primname=self.myself(), keyword="fixHeader")
+            ad.update_filename(suffix=params['suffix'], strip=False)
+
+        return adinputs
+
+    def getInitialWvlsol(self, adinputs=None, **params):
+        """
+        Generate an initial wavelength solution for the observed spectra.
+
+        This method creates a preliminary wavelength calibration by matching
+        identified spectral lines with a reference echellogram. It uses the
+        identified lines from the 'LINEID' attribute and the slit edge information
+        to establish a mapping between pixel positions and wavelengths.
+
+        The method performs the following steps:
+        1. Retrieves identified lines from the 'LINEID' attribute
+        2. Loads the reference echellogram for the appropriate band
+        3. Calculates the initial wavelength solution by matching observed lines
+           with the reference data
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include the initial
+            wavelength solution. The solution is stored in the 'WAVECAL' attribute.
+
+        Notes
+        -----
+        - The method uses a reference echellogram that contains pre-computed
+          wavelength solutions for the instrument.
+        - The band (H or K) is automatically determined from the input data.
+        - This provides an initial solution that may be refined by subsequent
+          calibration steps.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        for ad in adinputs:
+            for ext in ad:
+                tgt_spec = ext.SPEC1D
+                df_identified_lines = ext.LINEID.to_pandas()
+                ap = Apertures(ext.SLITEDGE)
+                band = ext.band() # phu["BAND"]
+
+                echellogram_data = get_ref_data(band, "echellogram_data")
+                echellogram = Echellogram.from_dict(echellogram_data)
+
+                # We may use the xpos and ypos to fit the wavelength solution. However,
+                # it is assumed that we do not have many lines to cover whole detector
+                # area thus doing that will may give unstable wavelength solution.
+                # Therefore, we fit affine transform from reference to the target,
+                # transform each orders' x, y position of echellogram (length of 2048;
+                # y position is not actually used), and then fit that to derive a new
+                # wavelength solution.
+
+                dfout = get_xy_of_ref_n_tgt(df_identified_lines, ap, echellogram)
+                xy_list_ref = dfout[["xpos0", "ypos0"]].values # from reference echellogram
+                xy_list_tgt = dfout[["xpos", "ypos"]].values # idntified from the target.
+
+                # find the affine transform.
+                affine_tr, mm = fit_affine_clip(xy_list_ref, xy_list_tgt)
+
+                affine_tr_matrix = affine_tr.get_matrix()
+
+                # we now transform the echellogram with the affine transform.
+
+                orders = tgt_spec["orders"]
+                wvl_sol = get_wvlsol_from_transformed_echellogram(echellogram,
+                                                                  affine_tr_matrix,
+                                                                  orders)
+
+                ext.WVLSOL0 = Table([orders, wvl_sol], names=['orders', 'wavelengths'])
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def identifyLines(self, adinputs=None, **params):
+        """
+        Identify spectral lines by matching observed spectra with reference data.
+
+        This method matches observed spectral lines to known reference lines using
+        a transform function that maps reference pixel positions to target spectrum
+        positions. It uses cross-correlation to determine the optimal alignment
+        between reference and observed spectra.
+
+        The method performs the following steps:
+        1. Retrieves reference spectral data for the appropriate band (H or K)
+        2. Computes a transform between reference and target spectra
+        3. Identifies and matches spectral lines between the reference and observed data
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include line identification
+            information. The results are stored in the 'LINE_TABLE' attribute.
+
+        Notes
+        -----
+        - The method relies on having reference line data available for the
+          appropriate band.
+        - The band (H or K) is automatically determined from the input data.
+        - The transform accounts for both wavelength calibration and any shifts
+          between the reference and observed spectra.
+        """
+        # Given the already identified line in position and wavelength per order,
+        # we try to reidentify lines from the spectrum. To do this, we need to
+        # provide an initial transform function that transform pixel axis in the
+        # reference spectra to that of target spectrum. For now, we use
+        # cross-corrlation of reference spectra to that of the target spectra.
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        for ad in adinputs:
+            for ext in ad:
+                tgt_spec = ext.SPEC1D
+
+                band = ext.band() # phu["BAND"]
+
+                ref_spec = get_ref_data(band, "ref_spec")
+
+                tr_ref_to_tgt = get_offset_transform_between_two_specs(ref_spec, tgt_spec)
+                # a dictionary of transforms by orders.
+
+                l = get_ref_data(band, "identified_lines_v0")
+                identified_lines_ref = IdentifiedLines(l)
+
+                identified_lines_tgt = identified_lines_ref.reidentify_specs(tgt_spec["orders"],
+                                                                             tgt_spec["specs"],
+                                                                             tr_ref_to_tgt)
+
+                tbl = Table.from_pandas(identified_lines_tgt.get_df())
+                ext.LINEID = tbl
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def identifyMultiline(self, adinputs=None, **params):
+        """
+        Identify multiple spectral lines across different slit positions.
+
+        This method identifies spectral lines in the extracted spectra from
+        multiple slit positions. It uses reference OH lines to identify and
+        fit lines in the observed spectra, taking into account the initial
+        wavelength solution.
+
+        The method performs the following steps:
+        1. Loads the initial wavelength solution from the 'WVLSOL0' attribute
+        2. Retrieves reference OH lines for the appropriate band
+        3. Matches observed lines with reference lines using the initial
+           wavelength solution
+        4. Fits the identified lines to improve the wavelength calibration
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include identified
+            lines information. The results are stored in the 'MULTILINE' attribute.
+
+        Notes
+        -----
+        - The method is particularly useful for echelle spectrographs with
+          multiple spectral orders.
+        - It relies on the presence of OH sky lines for accurate wavelength
+          calibration.
+        - The band (H or K) is automatically determined from the input data.
+        """
+        from operator import itemgetter
+        from scipy.interpolate import interp1d
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        for ad in adinputs:
+            band = ad.band()
+
+            # prepare line fitting. Reference lines are read and we will define
+            # _fit function which will fit lines given a list of spectrum. _fit
+            # will be applied to spectra of different slit positions.
+
+            wvlsol0 = ad[0].WVLSOL0
+            orders, wvlsol = wvlsol0["orders"], wvlsol0["wavelengths"]
+            wvlsol_by_order = dict(zip(orders, wvlsol))
+
+            ref_file = get_ref_path(band, "ref_lines_oh") # "ref_lines_oh.fits"
+            tbl = Table.read(ref_file.open("rb"), format="fits") # "ref_lines_oh.fits"
+            df_ref_data0 = tbl.to_pandas()
+
+            df_ref_data0["kind"] = "oh"
+
+            # now load hitran if band is K
+            if band == "K":
+                import json
+                ref_file = get_ref_path(band, "ref_lines_hitran_json")
+                j = json.load(ref_file.open())
+                dff = []
+                for o, v in j.items():
+                    _df = pd.DataFrame(v)
+                    _df["order"] = o
+                    dff.append(_df)
+                df = pd.concat(dff)
+                # df_ref_data0 : order  gid  lid        um
+
+                next_gid = 10**int(np.ceil(np.log10(len(df_ref_data0)))+1)
+
+                df_hitran = pd.DataFrame(dict(order=df["order"].astype(int),
+                                              um=df["wavelength"],
+                                              gid=np.arange(len(df))+next_gid,
+                                              kind="hitran"
+                                              )
+                                         )
+
+                df_ref_data0 = pd.concat([df_ref_data0, df_hitran],
+                                         axis=0, ignore_index=True)
+            else:
+                pass
+
+            x = np.arange(2048)
+            # for each order, add pixel coordinate from the initial wvlsol
+            for order, grouped in df_ref_data0.groupby("order"):
+                wvl = wvlsol_by_order.get(order, None)
+                if wvl is not None:
+                    knots = interp1d(wvl, x,
+                                     bounds_error=False, assume_sorted=True, fill_value=np.nan)
+                    df_ref_data0.loc[grouped.index, "pixel"] = knots(grouped["um"])
+
+            # flags groups that any of the line in the group has a pixel value of nan.
+            msk = df_ref_data0.groupby("gid")["pixel"].apply(lambda pixels:
+                                                            np.all(np.isfinite(pixels)))
+            # msk has an index of "gid". We will filter the dataframe using this mask.
+            # Note that there can be multiple rows wit same gid, and indexing with mask
+            # gives a warning of
+
+            # Boolean Series key will be reindexed to match DataFrame index
+
+            # FIXME check if there is a better way of doing this.
+            df_ref_data = df_ref_data0.set_index("gid")[msk].reset_index()
+
+            # The filtered df_ref_data should only have valid pixels.
+
+            sigma_init_map = dict(hitran=5)
+
+            def _fit(df_ref_data, spec_by_order):
+                # we prepare a dataframe index of (order, gid)
+                grouped = df_ref_data.groupby(["order", "gid"])
+                df_fit = pd.DataFrame(dict(initial_mean_pixel=grouped["pixel"].mean(),
+                                           wavelength=grouped["um"].mean()))
+
+                fitted_line_location = pd.Series(index=df_ref_data.index) # initially set to nan
+
+                # For each group, we fit the sliced data with multiple gaussian.
+                for (o, gid), grp in grouped:
+                    if (s := spec_by_order.get(o, None)) is not None:
+                        sigma_pixel = sigma_init_map.get(grp["kind"].iloc[0], 1.5)
+                        r = fit_gaussian_group(x, s, grp["pixel"], sigma_pixel)
+
+                        # add column for the fit parameter
+                        df_fit.loc[(o, gid), ["shift", "sigma", "height", "baseline"]] = r[0]
+                        # add column for fitted pixel position
+                        df_fit.loc[(o, gid), "fitted_pixel"] = df_fit.loc[(o, gid), "initial_mean_pixel"] + r[0][0]
+                        fitted_line_location[grp.index] = grp["pixel"] + r[0][0]
+
+                return df_fit, fitted_line_location
+
+            # fit lines in the spectrum of the slit center
+            multi_spec = ad[0].SPEC1D_MULTI
+            slit_centers = multi_spec["slit_centers"][0].astype("float32")
+            i_slit_center = len(slit_centers) // 2
+
+            spec_data = multi_spec["multispec"][:, i_slit_center, :]
+            spec_by_order = dict(zip(multi_spec["orders"], spec_data))
+
+            df_fit_list = []
+            df_fit, fitted_line_location0 = _fit(df_ref_data, spec_by_order)
+            df_fit_list.append((slit_centers[i_slit_center], df_fit))
+
+            # Now we do lower and upper part of the slit
+            for i_range in [range(0, i_slit_center)[::-1], # lower part of the slit
+                            range(i_slit_center+1, len(slit_centers)) # upper part of the slit
+                            ]:
+                # for the start of upper and lower parts, the initial location of
+                # lines are from the slit center.
+                fitted_line_location = fitted_line_location0
+                for i in i_range:
+                    # we update the pixel location from the previous fit
+                    df_ref_data_updated = df_ref_data.copy(deep=False)
+                    df_ref_data_updated["pixel"] = fitted_line_location
+
+                    spec_data = multi_spec["multispec"][:, i, :]
+                    spec_by_order = dict(zip(multi_spec["orders"], spec_data))
+
+                    df_fit, fitted_line_location = _fit(df_ref_data, spec_by_order)
+                    df_fit_list.append((slit_centers[i], df_fit))
+
+
+            df_fit_list.sort(key=itemgetter(0))
+            df_fit_master = pd.concat([df_fit for _, df_fit in df_fit_list],
+                                      keys=[c for c, _ in df_fit_list],
+                                      names=["slit_center"],
+                                      axis=0)
+
+            tbl = Table.from_pandas(df_fit_master.reset_index())
+            ad[0].LINEFIT = tbl
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def identifyOrders(self, adinputs=None, **params):
+        """
+        Identify spectral orders by cross-correlating with reference spectra.
+
+        This method matches extracted 1D spectra to known reference orders using
+        cross-correlation. It determines the correct order numbers and any
+        necessary shifts between the observed and reference spectra.
+
+        The method processes the input spectra as follows:
+        1. Compares each extracted spectrum with reference spectra using cross-correlation
+        2. Filters bright lines to improve correlation matching
+        3. Determines the most likely order assignments based on correlation peaks
+        4. Estimates any systematic shifts between observed and reference spectra
+
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include order identification
+            information. The results are stored in the 'ORDER_TABLE' attribute.
+
+        Notes
+        -----
+        - The method is particularly focused on the central ~10 orders for robust
+          identification.
+        - A threshold is applied to ensure reliable order identification.
+        - The reference spectra are filtered to prevent bright lines from dominating
+          the correlation.
+        - The band (H or K) is automatically determined from the input data.
+        """
+        # Given the extracted spectrum, we compare this with reference spectrum
+        # to figure which aperture corresponds to which order. We basically
+        # cross-correlat the spectrum of a given aperture with all the spectra
+        # in the reference spectra, and found the order that gives a maximum
+        # cross-correlation. To preven the spectrum to sensitive to the bright
+        # lines, we filter the spectrum before the cross-correlation. The
+        # filtering basically clips large values. For each aperture, what we
+        # get is an delta order from the initial guess. The delta order is
+        # estimated for about ~10 aperture near the center, and we delta order
+        # with maximum occurence given that number of occurence is larger than
+        # the threshold. As a result, we identify which aperture corresponds to
+        # which order and how much shift need to be applied to the reference
+        # spectra to match the given spectra. The shift is measure for the ~10 order
+        # in the center, though.
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        for ad in adinputs:
+            for ext in ad:
+                spec1d = ext.SPEC1D
+
+                s_list_ = spec1d["specs"]
+                s_list = [np.array(s, dtype=np.float64) for s in s_list_]
+
+                band = ext.band() # phu["BAND"]
+
+                orders_ref, s_list_ref = get_ref_spectra(band)
+
+                # match the orders of s_list_src & s_list_dst
+                new_orders, indx_shift_dict = match_orders(orders_ref, s_list_ref,
+                                                           s_list)
+
+                # indx in indx_shift_dict should be a real order
+                spec1d["orders"] = new_orders
+                # to make it a shift from the reference spectrum, we negate the shift.
+                spec1d["shift_from_ref"] = [-indx_shift_dict.get(o, np.nan) for o in spec1d["orders"]]
+
+                order_map = dict(zip(spec1d["orders_initial"], new_orders))
+                ext.SLITEDGE["order"] = [order_map[o] for o in ext.SLITEDGE["order"]]
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def makeAB(self, adinputs=None, **params):
+        """
+        Process and combine A-B nod pairs for background subtraction.
+
+        This method processes A-B nod pairs by splitting the input data into
+        A and B positions, stacking each position separately, and then
+        performing background subtraction between them.
+
+        The method performs the following steps:
+        1. Splits the input data into A and B nod positions
+        2. Stacks the frames for each position separately
+        3. Performs background subtraction between A and B stacks
+        4. Applies additional processing like level removal and amplifier-wise
+           variance correction
+
+        Parameters
+        ----------
+        adinputs : list of AstroData
+            Input data containing A-B nod pairs. The input should be a list
+            of AstroData objects with alternating A and B positions.
+        **params : dict
+            Additional parameters for the subtraction process:
+            - remove_level : int
+                Level of background removal to apply (default: 2)
+            - remove_amp_wise_var : bool
+                Whether to remove amplifier-wise variance (default: False)
+
+        Returns
+        -------
+        list of AstroData
+            A list containing a single AstroData object with the A-B subtracted
+            data and associated variance.
+
+        Notes
+        -----
+        - This method is typically used for nod-and-shuffle observations to
+          remove sky background and detector artifacts.
+        - The input data should contain an even number of frames, alternating
+          between A and B positions.
+        - The method preserves the header information from the first A position
+          in the output.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        adinputsA, adinputsB = splitAB(adinputs)
+
+        stackedA = self._stackFrames(adinputsA)
+        stackedB = self._stackFrames(adinputsB)
 
         ad = adinputs[0]
+        ad_sky = self._get_ad_sky(ad)
 
-        # ll = trace_flat_edges(ad[0].data)
-        # print(ad.info())
-        # tbl = Table(ll)
+        mask = ad_sky[0].ORDERMAP != 0
 
-        # ad.SLITEDGE = tbl
+        data, var = subtract_ab(stackedA[0][0].data, stackedB[0][0].data,
+                                stackedA[0][0].variance, stackedB[0][0].variance,
+                                mask,
+                                remove_level=params["remove_level"],
+                                remove_amp_wise_var=params["remove_amp_wise_var"],
+                                )
 
-        for ext in ad:
-            ll = trace_flat_edges(ext.data)
-            tbl = Table(ll)
+        # FIXME should we better to create a new instance of AstroData?
+        ad = stackedA[0]
+        ad[0].data = data
+        ad[0].variance = var
 
-            ext.SLITEDGE = tbl
+        # Timestamp and update filename
+        #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+        ad.update_filename(suffix=suffix, strip=True)
+
+        return [ad]
+
+    def makeIgrinsBPM(self, adinputs=None, **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        sigma_clip1 = params['hotpix_sigma_clip1']
+        sigma_clip2 = params['hotpix_sigma_clip2']
+        deadpix_thresh = params['deadpix_thresh']
+        smooth_size = params['deadpix_smooth_size']
+
+        ad_flatoff = self.streams['flat-off'][0]
+        ad_flaton = self.streams['flat-on'][0]
+
+        for flatoff_ext, flaton_ext in zip(ad_flatoff, ad_flaton):
+            flat_off = flatoff_ext.data
+
+            bg_std, hotpix_mask = make_igrins_hotpixel_mask(
+                flat_off, sigma_clip1=sigma_clip1, sigma_clip2=sigma_clip2,
+                medfilter_size=None)
+
+            flat_on = flaton_ext.data
+            flat_std = flaton_ext.variance**.5
+
+            deadpix_mask = make_igrins_deadpixel_mask(flat_on, flat_std, deadpix_thresh, smooth_size)
+
+
+            flatoff_ext.reset((hotpix_mask | deadpix_mask).astype(np.int16), mask=None, variance=None)
+
+        ad_flatoff.update_filename(suffix="_badpixel", strip=True)
+        ad_flatoff.phu.set('OBJECT', 'BadPixel')
+
+        return [ad_flatoff]
+
+    def makeSpectralMaps(self, adinputs=None, **params):
+        """
+        Generate spectral order and slit position maps for the detector.
+
+        This method creates spatial maps that identify the spectral order and
+        slit position for each pixel on the detector. These maps are essential
+        for subsequent spectral extraction and analysis.
+
+        The method performs the following steps:
+        1. Creates an order map that identifies the spectral order for each pixel
+        2. Creates a slit position map that identifies the relative position
+           within each order
+        3. Processes the volume fitting coefficients to create a comprehensive
+           mapping between pixel coordinates and spectral properties
+
+       Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include:
+            - 'ORDERMAP': A 2D array mapping each pixel to its spectral order
+            - 'SLITPOSMAP': A 2D array mapping each pixel to its relative position
+              within the slit
+
+        Notes
+        -----
+        - The order map and slit position map are essential for proper spectral
+          extraction and wavelength calibration.
+        - The method uses the volume fitting coefficients to create a smooth
+          mapping across the detector.
+        - The resulting maps can be used to transform between pixel coordinates
+          and spectral coordinates.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        for ad in adinputs:
+            for ext in ad:
+                ap = Apertures(ext.SLITEDGE)
+                ordermap = ext.ORDERMAP = ap.make_order_map()
+                slitposmap = ext.SLITPOSMAP = ap.make_slitpos_map()
+
+                # # FIXME Do not remember why we needed this.
+                # order_map2 = ap.make_order_map(mask_top_bottom=True)
+
+                # We now make slitoffset map. It could be refactored to become a separate function.
+                yy, xx = np.indices(ordermap.shape)
+
+                msk = np.isfinite(ordermap) & (ordermap > 0)
+                pixels, orders, slitpos = (xx[msk], ordermap[msk],
+                                           slitposmap[msk])
+
+                tbl = ext.VOLUMEFIT_COEFFS
+                in_df = tbl.to_pandas() # pd.DataFrame(**d)
+
+                names = ["pixel", "order", "slit"]
+
+                # # pixel, order, slit : saved as float, needt to be int. Not needed for dragons.
+                # for n in names:
+                #     in_df[n] = in_df[n].astype("i")
+
+                in_df = in_df.set_index(names)
+                poly, coeffs = NdPolyNamed.from_pandas(in_df)
+
+                cc0 = slitpos - 0.5
+                values = dict(zip(names, [pixels, orders, cc0]))
+                offsets = poly.multiply(values, coeffs) # * cc0
+
+                offset_map = np.empty(ordermap.shape, dtype=np.float64)
+                offset_map.fill(np.nan)
+                offset_map[msk] = offsets * cc0 # dd["offsets"]
+
+                ext.SLITOFFSETMAP = offset_map
+
+                # Derive wavelength solution
+                linefit = ext.LINEFIT
+                colnames = [n for n in linefit.colnames if n != "params"]
+                dfm = linefit[colnames].to_pandas().query("slit_center == 0.5")
+
+                p, fit_results = fit_wvlsol(dfm)
+
+                # from ..igrins_libs.resource_helper_igrins import ResourceHelper
+                # helper = ResourceHelper(obsset)
+                # orders = helper.get("orders")
+
+                wvl_sol = _convert2wvlsol(p, ap.orders)
+                ext.WVLSOL = Table([ap.orders, wvl_sol], names=["orders", "wavelengths"])
+                fit_results["orders"] = ap.orders
+                ext.WVLFIT_RESULTS = dict_to_table(fit_results)
+
+            # Timestamp and update filename
+            # gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
@@ -899,15 +1890,6 @@ class IGRINS2(Gemini, NearIR):
         regions outside the slit. This mask is then combined with any existing
         mask using a bitwise OR operation.
 
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input images containing SLITEDGE tables. Only the first image in the
-            list is processed.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
         Returns
         -------
         list of AstroData
@@ -918,20 +1900,27 @@ class IGRINS2(Gemini, NearIR):
         --------
         determineSlitEdges : Primitive that identifies the slit edges.
         """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
 
-        ad = adinputs[0]
+        for ad in adinputs:
+            for ext in ad:
+                tbl = ext.SLITEDGE
 
-        for ext in ad:
-            tbl = ext.SLITEDGE
+                pp = table_to_poly(tbl)
 
-            pp = table_to_poly(tbl)
+                mask = np.empty((2048, 2048), dtype=DQ.datatype)
+                mask.fill(DQ.unilluminated)
+                for o, sl, m in iter_order(pp):
+                    mask[sl][m] = 0
 
-            mask = np.empty((2048, 2048), dtype=DQ.datatype)
-            mask.fill(DQ.unilluminated)
-            for o, sl, m in iter_order(pp):
-                mask[sl][m] = 0
+                ext.mask |= mask
 
-            ext.mask |= mask
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 
@@ -946,16 +1935,6 @@ class IGRINS2(Gemini, NearIR):
         3. Computes a normalized flat field response that can be used to correct
            science data for pixel-to-pixel variations
 
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input flat field images. Only the first image in the list is processed.
-            Each extension should contain a 'SLITEDGE' table created by the
-            `determineSlitEdges` primitive.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
         Returns
         -------
         list of AstroData
@@ -968,53 +1947,350 @@ class IGRINS2(Gemini, NearIR):
         This primitive should be run after `determineSlitEdges` and `maskBeyondSlit`
         to ensure proper slit edge detection and masking of unilluminated regions.
         """
-
         from .procedures.normalize_flat import (get_initial_spectrum_for_flaton,
                                                 get_normalize_spectrum_for_flaton)
 
-        ad = adinputs[0]
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
 
-        for ext in ad:
-            tbl = ext.SLITEDGE
+        for ad in adinputs:
+            for ext in ad:
+                tbl = ext.SLITEDGE
 
-            slitedge_polyfit = table_to_poly(tbl)
+                slitedge_polyfit = table_to_poly(tbl)
 
-            ext.FLAT_ORIGINAL = ext.data.copy()
+                ext.FLAT_ORIGINAL = ext.data.copy()
 
-            # dq_mask = (ext.mask & DQ.unilluminated).astype(bool)
-            # d[dq_mask] = np.nan
+                # dq_mask = (ext.mask & DQ.unilluminated).astype(bool)
+                # d[dq_mask] = np.nan
 
-            d = ext.data
-            mask = ext.mask > 0
+                d = ext.data
+                mask = ext.mask > 0
 
-            s = get_initial_spectrum_for_flaton(d, mask, slitedge_polyfit)
-            s_list, i1i2_list, s2_list = get_normalize_spectrum_for_flaton(s)
+                s = get_initial_spectrum_for_flaton(d, mask, slitedge_polyfit)
+                s_list, i1i2_list, s2_list = get_normalize_spectrum_for_flaton(s)
 
-            flat_im = np.ones(d.shape, "d")
+                flat_im = np.ones(d.shape, "d")
 
-            for (o, sl, m), s2 in zip(iter_order(slitedge_polyfit), s2_list):
-                if s2 is None:  # some order may have little valid pixels and
-                                # spectrum is None. We just skip these.
-                    continue
+                for (o, sl, m), s2 in zip(iter_order(slitedge_polyfit), s2_list):
+                    if s2 is None:  # some order may have little valid pixels and
+                                    # spectrum is None. We just skip these.
+                        continue
 
-                # subim = np.ma.array(d[sl], mask=~m).filled(np.nan)
-                # d_div = subim / s2
-                subim = d[sl]
-                flat_im[sl][m] = (subim / s2)[m]
+                    # subim = np.ma.array(d[sl], mask=~m).filled(np.nan)
+                    # d_div = subim / s2
+                    subim = d[sl]
+                    flat_im[sl][m] = (subim / s2)[m]
 
-            with np.errstate(invalid="ignore"):
-                flat_im[flat_im < 0.5] = np.nan
+                with np.errstate(invalid="ignore"):
+                    flat_im[flat_im < 0.5] = np.nan
 
-            ext.data = flat_im
+                ext.data = flat_im
 
-            order_flat_dict = dict(#orders=orders,
-                                   fitted_responses=s2_list,
-                                   i1i2_list=i1i2_list,
-                                   mean_order_specs=s)
+                order_flat_dict = dict(#orders=orders,
+                                       fitted_responses=s2_list,
+                                       i1i2_list=i1i2_list,
+                                       mean_order_specs=s)
 
-            tbl = dict_to_table(order_flat_dict)
+                tbl = dict_to_table(order_flat_dict)
+                ext.FLATNORM = tbl
 
-            ad.FLATNORM = tbl
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def readoutPatternCorrectSky(self, adinputs=None, **params):
+
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        # We assume that ad instance has only a single extension.
+        data_list = [ad[0].data for ad in adinputs]
+        band = adinputs[0][0].band()
+        assert band in "HK"
+
+        data_list_fixed = remove_readout_pattern_flat_off(data_list, band=band,
+                                                          rp_remove_mode=0)
+
+        for ad, d in zip(adinputs, data_list_fixed):
+            ad[0].data = d
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def readoutPatternCorrectFlatOff(self, adinputs=None, **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        lamp_off_list = self.selectFromInputs(adinputs=None, tags='LAMPOFF')
+
+        # We assume that ad instance has only a single extension.
+        data_list = [ad[0].data for ad in lamp_off_list]
+        band = lamp_off_list[0][0].band()
+        assert band in "HK"
+
+        flat_off_1st_pattern_removal_mode = params["flat_off_1st_pattern_removal_mode"]
+        flat_off_2nd_pattern_removal_mode = params["flat_off_2nd_pattern_removal_mode"]
+        if flat_off_2nd_pattern_removal_mode == "auto":
+           rp_remove_mode = None
+        else:
+           rp_remove_mode = int(flat_off_2nd_pattern_removal_mode)
+
+        data_list_fixed = remove_readout_pattern_flat_off(data_list, band=band,
+                                                          flat_off_pattern_removal=flat_off_1st_pattern_removal_mode,
+                                                          rp_remove_mode=rp_remove_mode)
+
+        for ad, d in zip(lamp_off_list, data_list_fixed):
+            ad[0].data = d
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def readoutPatternCorrectFlatOn(self, adinputs=None, **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+
+        # do nothing for IGRINS-2. The reference pixel values in IGRINS-2
+        # detectors can make things worse. FIXME The data taken after
+        # 202410 can be okay. Need to check.
+        for ad in adinputs:
+            # This is for IGRINS-1
+            #lamp_on_list = self.selectFromInputs(adinputs, tags='LAMPON')
+            #for ad in lamp_on_list:
+            #    ad.data = remove_readout_pattern_from_guard(ad.data)
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def referencePixelsCorrect(self, adinputs=None, **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        apply_correction = params["apply_correction"]
+
+        for ad in adinputs:
+            if apply_correction:
+                for ext in ad:
+                    # FIXME we may want different default behavior btw IG1 and IG2
+                        ext.data = fix_pattern_using_reference_pixel(ext.data)
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+    def saveDebugImage(self, adinputs=None, **params):
+        suffix = params["suffix"]
+        if params["save_debug"]:
+            for ad in self.streams["debug"]:
+                ad.update_filename(suffix=suffix, strip=True)
+                ad.write(overwrite=True)
+
+        return adinputs
+
+    def saveTwodspec(self, adinputs=None, **params):
+        """
+        Save a rectified 2D spectral image with wavelength calibration.
+
+        This method processes and saves a 2D spectral image that has been
+        rectified and wavelength calibrated. The output is suitable for
+        visualization and further spectral analysis.
+
+        The method performs the following steps:
+        1. Retrieves wavelength calibration and order mapping from input data
+        2. Applies any necessary shifts to the data and variance maps
+        3. Creates a rectified 2D spectral image with uniform wavelength scale
+        4. Handles the wavelength order (increasing/decreasing) as specified
+
+        Returns
+        -------
+        list of AstroData
+            The input list, typically unmodified, as this method is primarily
+            used for its side effect of saving data.
+
+        Notes
+        -----
+        - The method uses the WAT (Wavelength Transformation) header information
+          to properly handle the wavelength calibration.
+        - The output is a rectified 2D spectrum where one axis is wavelength
+          and the other is spatial position along the slit.
+        - The flux can be optionally conserved during the rectification process.
+        - The method relies on the presence of ORDERMAP and SLITEDGE information
+          in the input data for proper rectification.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        height_2dspec = params["height_2dspec"]
+        conserve_flux = True
+        # height_2dspec = 100 # obsset.get_recipe_parameter("height_2dspec")
+        wavelength_increasing_order = params["wavelength_increasing_order"]
+
+        ad = self.streams["debug"][0]
+
+        ad_sky = self._get_ad_sky(ad)
+
+        shifted = ShiftedImages.from_table(ad[0].WVLCOR)
+        data_shft = shifted.image
+        variance_map_shft = shifted.variance
+
+        wat_table = ad_sky[0].WAT_HEADER
+
+        # make sure you apply convert_data to the output. If get_wat_header is
+        # called with wavelength_increasing_order=True, convert_data will rearrange
+        # the data to the correct order.
+        wvl_header, convert_data = get_wat_header(wat_table,
+                                                  wavelength_increasing_order)
+
+        ordermap = ad_sky[0].ORDERMAP
+        # FIXME we should use proper badpixel mask.
+        ordermap_bpixed = np.ma.array(ordermap, mask=ad_sky[0].mask).filled(0)
+
+        ap = Apertures(ad_sky[0].SLITEDGE)
+
+        order_map = ad_sky[0].ORDERMAP
+
+        _ = get_rectified_2dspec(data_shft, ordermap_bpixed, ap,  # bottom_up_solutions,
+                                 conserve_flux=conserve_flux, height=height_2dspec)
+
+        d0_shft_list, msk_shft_list, height = _
+
+        with np.errstate(invalid="ignore"):
+            d = np.array(d0_shft_list) / np.array(msk_shft_list)
+
+        d = convert_data(d.astype("float32"))
+
+        hdu_spec2d = fits.ImageHDU(header=wvl_header, data=d)
+
+        ad_out = astrodata.create(ad.phu)
+        ad_out.append(hdu_spec2d)
+
+        _ = get_rectified_2dspec(variance_map_shft, order_map, ap,  # bottom_up_solutions,
+                                 conserve_flux=conserve_flux, height=height)
+
+        d0_shft_list, msk_shft_list, _ = _
+
+        with np.errstate(invalid="ignore"):
+            d = np.array(d0_shft_list) / np.array(msk_shft_list)
+
+        ad_out[0].variance = d
+
+        ad_out[0].WAVELENGTHS = np.array(ad_sky[0].WVLSOL["wavelengths"])
+
+        ad_out.update_filename(suffix=suffix, strip=True)
+        ad_out.write(overwrite=True)
+
+        return adinputs
+
+    def selectFrame(self, adinputs=None, **params):
+        """Filter the adinputs by its FRMTYPE value in the header.
+        """
+        frmtype = params["frmtype"]
+        adoutputs = [ad for ad in adinputs
+                     if frmtype in ad.hdr['FRMTYPE']]
+        return adoutputs
+
+    def selectStream(self, adinputs=None, **params):
+        stream_name = params["stream_name"]
+        return self.streams[stream_name]
+
+    def setReferenceFrame(self, adinputs=None, **params):
+        ad_first = self.streams["first_frame"][0]
+        exptime = ad_first[0].exposure_time()
+        #Grab sky frame data.  If exposures are short, stack them, otherwise just use first frame
+        if exptime >= 100.0:
+            print('Sky frames exp time > 30 s.  Using the first frame.')
+            data = ad_first[0].data
+        else:
+            print('Sky frames exp time <= 30 s.  Use combined sky.')
+            # This primitive will be called after stacking, so the adinputs
+            # should contain stacked data.
+            data = adinputs[0][0].data
+
+        ref_data = isolate_sky_lines(data/exptime)
+        adinputs[0][0].FLEXCORR = ref_data
+
+        return adinputs
+
+    def setSuffix(self, adinputs=None, **params):
+        suffix = params["suffix"]
+
+        # Doing this also makes the output files saved.
+        adinputs = self._markAsCalibration(adinputs, suffix=suffix,
+                                           primname=self.myself(),
+                                           keyword="NOISETABLE")
+
+        return adinputs
+
+    # For the unclear reason (we need to check with K.Kaplan),
+    # setReferenceFrame primitive uses first frame data if individual exposure
+    # time is larger than 100. For now, we make a separate stream for the first
+    # frame. After this primitive, the main stream will be stacked.
+    def streamFirstFrame(self, adinputs=None, **params):
+        self.streams["first_frame"] = [adinputs[0]]
+
+        return adinputs
+
+    def streamPatternCorrected(self, adinputs=None, **params):
+        """
+        make images with Readout pattern corrected. And add them to streams.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        suffix = params["suffix"]
+
+        rpc_mode = params.get("rpc_mode")
+        # FIXME: only 'full' mode is supported for now, which will create
+        # images using the methods of ['guard', 'level2', 'level3']
+
+        dlist = [ad[0].data for ad in adinputs]
+        hdu_list = make_guard_n_bg_subtracted_images(dlist,
+                                                     rpc_mode=rpc_mode,
+                                                     bias_mask=None,
+                                                     log=log)
+        for (name, dlist) in hdu_list:
+            # name: the name of the correction method applied. One of ["GUARD",
+            # "LEVEL2", "LEVEL3"]
+            # dlist : list of numpy images
+            adoutputs = []
+            for ad0, d in zip(adinputs, dlist):
+                # we create new astrodata object based on the input's header.
+                hdu = fits.ImageHDU(data=d, header=ad0[0].hdr,
+                                    name='SCI')
+                ad = astrodata.create(ad0.phu, [hdu])
+                gt.mark_history(ad, primname=self.myself(),
+                                keyword="RPC")
+
+                adoutputs.append(ad)
+
+                # Timestamp and update filename
+                #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+                ad.update_filename(suffix=suffix, strip=True)
+
+            self.streams[f"RPC_{name}"] = adoutputs
 
         return adinputs
 
@@ -1060,6 +2336,7 @@ class IGRINS2(Gemini, NearIR):
                 ext.hdr[ad._keyword_for('data_section')] = shape_str
                 ext.hdr[ad._keyword_for('detector_section')] = shape_str
 
+            # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=params["suffix"], strip=True)
 
@@ -1069,617 +2346,57 @@ class IGRINS2(Gemini, NearIR):
         """No-ops because there are no WCS issues with IGRINS-2"""
         return adinputs
 
-    def readoutPatternCorrectSky(self, adinputs, **params):
+    def volumeFit(self, adinputs=None, **params):
+        """
+        Perform a volume fit to model the wavelength solution in 3D space.
 
-        # We assume that ad instance has only a single extension.
-        data_list = [ad[0].data for ad in adinputs]
-        band = adinputs[0][0].band()
-        assert band in "HK"
+        This method fits a polynomial model to the wavelength solution across
+        the detector, taking into account the spatial and spectral dimensions.
+        It uses the results from line fitting to create a comprehensive model
+        of the wavelength solution that varies across the detector.
 
-        data_list_fixed = remove_readout_pattern_flat_off(data_list, band=band,
-                                                          rp_remove_mode=0)
+        The method performs the following steps:
+        1. Retrieves line fitting results from the 'LINEFIT' attribute
+        2. Prepares the data for volume fitting
+        3. Fits a polynomial model to the wavelength solution in 3D space
+        4. Stores the resulting coefficients in the 'VOLUMEFIT_COEFFS' attribute
 
-        for ad, d in zip(adinputs, data_list_fixed):
-            ad[0].data = d
-            ad.update_filename(suffix="_rpc", strip=True)
+        Returns
+        -------
+        list of AstroData
+            The input list with the first image updated to include the volume
+            fitting coefficients in the 'VOLUMEFIT_COEFFS' attribute.
 
-        return adinputs
+        Notes
+        -----
+        - This method is typically used after line identification and fitting
+          to create a smooth wavelength solution across the entire detector.
+        - The resulting model can be used to convert between pixel coordinates
+          and wavelengths at any point on the detector.
+        - The polynomial order is determined by the input data and the fitting
+          process.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = self.params["suffix"]
 
-
-    def readoutPatternCorrectFlatOff(self, adinputs, **params):
-        lamp_off_list = self.selectFromInputs(adinputs, tags='LAMPOFF')
-
-        # We assume that ad instance has only a single extension.
-        data_list = [ad[0].data for ad in lamp_off_list]
-        band = lamp_off_list[0][0].band()
-        assert band in "HK"
-
-        flat_off_1st_pattern_removal_mode = params["flat_off_1st_pattern_removal_mode"]
-        flat_off_2nd_pattern_removal_mode = params["flat_off_2nd_pattern_removal_mode"]
-        if flat_off_2nd_pattern_removal_mode == "auto":
-           rp_remove_mode = None
-        else:
-           rp_remove_mode = int(flat_off_2nd_pattern_removal_mode)
-
-
-        data_list_fixed = remove_readout_pattern_flat_off(data_list, band=band,
-                                                          flat_off_pattern_removal=flat_off_1st_pattern_removal_mode,
-                                                          rp_remove_mode=rp_remove_mode)
-
-        for ad, d in zip(lamp_off_list, data_list_fixed):
-            ad[0].data = d
-            ad.update_filename(suffix="rp_corrected", strip=True)
-
-        return adinputs
-
-    def readoutPatternCorrectFlatOn(self, adinputs, **params):
-
-        if "IGRINS-2" in adinputs[0].tags:
-            # do nothing for IGRINS-2. The reference pixel values in IGRINS-2
-            # detectors can make things worse. FIXME The data taken after
-            # 202410 can be okay. Need to check.
-            return adinputs
-
-        lamp_on_list = self.selectFromInputs(adinputs, tags='LAMPON')
-        for ad in lamp_on_list:
-            ad.data = remove_readout_pattern_from_guard(ad.data)
-
-        return adinputs
-
-
-    def referencePixelsCorrect(self, adinputs, **params):
+        # fn = "./SDCH_20190412_0040_wvl0.fits"
+        # ad = astrodata.open(fn)
         for ad in adinputs:
             for ext in ad:
-                # FIXME we may want different default behavior btw IG1 and IG2
-                if params["apply_reference_pixels_correction"]:
-                    ext.data = fix_pattern_using_reference_pixel(ext.data)
+                tbl_linefit = ext.LINEFIT
+                dft = self._prepareVolumFit(tbl_linefit)
+                dd = dft[dft["badmask"] == 0].reset_index()
+                df = self._volumeFit(dd)
+                ext.VOLUMEFIT_COEFFS = Table.from_pandas(df)
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=params["suffix"], strip=True)
 
         return adinputs
 
-    def _get_ad_flat(self, ad):
-        calreturns = self.caldb.get_calibrations([ad, ad], caltype="processed_flat")
-        for fn, mode in zip(*calreturns):
-            assert mode == "user_cals"  # for now we assume userdb.
-            return astrodata.open(fn)
-
-    def _get_ad_sky(self, ad):
-        calreturns = self.caldb.get_calibrations([ad, ad], caltype="processed_arc")
-        for fn, mode in zip(*calreturns):
-            assert mode == "user_cals"  # for now we assume userdb.
-            return astrodata.open(fn)
-
-    def extractSimpleSpec(self, adinputs, **params):
-        """
-        Extract simple 1D spectra from 2D spectral data using predefined apertures.
-
-        This primitive performs a basic spectral extraction by summing flux within
-        predefined slit edges. It uses the SLITEDGE information from a processed
-        flat field to define the extraction apertures.
-
-        The extracted spectra are stored in the 'SPEC1D' attribute as an Astropy
-        Table containing the order numbers and corresponding 1D spectra.
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input science data to extract spectra from. Only the first image in
-            the list is processed. The input should be flat-field corrected.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include the extracted
-            spectra in the 'SPEC1D' attribute and the slit edge information in
-            the 'SLITEDGE' attribute.
-
-        Notes
-        -----
-        - This is a simple extraction method that performs a straight sum of
-          pixels within the defined apertures.
-        - The extraction uses a fractional range of 0.1 to 0.9 of the slit height
-          to avoid edge effects.
-        - The input data should be flat-field corrected before using this method.
-        - The mask from the flat field is applied to the science data.
-        """
-        # from recipe_system import cal_service
-        # caldb = cal_service.set_local_database()
-        # procmode = 'sq' if self.mode == 'sq' else None
-        # c = caldb.get_calibrations(adinputs, caltype="processed_flat", procmode=procmode)
-
-        ad = adinputs[0]
-
-        ad_flat = self._get_ad_flat(ad)
-
-        tbl = ad_flat[0].SLITEDGE
-        ap = Apertures(tbl)
-
-        # FIXME we simply apply mask from ad_flat. Maybe we should we have flatCorrect prmitive?
-        d = np.ma.array(ad[0].data, mask=(ad[0].mask | ad_flat[0].mask) > 0).filled(np.nan)
-        s = ap.extract_spectra_simple(d, f1=0.1, f2=0.9)
-
-        # t = Table(s,
-        #           names=(f"{o}" for o in ap.orders_to_extract))
-        ss = [np.array(s1, dtype='float32') for s1 in s]
-        t = Table([ap.orders_to_extract, ss], names=['orders_initial', 'specs'])
-
-        ad[0].SPEC1D = t
-        ad[0].SLITEDGE = tbl
-
-        return adinputs
-
-
-    def identifyOrders(self, adinputs):
-        """
-        Identify spectral orders by cross-correlating with reference spectra.
-
-        This method matches extracted 1D spectra to known reference orders using
-        cross-correlation. It determines the correct order numbers and any
-        necessary shifts between the observed and reference spectra.
-
-        The method processes the input spectra as follows:
-        1. Compares each extracted spectrum with reference spectra using cross-correlation
-        2. Filters bright lines to improve correlation matching
-        3. Determines the most likely order assignments based on correlation peaks
-        4. Estimates any systematic shifts between observed and reference spectra
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing extracted 1D spectra in the 'SPEC1D' attribute.
-            Only the first image in the list is processed.
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include order identification
-            information. The results are stored in the 'ORDER_TABLE' attribute.
-
-        Notes
-        -----
-        - The method is particularly focused on the central ~10 orders for robust
-          identification.
-        - A threshold is applied to ensure reliable order identification.
-        - The reference spectra are filtered to prevent bright lines from dominating
-          the correlation.
-        - The band (H or K) is automatically determined from the input data.
-        """
-        # Given the extracted spectrum, we compare this with reference spectrum
-        # to figure which aperture corresponds to which order. We basically
-        # cross-correlat the spectrum of a given aperture with all the spectra
-        # in the reference spectra, and found the order that gives a maximum
-        # cross-correlation. To preven the spectrum to sensitive to the bright
-        # lines, we filter the spectrum before the cross-correlation. The
-        # filtering basically clips large values. For each aperture, what we
-        # get is an delta order from the initial guess. The delta order is
-        # estimated for about ~10 aperture near the center, and we delta order
-        # with maximum occurence given that number of occurence is larger than
-        # the threshold. As a result, we identify which aperture corresponds to
-        # which order and how much shift need to be applied to the reference
-        # spectra to match the given spectra. The shift is measure for the ~10 order
-        # in the center, though.
-
-        ad = adinputs[0]
-        ext = ad[0]
-        spec1d = ext.SPEC1D
-
-        s_list_ = spec1d["specs"]
-        s_list = [np.array(s, dtype=np.float64) for s in s_list_]
-
-        band = ext.band() # phu["BAND"]
-
-        orders_ref, s_list_ref = get_ref_spectra(band)
-
-        # match the orders of s_list_src & s_list_dst
-        new_orders, indx_shift_dict = match_orders(orders_ref, s_list_ref,
-                                                   s_list)
-
-        # indx in indx_shift_dict should be a real order
-        spec1d["orders"] = new_orders
-        # to make it a shift from the reference spectrum, we negate the shift.
-        spec1d["shift_from_ref"] = [-indx_shift_dict.get(o, np.nan) for o in spec1d["orders"]]
-
-        order_map = dict(zip(spec1d["orders_initial"], new_orders))
-        ext.SLITEDGE["order"] = [order_map[o] for o in ext.SLITEDGE["order"]]
-
-        # ad[0].SPEC1D_NEW = spec1d
-        return adinputs
-
-
-    def identifyLines(self, adinputs, **params):
-        """
-        Identify spectral lines by matching observed spectra with reference data.
-
-        This method matches observed spectral lines to known reference lines using
-        a transform function that maps reference pixel positions to target spectrum
-        positions. It uses cross-correlation to determine the optimal alignment
-        between reference and observed spectra.
-
-        The method performs the following steps:
-        1. Retrieves reference spectral data for the appropriate band (H or K)
-        2. Computes a transform between reference and target spectra
-        3. Identifies and matches spectral lines between the reference and observed data
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing extracted 1D spectra in the 'SPEC1D' attribute.
-            The input should have gone through order identification first.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include line identification
-            information. The results are stored in the 'LINE_TABLE' attribute.
-
-        Notes
-        -----
-        - The method relies on having reference line data available for the
-          appropriate band.
-        - The band (H or K) is automatically determined from the input data.
-        - The transform accounts for both wavelength calibration and any shifts
-          between the reference and observed spectra.
-        """
-        # Given the already identified line in position and wavelength per order,
-        # we try to reidentify lines from the spectrum. To do this, we need to
-        # provide an initial transform function that transform pixel axis in the
-        # reference spectra to that of target spectrum. For now, we use
-        # cross-corrlation of reference spectra to that of the target spectra.
-
-        ad = adinputs[0]
-        ext = ad[0]
-        tgt_spec = ext.SPEC1D
-
-        band = ext.band() # phu["BAND"]
-
-        ref_spec = get_ref_data(band, "ref_spec")
-
-        tr_ref_to_tgt = get_offset_transform_between_two_specs(ref_spec, tgt_spec)
-        # a dictionary of transforms by orders.
-
-        l = get_ref_data(band, "identified_lines_v0")
-        identified_lines_ref = IdentifiedLines(l)
-
-        identified_lines_tgt = identified_lines_ref.reidentify_specs(tgt_spec["orders"],
-                                                                     tgt_spec["specs"],
-                                                                     tr_ref_to_tgt)
-
-        tbl = Table.from_pandas(identified_lines_tgt.get_df())
-        ad[0].LINEID = tbl
-
-        return adinputs
-
-    def getInitialWvlsol(self, adinputs, **params):
-        """
-        Generate an initial wavelength solution for the observed spectra.
-
-        This method creates a preliminary wavelength calibration by matching
-        identified spectral lines with a reference echellogram. It uses the
-        identified lines from the 'LINEID' attribute and the slit edge information
-        to establish a mapping between pixel positions and wavelengths.
-
-        The method performs the following steps:
-        1. Retrieves identified lines from the 'LINEID' attribute
-        2. Loads the reference echellogram for the appropriate band
-        3. Calculates the initial wavelength solution by matching observed lines
-           with the reference data
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing identified spectral lines in the 'LINEID' attribute
-            and slit edge information in 'SLITEDGE'. The input should have gone
-            through line identification first.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include the initial
-            wavelength solution. The solution is stored in the 'WAVECAL' attribute.
-
-        Notes
-        -----
-        - The method uses a reference echellogram that contains pre-computed
-          wavelength solutions for the instrument.
-        - The band (H or K) is automatically determined from the input data.
-        - This provides an initial solution that may be refined by subsequent
-          calibration steps.
-        """
-        ad = adinputs[0]
-        ext = ad[0]
-        tgt_spec = ext.SPEC1D
-
-        df_identified_lines = ad[0].LINEID.to_pandas()
-
-        ap = Apertures(ad[0].SLITEDGE)
-
-        band = ext.band() # phu["BAND"]
-
-        echellogram_data = get_ref_data(band, "echellogram_data")
-        echellogram = Echellogram.from_dict(echellogram_data)
-
-        # We may use the xpos and ypos to fit the wavelength solution. However,
-        # it is assumed that we do not have many lines to cover whole detector
-        # area thus doing that will may give unstable wavelength solution.
-        # Therefore, we fit affine transform from reference to the target,
-        # transform each orders' x, y position of echellogram (length of 2048;
-        # y position is not actually used), and then fit that to derive a new
-        # wavelength solution.
-
-        dfout = get_xy_of_ref_n_tgt(df_identified_lines, ap, echellogram)
-        xy_list_ref = dfout[["xpos0", "ypos0"]].values # from reference echellogram
-        xy_list_tgt = dfout[["xpos", "ypos"]].values # idntified from the target.
-
-        # find the affine transform.
-        affine_tr, mm = fit_affine_clip(xy_list_ref, xy_list_tgt)
-
-        affine_tr_matrix = affine_tr.get_matrix()
-
-        # we now transform the echellogram with the affine transform.
-
-        orders = tgt_spec["orders"]
-        wvl_sol = get_wvlsol_from_transformed_echellogram(echellogram,
-                                                          affine_tr_matrix,
-                                                          orders)
-
-        ad[0].WVLSOL0 = Table([orders, wvl_sol], names=['orders', 'wavelengths'])
-
-        ad.update_filename(suffix=params['suffix'], strip=True)
-        return adinputs
-
-    def extractSpectraMulti(self, adinputs, **params):
-        """
-        Extract multiple 1D spectra at different positions along the slit.
-
-        This method extracts spectra at multiple positions across the slit to capture
-        spatial information. It creates a series of extractions centered on the slit
-        and at positions above and below the center.
-
-        The extraction is performed at multiple slit positions defined by the
-        `n_slice_one_direction` parameter, which determines how many slices to take
-        on either side of the center. The results are stored in a table with
-        'orders', 'multispec', and 'slit_centers' columns.
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing 2D spectral data. Only the first image in the
-            list is processed. The input should contain SLITEDGE information.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include the multi-slit
-            extractions in the 'SPEC1D_MULTI' attribute. This is an Astropy Table
-            with the following columns:
-            - 'orders': The order numbers
-            - 'multispec': Extracted spectra at different slit positions
-            - 'slit_centers': The relative slit positions of each extraction
-
-        Notes
-        -----
-        - The method currently uses a fixed number of slices (2) on each side of
-          the center.
-        - The extracted spectra can be used for analysis of spatial variations
-          along the slit.
-        - The 'slit_centers' are given in fractional slit height from bottom to top.
-        """
-
-        ad = adinputs[0]
-
-        n_slice_one_direction = 2
-        slice_center, slice_up, slice_down = _get_slices(n_slice_one_direction)
-
-        data = ad[0].data
-
-        ap = Apertures(ad[0].SLITEDGE)
-
-        slices = slice_down[::-1] + [slice_center] + slice_up
-        slit_centers = [0.5*(s1+s2) for (s1, s2) in slices]
-
-        ss = []
-        for s1, s2 in slices:
-            s = ap.extract_spectra_simple(data, s1, s2)
-            ss.append(s)
-        ss = np.array(ss)
-
-        orders = ap.orders_to_extract
-        tbl = Table([orders, [ss[:, i, :] for i in range(ss.shape[1])], [slit_centers]*len(orders)],
-                    names=["orders", "multispec", "slit_centers"])
-
-        ad[0].SPEC1D_MULTI = tbl
-
-        return adinputs
-
-    def identifyMultiline(self, adinputs, **params):
-        """
-        Identify multiple spectral lines across different slit positions.
-
-        This method identifies spectral lines in the extracted spectra from
-        multiple slit positions. It uses reference OH lines to identify and
-        fit lines in the observed spectra, taking into account the initial
-        wavelength solution.
-
-        The method performs the following steps:
-        1. Loads the initial wavelength solution from the 'WVLSOL0' attribute
-        2. Retrieves reference OH lines for the appropriate band
-        3. Matches observed lines with reference lines using the initial
-           wavelength solution
-        4. Fits the identified lines to improve the wavelength calibration
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing extracted spectra and initial wavelength
-            solution. The input should have gone through initial wavelength
-            calibration and contain the 'WVLSOL0' attribute.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include identified
-            lines information. The results are stored in the 'MULTILINE' attribute.
-
-        Notes
-        -----
-        - The method is particularly useful for echelle spectrographs with
-          multiple spectral orders.
-        - It relies on the presence of OH sky lines for accurate wavelength
-          calibration.
-        - The band (H or K) is automatically determined from the input data.
-        """
-        from operator import itemgetter
-        from scipy.interpolate import interp1d
-        from geminidr.igrins.primitives_igrins import get_ref_path
-
-        ad = adinputs[0]
-        band = ad[0].band()
-
-        # prepare line fitting. Reference lines are read and we will define
-        # _fit function which will fit lines given a list of spectrum. _fit
-        # will be applied to spectra of different slit positions.
-
-        wvlsol0 = ad[0].WVLSOL0
-        orders, wvlsol = wvlsol0["orders"], wvlsol0["wavelengths"]
-        wvlsol_by_order = dict(zip(orders, wvlsol))
-
-        ref_file = get_ref_path(band, "ref_lines_oh") # "ref_lines_oh.fits"
-        tbl = Table.read(ref_file.open("rb"), format="fits") # "ref_lines_oh.fits"
-        df_ref_data0 = tbl.to_pandas()
-
-        df_ref_data0["kind"] = "oh"
-
-        # now load hitran if band is K
-        if band == "K":
-            import json
-            ref_file = get_ref_path(band, "ref_lines_hitran_json")
-            j = json.load(ref_file.open())
-            dff = []
-            for o, v in j.items():
-                _df = pd.DataFrame(v)
-                _df["order"] = o
-                dff.append(_df)
-            df = pd.concat(dff)
-            # df_ref_data0 : order  gid  lid        um
-
-            next_gid = 10**int(np.ceil(np.log10(len(df_ref_data0)))+1)
-
-            df_hitran = pd.DataFrame(dict(order=df["order"].astype(int),
-                                          um=df["wavelength"],
-                                          gid=np.arange(len(df))+next_gid,
-                                          kind="hitran"
-                                          )
-                                     )
-
-            df_ref_data0 = pd.concat([df_ref_data0, df_hitran],
-                                     axis=0, ignore_index=True)
-        else:
-            pass
-
-        from scipy.interpolate import interp1d
-        x = np.arange(2048)
-        # for each order, add pixel coordinate from the initial wvlsol
-        for order, grouped in df_ref_data0.groupby("order"):
-            wvl = wvlsol_by_order.get(order, None)
-            if wvl is not None:
-                knots = interp1d(wvl, x,
-                                 bounds_error=False, assume_sorted=True, fill_value=np.nan)
-                df_ref_data0.loc[grouped.index, "pixel"] = knots(grouped["um"])
-
-        # flags groups that any of the line in the group has a pixel value of nan.
-        msk = df_ref_data0.groupby("gid")["pixel"].apply(lambda pixels:
-                                                        np.all(np.isfinite(pixels)))
-        # msk has an index of "gid". We will filter the dataframe using this mask.
-        # Note that there can be multiple rows wit same gid, and indexing with mask
-        # gives a warning of
-
-        # Boolean Series key will be reindexed to match DataFrame index
-
-        # FIXME check if there is a better way of doing this.
-        df_ref_data = df_ref_data0.set_index("gid")[msk].reset_index()
-
-        # The filtered df_ref_data should only have valid pixels.
-
-        sigma_init_map = dict(hitran=5)
-
-        def _fit(df_ref_data, spec_by_order):
-            # we prepare a dataframe index of (order, gid)
-            grouped = df_ref_data.groupby(["order", "gid"])
-            df_fit = pd.DataFrame(dict(initial_mean_pixel=grouped["pixel"].mean(),
-                                       wavelength=grouped["um"].mean()))
-
-            fitted_line_location = pd.Series(index=df_ref_data.index) # initially set to nan
-
-            # For each group, we fit the sliced data with multiple gaussian.
-            for (o, gid), grp in grouped:
-                if (s := spec_by_order.get(o, None)) is not None:
-                    sigma_pixel = sigma_init_map.get(grp["kind"].iloc[0], 1.5)
-                    r = fit_gaussian_group(x, s, grp["pixel"], sigma_pixel)
-
-                    # add column for the fit parameter
-                    df_fit.loc[(o, gid), ["shift", "sigma", "height", "baseline"]] = r[0]
-                    # add column for fitted pixel position
-                    df_fit.loc[(o, gid), "fitted_pixel"] = df_fit.loc[(o, gid), "initial_mean_pixel"] + r[0][0]
-                    fitted_line_location[grp.index] = grp["pixel"] + r[0][0]
-
-            return df_fit, fitted_line_location
-
-        # fit lines in the spectrum of the slit center
-        multi_spec = ad[0].SPEC1D_MULTI
-        slit_centers = multi_spec["slit_centers"][0].astype("float32")
-        i_slit_center = len(slit_centers) // 2
-
-        spec_data = multi_spec["multispec"][:, i_slit_center, :]
-        spec_by_order = dict(zip(multi_spec["orders"], spec_data))
-
-        df_fit_list = []
-        df_fit, fitted_line_location0 = _fit(df_ref_data, spec_by_order)
-        df_fit_list.append((slit_centers[i_slit_center], df_fit))
-
-        # Now we do lower and upper part of the slit
-        for i_range in [range(0, i_slit_center)[::-1], # lower part of the slit
-                        range(i_slit_center+1, len(slit_centers)) # upper part of the slit
-                        ]:
-            # for the start of upper and lower parts, the initial location of
-            # lines are from the slit center.
-            fitted_line_location = fitted_line_location0
-            for i in i_range:
-                # we update the pixel location from the previous fit
-                df_ref_data_updated = df_ref_data.copy(deep=False)
-                df_ref_data_updated["pixel"] = fitted_line_location
-
-                spec_data = multi_spec["multispec"][:, i, :]
-                spec_by_order = dict(zip(multi_spec["orders"], spec_data))
-
-                df_fit, fitted_line_location = _fit(df_ref_data, spec_by_order)
-                df_fit_list.append((slit_centers[i], df_fit))
-
-
-        df_fit_list.sort(key=itemgetter(0))
-        df_fit_master = pd.concat([df_fit for _, df_fit in df_fit_list],
-                                  keys=[c for c, _ in df_fit_list],
-                                  names=["slit_center"],
-                                  axis=0)
-
-        tbl = Table.from_pandas(df_fit_master.reset_index())
-
-        ad[0].LINEFIT = tbl
-
-        return adinputs
 
     @staticmethod
     def _prepareVolumFit(tbl_linefit):
@@ -1731,7 +2448,6 @@ class IGRINS2(Gemini, NearIR):
 
         return dft
 
-
     @staticmethod
     def _volumeFit(dd):
 
@@ -1759,213 +2475,6 @@ class IGRINS2(Gemini, NearIR):
 
         return out_df
 
-    def volumeFit(self, adinputs, **params):
-        """
-        Perform a volume fit to model the wavelength solution in 3D space.
-
-        This method fits a polynomial model to the wavelength solution across
-        the detector, taking into account the spatial and spectral dimensions.
-        It uses the results from line fitting to create a comprehensive model
-        of the wavelength solution that varies across the detector.
-
-        The method performs the following steps:
-        1. Retrieves line fitting results from the 'LINEFIT' attribute
-        2. Prepares the data for volume fitting
-        3. Fits a polynomial model to the wavelength solution in 3D space
-        4. Stores the resulting coefficients in the 'VOLUMEFIT_COEFFS' attribute
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing line fitting results in the 'LINEFIT' attribute.
-            The input should have gone through line identification and fitting.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include the volume
-            fitting coefficients in the 'VOLUMEFIT_COEFFS' attribute.
-
-        Notes
-        -----
-        - This method is typically used after line identification and fitting
-          to create a smooth wavelength solution across the entire detector.
-        - The resulting model can be used to convert between pixel coordinates
-          and wavelengths at any point on the detector.
-        - The polynomial order is determined by the input data and the fitting
-          process.
-        """
-
-        # fn = "./SDCH_20190412_0040_wvl0.fits"
-        # ad = astrodata.open(fn)
-        ad = adinputs[0]
-
-        tbl_linefit = ad[0].LINEFIT
-
-        dft = self._prepareVolumFit(tbl_linefit)
-
-        dd = dft[dft["badmask"] == 0].reset_index()
-
-        df = self._volumeFit(dd)
-
-        ad[0].VOLUMEFIT_COEFFS = Table.from_pandas(df)
-
-        return adinputs
-
-    def attachWatTable(self, adinputs, **params):
-        """
-        Attach Wavelength Transformation (WAT) header cards to the data.
-
-        This method generates and attaches Wavelength Transformation (WAT) header
-        cards to the input data. These cards are used to describe the wavelength
-        solution in a format compatible with the FITS WCS standard.
-
-        The method performs the following steps:
-        1. Retrieves wavelength fitting results from the 'WVLFIT_RESULTS' attribute
-        2. Generates WAT header cards using the fitting results
-        3. Stores the WAT cards in the 'WAT_HEADER' attribute
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing wavelength fitting results in the 'WVLFIT_RESULTS'
-            attribute. The input should have gone through wavelength calibration.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include the WAT header
-            cards in the 'WAT_HEADER' attribute.
-
-        Notes
-        -----
-        - The WAT cards follow the FITS WCS standard for describing non-linear
-          wavelength solutions.
-        - These cards are essential for tools that need to interpret the wavelength
-          solution of the data.
-        - The method is typically one of the final steps in the wavelength
-          calibration process.
-        """
-
-        ad = adinputs[0]
-        fit_results_tbl = ad[0].WVLFIT_RESULTS
-
-        cards = get_wat_cards(fit_results_tbl)
-        tbl = Table([[c.image for c in cards]], names=["cards"])
-
-        ad[0].WAT_HEADER = tbl
-
-        return adinputs
-
-    def makeSpectralMaps(self, adinputs, **params):
-        """
-        Generate spectral order and slit position maps for the detector.
-
-        This method creates spatial maps that identify the spectral order and
-        slit position for each pixel on the detector. These maps are essential
-        for subsequent spectral extraction and analysis.
-
-        The method performs the following steps:
-        1. Creates an order map that identifies the spectral order for each pixel
-        2. Creates a slit position map that identifies the relative position
-           within each order
-        3. Processes the volume fitting coefficients to create a comprehensive
-           mapping between pixel coordinates and spectral properties
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing SLITEDGE information. The input should have
-            gone through the volume fitting process and contain the 'VOLUMEFIT_COEFFS'
-            attribute.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include:
-            - 'ORDERMAP': A 2D array mapping each pixel to its spectral order
-            - 'SLITPOSMAP': A 2D array mapping each pixel to its relative position
-              within the slit
-
-        Notes
-        -----
-        - The order map and slit position map are essential for proper spectral
-          extraction and wavelength calibration.
-        - The method uses the volume fitting coefficients to create a smooth
-          mapping across the detector.
-        - The resulting maps can be used to transform between pixel coordinates
-          and spectral coordinates.
-        """
-
-        ad = adinputs[0]
-
-        ap = Apertures(ad[0].SLITEDGE)
-
-        ordermap = ad[0].ORDERMAP = ap.make_order_map()
-        slitposmap = ad[0].SLITPOSMAP = ap.make_slitpos_map()
-
-        # # FIXME Do not remember why we needed this.
-        # order_map2 = ap.make_order_map(mask_top_bottom=True)
-
-        # We now make slitoffset map. It could be refactored to become a separate function.
-        yy, xx = np.indices(ordermap.shape)
-
-        msk = np.isfinite(ordermap) & (ordermap > 0)
-        pixels, orders, slitpos = (xx[msk], ordermap[msk],
-                                   slitposmap[msk])
-
-        tbl = ad[0].VOLUMEFIT_COEFFS
-        in_df = tbl.to_pandas() # pd.DataFrame(**d)
-
-        names = ["pixel", "order", "slit"]
-
-        # # pixel, order, slit : saved as float, needt to be int. Not needed for dragons.
-        # for n in names:
-        #     in_df[n] = in_df[n].astype("i")
-
-        in_df = in_df.set_index(names)
-        poly, coeffs = NdPolyNamed.from_pandas(in_df)
-
-        cc0 = slitpos - 0.5
-        values = dict(zip(names, [pixels, orders, cc0]))
-        offsets = poly.multiply(values, coeffs) # * cc0
-
-        offset_map = np.empty(ordermap.shape, dtype=np.float64)
-        offset_map.fill(np.nan)
-        offset_map[msk] = offsets * cc0 # dd["offsets"]
-
-        ad[0].SLITOFFSETMAP = offset_map
-
-        # Derive wavelength solution
-
-        linefit = ad[0].LINEFIT
-        colnames = [n for n in linefit.colnames if n != "params"]
-        dfm = linefit[colnames].to_pandas().query("slit_center == 0.5")
-
-        p, fit_results = fit_wvlsol(dfm)
-
-        # from ..igrins_libs.resource_helper_igrins import ResourceHelper
-        # helper = ResourceHelper(obsset)
-        # orders = helper.get("orders")
-
-        wvl_sol = _convert2wvlsol(p, ap.orders)
-
-        ad[0].WVLSOL = Table([ap.orders, wvl_sol], names=["orders", "wavelengths"])
-
-        fit_results["orders"] = ap.orders
-        ad[0].WVLFIT_RESULTS = dict_to_table(fit_results)
-
-        return adinputs
-
     def _stackFrames(self, adinputs, correct_flexure=True):
         print("#### stackFrames!!")
         if correct_flexure == False:
@@ -1989,218 +2498,6 @@ class IGRINS2(Gemini, NearIR):
         stacked = self.stackFrames(adinputs)
         return stacked
 
-    def makeAB(self, adinputs, **params):
-        """
-        Process and combine A-B nod pairs for background subtraction.
-
-        This method processes A-B nod pairs by splitting the input data into
-        A and B positions, stacking each position separately, and then
-        performing background subtraction between them.
-
-        The method performs the following steps:
-        1. Splits the input data into A and B nod positions
-        2. Stacks the frames for each position separately
-        3. Performs background subtraction between A and B stacks
-        4. Applies additional processing like level removal and amplifier-wise
-           variance correction
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing A-B nod pairs. The input should be a list
-            of AstroData objects with alternating A and B positions.
-        **params : dict
-            Additional parameters for the subtraction process:
-            - remove_level : int
-                Level of background removal to apply (default: 2)
-            - remove_amp_wise_var : bool
-                Whether to remove amplifier-wise variance (default: False)
-
-        Returns
-        -------
-        list of AstroData
-            A list containing a single AstroData object with the A-B subtracted
-            data and associated variance.
-
-        Notes
-        -----
-        - This method is typically used for nod-and-shuffle observations to
-          remove sky background and detector artifacts.
-        - The input data should contain an even number of frames, alternating
-          between A and B positions.
-        - The method preserves the header information from the first A position
-          in the output.
-        """
-        adinputsA, adinputsB = splitAB(adinputs)
-
-
-        stackedA = self._stackFrames(adinputsA)
-        stackedB = self._stackFrames(adinputsB)
-
-        ad = adinputs[0]
-        ad_sky = self._get_ad_sky(ad)
-
-        mask = ad_sky[0].ORDERMAP != 0
-
-        data, var = subtract_ab(stackedA[0][0].data, stackedB[0][0].data,
-                                stackedA[0][0].variance, stackedB[0][0].variance,
-                                mask,
-                                remove_level=params["remove_level"],
-                                remove_amp_wise_var=params["remove_amp_wise_var"],
-                                )
-
-        # FIXME should we better to create a new instance of AstroData?
-        ad = stackedA[0]
-        ad[0].data = data
-        ad[0].variance = var
-
-        return [ad]
-
-    def estimateSlitProfile(self, adinputs, **params):
-        """
-        Estimate the slit profile function for the spectrograph.
-
-        This method calculates the spatial profile of the slit as a function of
-        spectral order, pixel position, and slit position. The profile can be
-        used to model and correct for variations in the slit illumination.
-
-        The method supports different calculation methods controlled by the
-        'slit_profile_method' parameter:
-        - 'full': Uses a single profile across the full detector
-        - 'per_order': Calculates separate profiles for each order
-        - 'per_pixel': Calculates a profile for each pixel position
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing the science frames to analyze. Only the first
-            image in the list is processed.
-        **params : dict
-            Additional parameters including:
-            - slit_profile_range : tuple (x1, x2)
-                The pixel range in the dispersion direction to use for profile
-                calculation.
-            - slit_profile_method : str
-                Method to use for profile calculation. One of: 'full', 'per_order',
-                or 'per_pixel'.
-
-        Returns
-        -------
-        function
-            A profile function with the signature:
-                profile(order, x_pixel, y_slit_pos) -> profile_value
-            where:
-            - order : int
-                The spectral order number
-            - x_pixel : int
-                The pixel position in the dispersion direction
-            - y_slit_pos : float
-                The relative position in the slit (0-1)
-            - profile_value : float
-                The normalized intensity at the specified position
-
-        Notes
-        -----
-        - The method uses flat field and sky data to estimate the slit profile.
-        - The profile is normalized such that the maximum value is 1.0.
-        - The input data should be flat-field corrected before using this method.
-        - The method requires the 'ORDERMAP' and 'SLITPOSMAP' attributes to be
-          present in the input data.
-        """
-
-        ad = adinputs[0]
-
-        ad_flat = self._get_ad_flat(ad)
-        ad_sky = self._get_ad_sky(ad)
-
-        orderflat = ad_flat[0].data
-
-        data_minus = ad[0].data
-        data_minus_flattened = data_minus / orderflat
-
-        ap = Apertures(ad_sky[0].SLITEDGE)
-        # from .aperture_helper import get_aperture_from_obsset
-        # orders = helper.get("orders")
-        # ap = get_aperture_from_obsset(obsset, orders=orders)
-
-        ordermap = ad_sky[0].ORDERMAP
-        # ordermap_bpixed = helper.get("ordermap_bpixed")
-        slitpos_map = ad_sky[0].SLITPOSMAP
-
-        ordermap_bpixed = np.ma.array(ordermap, mask=ad_flat[0].mask > 0).filled(0)
-
-        x1, x2 = params["slit_profile_range"]
-
-        method = params["slit_profile_method"]
-
-        if method == 'full': #Old method that used a single profile for the full detector
-
-            _ = extract_slit_profile(ap,
-                                     ordermap_bpixed, slitpos_map,
-                                     data_minus_flattened,
-                                     x1=x1, x2=x2,
-                                     mode="biweight_location"
-                                     )
-            bins, hh0, slit_profile_list = _
-
-            if params["do_ab"]:
-                profile_x, profile_y = _get_norm_profile_ab(bins, hh0)
-                # profile = get_profile_func_ab(profile_x, profile_y)
-            else:
-                profile_x, profile_y = _get_norm_profile(bins, hh0)
-                # profile = get_profile_func(profile_x, profile_y)
-
-            slit_profile_dict = dict(orders=ap.orders,
-                                     ab_mode=params["do_ab"],
-                                     slit_profile_list=slit_profile_list,
-                                     profile_x=profile_x,
-                                     profile_y=profile_y)
-
-            tbl = dict_to_table(slit_profile_dict)
-            ad[0].SLITPROFILE = tbl
-
-            profile = _get_profile_func_from_dict(slit_profile_dict)
-            profile_map = make_slitprofile_map(ap, profile,
-                                               ordermap, slitpos_map,
-                                               frac_slit_list=params["frac_slit"]
-                                               )
-
-            ad[0].SLITPROFILE_MAP = profile_map
-
-        elif method == 'column': #New method that uses a running median to find the profile per column
-            profile_map = np.zeros([2048, 2048])
-
-            for i in range(2048):
-                x1 = i - 64 #Range +/- 
-                x2 = i + 64
-                if x1 < 0: x1 = 0
-                if x2 > 2048: x2 = 2048
-
-                bins, hh0, slit_profile_list = extract_slit_profile(ap,
-                                         ordermap_bpixed, slitpos_map,
-                                         data_minus_flattened,
-                                         x1=x1, x2=x2,
-                                         mode='median',
-                                         #mode = 'biweight_location',
-                                         )
-                if params["do_ab"]:
-                    profile_x, profile_y = _get_norm_profile_ab(bins, hh0)
-                else:
-                    profile_x, profile_y = _get_norm_profile(bins, hh0)
-                    # profile = get_profile_func(profile_x, profile_y)
-                slit_profile_dict = dict(orders=ap.orders_to_extract,
-                                         ab_mode=params["do_ab"],
-                                         slit_profile_list=slit_profile_list,
-                                         profile_x=profile_x,
-                                         profile_y=profile_y)
-                profile = _get_profile_func_from_dict(slit_profile_dict)
-
-                profile_map[:,i] = ap.make_profile_column(ordermap, slitpos_map,
-                                                          profile, slice_index=i)
-
-            ad[0].SLITPROFILE_MAP = profile_map
-
-        return adinputs
 
     def _get_spec1d(self, ad, ad_sky):
 
@@ -2225,329 +2522,23 @@ class IGRINS2(Gemini, NearIR):
 
         return ad_out
 
-    def extractStellarSpec(self, adinputs, **params):
-        """
-        Extract 1D stellar spectra from 2D spectral data using optimal extraction.
-
-        This method performs optimal extraction of stellar spectra from 2D
-        spectral data, taking into account the spatial profile of the star
-        and the noise characteristics of the detector. The extraction can be
-        performed using different methods and parameters to optimize the
-        signal-to-noise ratio.
-
-        The method performs the following steps:
-        1. Loads flat field and sky data for calibration
-        2. Applies flat field correction
-        3. Performs optimal extraction using the specified method
-        4. Calculates wavelength solution and signal-to-noise ratios
-        5. Returns the extracted 1D spectrum with associated metadata
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing 2D spectral data. Only the first image in the
-            list is processed. The input should be flat-field corrected and
-            have associated SLITEDGE information.
-        **params : dict
-            Additional parameters:
-            - extraction_mode : str
-                The extraction method to use. Currently supports 'optimal'.
-            - pixel_per_res_element : int or None
-                The number of pixels per resolution element, used for calculating
-                the signal-to-noise ratio. If None, a default value is used.
-
-        Returns
-        -------
-        AstroData
-            A new AstroData object containing the extracted 1D spectrum with
-            the following extensions:
-            - Primary HDU: The extracted 1D spectrum
-            - Variance array: The variance of the extracted spectrum
-            - Wavelengths: The wavelength solution for the spectrum
-            - SN_PER_RESEL: Signal-to-noise ratio per resolution element
-
-        Notes
-        -----
-        - The method requires flat field and sky data to be available through
-          the `_get_ad_flat` and `_get_ad_sky` methods.
-        - The extraction uses the SLITEDGE information to define the extraction
-          apertures.
-        - The wavelength solution is taken from the WVLFIT_RESULTS attribute
-          of the sky data.
-        - The output spectrum includes WCS information in the header for
-          wavelength calibration.
-        """
-
-        extraction_mode = params["extraction_mode"]
-        pixel_per_res_element = params["pixel_per_res_element"]
-
-        ad = adinputs[0]
-
-        ad_flat = self._get_ad_flat(ad)
-        ad_sky = self._get_ad_sky(ad)
-
-        ap = Apertures(ad_sky[0].SLITEDGE)
-
-        orderflat = ad_flat[0].data
-        data_minus = ad[0].data
-        data_minus_flattened = data_minus / orderflat
-
-        # if False:
-        #     variance_map = obsset.load_fits_sci_hdu("combined_variance1",
-        #                                             postfix=postfix).data
-        #     variance_map0 = obsset.load_fits_sci_hdu("combined_variance0",
-        #                                              postfix=postfix).data
-
-        variance_map = ad[0].variance + 2**2 # FIXME figure out the readout
-                                             # noize and properly update it
-        variance_map0 = None # FIXME original plp used this to update variance
-                             # while doing the iterationin optima extraction. We
-                             # simply ignore this by setting it to NaN.
-
-        ordermap = ad_sky[0].ORDERMAP
-        # ordermap_bpixed = helper.get("ordermap_bpixed")
-        slitpos_map = ad_sky[0].SLITPOSMAP
-
-        ordermap_bpixed = np.ma.array(ordermap, mask=ad_flat[0].mask > 0).filled(0)
-
-        slitoffset_map = ad_sky[0].SLITOFFSETMAP
-        # slitoffset_map = helper.get("slitoffsetmap")
-
-        # ordermap = helper.get("ordermap")
-        # ordermap_bpixed = helper.get("ordermap_bpixed")
-        # slitpos_map = helper.get("slitposmap")
-
-        # gain = float(obsset.rs.query_ref_value("gain"))
-        gain = 1.
-
-        profile_map = ad[0].SLITPROFILE_MAP
-
-        # profile_map = obsset.load_fits_sci_hdu("slitprofile_fits",
-        #                                        postfix=postfix).data
-
-        _ = extract_spec_using_profile(ap, profile_map,
-                                       variance_map,
-                                       variance_map0,
-                                       data_minus_flattened,
-                                       orderflat,
-                                       ordermap, ordermap_bpixed,
-                                       slitpos_map,
-                                       slitoffset_map,
-                                       gain,
-                                       extraction_mode=extraction_mode,
-                                       debug=False)
-
-        s_list, v_list, cr_mask, aux_images = _
-
-        wvl_solutions_map = dict(zip(ad_sky[0].WVLSOL["orders"], ad_sky[0].WVLSOL["wavelengths"]))
-
-        wvl_solutions = []
-        sn_list = []
-        for o, s, v in zip(ap.orders_to_extract,
-                           s_list, v_list):
-            wvl = wvl_solutions_map[o]
-            # if pixel_per_res_element is None:
-            if pixel_per_res_element == 0.:
-                dw = np.gradient(wvl)
-                _pixel_per_res_element = (wvl/40000.)/dw
-            else:
-                _pixel_per_res_element = float(pixel_per_res_element)
-
-            # print pixel_per_res_element[1024]
-            # len(pixel_per_res_element) = 2047. But we ignore it.
-
-            with np.errstate(invalid="ignore"):
-                sn = (s/v**.5)*(_pixel_per_res_element**.5)
-
-            sn_list.append(sn)
-            wvl_solutions.append(wvl)
-
-        from astropy.table import Table
-        tbl = Table([ap.orders_to_extract, wvl_solutions, s_list, v_list, sn_list],
-                    names=["orders", "wavelengths", "spec", "variance", "sn_per_res_element"])
-
-        ad[0].SPEC1D = tbl
-
-        shifted = aux_images["shifted"]
-        tbl = Table([shifted._fields, list(shifted)],
-                    names=["type", "array"])
-
-        ad[0].WVLCOR = tbl
-
-        ad_1dspec = self._get_spec1d(ad, ad_sky)
-        ad_1dspec.update_filename(suffix="_spec1d", strip=True)
-
-        self.streams["debug"] = adinputs
-
-        return [ad_1dspec]
-
-    def checkCALDB(self, adinputs, **params):
-        for caltype in params["caltypes"]:
-            calibrations = self.caldb.get_calibrations(adinputs, caltype)
-            if calibrations.files[0] is None:
-                raise RuntimeError(f"calibration file of {caltype} need to be specified")
-
-        return adinputs
-
-    def fixHeader(self, adinputs, **params):
-        for ad in adinputs:
-            forced_tags = set(ad.phu.get("TAG_FORCED", "").split())
-            for tag in params["tags"]:
-                if tag not in forced_tags:
-                    forced_tags.add(tag)
-            ad.phu["TAG_FORCED"] = " ".join(forced_tags)
-
-            gt.mark_history(ad, primname=self.myself(), keyword="fixHeader")
-            ad.update_filename(suffix=params['suffix'], strip=False)
-
-        return adinputs
-
-    def saveTwodspec(self, adinputs, **params):
-        """
-        Save a rectified 2D spectral image with wavelength calibration.
-
-        This method processes and saves a 2D spectral image that has been
-        rectified and wavelength calibrated. The output is suitable for
-        visualization and further spectral analysis.
-
-        The method performs the following steps:
-        1. Retrieves wavelength calibration and order mapping from input data
-        2. Applies any necessary shifts to the data and variance maps
-        3. Creates a rectified 2D spectral image with uniform wavelength scale
-        4. Handles the wavelength order (increasing/decreasing) as specified
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing the 2D spectral data. The method expects
-            the input to have gone through wavelength calibration and have
-            the necessary WCS information in the header.
-        **params : dict
-            Additional parameters:
-            - height_2dspec : int
-                The height (in pixels) of the output rectified 2D spectrum.
-            - wavelength_increasing_order : bool
-                If True, ensures the output spectrum has wavelengths in
-                increasing order. If False, preserves the original order.
-
-        Returns
-        -------
-        list of AstroData
-            The input list, typically unmodified, as this method is primarily
-            used for its side effect of saving data.
-
-        Notes
-        -----
-        - The method uses the WAT (Wavelength Transformation) header information
-          to properly handle the wavelength calibration.
-        - The output is a rectified 2D spectrum where one axis is wavelength
-          and the other is spatial position along the slit.
-        - The flux can be optionally conserved during the rectification process.
-        - The method relies on the presence of ORDERMAP and SLITEDGE information
-          in the input data for proper rectification.
-        """
-
-        height_2dspec = params["height_2dspec"]
-        conserve_flux = True
-        # height_2dspec = 100 # obsset.get_recipe_parameter("height_2dspec")
-        wavelength_increasing_order = params["wavelength_increasing_order"]
-
-        ad = self.streams["debug"][0]
-
-        ad_sky = self._get_ad_sky(ad)
-
-        shifted = ShiftedImages.from_table(ad[0].WVLCOR)
-        data_shft = shifted.image
-        variance_map_shft = shifted.variance
-
-        wat_table = ad_sky[0].WAT_HEADER
-
-        # make sure you apply convert_data to the output. If get_wat_header is
-        # called with wavelength_increasing_order=True, convert_data will rearrange
-        # the data to the correct order.
-        wvl_header, convert_data = get_wat_header(wat_table,
-                                                  wavelength_increasing_order)
-
-        ordermap = ad_sky[0].ORDERMAP
-        # FIXME we should use proper badpixel mask.
-        ordermap_bpixed = np.ma.array(ordermap, mask=ad_sky[0].mask).filled(0)
-
-        ap = Apertures(ad_sky[0].SLITEDGE)
-
-        order_map = ad_sky[0].ORDERMAP
-
-        _ = get_rectified_2dspec(data_shft, ordermap_bpixed, ap, # bottom_up_solutions,
-                                 conserve_flux=conserve_flux, height=height_2dspec)
-
-
-        d0_shft_list, msk_shft_list, height = _
-
-        with np.errstate(invalid="ignore"):
-            d = np.array(d0_shft_list) / np.array(msk_shft_list)
-
-        d = convert_data(d.astype("float32"))
-
-        hdu_spec2d = fits.ImageHDU(header=wvl_header, data=d)
-
-        ad_out = astrodata.create(ad.phu)
-        ad_out.append(hdu_spec2d)
-
-        _ = get_rectified_2dspec(variance_map_shft, order_map, ap, # bottom_up_solutions,
-                                 conserve_flux=conserve_flux, height=height)
-
-        d0_shft_list, msk_shft_list, _ = _
-
-        with np.errstate(invalid="ignore"):
-            d = np.array(d0_shft_list) / np.array(msk_shft_list)
-
-        ad_out[0].variance = d
-
-        ad_out[0].WAVELENGTHS = np.array(ad_sky[0].WVLSOL["wavelengths"])
-
-        ad_out.update_filename(suffix="_spec2d", strip=True)
-        ad_out.write(overwrite=True)
-
-        return adinputs
-
-    def saveDebugImage(self, adinputs, **params):
-        if params["save_debug"]:
-            ad_debug = self.streams["debug"]
-            ad_debug[0].update_filename(suffix="_spec_debug", strip=True)
-            ad_debug[0].write(overwrite=True)
-
-        return adinputs
-
-    # For FLAT recipes : make_hotpix_mask, make_deadpix_mask
-
-    def makeIgrinsBPM(self, adinputs, **params):
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-
-        sigma_clip1 = params['hotpix_sigma_clip1']
-        sigma_clip2 = params['hotpix_sigma_clip2']
-        deadpix_thresh = params['deadpix_thresh']
-        smooth_size = params['deadpix_smooth_size']
-
-        ad_flatoff = self.streams['flat-off'][0]
-        ad_flaton = self.streams['flat-on'][0]
-
-        for flatoff_ext, flaton_ext in zip(ad_flatoff, ad_flaton):
-            flat_off = flatoff_ext.data
-
-            bg_std, hotpix_mask = make_igrins_hotpixel_mask(flat_off,
-                                                            sigma_clip1=sigma_clip1,
-                                                            sigma_clip2=sigma_clip2,
-                                                            medfilter_size=None)
-
-            flat_on = flaton_ext.data
-            flat_std = flaton_ext.variance**.5
-
-            deadpix_mask = make_igrins_deadpixel_mask(flat_on, flat_std, deadpix_thresh, smooth_size)
-
-
-            flatoff_ext.reset((hotpix_mask | deadpix_mask).astype(np.int16), mask=None, variance=None)
-
-        ad_flatoff.update_filename(suffix="_badpixel", strip=True)
-        ad_flatoff.phu.set('OBJECT', 'BadPixel')
-
-        return [ad_flatoff]
+    @staticmethod
+    def _has_valid_extensions(ad):
+        """ Check that the AD has a valid number of extensions. """
+
+        # this needs to be updated at appropriate.
+        return len(ad) in [1]
+
+    def _get_ad_flat(self, ad):
+        calreturns = self.caldb.get_calibrations([ad, ad], caltype="processed_flat")
+        for fn, mode in zip(*calreturns):
+            assert mode == "user_cals"  # for now we assume userdb.
+            return astrodata.open(fn)
+
+    def _get_ad_sky(self, ad):
+        calreturns = self.caldb.get_calibrations([ad, ad], caltype="processed_arc")
+        for fn, mode in zip(*calreturns):
+            assert mode == "user_cals"  # for now we assume userdb.
+            return astrodata.open(fn)
+
+   # For FLAT recipes : make_hotpix_mask, make_deadpix_mask
