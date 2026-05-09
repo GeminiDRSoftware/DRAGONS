@@ -59,6 +59,7 @@ timestamp_keys = {
     "makeFringeFrame": "FRINGE",
     "makeIRAFCompatible": "IRAFCOMP",
     "maskBeyondRegions": "MSKBYNDR",
+    "maskBeyondSlit": "MSKBYNDS",
     "measureBlaze": "MEASBLZE",
     "measureBG": "MEASREBG",
     "measureCC": "MEASRECC",

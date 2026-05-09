@@ -3912,7 +3912,6 @@ class Spect(Resample):
 
         return adoutputs
 
-
     def maskBeyondSlit(self, adinputs=None, **params):
         """
         This primitive masks unilluminated regions defined by a mask definition
@@ -3937,6 +3936,7 @@ class Spect(Resample):
         # Set up log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         min_frac = params["debug_min_illuminated_fraction"]
 
@@ -3986,7 +3986,8 @@ class Spect(Resample):
                 else:
                     ext.mask[~slits] |= DQ.unilluminated
 
-            # Update the filename.
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
