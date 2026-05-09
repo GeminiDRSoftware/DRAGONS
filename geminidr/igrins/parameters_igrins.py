@@ -61,7 +61,7 @@ class extractSpectraMultiConfig(config.Config):
 
 
 class extractStellarSpecConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_extracted",
+    suffix = config.Field("Filename suffix", str, "_spec1d",
                           optional=True)
     extraction_mode = config.Field("Extraction mode", str, "optimal")
     pixel_per_res_element = config.Field("number of pixel per res. element", float, 0.)
@@ -185,8 +185,9 @@ class streamPatternCorrectedConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_streamPatternCorrected",
                           optional=True)
     # rpc_mode = config.Field("RP Correction mode", str, "guard")
-    rpc_mode = config.ChoiceField("method to correct the pattern",
-                                  allowed={"full": "only option"}, optional=False)
+    rpc_mode = config.ChoiceField("method to correct the pattern", str,
+                                  allowed={"full": "only option"}, default="full",
+                                  optional=False)
 
 
 class volumeFitConfig(config.Config):

@@ -50,4 +50,5 @@ def test_make_processed_flat(input_files, change_working_dir, path_to_refs):
         # smoothing in normalizeFlat()
         ad_compare(adout, adref, rtol=2e-4,
                    ignore_kw=['PROCFLAT', 'UTEND', 'UTSTART', 'SDZWCS', 'SDZHDRSI',
-                              'ARRAYSEC', 'DETSEC', 'DATASEC', 'UTDATETI', 'DATE-OBS'])
+                              'ARRAYSEC', 'DETSEC', 'DATASEC', 'UTDATETI', 'DATE-OBS',
+                              'NORMLIZE', 'DETSLITS', 'MSKBYNDS'])

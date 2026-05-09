@@ -2379,7 +2379,7 @@ class IGRINS2(Gemini, NearIR):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         #timestamp_key = self.timestamp_keys[self.myself()]
-        suffix = self.params["suffix"]
+        suffix = params["suffix"]
 
         # fn = "./SDCH_20190412_0040_wvl0.fits"
         # ad = astrodata.open(fn)
@@ -2393,7 +2393,7 @@ class IGRINS2(Gemini, NearIR):
 
             # Timestamp and update filename
             #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=params["suffix"], strip=True)
+            ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
 

@@ -293,7 +293,6 @@ class AstroDataIgrins2(AstroDataGemini):
         return [h[0] if h else None for h in self.hdr.get('DETECT_?')]
 
     @returns_list
-    @use_keyword_if_prepared
     @astro_data_descriptor
     def array_section(self, pretty=False):
         """
@@ -321,9 +320,8 @@ class AstroDataIgrins2(AstroDataGemini):
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
         """
-        # Since none of the parent class defines array_section, we simply skip.
-        # if 'PREPARED' in self.tags:
-        #     return super().array_section(pretty=pretty)
+        if 'PREPARED' in self.tags:
+            return super().array_section(pretty=pretty)
 
         value_filter = (str if pretty else Section.from_string)
         return value_filter('[1:2048,1:2048]')
@@ -333,9 +331,11 @@ class AstroDataIgrins2(AstroDataGemini):
         return self.phu.get('FILTER')
 
     @returns_list
-    @use_keyword_if_prepared
     @astro_data_descriptor
     def data_section(self, pretty=False):
+        if 'PREPARED' in self.tags:
+            return super().array_section(pretty=pretty)
+
         value_filter = (str if pretty else Section.from_string)
         return value_filter('[1:2048,1:2048]')
 
@@ -344,9 +344,11 @@ class AstroDataIgrins2(AstroDataGemini):
         return "IGRINS-2"
 
     @returns_list
-    @use_keyword_if_prepared
     @astro_data_descriptor
     def detector_section(self, pretty=False):
+        if 'PREPARED' in self.tags:
+            return super().array_section(pretty=pretty)
+
         value_filter = (str if pretty else Section.from_string)
         return value_filter('[1:2048,1:2048]')
 
