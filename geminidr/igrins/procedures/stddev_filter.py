@@ -1,6 +1,8 @@
 
 # standard deviation filter
-from scipy.ndimage.filters import uniform_filter
+from scipy.ndimage import uniform_filter
+
+
 def window_stdev(arr, radius):
     c1 = uniform_filter(arr, radius*2, mode='constant',
                         #origin=-radius
