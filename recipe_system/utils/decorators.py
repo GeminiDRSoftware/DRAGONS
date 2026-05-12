@@ -359,7 +359,7 @@ def parameter_override(fn):
                 try:
                     fnargs = dict(config.items())
                     ret_value = fn(pobj, adinputs=adinputs, **fnargs)
-                    assert_expected_dtypes(ret_value)
+                    assert_expected_dtypes(ret_value, pname)
                 except Exception:
                     zeroset()
                     raise
@@ -374,7 +374,7 @@ def parameter_override(fn):
                         raise TypeError("Single AstroData instance passed to "
                                         "primitive, should be a list")
                     ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
-                    assert_expected_dtypes(ret_value)
+                    assert_expected_dtypes(ret_value, pname)
                 except Exception:
                     zeroset()
                     raise
@@ -389,8 +389,7 @@ def parameter_override(fn):
 
 
 # Enforce the expected dtypes between primitives, to catch NumPy 2 issues:
-def assert_expected_dtypes(adinputs):
-    return
+def assert_expected_dtypes(adinputs, pname):
     msg = ""
     for ad in adinputs:
         for n, ext in enumerate(ad):
@@ -416,5 +415,5 @@ def assert_expected_dtypes(adinputs):
                 msg += emsg
     if msg:
         raise AssertionError(
-            f'Produced unexpected output data type(s):\n\n{msg}'
+            f'Produced unexpected output data type(s) from primitive {pname}:\n\n{msg}'
         )
