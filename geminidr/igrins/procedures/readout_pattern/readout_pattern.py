@@ -206,6 +206,8 @@ class PatternBase(object):
     def sub(kls, d5, mask=None):
         a = kls.get(d5, mask=mask)
         k = kls.broadcast(d5, a)
+        assert d5.dtype == np.float32, f"Expected d5 to be float32 in {kls.__name__}"
+        assert k.dtype == np.float32, f"Expected k to be float32 in {kls.__name__}"
 
         return d5 - k
 
@@ -261,7 +263,7 @@ class PatternP64First(PatternBase):
         a0 = np.nanmedian(p64[:, :1024], axis=1)
         a1 = np.nanmedian(p64[:, 1024:], axis=1)
         v = (a1 + a0)/2.
-        x = np.arange(2048)
+        x = np.arange(2048, dtype=np.float32)  # avoids conversion to float64
         u = (a1 - a0)[:, np.newaxis]/1024.*(x-1024.)
 
         assert np.all(np.isfinite(v))
@@ -331,7 +333,7 @@ class PatternColWiseBiasC64(PatternBase):
     @classmethod
     def broadcast(kls, d5, tck):
         spl = LSQUnivariateSpline._from_tck(tck)
-        s = spl(np.arange(len(d5)))
+        s = spl(np.arange(len(d5))).astype(np.float32)
         return s
 
 # def sub_col_median_slow(d5, mask=None):
@@ -377,8 +379,8 @@ class PatternAmpP2(PatternBase):
     @classmethod
     def broadcast(kls, d, av_p):
         av, p = av_p
-        k = p[:, np.newaxis] * np.array([1, -1])
-        v = np.zeros((32, 32, 2, 1)) + k[:, np.newaxis, :, np.newaxis]
+        k = p[:, np.newaxis] * np.array([1, -1], dtype=p.dtype)
+        v = np.zeros((32, 32, 2, 1), dtype=k.dtype) + k[:, np.newaxis, :, np.newaxis]
         avv = av.reshape(32, 1, 1, 1) + v
         return avv.reshape(2048, 1)
 
@@ -399,14 +401,14 @@ class PatternAmpP2v1(PatternBase):
         dd = do - av.reshape(32, 1, 1, 1)
 
         # and then [1, -1] bias.
-        pp = np.array([1, -1])[np.newaxis, np.newaxis, :, np.newaxis]
+        pp = np.array([1, -1], dtype=dd.dtype)[np.newaxis, np.newaxis, :, np.newaxis]
         p = np.nanmedian(dd * pp, axis=[1, 2, 3])
         return av, p
 
     @classmethod
     def broadcast(kls, d, av_p):
         av, p = av_p
-        k = p[:, np.newaxis] * np.array([1, -1])
+        k = p[:, np.newaxis] * np.array([1, -1], dtype=p.dtype)
         v = np.zeros((32, 32, 2, 1)) + k[:, np.newaxis, :, np.newaxis]
         avv = av.reshape(32, 1, 1, 1) + v
         return avv.reshape(2048, 1)

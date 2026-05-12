@@ -147,6 +147,7 @@ def remove_pattern(data_minus, mask=None, remove_level=1,
                    remove_amp_wise_var=True):
 
     d1 = remove_readout_pattern_from_guard(data_minus)
+    assert d1.dtype == np.float32
 
     if remove_level == 2:
         d2 = apply_rp_2nd_phase(d1, mask=mask)
@@ -156,6 +157,7 @@ def remove_pattern(data_minus, mask=None, remove_level=1,
     else:
         d2 = d1
 
+    assert d2.dtype == np.float32
     if remove_amp_wise_var:
         c = get_amp_wise_rfft(d2)
 

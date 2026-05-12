@@ -309,6 +309,8 @@ def subtract_ab(dataA, dataB, varA, varB, mask,
 
     var = remove_pattern(varA + varB, remove_level=1,
                         remove_amp_wise_var=False)
+    assert data.dtype == np.float32
+    assert var.dtype == np.float32
 
     return data, var
 
@@ -1247,9 +1249,10 @@ class IGRINS2(Gemini, NearIR):
                 sn_list.append(sn)
                 wvl_solutions.append(wvl)
 
-            from astropy.table import Table
+            # TODO: rather than coerce here, create arrays as float32
             tbl = Table([ap.orders_to_extract, wvl_solutions, s_list, v_list, sn_list],
-                        names=["orders", "wavelengths", "spec", "variance", "sn_per_res_element"])
+                        names=["orders", "wavelengths", "spec", "variance", "sn_per_res_element"],
+                        dtype=[np.float32] * 5)
 
             ad[0].SPEC1D = tbl
 
@@ -1972,7 +1975,7 @@ class IGRINS2(Gemini, NearIR):
                 s = get_initial_spectrum_for_flaton(d, mask, slitedge_polyfit)
                 s_list, i1i2_list, s2_list = get_normalize_spectrum_for_flaton(s)
 
-                flat_im = np.ones(d.shape, "d")
+                flat_im = np.ones(d.shape, dtype=d.dtype)
 
                 for (o, sl, m), s2 in zip(iter_order(slitedge_polyfit), s2_list):
                     if s2 is None:  # some order may have little valid pixels and
