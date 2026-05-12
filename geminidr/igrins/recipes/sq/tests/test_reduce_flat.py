@@ -48,7 +48,4 @@ def test_make_processed_flat(input_files, change_working_dir, path_to_refs):
         # A large tolerance is needed here because significant numerical
         # differences arise on different architectures with the Savitzky-Golay
         # smoothing in normalizeFlat()
-        ad_compare(adout, adref, rtol=2e-4,
-                   ignore_kw=['PROCFLAT', 'UTEND', 'UTSTART', 'SDZWCS', 'SDZHDRSI',
-                              'ARRAYSEC', 'DETSEC', 'DATASEC', 'UTDATETI', 'DATE-OBS',
-                              'NORMLIZE', 'DETSLITS', 'MSKBYNDS'])
+        ad_compare(adout, adref, rtol=2e-4, ignore_kw=['PROCFLAT'])
