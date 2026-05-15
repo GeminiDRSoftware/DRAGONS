@@ -1,11 +1,9 @@
 """
 Recipes available to data with tags ['IGRINS', 'CAL', 'FLAT'].
 """
-from geminidr.igrins.primitives_igrins import IGRINS2
-
 recipe_tags = {'IGRINS-2', 'FLAT'}
 
-def estimateNoise(p: IGRINS2):
+def estimateNoise(p):
     """This recipe performs the analysis of irs readout pattern noise in flat off
     images. It creates a stacked image of pattern removed images and add a
     table that descibes its noise characteristics. The result is stored on disk
@@ -39,7 +37,7 @@ def estimateNoise(p: IGRINS2):
     p.setSuffix(suffix="_pattern_noise")
     return
 
-def makeProcessedFlat(p: IGRINS2):
+def makeProcessedFlat(p):
     """
     This recipe takes flat images and reduce them to prepare a processed flat image.
     The raw input should have both flat on and off images. The flat off and images are
@@ -99,7 +97,7 @@ _default = makeProcessedFlat
 # _default = estimateNoise
 
 
-def makeProcessedBPM(p: IGRINS2):
+def makeProcessedBPM(p):
     """
     This recipe requires flats and uses the lamp-off as short darks.
     """
@@ -125,7 +123,7 @@ def makeProcessedBPM(p: IGRINS2):
     return
 
 
-def makeTestBadpix(p: IGRINS2):
+def makeTestBadpix(p):
 
     p.prepare(require_wcs=False)
     p.readoutPatternCorrectFlatOff() # This primitive needs to be applied
