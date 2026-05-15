@@ -5,7 +5,7 @@ import numpy as np
 def _convert2wvlsol(p, orders_w_solutions):
 
     # derive wavelengths.
-    xx = np.arange(2048)
+    xx = np.arange(2048, dtype=np.float32)
     wvl_sol = []
     for o in orders_w_solutions:
         oo = np.empty_like(xx)

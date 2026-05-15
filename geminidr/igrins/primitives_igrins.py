@@ -2200,7 +2200,7 @@ class IGRINS2(Gemini, NearIR):
 
         ad_out[0].variance = d
 
-        ad_out[0].WAVELENGTHS = np.array(ad_sky[0].WVLSOL["wavelengths"])
+        ad_out[0].WAVELENGTHS = np.array(ad_sky[0].WVLSOL["wavelengths"], dtype=np.float32)
 
         ad_out.update_filename(suffix=suffix, strip=True)
         ad_out.write(overwrite=True)
