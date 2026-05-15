@@ -56,6 +56,7 @@ from gempy.library.fitting import fit_1D
 from gempy.library.matching import KDTreeFitter
 from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
+from gempy.adlibrary.embedded_files import embed_file
 from gwcs.utils import CoordinateFrameError
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
@@ -2933,6 +2934,9 @@ class Spect(Resample):
                     for fig in figures:
                         pdf.savefig(fig, bbox_inches='tight')
                     plt.close()
+
+                # We could add a parameter to enable this if desired
+                embed_file(ad, plot_filename, contenttype='pdf')
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
