@@ -11,11 +11,8 @@ import pandas as pd
 
 from numpy.typing import ArrayLike
 
-
 from collections import namedtuple
 from importlib.resources import files
-
-from itertools import product
 
 from numpy.linalg import lstsq
 
@@ -28,6 +25,8 @@ from gempy.gemini import gemini_tools as gt
 
 from .primitives_igrins import IGRINS
 from geminidr.gemini.lookups import DQ_definitions as DQ
+
+from .ndpoly import NdPolyNamed
 
 import matplotlib
 import warnings
@@ -275,43 +274,6 @@ def splitAB(adinputs):
     return adinputsA, adinputsB
 
 
-def subtract_ab(dataA, dataB, varA, varB, mask,
-                # allow_no_b_frame=False,
-                remove_level=2,
-                remove_amp_wise_var=False,
-                # interactive=False,
-                # cache_only=False
-                ):
-
-    if remove_level == "auto":
-        remove_level = 2
-
-    if remove_amp_wise_var == "auto":
-        remove_amp_wise_var = False
-
-    # if interactive:
-    #     params = run_interactive(obsset,
-    #                              data_minus_raw, data_plus, bias_mask,
-    #                              remove_level, remove_amp_wise_var)
-
-    #     print("returned", params)
-    #     if not params["to_save"]:
-    #         print("canceled")
-    #         return
-
-    #     remove_level = params["remove_level"]
-    #     remove_amp_wise_var = params["amp_wise"]
-
-    data = remove_pattern(dataA - dataB, mask=mask,
-                          remove_level=remove_level,
-                          remove_amp_wise_var=remove_amp_wise_var)
-
-    var = remove_pattern(varA + varB, remove_level=1,
-                        remove_amp_wise_var=False)
-    assert data.dtype == np.float32
-    assert var.dtype == np.float32
-
-    return data, var
 
 
 def get_wat_cards(fit_results_tbl):
@@ -527,111 +489,6 @@ def fit_gaussian_group(x: np.ndarray, s: np.ndarray,
     return sol_
 
 
-######
-# Helper function and classes for volume fit
-
-class NdPoly(object):
-    """This class is to help fitting n-dim data with 3-dimensional polynomial.
-    Asume that we 3 independent variable of x, y, z, with polynomial order of
-    Ox, Oy and Oz, then there will be (Ox+1)(Oy+1)(Oz+1) coeeficients. For example,
-    Ox, Oy and Oz of (2, 2, 1), then v = c1*x^2*y^2*z + c2*x^2*y^2 + ... + c18.
-    The `get_array` method will return [x^2*y^2*z, x^2*y^2, ...., 1] so that this
-    can be used with least square method to get the coefficients of [c1, c2, ..., c18].
-    """
-    def _setup(self, orders, orderT, names):
-        po_list = [orderT(*_) for _ in product(*list(range(o + 1) for o in orders))]
-
-        self.orders = orderT(*orders)
-        self.names = names
-        self.orderT = orderT
-        self.po_list = po_list
-
-    def __init__(self, orders):
-        names = range(len(orders))
-        orderT = tuple
-
-        self._setup(orders, orderT, names)
-
-    def multiply(self, vv, coeffs):
-        v = 0.
-        for po, p in zip(self.po_list, coeffs):
-            pod = po._asdict()
-            v1 = np.multiply.reduce([pow(vv[k], pod[k])
-                                     for k in self.names])
-            v += p*v1
-
-        return v
-
-    def get_array(self, vv):
-        v_list = []
-        for po in self.po_list:
-            pod = po._asdict()
-            v1 = np.multiply.reduce([pow(vv[k], pod[k])
-                                     for k in self.names])
-            v_list.append(v1)
-
-        return v_list
-
-    def _get_frozen_p(self, k_survived):
-        p = NdPoly([self.orders[_k] for _k in k_survived])
-        return p
-
-    def freeze(self, k, v, coeffs):
-
-        k_survived = tuple(_k for _k in self.names if _k != k)
-        p = self._get_frozen_p(k_survived)
-        # p = NdPoly([self.orders[_k] for _k in k_survived], k_survived)
-
-        poo = dict((_k, []) for _k in p.po_list)
-
-        for c1, po in zip(coeffs, self.po_list):
-            _ = (o for _k, o in zip(self.names, po) if _k != k)
-            nk = p.orderT(_)
-            oo = po[k]
-            poo[nk].append(c1 * pow(v, oo))
-
-        sol1 = [np.sum(poo[po]) for po in p.po_list]
-
-        return p, sol1
-
-    def to_pandas(self, **kwargs):
-        """
-        convert to pandas dataframe.
-        """
-
-        import pandas as pd
-        index = pd.MultiIndex.from_tuples(self.po_list, names=self.names)
-        df = pd.DataFrame(index=index, data=kwargs)
-
-        return df
-
-    @staticmethod
-    def from_pandas(df):
-        # df.index.values
-        # df.index.names
-        # df = coeffs
-
-        orders = df.index.values.max(axis=0)
-        p = NdPolyNamed(orders, df.index.names)
-
-        coeffs = df.loc[p.po_list].values.reshape([-1,])
-
-        return p, coeffs
-
-        # coeffs = pd.read_json("coeffs.json", orient="split")
-
-
-class NdPolyNamed(NdPoly):
-    def __init__(self, orders, names):
-        # orderT = my_namedtuple("order_" + "_".join(names), names)
-        orderT = namedtuple("order_" + "_".join(names), names)
-
-        self._setup(orders, orderT, names)
-
-    def _get_frozen_p(self, k_survived):
-        p = NdPolyNamed([self.orders[_k] for _k in k_survived], k_survived)
-        return p
-
 
 def _volume_poly_fit(points, scalar, orders, names):
 
@@ -718,21 +575,6 @@ class IGRINS2Spect(IGRINS):
         2. Generates WAT header cards using the fitting results
         3. Stores the WAT cards in the 'WAT_HEADER' attribute
 
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing wavelength fitting results in the 'WVLFIT_RESULTS'
-            attribute. The input should have gone through wavelength calibration.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include the WAT header
-            cards in the 'WAT_HEADER' attribute.
-
         Notes
         -----
         - The WAT cards follow the FITS WCS standard for describing non-linear
@@ -779,21 +621,6 @@ class IGRINS2Spect(IGRINS):
         The detected slit edges are stored in the 'SLITEDGE' attribute of each
         extension as an Astropy Table, which can be used by subsequent primitives
         like `maskBeyondSlit` for further processing.
-
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input images containing flat field data. Only the first image in the
-            list is processed.
-        **params : dict
-            Additional parameters (not currently used, but maintained for API
-            compatibility).
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include SLITEDGE tables
-            in each extension.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1684,24 +1511,6 @@ class IGRINS2Spect(IGRINS):
         4. Applies additional processing like level removal and amplifier-wise
            variance correction
 
-        Parameters
-        ----------
-        adinputs : list of AstroData
-            Input data containing A-B nod pairs. The input should be a list
-            of AstroData objects with alternating A and B positions.
-        **params : dict
-            Additional parameters for the subtraction process:
-            - remove_level : int
-                Level of background removal to apply (default: 2)
-            - remove_amp_wise_var : bool
-                Whether to remove amplifier-wise variance (default: False)
-
-        Returns
-        -------
-        list of AstroData
-            A list containing a single AstroData object with the A-B subtracted
-            data and associated variance.
-
         Notes
         -----
         - This method is typically used for nod-and-shuffle observations to
@@ -1715,28 +1524,33 @@ class IGRINS2Spect(IGRINS):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         #timestamp_key = self.timestamp_keys[self.myself()]
         suffix = params["suffix"]
+        remove_level = params["remove_level"]
+        remove_amp_wise_var = params["remove_amp_wise_var"]
 
         adinputsA, adinputsB = splitAB(adinputs)
 
-        stackedA = self._stackFrames(adinputsA)
-        stackedB = self._stackFrames(adinputsB)
+        stackedA = self._stackFrames(adinputsA).pop()
+        stackedB = self._stackFrames(adinputsB).pop()
 
-        ad = adinputs[0]
-        ad_sky = self._get_ad_sky(ad)
-
+        ad_sky = self._get_ad_sky(adinputs[0])
         mask = ad_sky[0].ORDERMAP != 0
 
-        data, var = subtract_ab(stackedA[0][0].data, stackedB[0][0].data,
-                                stackedA[0][0].variance, stackedB[0][0].variance,
-                                mask,
-                                remove_level=params["remove_level"],
-                                remove_amp_wise_var=params["remove_amp_wise_var"],
-                                )
-
         # FIXME should we better to create a new instance of AstroData?
-        ad = stackedA[0]
-        ad[0].data = data
-        ad[0].variance = var
+        ad = stackedA.subtract(stackedB)
+        ad[0].data = remove_pattern(stackedA[0].data, mask=mask,
+                                    remove_level=remove_level,
+                                    remove_amp_wise_var=remove_amp_wise_var)
+        ad[0].variance = remove_pattern(stackedA[0].variance, remove_level=1,
+                                        remove_amp_wise_var=False)
+
+        # if interactive:
+        #     params = run_interactive(obsset,
+        #                              data_minus_raw, data_plus, bias_mask,
+        #                              remove_level, remove_amp_wise_var)
+        #     print("returned", params)
+        #     if not params["to_save"]:
+        #         print("canceled")
+        #         return
 
         # Timestamp and update filename
         #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)

@@ -28,6 +28,7 @@ def makeStellar(p):
     #p.nonlinearityCorrect()
 
     p.makeAB() # This will make stacked A-B and do the reference pixel correction.
+    p.writeOutputs()
     p.estimateSlitProfile()
     p.extractStellarSpec()
 

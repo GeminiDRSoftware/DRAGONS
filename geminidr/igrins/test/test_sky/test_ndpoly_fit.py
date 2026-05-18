@@ -1,4 +1,5 @@
-from geminidr.igrins.primitives_igrins_spect import IGRINS2Spect, NdPolyNamed
+from geminidr.igrins.primitives_igrins_spect import IGRINS2Spect
+from geminidr.igrins.ndpoly import NdPolyNamed
 
 import astrodata, gemini_instruments
 
@@ -23,7 +24,7 @@ if True: # FIXME The code below needs to be reviewed.
 
     tbl_linefit = ad[0].LINEFIT
 
-    dft = IGRINS2._prepareVolumFit(tbl_linefit)
+    dft = IGRINS2Spect._prepareVolumFit(tbl_linefit)
     dd = dft[dft["badmask"] == 0].reset_index()
     # dd = dft.reset_index()
 
