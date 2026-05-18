@@ -2098,6 +2098,9 @@ class IGRINS2Spect(IGRINS):
         suffix = params["suffix"]
         if params["save_debug"]:
             for ad in self.streams["debug"]:
+                for imname, data in ad[0].WVLCOR.iterrows():
+                    setattr(ad[0], imname.upper(), data)
+                del ad[0].WVLCOR
                 ad.update_filename(suffix=suffix, strip=True)
                 ad.write(overwrite=True)
 
