@@ -20,6 +20,6 @@ def ad(path_to_inputs, request):
 def test_add_dq(path_to_refs, ad):
     """A simple test for the IGRINS2 addDQ primitive."""
     p = IGRINS2Spect([ad])
-    adout = p.addDQ().pop()
+    adout = p.addDQ(static_bpm=None).pop()
     adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
     ad_compare(adref, adout)

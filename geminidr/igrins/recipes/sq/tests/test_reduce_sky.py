@@ -24,6 +24,9 @@ def input_files(request, path_to_inputs):
 def test_make_processed_arc(input_files, caldict, change_working_dir, path_to_inputs, path_to_refs):
     r = Reduce()
     r.files = input_files
+    # This avoids issues when running locally since test_make_processed_bpm
+    # will add the BPM to the caldb
+    r.uparms = {'addDQ:static_bpm': None}
     r.ucals = {k : os.path.join(path_to_inputs, v) for k, v in caldict.items()}
     with change_working_dir():
         r.runr()

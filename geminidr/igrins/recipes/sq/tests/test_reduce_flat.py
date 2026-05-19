@@ -38,6 +38,9 @@ def test_make_processed_bpm(input_files, change_working_dir, path_to_refs):
 def test_make_processed_flat(input_files, change_working_dir, path_to_refs):
     r = Reduce()
     r.files = input_files
+    # This avoids issues when running locally since test_make_processed_bpm
+    # will add the BPM to the caldb
+    r.uparms = {'addDQ:static_bpm': None}
     with change_working_dir():
         r.runr()
         output_filename = r._output_filenames.pop()
