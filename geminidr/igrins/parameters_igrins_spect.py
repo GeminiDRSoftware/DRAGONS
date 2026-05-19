@@ -58,6 +58,14 @@ class extractSimpleSpecConfig(config.Config):
 class extractSpectraMultiConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted",
                           optional=True)
+    nslices = config.RangeField("Number of slices (must be odd) to extract "
+                                "along the length of the slit", int, 5,
+                                min=1, max=9, inclusiveMax=True, optional=False)
+
+    def validate(self):
+        super().validate()
+        if self.nslices % 2 == 0:
+            raise config.ValidationError("nslices must be an odd number to have a central slice.")
 
 
 class extractStellarSpecConfig(config.Config):

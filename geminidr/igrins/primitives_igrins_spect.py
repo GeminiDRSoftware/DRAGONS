@@ -502,27 +502,6 @@ def _volume_poly_fit(points, scalar, orders, names):
 
     return p, s
 
-## util function for extractSpectraMulti
-
-def _get_slices(n_slice_one_direction):
-    """
-    given number of slices per direction, return slices for the
-    center, up and down positions.
-    """
-    n_slice = n_slice_one_direction*2 + 1
-    i_center = n_slice_one_direction
-    slit_slice = np.linspace(0., 1., n_slice+1)
-
-    slice_center = (slit_slice[i_center], slit_slice[i_center+1])
-
-    slice_up = [(slit_slice[i_center+i], slit_slice[i_center+i+1])
-                for i in range(1, n_slice_one_direction+1)]
-
-    slice_down = [(slit_slice[i_center-i-1], slit_slice[i_center-i])
-                  for i in range(n_slice_one_direction)]
-
-    return slice_center, slice_up, slice_down
-
 
 @parameter_override
 class IGRINS2Spect(IGRINS):
@@ -896,6 +875,11 @@ class IGRINS2Spect(IGRINS):
         on either side of the center. The results are stored in a table with
         'orders', 'multispec', and 'slit_centers' columns.
 
+        Parameters
+        ----------
+        nslices: int (odd)
+            number of slices to extract along the length of the slit
+
         Returns
         -------
         list of AstroData
@@ -918,10 +902,9 @@ class IGRINS2Spect(IGRINS):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         #timestamp_key = self.timestamp_keys[self.myself()]
         suffix = params["suffix"]
+        nslices = params["nslices"]
 
-        n_slice_one_direction = 2
-        slice_center, slice_up, slice_down = _get_slices(n_slice_one_direction)
-        slices = slice_down[::-1] + [slice_center] + slice_up
+        slices = [(i/nslices, (i+1)/nslices) for i in range(nslices)]
         slit_centers = [0.5 * (s1 + s2) for (s1, s2) in slices]
 
         for ad in adinputs:
