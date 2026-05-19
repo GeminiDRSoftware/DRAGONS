@@ -1003,17 +1003,8 @@ class IGRINS2Spect(IGRINS):
             data_minus = ad[0].data
             data_minus_flattened = data_minus / orderflat
 
-            # if False:
-            #     variance_map = obsset.load_fits_sci_hdu("combined_variance1",
-            #                                             postfix=postfix).data
-            #     variance_map0 = obsset.load_fits_sci_hdu("combined_variance0",
-            #                                              postfix=postfix).data
-
             variance_map = ad[0].variance + 2**2 # FIXME figure out the readout
                                                  # noize and properly update it
-            variance_map0 = None # FIXME original plp used this to update variance
-                                 # while doing the iterationin optima extraction. We
-                                 # simply ignore this by setting it to NaN.
 
             ordermap = ad_sky[0].ORDERMAP
             # ordermap_bpixed = helper.get("ordermap_bpixed")
@@ -1038,7 +1029,6 @@ class IGRINS2Spect(IGRINS):
 
             _ = extract_spec_using_profile(ap, profile_map,
                                            variance_map,
-                                           variance_map0,
                                            data_minus_flattened,
                                            orderflat,
                                            ordermap, ordermap_bpixed,
