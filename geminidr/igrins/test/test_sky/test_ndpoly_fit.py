@@ -1,6 +1,6 @@
-from geminidr.igrins.primitives_igrins import IGRINS2, NdPolyNamed
+from geminidr.igrins.primitives_igrins_spect import IGRINS2Spect, NdPolyNamed
 
-import astrodata, geminii_instruments
+import astrodata, gemini_instruments
 
 # fn = "N20240429S0204_K.fits"
 band = "H"

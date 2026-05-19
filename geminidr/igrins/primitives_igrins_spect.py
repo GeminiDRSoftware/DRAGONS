@@ -26,8 +26,7 @@ import astrodata
 from astrodata import Section
 from gempy.gemini import gemini_tools as gt
 
-from geminidr.gemini.primitives_gemini import Gemini
-from geminidr.core.primitives_nearIR import NearIR
+from .primitives_igrins import IGRINS
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 import matplotlib
@@ -37,7 +36,7 @@ from recipe_system.utils.decorators import parameter_override
 
 # ------------------------------------------------------------------------------
 
-from . import parameters_igrins
+from . import parameters_igrins_spect
 
 from .lookups import timestamp_keywords as igrins_stamps
 
@@ -669,7 +668,7 @@ def _get_slices(n_slice_one_direction):
 
 
 @parameter_override
-class IGRINS2(Gemini, NearIR):
+class IGRINS2Spect(IGRINS):
     """
     This class inherits from the level above.  Any primitives specific
     to IGRINS can go here.
@@ -680,9 +679,7 @@ class IGRINS2(Gemini, NearIR):
     def _initialize(self, adinputs=None, **kwargs):
         self.inst_lookups = 'geminidr.igrins.lookups'
         super()._initialize(adinputs, **kwargs)
-        self._param_update(parameters_igrins)
-        # Add IGRINS specific timestamp keywords
-        self.timestamp_keys.update(igrins_stamps.timestamp_keys)
+        self._param_update(parameters_igrins_spect)
 
     def addNoiseTable(self, adinputs=None, **params):
         """
@@ -1374,12 +1371,6 @@ class IGRINS2(Gemini, NearIR):
         1. Retrieves reference spectral data for the appropriate band (H or K)
         2. Computes a transform between reference and target spectra
         3. Identifies and matches spectral lines between the reference and observed data
-
-        Returns
-        -------
-        list of AstroData
-            The input list with the first image updated to include line identification
-            information. The results are stored in the 'LINE_TABLE' attribute.
 
         Notes
         -----

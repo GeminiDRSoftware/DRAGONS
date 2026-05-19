@@ -5,7 +5,7 @@ import pandas as pd
 from astropy.table import Table
 import astrodata, gemini_instruments
 
-from geminidr.igrins.primitives_igrins import get_ref_spectra, get_ref_data
+from geminidr.igrins.primitives_igrins_spect import get_ref_spectra, get_ref_data
 
 # from geminidr.igrins.procedures.procedures_register import _get_offset_transform_between_2spec
 
@@ -342,8 +342,8 @@ def fitted_lines_init(ref_lines):
 
 
 if True:
-        from geminidr.igrins.primitives_igrins import (get_ref_path,
-                                                       identify_lines_from_spec)
+        from geminidr.igrins.primitives_igrins_spect import (get_ref_path,
+                                                             identify_lines_from_spec)
         ad = adinputs[0]
 
         wvlsol0 = ad[0].WVLSOL0
@@ -463,8 +463,8 @@ Out[74]:
 
 if True:
         #
-        from geminidr.igrins.primitives_igrins import (get_ref_path,
-                                                       identify_lines_from_spec)
+        from geminidr.igrins.primitives_igrins_spect import (get_ref_path,
+                                                             identify_lines_from_spec)
         # from geminidr.igrins.procedures.ref_lines_db import SkyLinesDB
 
         ad = adinputs[0]

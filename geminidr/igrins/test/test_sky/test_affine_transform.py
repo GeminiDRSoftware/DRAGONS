@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from astropy.table import Table
 import astrodata, gemini_instruments
 
-from geminidr.igrins.primitives_igrins import get_ref_spectra, get_ref_data
+from geminidr.igrins.primitives_igrins_spect import get_ref_spectra, get_ref_data
 
 # from geminidr.igrins.procedures.procedures_register import _get_offset_transform_between_2spec
 

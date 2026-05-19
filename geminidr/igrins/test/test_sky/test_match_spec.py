@@ -20,7 +20,7 @@ fnroot = "N20240429S0204"
 fnout = f"../../test_i2/{fnroot}_{band}_arc.fits"
 adout = astrodata.open(fnout)
 
-from geminidr.igrins.primitives_igrins import get_ref_spectra, get_ref_data
+from geminidr.igrins.primitives_igrins_spect import get_ref_spectra, get_ref_data
 from geminidr.igrins.procedures.match_orders import match_specs_w_shift, match_specs
 
 orders_ref, s_list_ref = get_ref_spectra(band)
