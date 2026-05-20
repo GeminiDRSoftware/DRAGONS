@@ -930,7 +930,7 @@ class IGRINS2Spect(IGRINS):
 
         return adinputs
 
-    def extractStellarSpec(self, adinputs=None, **params):
+    def extractSpectra(self, adinputs=None, **params):
         """
         Extract 1D stellar spectra from 2D spectral data using optimal extraction.
 
@@ -970,7 +970,7 @@ class IGRINS2Spect(IGRINS):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        #timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys[self.myself()]
         suffix = params["suffix"]
         extraction_mode = params["extraction_mode"]
         pixel_per_res_element = params["pixel_per_res_element"]
@@ -990,25 +990,16 @@ class IGRINS2Spect(IGRINS):
                                                  # noize and properly update it
 
             ordermap = ad_sky[0].ORDERMAP
-            # ordermap_bpixed = helper.get("ordermap_bpixed")
             slitpos_map = ad_sky[0].SLITPOSMAP
 
             ordermap_bpixed = np.ma.array(ordermap, mask=ad_flat[0].mask > 0).filled(0)
 
             slitoffset_map = ad_sky[0].SLITOFFSETMAP
-            # slitoffset_map = helper.get("slitoffsetmap")
-
-            # ordermap = helper.get("ordermap")
-            # ordermap_bpixed = helper.get("ordermap_bpixed")
-            # slitpos_map = helper.get("slitposmap")
 
             # gain = float(obsset.rs.query_ref_value("gain"))
             gain = 1.
 
             profile_map = ad[0].SLITPROFILE_MAP
-
-            # profile_map = obsset.load_fits_sci_hdu("slitprofile_fits",
-            #                                        postfix=postfix).data
 
             _ = extract_spec_using_profile(ap, profile_map,
                                            variance_map,
@@ -1061,7 +1052,7 @@ class IGRINS2Spect(IGRINS):
             adout = self._get_spec1d(ad, ad_sky)
 
             # Timestamp and update filename
-            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             adout.update_filename(suffix=suffix, strip=True)
             adoutputs.append(adout)
 

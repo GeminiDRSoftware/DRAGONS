@@ -27,7 +27,7 @@ def test_save_final_spectra(path_to_inputs, path_to_refs, change_working_dir, ad
                          for k, v in caldict.items()}
     # We want to write this to disk since the wcs will be written then
     with change_working_dir():
-        p.extractStellarSpec()
+        p.extractSpectra()
         p.writeOutputs()
         adout1d = astrodata.open(p.adinputs[0].filename)
         p.saveTwodspec()

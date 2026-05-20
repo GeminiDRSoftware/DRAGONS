@@ -30,7 +30,7 @@ def makeStellar(p):
     p.makeAB() # This will make stacked A-B and do the reference pixel correction.
     p.writeOutputs()
     p.estimateSlitProfile()
-    p.extractStellarSpec()
+    p.extractSpectra()
 
     p.saveTwodspec()
     p.saveDebugImage()

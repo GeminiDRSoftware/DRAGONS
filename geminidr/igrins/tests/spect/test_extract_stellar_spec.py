@@ -21,12 +21,12 @@ def ad(path_to_inputs, request):
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("ad, caldict", INPUT_FILES, indirect=['ad'])
 def test_extract_stellar_spec(path_to_inputs, path_to_refs, change_working_dir, ad, caldict):
-    """A simple test for the IGRINS2 extractStellarSpec primitive."""
+    """A simple test for the IGRINS2 extractSpectra primitive."""
     p = IGRINS2Spect([ad])
     p.caldb.user_cals = {k: os.path.join(path_to_inputs, v)
                          for k, v in caldict.items()}
     # We want to write this to disk since the wcs will be written then
-    p.extractStellarSpec()
+    p.extractSpectra()
     with change_working_dir():
         p.writeOutputs()
         adout = astrodata.open(p.adinputs[0].filename)
