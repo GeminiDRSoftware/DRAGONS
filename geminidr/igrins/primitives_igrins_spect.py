@@ -1889,7 +1889,7 @@ class IGRINS2Spect(IGRINS):
                     setattr(ad[0], imname.upper(), data)
                 del ad[0].WVLCOR
                 ad.update_filename(suffix=suffix, strip=True)
-                ad.write(overwrite=True)
+                ad.write(ad.filename, overwrite=True)
 
         return adinputs
 
