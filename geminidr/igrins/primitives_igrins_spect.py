@@ -27,6 +27,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import transform
 
 from .primitives_igrins import IGRINS
+from .primitives_new import IGRINSNew
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .ndpoly import NdPolyNamed
@@ -36,8 +37,6 @@ from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 
 from . import parameters_igrins_spect
-
-from .lookups import timestamp_keywords as igrins_stamps
 
 from .json_helper import dict_to_table
 
@@ -66,6 +65,7 @@ from .procedures.iter_order import iter_order
 
 from .procedures.apertures import Apertures
 
+from .procedures.iraf_helper import get_wat_cards, get_wat_header
 from .procedures.match_orders import match_orders
 from .procedures.identified_lines import IdentifiedLines
 from .procedures.echellogram import Echellogram
@@ -83,10 +83,6 @@ from .procedures.slit_profile import (extract_slit_profile,
 # from geminidr.igrins.json_helper import dict_to_table
 
 from .procedures.spec_extract_w_profile import extract_spec_using_profile
-
-from .procedures.astropy_poly_helper import deserialize_poly_model
-from .procedures.iraf_helper import get_wat_spec, default_header_str
-from .procedures.iraf_helper import invert_order
 
 from .procedures.correct_distortion import get_rectified_2dspec
 from .procedures.shifted_images import ShiftedImages
@@ -276,79 +272,6 @@ def splitAB(adinputs):
 
 
 
-def get_wat_cards(fit_results_tbl):
-
-    fit_results_map = dict(zip(fit_results_tbl["key"], fit_results_tbl["encoded"]))
-    fitted_model_encoded = fit_results_map["fitted_model"]
-    orders = json.loads(fit_results_map["orders"])
-    modeul_name, class_name, serialized = json.loads(fitted_model_encoded)
-
-    p = deserialize_poly_model(modeul_name, class_name, serialized)
-
-    # save as WAT fits header
-    xx = np.arange(0, 2048)
-    xx_plus1 = np.arange(1, 2048+1)
-
-    from astropy.modeling import models, fitting
-
-    # We convert 2d chebyshev solution to a seriese of 1d
-    # chebyshev.  For now, use naive (and inefficient)
-    # approach of refitting the solution with 1d. Should be
-    # reimplemented.
-
-    p1d_list = []
-    for o in orders:
-        oo = np.empty_like(xx)
-        oo.fill(o)
-        wvl = p(xx, oo) / o * 1.e4  # um to angstrom
-
-        p_init1d = models.Chebyshev1D(domain=[1, 2048],
-                                      degree=p.x_degree)
-        fit_p1d = fitting.LinearLSQFitter()
-        p1d = fit_p1d(p_init1d, xx_plus1, wvl)
-        p1d_list.append(p1d)
-
-    wat_list = get_wat_spec(orders, p1d_list)
-
-    cards = [fits.Card.fromstring(l.strip())
-             for l in default_header_str]
-
-    wat = "wtype=multispec " + " ".join(wat_list)
-    char_per_line = 68
-    num_line, remainder = divmod(len(wat), char_per_line)
-    for i in range(num_line):
-        k = "WAT2_%03d" % (i+1,)
-        v = wat[char_per_line*i:char_per_line*(i+1)]
-        c = fits.Card(k, v)
-        cards.append(c)
-
-    if remainder > 0:
-        i = num_line
-        k = "WAT2_%03d" % (i+1,)
-        v = wat[char_per_line*i:]
-        c = fits.Card(k, v)
-        cards.append(c)
-
-    return cards
-
-
-def get_wat_header(wat_table, wavelength_increasing_order=False):
-
-    cards = [fits.Card.fromstring(s) for s in wat_table['cards']]
-    header = fits.Header(cards)
-
-    # hdu = obsset.load_resource_sci_hdu_for("wvlsol_fits")
-    if wavelength_increasing_order:
-        header = invert_order(header)
-
-        def convert_data(d):
-            return d[::-1]
-    else:
-
-        def convert_data(d):
-            return d
-
-    return header, convert_data
 
 # for fitting the lines
 
@@ -617,88 +540,6 @@ class IGRINS2Spect(IGRINS):
             ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
-
-    def distortionCorrect(self, adinputs=None, **params):
-        """
-        Corrects the wavelength distortion by shifting all rows so that the
-        lines of constant wavelength become vertical. This can currently use
-        the IGRINS-2 PLP code or the DRAGONS transform module.
-
-        TODO: This can ultimately be removed once the WCS is properly
-        implemented.
-
-        Parameters
-        ----------
-        suffix : str
-            Suffix to be added to output files.
-        interpolant : str
-            Type of interpolant
-        subsample : int
-            Pixel subsampling factor.
-        dq_threshold : float
-            The fraction of a pixel's contribution from a DQ-flagged pixel to
-            be considered 'bad' and also flagged.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params["suffix"]
-        interpolant = params["interpolant"]
-        subsample = params["subsample"]
-        dq_threshold = params["dq_threshold"]
-        use_dragons = params["use_dragons"]
-
-        adoutputs = []
-        for ad in adinputs:
-            ad_flat = self._get_ad_flat(ad)
-            ad_sky = self._get_ad_sky(ad)
-
-            ap = Apertures(ad_sky[0].SLITEDGE)
-            data_minus_flattened = ad[0].data / ad_flat[0].data
-            variance_map = ad[0].variance + 2**2 # FIXME figure out the readout
-                                                 # noize and properly update it
-
-            if use_dragons:  # use existing DRAGONS transform module
-                x = np.meshgrid(*(np.arange(length) for length in ad[0].shape[::-1]))[1]
-                t = models.Identity(2)  # ensure array size doesn't change
-                t.inverse = (models.Mapping((0, 1, 1)) |
-                             models.Tabular2D(lookup_table=x+ad_sky[0].SLITOFFSETMAP.T, bounds_error=False,
-                                              fill_value=0) & models.Identity(1))
-                if ad[0].wcs is None:
-                    ad[0].wcs = gWCS([(astrodata.wcs.pixel_frame(naxes=2), t),
-                                      (astrodata.wcs.pixel_frame(naxes=2, name="xshifted"), None)])
-                else:
-                    ad[0].wcs = gWCS([(ad[0].wcs.pipeline[0].frame, t),
-                                      (astrodata.wcs.pixel_frame(naxes=2, name="xshifted"),
-                                       ad[0].wcs.pipeline[0].transform),
-                                      ] + ad[0].wcs.pipeline[1:])
-
-                ad_out = transform.resample_from_wcs(
-                    ad, 'xshifted', interpolant=interpolant,
-                    subsample=subsample, parallel=False,
-                    threshold=dq_threshold
-                )
-
-            else:
-                _ = ap.get_shifted_images(ad[0].SLITPROFILE_MAP,
-                                          variance_map,
-                                          data_minus_flattened,
-                                          slitoffset_map=ad_sky[0].SLITOFFSETMAP,
-                                          debug=False)
-                data_shft, variance_map_shft, profile_map_shft, msk1_shft = _
-                ad_out = astrodata.create(ad.phu)
-                new_image = ad[0].__class__(data=data_shft.astype(np.float32),
-                                            mask=msk1_shft.astype(ad[0].mask.dtype),
-                                            variance=variance_map_shft.astype(np.float32))
-                ad_out.append(new_image)
-                ad_out[0].SLITPROFILE_MAP = profile_map_shft.astype(np.float32)
-
-            # Timestamp and update the filename
-            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-            ad_out.update_filename(suffix=sfx, strip=True)
-            adoutputs.append(ad_out)
-
-        return adoutputs
 
     def estimateNoise(self, adinputs=None, **params):
         """Estimate the noise characteriscs for images in each streams. The resulting
@@ -1134,7 +975,7 @@ class IGRINS2Spect(IGRINS):
             adout = self._get_spec1d(ad, ad_sky)
 
             # Timestamp and update filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            #gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
             adout.update_filename(suffix=suffix, strip=True)
             adoutputs.append(adout)
 
@@ -2033,10 +1874,8 @@ class IGRINS2Spect(IGRINS):
                                  conserve_flux=conserve_flux, height=height_2dspec)
 
         d0_shft_list, msk_shft_list, height = _
-
         with np.errstate(invalid="ignore"):
             d = np.array(d0_shft_list) / np.array(msk_shft_list)
-
         d = convert_data(d.astype("float32"))
 
         hdu_spec2d = fits.ImageHDU(header=wvl_header, data=d)

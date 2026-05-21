@@ -37,7 +37,8 @@ def test_save_final_spectra(path_to_inputs, path_to_refs, change_working_dir, ad
 
     # Compare the 1d spectrum _spec1d.fits
     adref1d = astrodata.open(os.path.join(path_to_refs, adout1d.filename))
-    ad_compare(adref1d, adout1d, ignore_kw=[k for k in adref1d[0].hdr['WAT2*']])
+    ad_compare(adref1d, adout1d, ignore_kw=['EXTRACT'] +
+                                           [k for k in adref1d[0].hdr['WAT2*']])
     assert_allclose(adref1d[0].WAVELENGTHS, adout1d[0].WAVELENGTHS)
     assert_allclose(adref1d[0].SN_PER_RESEL, adout1d[0].SN_PER_RESEL)
 
