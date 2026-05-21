@@ -17,19 +17,19 @@ from importlib.resources import files
 from numpy.linalg import lstsq
 
 from astropy.io import fits
+from astropy.modeling import models
 from astropy.table import Table
+from gwcs.wcs import WCS as gWCS
 
 import astrodata
 from astrodata import Section
 from gempy.gemini import gemini_tools as gt
+from gempy.library import transform
 
 from .primitives_igrins import IGRINS
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .ndpoly import NdPolyNamed
-
-import matplotlib
-import warnings
 
 from recipe_system.utils.decorators import parameter_override
 
@@ -617,6 +617,88 @@ class IGRINS2Spect(IGRINS):
             ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
+
+    def distortionCorrect(self, adinputs=None, **params):
+        """
+        Corrects the wavelength distortion by shifting all rows so that the
+        lines of constant wavelength become vertical. This can currently use
+        the IGRINS-2 PLP code or the DRAGONS transform module.
+
+        TODO: This can ultimately be removed once the WCS is properly
+        implemented.
+
+        Parameters
+        ----------
+        suffix : str
+            Suffix to be added to output files.
+        interpolant : str
+            Type of interpolant
+        subsample : int
+            Pixel subsampling factor.
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        interpolant = params["interpolant"]
+        subsample = params["subsample"]
+        dq_threshold = params["dq_threshold"]
+        use_dragons = params["use_dragons"]
+
+        adoutputs = []
+        for ad in adinputs:
+            ad_flat = self._get_ad_flat(ad)
+            ad_sky = self._get_ad_sky(ad)
+
+            ap = Apertures(ad_sky[0].SLITEDGE)
+            data_minus_flattened = ad[0].data / ad_flat[0].data
+            variance_map = ad[0].variance + 2**2 # FIXME figure out the readout
+                                                 # noize and properly update it
+
+            if use_dragons:  # use existing DRAGONS transform module
+                x = np.meshgrid(*(np.arange(length) for length in ad[0].shape[::-1]))[1]
+                t = models.Identity(2)  # ensure array size doesn't change
+                t.inverse = (models.Mapping((0, 1, 1)) |
+                             models.Tabular2D(lookup_table=x+ad_sky[0].SLITOFFSETMAP.T, bounds_error=False,
+                                              fill_value=0) & models.Identity(1))
+                if ad[0].wcs is None:
+                    ad[0].wcs = gWCS([(astrodata.wcs.pixel_frame(naxes=2), t),
+                                      (astrodata.wcs.pixel_frame(naxes=2, name="xshifted"), None)])
+                else:
+                    ad[0].wcs = gWCS([(ad[0].wcs.pipeline[0].frame, t),
+                                      (astrodata.wcs.pixel_frame(naxes=2, name="xshifted"),
+                                       ad[0].wcs.pipeline[0].transform),
+                                      ] + ad[0].wcs.pipeline[1:])
+
+                ad_out = transform.resample_from_wcs(
+                    ad, 'xshifted', interpolant=interpolant,
+                    subsample=subsample, parallel=False,
+                    threshold=dq_threshold
+                )
+
+            else:
+                _ = ap.get_shifted_images(ad[0].SLITPROFILE_MAP,
+                                          variance_map,
+                                          data_minus_flattened,
+                                          slitoffset_map=ad_sky[0].SLITOFFSETMAP,
+                                          debug=False)
+                data_shft, variance_map_shft, profile_map_shft, msk1_shft = _
+                ad_out = astrodata.create(ad.phu)
+                new_image = ad[0].__class__(data=data_shft.astype(np.float32),
+                                            mask=msk1_shft.astype(ad[0].mask.dtype),
+                                            variance=variance_map_shft.astype(np.float32))
+                ad_out.append(new_image)
+                ad_out[0].SLITPROFILE_MAP = profile_map_shft.astype(np.float32)
+
+            # Timestamp and update the filename
+            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
+            ad_out.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(ad_out)
+
+        return adoutputs
 
     def estimateNoise(self, adinputs=None, **params):
         """Estimate the noise characteriscs for images in each streams. The resulting

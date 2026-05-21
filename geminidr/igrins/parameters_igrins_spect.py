@@ -2,7 +2,7 @@
 # define in the primitives_igrins.py file
 
 from gempy.library import config
-from geminidr.core import parameters_nearIR, parameters_standardize
+from geminidr.core import parameters_nearIR, parameters_spect, parameters_standardize
 
 class prepareConfig(parameters_standardize.prepareConfig):
     def setDefaults(self):
@@ -30,6 +30,10 @@ class checkCALDBConfig(config.Config):
 class determineSlitEdgesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined",
                           optional=True)
+
+
+class distortionCorrectConfig(parameters_spect.distortionCorrectConfig):
+    use_dragons = config.Field("Use DRAGONS code for interpolation?", bool, False)
 
 
 class estimateNoiseConfig(config.Config):
