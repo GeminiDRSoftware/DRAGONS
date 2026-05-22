@@ -125,11 +125,15 @@ class CachedFileGetter(object):
             tuples = []
             total_bytes = 0
             for dirent in dirents:
-                statobj = dirent.stat()  # To avoid multiple stat calls
-                tuples.append((statobj.st_atime,
-                                      dirent.path,
-                                      statobj.st_size))
-                total_bytes += statobj.st_size
+                try:
+                    statobj = dirent.stat()  # To avoid multiple stat calls
+                    tuples.append((statobj.st_atime,
+                                          dirent.path,
+                                          statobj.st_size))
+                    total_bytes += statobj.st_size
+                except FileNotFoundError:
+                    # Race condition where another process deleted the file
+                    pass
             # Sort list by increasing atime (ie oldest first)
             tuples.sort()
             while total_bytes > (1E9 * self.cachegbs):
