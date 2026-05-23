@@ -27,7 +27,6 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import transform
 
 from .primitives_igrins import IGRINS
-from .primitives_new import IGRINSNew
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .ndpoly import NdPolyNamed
@@ -909,8 +908,7 @@ class IGRINS2Spect(IGRINS):
             data_minus = ad[0].data
             data_minus_flattened = data_minus / orderflat
 
-            variance_map = ad[0].variance + 2**2 # FIXME figure out the readout
-                                                 # noize and properly update it
+            variance_map = ad[0].variance
 
             ordermap = ad_sky[0].ORDERMAP
             slitpos_map = ad_sky[0].SLITPOSMAP
@@ -978,6 +976,11 @@ class IGRINS2Spect(IGRINS):
             #gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
             adout.update_filename(suffix=suffix, strip=True)
             adoutputs.append(adout)
+            adnew = astrodata.create(ad.phu)
+            adnew.append(shifted.image)
+            adnew[0].variance = shifted.variance
+            adnew.update_filename(suffix="_wvlcor", strip=True)
+            adnew.write(overwrite=True)
 
         self.streams["debug"] = adinputs
 
