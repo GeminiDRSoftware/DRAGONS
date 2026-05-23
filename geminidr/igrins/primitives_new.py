@@ -5,12 +5,11 @@ from astropy.modeling import models
 from gwcs.wcs import WCS as gWCS
 
 import astrodata
-from astrodata import Section
 from gempy.gemini import gemini_tools as gt
 from gempy.library import transform
 
-from .primitives_igrins import IGRINS
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from .primitives_igrins import IGRINS
 
 from recipe_system.utils.decorators import parameter_override
 from . import parameters_new
@@ -28,6 +27,12 @@ class IGRINSNew(IGRINS):
         self.inst_lookups = 'geminidr.igrins.lookups'
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_new)
+
+    def _get_ad_flat(self, ad):
+        return NotImplementedError("_get_ad_flat not implemented")
+
+    def _get_ad_sky(self, ad):
+        return NotImplementedError("_get_ad_sky not implemented")
 
     def createDataCube(self, adinputs=None, **params):
         """
@@ -79,7 +84,7 @@ class IGRINSNew(IGRINS):
             with np.errstate(invalid="ignore"):
                 d = np.array(d0_shft_list) / np.array(msk_shft_list)
 
-            ad_out[0].variance = d
+            ad_out[0].variance = d.astype(np.float32)
             ad_out[0].WAVELENGTHS = np.array(ad_sky[0].WVLSOL["wavelengths"], dtype=np.float32)
 
             ad_out.update_filename(suffix=suffix, strip=True)
@@ -121,13 +126,8 @@ class IGRINSNew(IGRINS):
 
         adoutputs = []
         for ad in adinputs:
-            ad_flat = self._get_ad_flat(ad)
             ad_sky = self._get_ad_sky(ad)
-
             ap = Apertures(ad_sky[0].SLITEDGE)
-            data_minus_flattened = ad[0].data / ad_flat[0].data
-            variance_map = ad[0].variance + 2**2 # FIXME figure out the readout
-                                                 # noize and properly update it
 
             if use_dragons:  # use existing DRAGONS transform module
                 x = np.meshgrid(*(np.arange(length) for length in ad[0].shape[::-1]))[1]
@@ -152,17 +152,16 @@ class IGRINSNew(IGRINS):
 
             else:
                 _ = ap.get_shifted_images(ad[0].SLITPROFILE_MAP,
-                                          variance_map,
-                                          data_minus_flattened,
+                                          ad[0].variance, ad[0].data,
                                           slitoffset_map=ad_sky[0].SLITOFFSETMAP,
                                           debug=False)
                 data_shft, variance_map_shft, profile_map_shft, msk1_shft = _
                 ad_out = astrodata.create(ad.phu)
-                new_image = ad[0].__class__(data=data_shft.astype(np.float32),
-                                            mask=msk1_shft.astype(ad[0].mask.dtype),
-                                            variance=variance_map_shft.astype(np.float32))
+                new_image = ad[0].nddata.__class__(data=data_shft.astype(np.float32),
+                                                   mask=(~msk1_shft).astype(ad[0].mask.dtype),
+                                                   variance=variance_map_shft.astype(np.float32))
                 ad_out.append(new_image)
-                ad_out[0].SLITPROFILE_MAP = profile_map_shft.astype(np.float32)
+                ad_out[0].SLITPROFILE_MAP = profile_map_shft
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
@@ -171,7 +170,7 @@ class IGRINSNew(IGRINS):
 
         return adoutputs
 
-    def extractSpectraNew(self, adinputs=None, **params):
+    def extractSpectrumUsingProfile(self, adinputs=None, **params):
         """
         Extract 1D stellar spectra from 2D spectral data using optimal extraction.
 
@@ -223,20 +222,18 @@ class IGRINSNew(IGRINS):
 
             ap = Apertures(ad_sky[0].SLITEDGE)
             ordermap = ad_sky[0].ORDERMAP
-            slitpos_map = ad_sky[0].SLITPOSMAP
-            slitoffset_map = ad_sky[0].SLITOFFSETMAP
             ordermap_bpixed = np.ma.array(ordermap, mask=ad_flat[0].mask > 0).filled(0)
 
             weight_thresh = None
             remove_negative = False
             s_list, v_list = ap.extract_stellar_from_shifted(
                 ordermap_bpixed, ad[0].SLITPROFILE_MAP, ad[0].variance,
-                ad[0].data, ad[0].mask, weight_thresh=weight_thresh,
+                ad[0].data, ~(ad[0].mask.astype(bool)), weight_thresh=weight_thresh,
                 remove_negative=remove_negative)
 
             ad_out = astrodata.create(ad.phu)
-            new_image = ad[0].__class__(data=s_list.astype(np.float32),
-                                        variance=v_list.astype(np.float32))
+            new_image = ad[0].nddata.__class__(data=np.array(s_list, dtype=np.float32),
+                                               variance=np.array(v_list, dtype=np.float32))
             ad_out.append(new_image)
 
             # Timestamp and update the filename
@@ -246,3 +243,79 @@ class IGRINSNew(IGRINS):
 
         return adoutputs
 
+    def flagDiscrepantPixels(self, adinputs=None, **params):
+        """
+        Flag discrepant pixels in the extracted spectrum.
+
+        This method identifies and flags pixels in the extracted 1D spectrum
+        that are discrepant based on a specified threshold. The flagged pixels
+        can be used to exclude them from further analysis or to apply special
+        handling during subsequent processing steps.
+
+        Parameters
+        ----------
+        threshold : float
+            The threshold for identifying discrepant pixels. Pixels with values
+            that deviate from the median by more than this threshold will be flagged.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys["flagDiscrepantPixels"]
+        sfx = params["suffix"]
+        discrepant_pixel_threshold = params["discrepant_pixel_threshold"]
+
+        for ad in adinputs:
+            for ext in ad:
+                discrepant_mask = np.where(np.abs(ext.data - ext.SYNTHMAP) /
+                                           np.sqrt(ext.variance) > discrepant_pixel_threshold,
+                                           DQ.cosmic_ray, DQ.good)
+                if ext.mask is None:
+                    ext.mask = discrepant_mask.astype(DQ.datatype)
+                else:
+                    ext.mask |= discrepant_mask
+
+            # Timestamp and update the filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=None):
+        # We have to delete the mask and variance because IGRINSDR doesn't do
+        # anything with these and they're probably junk.
+        for ad in adinputs:
+            ad_flat = self._get_ad_flat(ad)
+            ad_flat[0].mask = None
+            ad_flat[0].variance = None
+            ad.divide(ad_flat)
+            ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
+
+    def makeSyntheticImage(self, adinputs=None, **params):
+        """
+        Make a synthetic 2D spectrum image based on the slit profile and order map.
+
+        Parameters
+        ----------
+        suffix : str
+            Suffix to be added to output files.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        sfx = params["suffix"]
+
+        adoutputs = []
+        for ad in adinputs:
+            ad_sky = self._get_ad_sky(ad)
+            ap = Apertures(ad_sky[0].SLITEDGE)
+
+            synth_map = ap.make_synth_map(ad_sky[0].ORDERMAP, ad_sky[0].SLITPOSMAP,
+                                          ad[0].SLITPROFILE_MAP, ad[0].data,
+                                          slitoffset_map=ad_sky[0].SLITOFFSETMAP)
+
+            adout = astrodata.create(ad.phu)
+            adout.append(synth_map.astype(np.float32))
+            adout.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(adout)
+
+        return adoutputs

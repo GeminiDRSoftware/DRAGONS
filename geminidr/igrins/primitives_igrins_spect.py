@@ -27,6 +27,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import transform
 
 from .primitives_igrins import IGRINS
+from .primitives_new import IGRINSNew
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .ndpoly import NdPolyNamed
@@ -426,7 +427,7 @@ def _volume_poly_fit(points, scalar, orders, names):
 
 
 @parameter_override
-class IGRINS2Spect(IGRINS):
+class IGRINS2Spect(IGRINSNew, IGRINS):
     """
     This class inherits from the level above.  Any primitives specific
     to IGRINS can go here.
