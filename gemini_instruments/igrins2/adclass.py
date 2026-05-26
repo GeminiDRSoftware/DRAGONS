@@ -352,6 +352,11 @@ class AstroDataIgrins2(AstroDataGemini):
         value_filter = (str if pretty else Section.from_string)
         return value_filter('[1:2048,1:2048]')
 
+    @returns_list
+    @astro_data_descriptor
+    def dispersion_axis(self):
+        return 1
+
     @use_keyword_if_prepared
     @astro_data_descriptor
     def filter_name(self, pretty=True):
@@ -410,6 +415,11 @@ class AstroDataIgrins2(AstroDataGemini):
     #             if len(self):
     #                 return self._get_udatetime(self[0].hdr,
     #                                            dateonly=dateonly, timeonly=timeonly)
+
+    @returns_list
+    @astro_data_descriptor
+    def pixel_scale(self):
+        return 0.1
 
     @returns_list
     @use_keyword_if_prepared
