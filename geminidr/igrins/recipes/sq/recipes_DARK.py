@@ -23,8 +23,7 @@ def makeProcessedDark(p):
     # p.addDQ(static_bpm=None)
     p.streamPatternCorrected()
     p.estimateNoise(),
-    p.selectLevel3Removed(),
-    p.stackDarks(),
+    p.stackDarks(instream="LEVEL3_REMOVED"),
     p.addNoiseTable(),
     # p.makeIRAFCompatible()
     p.storeProcessedDark()

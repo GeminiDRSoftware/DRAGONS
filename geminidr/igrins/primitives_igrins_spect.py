@@ -1912,10 +1912,6 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
                      if frmtype in ad.hdr['FRMTYPE']]
         return adoutputs
 
-    def selectStream(self, adinputs=None, **params):
-        stream_name = params["stream_name"]
-        return self.streams[stream_name]
-
     def setReferenceFrame(self, adinputs=None, **params):
         ad_first = self.streams["first_frame"][0]
         exptime = ad_first[0].exposure_time()

@@ -27,10 +27,7 @@ def estimateNoise(p):
     # Estimate some noise characteristics of images in each stream. A table is
     # created and added to a 'ESTIMATED_NOISE' stream.
     p.estimateNoise()
-    # Select the "level3_removed" stream and make it the output (i.e., input of
-    # next primitive)
-    p.selectStream(stream_name="LEVEL3_REMOVED")
-    p.stackFlats()
+    p.stackFlats(instream="level3_REMOVED")
     # The table from 'ESTIMATED_NOISE' stream is appended to the stacked image.
     p.addNoiseTable()
     # Set the suffix.
@@ -120,33 +117,6 @@ def makeProcessedBPM(p):
                       # deadpix mask is from flat-on stream.
 
     p.storeBPM()
-    return
-
-
-def makeTestBadpix(p):
-
-    p.prepare(require_wcs=False)
-    p.readoutPatternCorrectFlatOff() # This primitive needs to be applied
-                                     # before addVar as we will add
-                                     # poisson_noise.
-
-    p.addDQ()
-    p.addVAR(read_noise=True, poisson_noise=True) # readout noise from header
-    p.fixIgrinsHeader()
-    p.ADUToElectrons()
-
-    p.selectFromInputs(tags="LAMPOFF", outstream="flatoff")
-    p.stackFrames(stream="flatoff")
-
-    p.selectFromInputs(tags="LAMPON", outstream="flaton")
-    p.stackFrames(stream="flaton")
-
-
-    adlist = p.selectStream(stream_name="flatoff")
-    adlist[0].write(overwrite=True)
-    adlist = p.selectStream(stream_name="flaton")
-    adlist[0].write(overwrite=True)
-
     return
 
 

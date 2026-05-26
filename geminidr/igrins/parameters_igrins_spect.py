@@ -177,10 +177,6 @@ class selectFrameConfig(config.Config):
     frmtype = config.Field("frametype to filter", str)
 
 
-class selectStreamConfig(config.Config):
-    stream_name = config.Field("stream name for the output", str)
-
-
 class setReferenceFrameConfig(config.Config):
     pass
 
