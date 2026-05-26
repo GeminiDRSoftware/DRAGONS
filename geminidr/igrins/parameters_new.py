@@ -2,6 +2,11 @@ from gempy.library import config
 from geminidr.core import parameters_spect
 
 
+class correctFlexureConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_flexureCorrected",
+                          optional=True)
+
+
 class createDataCubeConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_dataCubeCreated",
                           optional=True)
@@ -30,6 +35,12 @@ class flagDiscrepantPixelsConfig(config.Config):
                           optional=True)
     discrepant_pixel_threshold = config.RangeField("Sigma threshold for flagging discrepant pixels", float, 30.,
                                                    min=1)
+
+
+class makeABNewConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_AB",  optional=True)
+    remove_level = config.Field("readoutpattern remove level", int, 2)
+    remove_amp_wise_var = config.Field("remove amp-wise variation if True", bool, False)
 
 
 class makeSyntheticImageConfig(config.Config):

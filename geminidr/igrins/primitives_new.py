@@ -16,7 +16,9 @@ from . import parameters_new
 
 from .procedures.apertures import Apertures
 from .procedures.correct_distortion import get_rectified_2dspec
-from .procedures.iraf_helper import get_wat_cards, get_wat_header
+from .procedures.flexure_correction import estimate_flexure
+from .procedures.iraf_helper import get_wat_header
+from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
 
 
 @parameter_override
@@ -33,6 +35,33 @@ class IGRINSNew(IGRINS):
 
     def _get_ad_sky(self, ad):
         return NotImplementedError("_get_ad_sky not implemented")
+
+    def correctFlexure(self, adinputs=None, **params):
+        """
+        Correct the flexure. This can be skipped using the
+        "skip_primitive" recipe-level parameter.
+
+        Weirdly though, the main code calls estimate_flexure if
+        correct_flexure=False!?
+
+        Parameters
+        ----------
+        suffix: str
+            Suffix to be added to output files
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+
+        ad_sky = self._get_ad_sky(adinputs[0])
+        adinputs = estimate_flexure(adinputs, ad_sky, adinputs[0].exposure_time())
+        for ad in adinputs:
+            # Timestamp and update the filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
 
     def createDataCube(self, adinputs=None, **params):
         """
@@ -291,6 +320,60 @@ class IGRINSNew(IGRINS):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
+    def makeABNew(self, adinputs=None, **params):
+        """
+        This performed the same work as the makeAB primitive, but doesn't do
+        the flexure correction, which now lives in its own primitive. If all
+        works as desired, this will become the makeAB primitive and the old
+        one will be removed.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        remove_level = params["remove_level"]
+        remove_amp_wise_var = params["remove_amp_wise_var"]
+        frac_FOV = 1.0
+
+        frametypes = [ad.phu.get("FRMTYPE") for ad in adinputs]
+        if frametypes.count(None) == 0:
+            log.stdinfo("Grouping by FRMTYPE keyword")
+            frametype_set = set(frametypes)
+            assert len(frametype_set) == 2
+            in_group_a = np.array([ft == frametypes[0] for ft in frametypes])
+            if frametype_set.intersection({"A", "ON"}) and frametypes[0] not in ("A", "ON"):
+                in_group_a = ~in_group_a
+        else:
+            log.stdinfo("Grouping by location on sky")
+            groups = gt.group_exposures(adinputs, fields_overlap=self._fields_overlap,
+                                        frac_FOV=frac_FOV)
+            assert len(groups) == 2
+            in_group_a = [ad in groups[0] for ad in adinputs]
+
+        log.stdinfo("Exposures in group A: {}".format([ad.filename for ad, in_a in zip(adinputs, in_group_a) if in_a]))
+        log.stdinfo("Exposures in group B: {}".format([ad.filename for ad, in_a in zip(adinputs, in_group_a) if not in_a]))
+        adinputsA = [ad for ad, in_a in zip(adinputs, in_group_a) if in_a]
+        adinputsB = [ad for ad, in_a in zip(adinputs, in_group_a) if not in_a]
+        stackedA = self.stackFrames(adinputsA).pop()
+        stackedB = self.stackFrames(adinputsB).pop()
+
+        ad_sky = self._get_ad_sky(adinputs[0])
+        mask = ad_sky[0].ORDERMAP != 0
+
+        # FIXME should we better to create a new instance of AstroData?
+        ad = stackedA.subtract(stackedB)
+        ad[0].data = remove_pattern(stackedA[0].data, mask=mask,
+                                    remove_level=remove_level,
+                                    remove_amp_wise_var=remove_amp_wise_var)
+        ad[0].variance = remove_pattern(stackedA[0].variance, remove_level=1,
+                                        remove_amp_wise_var=False)
+
+        # Timestamp and update filename
+        #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+        ad.update_filename(suffix=suffix, strip=True)
+
+        return [ad]
+
     def makeSyntheticImage(self, adinputs=None, **params):
         """
         Make a synthetic 2D spectrum image based on the slit profile and order map.
@@ -319,3 +402,8 @@ class IGRINSNew(IGRINS):
             adoutputs.append(adout)
 
         return adoutputs
+
+    def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
+        offset = ad1.phu["QOFFSET"] - ad2.phu["QOFFSET"]
+        print(ad1.filename, ad2.filename, offset)
+        return abs(offset) <= 1.0
