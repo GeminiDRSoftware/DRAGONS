@@ -2133,6 +2133,8 @@ class Spect(Resample):
             Suffix to be added to output files.
         spectral_order : int
             Fitting order in the spectral direction (minimum of 1).
+        nsum : int
+            Number of rows/columns to sum when searching for peaks
         min_snr : float
             Minimum signal-to-noise ratio of peaks to be considered as slit
             edges
@@ -2181,6 +2183,8 @@ class Spect(Resample):
         # How far to search (in pixels) to match expected and detected
         # peaks.
         search_rad = params.get('search_radius', 30)
+        nsum = params.get('nsum', 6)
+        offset = nsum // 2
 
         debug_min_line_length = 0.1  # fraction of detector size in tracing direction
 
@@ -2287,14 +2291,6 @@ class Spect(Resample):
             if len(slit_lengths) > 1:
                 log.stdinfo(f"Looking for {len(slit_lengths)} {slit_name}s.")
 
-            # This is the number of rows/columns to sum around the row with
-            # the maximum flux to create the profile for finding edges, to
-            # help eliminate cosmic rays. The row/column used for finding edges
-            # will also be at least this far from the ends of the detector.
-            # XD slits can be much more tilted/curved, so need a smaller cut to
-            # prevent the edges being too wide.
-            offset = 3
-
             for ext in ad:
                 dispaxis = 2 - ext.dispersion_axis()
                 log.debug(f"Dispersion axis is axis '{dispaxis}'.")
@@ -2322,7 +2318,7 @@ class Spect(Resample):
                 diffarr = np.diff(ext.data, axis=1-dispaxis)
 
                 # Take median of a small slice to smooth over cosmic rays:
-                s = slice(cut-offset, cut+offset)
+                s = slice(cut-offset, cut-offset+nsum)
                 if dispaxis == 0:
                     median_slice = np.median(diffarr[s], axis=0)
                 else:

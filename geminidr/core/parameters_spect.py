@@ -200,10 +200,12 @@ class determinePinholeRectificationConfig(config.Config):
 
 class determineSlitEdgesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined", optional=True)
-    spectral_order = config.RangeField("Fitting order in spectral direction",
-                                       int, 3, min=1)
+    nsum = config.RangeField("Number of lines to sum in spatial profile for edge detection",
+                             int, 6, min=1, optional=False)
     min_snr = config.RangeField("Minimum SNR for edge detection", float, 10., min=0.1,
                                 optional=False)
+    spectral_order = config.RangeField("Fitting order in spectral direction",
+                                       int, 3, min=1)
     edge1 = config.RangeField("Left/lower edge of illuminated region",
                               float, None, min=1)
     edge2 = config.RangeField("Right/upper edge of illuminated region",
