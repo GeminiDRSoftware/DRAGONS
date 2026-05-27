@@ -283,7 +283,7 @@ class AstroDataIgrins2(AstroDataGemini):
     def _tag_spect(self):
         band = self.phu.get('FILTER')
         if band:
-            return TagSet([band, 'SPECT'], blocks=['BUNDLE'])
+            return TagSet([band, 'SPECT', 'XD'], blocks=['BUNDLE'])
 
 
     @astro_data_descriptor
