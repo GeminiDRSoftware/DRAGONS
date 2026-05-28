@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 import astrodata, gemini_instruments
@@ -19,4 +17,4 @@ def test_split_bundle():
     assert len(p.adinputs) == 2
     assert p.adinputs[0].filename == orig_filename.replace(".", "_H.")
     assert p.adinputs[1].filename == orig_filename.replace(".", "_K.")
-    assert p.adinputs[0].tags == (orig_tags - {'RAW', 'BUNDLE'}) | {'H', 'SPECT'}
+    assert p.adinputs[0].tags == (orig_tags - {'RAW', 'BUNDLE'}) | {'H', 'SPECT', 'XD'}
