@@ -433,7 +433,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
     to IGRINS can go here.
     """
 
-    tagset = {"GEMINI", "IGRINS-2"}
+    tagset = {"GEMINI", "IGRINS-2", "SPECT", "XD"}
 
     def _initialize(self, adinputs=None, **kwargs):
         self.inst_lookups = 'geminidr.igrins.lookups'

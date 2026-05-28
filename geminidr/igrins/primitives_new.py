@@ -11,7 +11,7 @@ from gempy.library import transform
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from .primitives_igrins import IGRINS
-from ..core.primitives_spect import Spect
+from ..core.primitives_crossdispersed import CrossDispersed
 
 from recipe_system.utils.decorators import parameter_override
 from . import parameters_new
@@ -24,7 +24,7 @@ from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
 
 
 @parameter_override
-class IGRINSNew(IGRINS, Spect):
+class IGRINSNew(IGRINS, CrossDispersed):
     tagset = {}
 
     def _initialize(self, adinputs=None, **kwargs):
