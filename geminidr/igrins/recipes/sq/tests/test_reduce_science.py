@@ -38,17 +38,17 @@ def test_make_processed_std(input_files, caldict, change_working_dir, path_to_in
         output_filename = r._output_filenames.pop()
         adout = astrodata.open(output_filename)
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        ad_compare(adout, adref, ignore_kw=[k for k in adref[0].hdr['WAT2*']])
+        ad_compare(adout, adref, ignore_kw=[k for k in adref[0].hdr['WAT2*']] + ["ADDMDF"])
         assert_allclose(adref[0].WAVELENGTHS, adout[0].WAVELENGTHS)
 
         output_filename = output_filename.replace("1d", "2d")
         adout = astrodata.open(output_filename)
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        ad_compare(adout, adref, ignore_kw=[k for k in adref[0].hdr['WAT2*']])
+        ad_compare(adout, adref, ignore_kw=[k for k in adref[0].hdr['WAT2*']] + ["ADDMDF"])
         assert_allclose(adref[0].WAVELENGTHS, adout[0].WAVELENGTHS)
 
         output_filename = output_filename.replace("2d", "_debug")
         adout = astrodata.open(output_filename)
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        ad_compare(adout, adref, ignore_kw=[k for k in adref[0].hdr['WAT2*']])
+        ad_compare(adout, adref, ignore_kw=[k for k in adref[0].hdr['WAT2*']] + ["ADDMDF"])
 

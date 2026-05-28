@@ -4,10 +4,6 @@
 from gempy.library import config
 from geminidr.core import parameters_nearIR, parameters_standardize
 
-class prepareConfig(parameters_standardize.prepareConfig):
-    def setDefaults(self):
-        self.require_wcs = False
-
 
 class addDQConfig(parameters_nearIR.addDQConfig):
     pass
@@ -181,6 +177,11 @@ class setReferenceFrameConfig(config.Config):
     pass
 
 
+class standardizeWCSConfig(parameters_standardize.standardizeWCSConfig):
+    # remove WCS checking
+    pass
+
+
 class streamFirstFrameConfig(config.Config):
     pass
 
@@ -192,6 +193,11 @@ class streamPatternCorrectedConfig(config.Config):
     rpc_mode = config.ChoiceField("method to correct the pattern", str,
                                   allowed={"full": "only option"}, default="full",
                                   optional=False)
+
+
+class validateDataConfig(parameters_standardize.validateDataConfig):
+    def setDefaults(self):
+        self.require_wcs = False
 
 
 class volumeFitConfig(config.Config):

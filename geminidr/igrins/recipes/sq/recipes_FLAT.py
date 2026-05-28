@@ -99,7 +99,7 @@ def makeProcessedBPM(p):
     This recipe requires flats and uses the lamp-off as short darks.
     """
 
-    p.prepare(require_wcs=False)
+    p.prepare(attach_mdf=False)
     p.addDQ() # FIXME : While I don't think this is required, we still need
               # this. Otherwise, it will raise error in stackFrames.
 
