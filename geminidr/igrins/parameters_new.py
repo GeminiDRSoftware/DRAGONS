@@ -16,6 +16,14 @@ class createDataCubeConfig(config.Config):
                                                 bool, False)
 
 
+class determineSlitEdgesNewConfig(parameters_spect.determineSlitEdgesConfig):
+    def setDefaults(self):
+        self.nsum = 10
+        self.min_snr = 1.5
+        self.spectral_order = 4
+        self.debug_max_shift = 0.2
+
+
 class distortionCorrectConfig(parameters_spect.distortionCorrectConfig):
     use_dragons = config.Field("Use DRAGONS code for interpolation?", bool, False)
 

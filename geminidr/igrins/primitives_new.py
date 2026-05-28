@@ -1,6 +1,7 @@
 import numpy as np
 from astropy.io import fits
 from astropy.modeling import models
+from astropy.table import Table
 
 from gwcs.wcs import WCS as gWCS
 
@@ -10,6 +11,7 @@ from gempy.library import transform
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from .primitives_igrins import IGRINS
+from ..core.primitives_spect import Spect
 
 from recipe_system.utils.decorators import parameter_override
 from . import parameters_new
@@ -22,7 +24,7 @@ from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
 
 
 @parameter_override
-class IGRINSNew(IGRINS):
+class IGRINSNew(IGRINS, Spect):
     tagset = {}
 
     def _initialize(self, adinputs=None, **kwargs):
@@ -35,6 +37,46 @@ class IGRINSNew(IGRINS):
 
     def _get_ad_sky(self, ad):
         return NotImplementedError("_get_ad_sky not implemented")
+
+    def addMDF(self, adinputs=None, suffix=None, mdf=None):
+        """
+        This IGRINS2-specific implementation of addMDF() adds a "virtual MDF"
+        (as in, created from data in this module rather than pulled from another
+        file) to each IGRINS-2 frame.
+
+        Parameters
+        ----------
+        suffix : str
+            suffix to be added to output files
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        # Number of orders, value of lowest order, x pixel location, then
+        # Polynomial1D coefficients for the slit midpoints for each order
+        order_location_dict = {'K': [24, 1, 700, (8.14, 125.88, -2.3, 0.027)]}
+
+        for ad in adinputs:
+            norders, low_order, x_ccd, coeffs = order_location_dict[ad.band()]
+            order_poly = models.Polynomial1D(degree=len(coeffs)-1,
+                                             **{f"c{i}": c for i, c in enumerate(coeffs)})
+            y_ccd = order_poly(np.arange(norders))
+
+            # This coding means we don't need to turn the x_ccd column into a
+            # list/array before adding it
+            mdf_table = Table([range(1, len(y_ccd) + 1)], names=['slit_id'])
+            mdf_table['x_ccd'] = x_ccd
+            mdf_table['y_ccd'] = y_ccd
+            mdf_table['specorder'] = mdf_table['slit_id'] + low_order - 1
+            mdf_table['slitlength_asec'] = 6.0
+            mdf_table['slitlength_pixels'] = 60
+            ad.MDF = mdf_table
+            log.stdinfo(f"Adding MDF table for {ad.filename}")
+
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
 
     def correctFlexure(self, adinputs=None, **params):
         """
@@ -120,6 +162,9 @@ class IGRINSNew(IGRINS):
             adoutputs.append(ad_out)
 
         return adoutputs
+
+    def determineSlitEdgesNew(self, adinputs=None, **params):
+        return Spect([]).determineSlitEdges(adinputs, **params)
 
     def distortionCorrect(self, adinputs=None, **params):
         """
