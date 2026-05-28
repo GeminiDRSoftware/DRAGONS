@@ -11,7 +11,7 @@ from gempy.library import transform
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from .primitives_igrins import IGRINS
-from ..core.primitives_crossdispersed import CrossDispersed
+from ..core.primitives_crossdispersed import CrossDispersed, Spect
 
 from recipe_system.utils.decorators import parameter_override
 from . import parameters_new
@@ -24,7 +24,7 @@ from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
 
 
 @parameter_override
-class IGRINSNew(IGRINS, CrossDispersed):
+class IGRINSNew(IGRINS, CrossDispersed, Spect):
     tagset = {}
 
     def _initialize(self, adinputs=None, **kwargs):
@@ -55,7 +55,9 @@ class IGRINSNew(IGRINS, CrossDispersed):
 
         # Number of orders, value of lowest order, x pixel location, then
         # Polynomial1D coefficients for the slit midpoints for each order
-        order_location_dict = {'K': [24, 1, 700, (8.14, 125.88, -2.3, 0.027)]}
+        order_location_dict = {'H': [26, 98, 800, (58.78, 110.29, -1.63, 0.016)],
+                               'K': [24, 70, 700, (8.14, 125.88, -2.30, 0.027)]}
+        slitlen_pix = 50.
 
         for ad in adinputs:
             norders, low_order, x_ccd, coeffs = order_location_dict[ad.band()]
@@ -69,8 +71,8 @@ class IGRINSNew(IGRINS, CrossDispersed):
             mdf_table['x_ccd'] = x_ccd
             mdf_table['y_ccd'] = y_ccd
             mdf_table['specorder'] = mdf_table['slit_id'] + low_order - 1
-            mdf_table['slitlength_asec'] = 6.0
-            mdf_table['slitlength_pixels'] = 60
+            mdf_table['slitlength_pixels'] = slitlen_pix
+            mdf_table['slitlength_asec'] = slitlen_pix * ad.pixel_scale()[0]
             ad.MDF = mdf_table
             log.stdinfo(f"Adding MDF table for {ad.filename}")
 
