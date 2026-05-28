@@ -25,7 +25,6 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from geminidr.core import Spect, Preprocess
 from geminidr import CalibrationNotFoundError
-from gemini_instruments.gnirs import lookup
 from . import parameters_crossdispersed
 
 
@@ -236,34 +235,17 @@ class CrossDispersed(Spect, Preprocess):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
 
-        def get_dispersions_for_orders(grating, camera):
-            min_order = 3
-            dispersions = []
-            config = lookup.dispersion_by_config.get((grating, camera), {})
-            for order in range(min_order, max(lookup.xd_orders.keys()) + 1):
-                filter_name = lookup.xd_orders.get(order)
-                if filter_name and filter_name in config:
-                    dispersions.append(config[filter_name])
-            return dispersions
+        xdtools = import_module('.xdtools', self.inst_lookups)
 
         adoutputs = []
         for ad in adinputs:
-            grating = ad._grating(pretty=True, stripID=True)
-            camera = 'Short' if 'Short' in ad.camera() \
-                else 'Long' if 'Long' in ad.camera() else None
-            dispersions = get_dispersions_for_orders(grating, camera)
-
-            # Get the central wavelength setting and order it occurs in.
-            central_wavelength = ad.central_wavelength(asNanometers=True)
-            grating_order = ad._grating_order()
-
             # This is the presumed pointing location and the centres of
             # each cut slit should recover these sky coordinates
             world_refpos = ad[0].wcs(*list(0.5 * (length - 1)
                                            for length in ad[0].shape[::-1]))
             ad = self._cut_slits(ad, padding=2)
 
-            for i, ext in enumerate(ad):
+            for ext in ad:
                 dispaxis = 2 - ext.dispersion_axis()  # Python Sense
                 specaxis_middle = 0.5 * (ext.shape[dispaxis] - 1)
                 try:
@@ -285,20 +267,13 @@ class CrossDispersed(Spect, Preprocess):
                     spec_order = spec_order.pop()
                     ext.hdr['SPECORDR'] = spec_order
 
-                # Update the central wavelength for this order using the
-                # following formula:
-                #   order_X * cent_wavelength_X = order_Y * cent_wavelength_Y
-                # e.g., 3 * 2.3 = 4 * central_wavelength_4 -> 3/4 * 2.2 = 1.65
-                # We have the central wavelength and number of one order from
-                # the header, so we can find the central wavelength in any
-                # other order.
-                centwl = grating_order * central_wavelength / spec_order
-
-                # Update the WCS by adding a "first guess" wavelength scale
-                # for each slit.
+                # Get the central wavelength and dispersion info for this order
+                # and Update the WCS by adding a "first guess" wavelength scale
+                # for this slit
+                order = xdtools.order_info(ad, spec_order)
                 new_wave_model = (models.Shift(-specaxis_middle) |
-                                  models.Scale(dispersions[i]) |
-                                  models.Shift(centwl))
+                                  models.Scale(order['dispersion']) |
+                                  models.Shift(order['cenwave']))
                 new_wave_model.name = "WAVE"
 
                 for idx, step in enumerate(ext.wcs.pipeline):
@@ -311,7 +286,7 @@ class CrossDispersed(Spect, Preprocess):
                     else:
                         # Update the SKY model so all slit centers point to
                         # the same location
-                        coords = ext.wcs.invert(centwl, *world_refpos[1:])
+                        coords = ext.wcs.invert(order['cenwave'], *world_refpos[1:])
                         shift = coords[dispaxis] - slit_center
                         sky_model = am.get_named_submodel(step.transform, "SKY")
                         new_sky_model = models.Shift(shift) | sky_model
