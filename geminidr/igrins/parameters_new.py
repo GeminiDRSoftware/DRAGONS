@@ -56,5 +56,9 @@ class makeSyntheticImageConfig(config.Config):
                           optional=True)
 
 
+class maskReferencePixelsConfig(config.Config):
+    pass
+
+
 class normalizeFlatNewConfig(parameters_spect.normalizeFlatConfig):
     pass
