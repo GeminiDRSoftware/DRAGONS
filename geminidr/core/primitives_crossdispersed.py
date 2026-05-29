@@ -241,8 +241,11 @@ class CrossDispersed(Spect, Preprocess):
         for ad in adinputs:
             # This is the presumed pointing location and the centres of
             # each cut slit should recover these sky coordinates
-            world_refpos = ad[0].wcs(*list(0.5 * (length - 1)
-                                           for length in ad[0].shape[::-1]))
+            try:
+                world_refpos = ad[0].wcs(*list(0.5 * (length - 1)
+                                               for length in ad[0].shape[::-1]))
+            except TypeError:  # probably wcs is None
+                world_refpos = None
             ad = self._cut_slits(ad, padding=2)
 
             for ext in ad:
@@ -434,7 +437,7 @@ class CrossDispersed(Spect, Preprocess):
                 # original WCS (this will mess up the astrometry)
                 adout[-1].wcs = deepcopy(orig_wcs)
                 if adout[-1].wcs is None:
-                    adout[-1].wcs = gWCS([(ext.wcs.input_frame, model),
+                    adout[-1].wcs = gWCS([(astrodata.wcs.pixel_frame(naxes=2), model),
                                           (cf.Frame2D(name="rectified"),
                                            None)])
                 else:
