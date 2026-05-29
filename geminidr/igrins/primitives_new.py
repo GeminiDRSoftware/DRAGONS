@@ -38,9 +38,8 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
     def _get_ad_sky(self, ad):
         return NotImplementedError("_get_ad_sky not implemented")
 
-    def addDQ(self, adinputs=None, **params):
+    def maskReferencePixels(self, adinputs=None, **params):
         """Mask reference pixels as unilluminated."""
-        super().addDQ(adinputs, **params)
         for ad in adinputs:
             ad[0].mask[:4] = DQ.unilluminated
             ad[0].mask[-4:] = DQ.unilluminated

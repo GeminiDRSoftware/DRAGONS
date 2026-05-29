@@ -97,6 +97,7 @@ def newMakeProcessedFlat(p):
     p.prepare()
     p.readoutPatternCorrectFlatOff()
     p.addDQ()
+    p.maskReferencePixels()
     p.addVAR(read_noise=True, poisson_noise=True) # readout noise from header
     p.ADUToElectrons()
     p.makeLampFlat()
