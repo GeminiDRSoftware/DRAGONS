@@ -54,3 +54,7 @@ class makeABNewConfig(config.Config):
 class makeSyntheticImageConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_syntheticImageMade",
                           optional=True)
+
+
+class normalizeFlatNewConfig(parameters_spect.normalizeFlatConfig):
+    pass

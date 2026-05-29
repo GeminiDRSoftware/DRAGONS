@@ -76,7 +76,7 @@ def makeProcessedFlat(p):
     # ported IGRINS's version of slit edge detection.
     # Will create SLITEDGE table.
 
-    p.maskBeyondSlit()
+    p.maskBetweenSlits()
     # set unilluminated flags for the pixel not illuminated by the slit.
 
     p.normalizeFlat()
@@ -100,8 +100,12 @@ def newMakeProcessedFlat(p):
     p.addVAR(read_noise=True, poisson_noise=True) # readout noise from header
     p.ADUToElectrons()
     p.makeLampFlat()
-    return
     p.determineSlitEdgesNew()
+    p.cutSlits()
+    p.maskBeyondSlit()
+    p.normalizeFlatNew()
+    p.thresholdFlatfield()
+    p.storeProcessedFlat()
 
 
 def makeProcessedBPM(p):
