@@ -126,7 +126,7 @@ class makeSpectralMapsConfig(config.Config):
                           optional=True)
 
 
-class maskBeyondSlitConfig(config.Config):
+class maskBetweenSlitsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit",
                           optional=True)
 

@@ -522,7 +522,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
 
         The detected slit edges are stored in the 'SLITEDGE' attribute of each
         extension as an Astropy Table, which can be used by subsequent primitives
-        like `maskBeyondSlit` for further processing.
+        like `maskBetweenSlits` for further processing.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1578,7 +1578,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
 
         return adinputs
 
-    def maskBeyondSlit(self, adinputs=None, **params):
+    def maskBetweenSlits(self, adinputs=None, **params):
         """
         This primitive applies a mask to pixels that lie beyond the slit edges
         as determined by the `determineSlitEdges` primitive. It updates the
@@ -1643,7 +1643,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
 
         Notes
         -----
-        This primitive should be run after `determineSlitEdges` and `maskBeyondSlit`
+        This primitive should be run after `determineSlitEdges` and `maskBetweenSlits`
         to ensure proper slit edge detection and masking of unilluminated regions.
         """
         from .procedures.normalize_flat import (get_initial_spectrum_for_flaton,
