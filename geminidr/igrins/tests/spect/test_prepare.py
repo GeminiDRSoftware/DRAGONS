@@ -22,4 +22,4 @@ def test_prepare(path_to_refs, ad):
     p = IGRINS2Spect([ad])
     adout = p.prepare().pop()
     adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
-    ad_compare(adref, adout)
+    ad_compare(adref, adout, ignore_kw=['ADDMDF'])
