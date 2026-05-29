@@ -38,6 +38,16 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
     def _get_ad_sky(self, ad):
         return NotImplementedError("_get_ad_sky not implemented")
 
+    def addDQ(self, adinputs=None, **params):
+        """Mask reference pixels as unilluminated."""
+        super().addDQ(adinputs, **params)
+        for ad in adinputs:
+            ad[0].mask[:4] = DQ.unilluminated
+            ad[0].mask[-4:] = DQ.unilluminated
+            ad[0].mask[:, :4] = DQ.unilluminated
+            ad[0].mask[:, -4:] = DQ.unilluminated
+        return adinputs
+
     def addMDF(self, adinputs=None, suffix=None, mdf=None):
         """
         This IGRINS2-specific implementation of addMDF() adds a "virtual MDF"
@@ -449,6 +459,9 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
             adoutputs.append(adout)
 
         return adoutputs
+
+    def normalizeFlatNew(self, adinputs=None, **params):
+        return Spect([]).normalizeFlat(adinputs, **params)
 
     def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
         offset = ad1.phu["QOFFSET"] - ad2.phu["QOFFSET"]
