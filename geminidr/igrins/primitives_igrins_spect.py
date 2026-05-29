@@ -1601,7 +1601,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys['maskBeyondSlit']
         suffix = params["suffix"]
 
         for ad in adinputs:
