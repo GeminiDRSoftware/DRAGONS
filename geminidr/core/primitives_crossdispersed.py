@@ -343,6 +343,8 @@ class CrossDispersed(Spect, Preprocess):
         adout = astrodata.create(ad.phu)
         adout.filename = ad.filename
         adout.orig_filename = ad.orig_filename
+        arrsec_kw = ad._keyword_for('array_section')
+        datasec_kw = ad._keyword_for('data_section')
         detsec_kw = ad._keyword_for('detector_section')
         binnings = ad.detector_x_bin(), ad.detector_y_bin()
 
@@ -388,6 +390,7 @@ class CrossDispersed(Spect, Preprocess):
                 adout[-1].SLITEDGE = slitedge[i*2:i*2+2]
                 adout[-1].SLITEDGE["c0"] -= y1
                 adout[-1].SLITEDGE["slit"] = 1  # reset slit number in ext
+                cut_shape = adout[-1].shape
 
                # Calculate a Chebyshev2D model that represents both slit
                 # edges. This requires coordinates be fed with the *detector*
@@ -422,8 +425,8 @@ class CrossDispersed(Spect, Preprocess):
 
                 m_init_2d = models.Chebyshev2D(
                     x_degree=xorder, y_degree=yorder,
-                    x_domain=[0, ext.shape[1]-1],
-                    y_domain=[0, ext.shape[0]-1])
+                    x_domain=[0, cut_shape[1]-1],
+                    y_domain=[0, cut_shape[0]-1])
                 log.stdinfo("  Creating distortion model for slit "
                             f"rectification for slit {i+1}")
                 # The `fixed_linear` parameter is False because we should
@@ -444,11 +447,14 @@ class CrossDispersed(Spect, Preprocess):
                     adout[-1].wcs.insert_frame(ext.wcs.input_frame, model,
                                                cf.Frame2D(name="rectified"))
 
-                # TODO: this updates the detector_section keyword, which
-                # is fine for instruments with only one array in the
-                # detector. NEEDS UPDATING for multi-array instruments
-                # (e.g., MOS data from MOS), and will need to update
-                # the array_section keyword then as well.
+                # TODO: need to decide how to update the array_section
+                # keyword for multi-detector instruments and/or MOS data.
+                adout[-1].hdr[arrsec_kw] = (
+                    cut_section.asIRAFsection(binning=binnings),
+                    self.keyword_comments.get(arrsec_kw))
+                adout[-1].hdr[datasec_kw] = (
+                    Section.from_shape(cut_shape).asIRAFsection(),
+                    self.keyword_comments.get(datasec_kw))
                 adout[-1].hdr[detsec_kw] = (
                     cut_section.asIRAFsection(binning=binnings),
                     self.keyword_comments.get(detsec_kw))
