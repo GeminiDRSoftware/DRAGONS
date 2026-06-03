@@ -48,7 +48,7 @@ def pixel_frame(naxes, name="pixels"):
                               axes_names=axes_names, unit=[u.pix] * naxes)
 
 
-def fitswcs_to_gwcs(input):
+def fitswcs_to_gwcs(input, silent=True):
     """
     Create and return a gWCS object from a FITS header or NDData object.
     If it can't construct one, it should quietly return None.
@@ -60,6 +60,8 @@ def fitswcs_to_gwcs(input):
     try:
         transform = make_fitswcs_transform(input)
     except Exception as e:
+        if not silent:
+            raise
         return
     outputs = transform.outputs
     try:
