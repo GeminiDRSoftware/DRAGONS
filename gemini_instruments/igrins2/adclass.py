@@ -11,6 +11,7 @@ from astrodata import (astro_data_tag, astro_data_descriptor,
                        returns_list, TagSet)
 from gemini_instruments.common import Section
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
+from .. import gmu
 from . import lookup
 
 
@@ -330,11 +331,20 @@ class AstroDataIgrins2(AstroDataGemini):
     def band(self):
         return self.phu.get('FILTER')
 
+    @astro_data_descriptor
+    @gmu.return_requested_units()
+    def central_wavelength(self):
+        # These are approximate values for the central order in each band
+        if self.band() == "K":
+            return 2120.674
+        elif self.band() == "H":
+            return 1616.297
+
     @returns_list
     @astro_data_descriptor
     def data_section(self, pretty=False):
         if 'PREPARED' in self.tags:
-            return super().array_section(pretty=pretty)
+            return super().data_section(pretty=pretty)
 
         value_filter = (str if pretty else Section.from_string)
         return value_filter('[1:2048,1:2048]')
@@ -347,10 +357,20 @@ class AstroDataIgrins2(AstroDataGemini):
     @astro_data_descriptor
     def detector_section(self, pretty=False):
         if 'PREPARED' in self.tags:
-            return super().array_section(pretty=pretty)
+            return super().detector_section(pretty=pretty)
 
         value_filter = (str if pretty else Section.from_string)
         return value_filter('[1:2048,1:2048]')
+
+    @returns_list
+    @astro_data_descriptor
+    @gmu.return_requested_units()
+    def dispersion(self):
+        # These are approximate values for the central order in each band
+        if self.band() == "K":
+            return 0.01430
+        elif self.band() == "H":
+            return 0.01066
 
     @returns_list
     @astro_data_descriptor
