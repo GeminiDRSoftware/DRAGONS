@@ -392,7 +392,7 @@ class CrossDispersed(Spect, Preprocess):
                 adout[-1].SLITEDGE["slit"] = 1  # reset slit number in ext
                 cut_shape = adout[-1].shape
 
-               # Calculate a Chebyshev2D model that represents both slit
+                # Calculate a Chebyshev2D model that represents both slit
                 # edges. This requires coordinates be fed with the *detector*
                 # x-coordinate first. The rectified slit will be as wide in
                 # pixels as it is halfway up the unrectified image, and the
@@ -404,6 +404,13 @@ class CrossDispersed(Spect, Preprocess):
                     ypixels1 >= padding, ypixels1 <= ext.shape[1 - dispaxis] - padding - 1)
                 ypix2_on = np.logical_and(
                     ypixels2 >= padding, ypixels2 <= ext.shape[1 - dispaxis] - padding - 1)
+
+                # If we don't have enough points along one edge to constrain the model,
+                # then trust the "made-up" points.
+                if ypix1_on.sum() <= model1.degree:
+                    ypix1_on = np.ones_like(ypixels1, dtype=bool)
+                if ypix2_on.sum() <= model2.degree:
+                    ypix2_on = np.ones_like(ypixels2, dtype=bool)
 
                 xcenter = 0.5 * (ext.shape[dispaxis] - 1)
                 y1ref = np.full_like(ypixels1, padding)[ypix1_on]
