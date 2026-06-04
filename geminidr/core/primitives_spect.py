@@ -1219,6 +1219,7 @@ class Spect(Resample):
                                                    primitive_name="calculateSensitivity",
                                                    filename_info=filename_info,
                                                    help_text=CALCULATE_SENSITIVITY_HELP_TEXT,
+                                                   plot_ratios=False,
                                                    ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
