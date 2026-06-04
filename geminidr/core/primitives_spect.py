@@ -2551,9 +2551,9 @@ class Spect(Resample):
                             zip(edges, (name_edge1, name_edge2), traces)):
                         if trace is None:
                             log.stdinfo(f"No {edge_name} edge traced for "
-                                        f"{this_slit} - copying "
-                                        "the other edge using a slit length "
-                                        f"of {slit_lengths[slit_num]} pixels.")
+                                        f"{this_slit} - copying the other "
+                                        "edge using a slit length of "
+                                        f"{slit_lengths[slit_num]:.2f} pixels.")
                             # If this is the second edge, we can copy now
                             if edge_id == 1:
                                 model_fits.append(deepcopy(model_fits[-1]))

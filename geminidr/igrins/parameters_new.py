@@ -16,6 +16,15 @@ class createDataCubeConfig(config.Config):
                                                 bool, False)
 
 
+class determineDistortionConfig(parameters_spect.determineDistortionConfig):
+    max_shift = config.RangeField("Maximum shift per pixel in line position",
+                                  float, 0.1, min=0.001, max=0.2, inclusiveMax=True)
+
+    def setDefaults(self):
+        self.min_snr = 20
+        self.min_line_length = 0.7
+
+
 class determineSlitEdgesNewConfig(parameters_spect.determineSlitEdgesConfig):
     def setDefaults(self):
         self.nsum = 10

@@ -59,4 +59,14 @@ def makeProcessedArc(p):
     return
 
 
+def newMakeProcessedArc(p):
+    p.prepare(require_wcs=False)
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.readoutPatternCorrectSky()
+    p.ADUToElectrons()
+    p.stackFrames()  # ignore setReferenceFrame, as user can decide which frame(s) to use
+    p.applySlitModel()  # cuts as well
+
+
 _default = makeProcessedArc

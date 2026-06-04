@@ -7,7 +7,8 @@ from gwcs.wcs import WCS as gWCS
 
 import astrodata
 from gempy.gemini import gemini_tools as gt
-from gempy.library import transform
+from gempy.library import astromodels as am
+from gempy.library import peak_finding, tracing, transform
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from .primitives_igrins import IGRINS
@@ -64,15 +65,18 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
 
         # Number of orders, value of lowest order, x pixel location, then
         # Polynomial1D coefficients for the slit midpoints for each order
-        order_location_dict = {'H': [26, 98, 800, (58.78, 110.29, -1.63, 0.016)],
-                               'K': [24, 70, 700, (8.14, 125.88, -2.30, 0.027)]}
-        slitlen_pix = 50.
+        # and Polynomial1D coefficients for the slit lengths.
+        order_location_dict = {'H': [26, 98, 800, (58.78, 110.29, -1.63, 0.016), (60.855, -0.716, 0.013)],
+                               'K': [24, 70, 700, (8.14, 125.88, -2.30, 0.027), (60.076, -0.627, 0.013)]}
 
         for ad in adinputs:
-            norders, low_order, x_ccd, coeffs = order_location_dict[ad.band()]
-            order_poly = models.Polynomial1D(degree=len(coeffs)-1,
-                                             **{f"c{i}": c for i, c in enumerate(coeffs)})
+            norders, low_order, x_ccd, coeffs1, coeffs2 = order_location_dict[ad.band()]
+            order_poly = models.Polynomial1D(degree=len(coeffs1)-1,
+                                             **{f"c{i}": c for i, c in enumerate(coeffs1)})
             y_ccd = order_poly(np.arange(norders))
+            order_poly = models.Polynomial1D(degree=len(coeffs2)-1,
+                                             **{f"c{i}": c for i, c in enumerate(coeffs2)})
+            slitlen_pix = order_poly(np.arange(norders))
 
             # This coding means we don't need to turn the x_ccd column into a
             # list/array before adding it
@@ -461,6 +465,36 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
 
     def normalizeFlatNew(self, adinputs=None, **params):
         return Spect([]).normalizeFlat(adinputs, **params)
+
+    def standardizeWCS(self, adinputs=None, suffix=None):
+        """
+        We need to add a gWCS object to each extension since there are no
+        standard FITS WCS keywords in the headers.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        for ad in adinputs:
+            pixscale = ad.pixel_scale().pop()
+            wcs_dict = {"CRVAL1": ad.ra(), "CRVAL2": ad.dec(),
+                        "CTYPE1": "RA---TAN", "CTYPE2": "DEC--TAN",
+                        "CUNIT1": "deg", "CUNIT2": "deg",
+                        "RADESYS": "FK5", "EQUINOX": ad.phu['EQUINOX']}
+            wcs_dict['CRPIX1'] = 1024 - ad.phu['POFFSET'] / pixscale
+            wcs_dict['CRPIX2'] = 1024 - ad.phu['QOFFSET'] / pixscale
+            pa = ad.phu['PA'] * np.pi / 180
+            wcs_dict['CD1_1'] = pixscale * np.cos(pa) / 3600
+            wcs_dict['CD1_2'] = -pixscale * np.sin(pa) / 3600
+            wcs_dict['CD2_1'] = pixscale * np.sin(pa) / 3600
+            wcs_dict['CD2_2'] = pixscale * np.cos(pa) / 3600
+            ad[0].wcs = astrodata.wcs.fitswcs_to_gwcs(fits.Header(wcs_dict), silent=False)
+            self._add_longslit_wcs(ad, pointing="center")
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+        return adinputs
 
     def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
         offset = ad1.phu["QOFFSET"] - ad2.phu["QOFFSET"]

@@ -2038,7 +2038,9 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
 
         return adinputs
 
-    def standardizeWCS(self, adinputs=None, **params):
+    # TODO: remove if we can successfully propagate a gWCS object
+    # Otherwise reinstate!
+    def _standardizeWCS(self, adinputs=None, **params):
         """No-ops because there are no WCS issues with IGRINS-2"""
         return adinputs
 
