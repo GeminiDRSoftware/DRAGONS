@@ -2291,6 +2291,10 @@ def fit1d_figure(
         tabs = bm.Tabs(
             tabs=[], sizing_mode="stretch_width", stylesheets=dragons_styles()
         )
+        try:  # needed for bokeh 3.9
+            tabs.link_layouts = True
+        except AttributeError:  # bokeh < 3.9
+            pass
 
         tabs.tabs.append(bm.TabPanel(child=p_resid, title="Residuals"))
         tabs.tabs.append(bm.TabPanel(child=p_ratios, title="Ratios"))
