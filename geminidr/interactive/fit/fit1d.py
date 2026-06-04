@@ -1238,6 +1238,8 @@ class Fit1DPanel:
             ylabel=self.ylabel,
             model=self.model,
             enable_user_masking=self.enable_user_masking,
+            plot_ratios=plot_ratios,
+            plot_residuals=plot_residuals,
         )
 
         if self.enable_regions:
