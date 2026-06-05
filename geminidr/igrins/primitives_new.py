@@ -93,6 +93,48 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
+    def applySlitModel(self, adinputs=None, **params):
+        """
+        This performs the standard applySlitModel operation, and then modifies the
+        'rectified' transform to have the spatial axis be in "slitpos units"
+        (i.e., extend from -0.5 to +0.5) instead of pixel units.
+
+        We also have to modify the SKY model to account for this new origin,
+        to ensure that the overall WCS is unchanged.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        adinputs = super().applySlitModel(adinputs, **params)
+        self.writeOutputs(adinputs, suffix="_intermediateCut", strip=True)
+        x = np.arange(2048)
+        for ad in adinputs:
+            for ext in ad:
+                edge_models = [am.table_to_model(row) for row in ext.SLITEDGE]
+                t = ext.wcs.get_transform('pixels', 'rectified')
+                y1 = edge_models[0](x)
+                y2 = edge_models[1](x)
+                center = 0.5 * np.mean(t(x, y2)[1] + t(x, y1)[1])
+                width = np.mean(t(x, y2)[1] - t(x, y1)[1])  # of rectified slit
+                m = models.Identity(1) & (models.Shift(-center) | models.Scale(1. / width))
+                ext.wcs.insert_transform("rectified", m, after=False)
+                wave_model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+                sky_model = am.get_named_submodel(ext.wcs.forward_transform, "SKY")
+                current_pixscale = 3600 * np.sqrt(np.linalg.det(sky_model[-3].matrix))
+                sky_model[-3].matrix *= 5. / current_pixscale  # slit is 5 arcsec
+                # We then want to remove all shifts (there'll be the CRPIX2
+                # shift, and a second shift from the origin reset after cutting).
+                # We do it like this because the CD matrix may have been rotated
+                # by 90 degrees if saved as FITS and read back in.
+                for m in sky_model:
+                    if m.__class__ == models.Shift:
+                        m.offset = 0
+                ext.wcs.set_transform("rectified", "world", wave_model & sky_model)
+
+                # super().applySlitModel() will have done the housekeeping
+
+        return adinputs
+
     def correctFlexure(self, adinputs=None, **params):
         """
         Correct the flexure. This can be skipped using the
