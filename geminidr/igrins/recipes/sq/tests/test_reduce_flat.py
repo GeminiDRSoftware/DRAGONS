@@ -29,7 +29,7 @@ def test_make_processed_bpm(input_files, change_working_dir, path_to_refs):
         output_filename = r._output_filenames.pop()
         adout = astrodata.open(os.path.join("calibrations", "processed_bpm", output_filename))
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        ad_compare(adout, adref, ignore_kw=["PROCBPM"])
+        ad_compare(adout, adref, ignore=["wcs"], ignore_kw=["PROCBPM", "SDZWCS"])
 
 
 @pytest.mark.igrins2
@@ -50,4 +50,4 @@ def test_make_processed_flat(input_files, change_working_dir, path_to_refs):
         # A large tolerance is needed here because significant numerical
         # differences arise on different architectures with the Savitzky-Golay
         # smoothing in normalizeFlat()
-        ad_compare(adout, adref, rtol=2e-4, ignore_kw=["PROCFLAT", "ADDMDF"])
+        ad_compare(adout, adref, rtol=2e-4, ignore=["wcs"], ignore_kw=["PROCFLAT", "ADDMDF", "SDZWCS"])

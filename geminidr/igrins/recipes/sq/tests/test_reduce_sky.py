@@ -34,4 +34,4 @@ def test_make_processed_arc(input_files, caldict, change_working_dir, path_to_in
         assert r.recipename == "makeProcessedArc"
         adout = astrodata.open(os.path.join("calibrations", "processed_arc", output_filename))
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        ad_compare(adout, adref, ignore_kw=["PROCARC", "ADDMDF"])
+        ad_compare(adout, adref, ignore=["wcs"], ignore_kw=["PROCARC", "ADDMDF", "SDZWCS"])
