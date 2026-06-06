@@ -220,8 +220,208 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
 
         return adoutputs
 
+    def determineDistortion(self, adinputs=None, **params):
+        """
+        Maps the distortion on a detector by tracing lines perpendicular to the
+        dispersion direction. Then it fits a 2D Chebyshev polynomial to the
+        fitted coordinates in the dispersion direction. The distortion map does
+        not change the coordinates in the spatial direction.
+
+        The Chebyshev2D model is stored as part of a gWCS object in each
+        `nddata.wcs` attribute, which gets mapped to a FITS table extension
+        named `WCS` on disk.
+
+
+        Parameters
+        ----------
+        suffix :  str
+            Suffix to be added to output files.
+        spatial_order : int
+            Order of fit in spatial direction.
+        spectral_order : int
+            Order of fit in spectral direction.
+        id_only : bool
+            Trace using only those lines identified for wavelength calibration?
+        min_snr : float
+            Minimum signal-to-noise ratio for identifying lines (if
+            id_only=False).
+        nsum : int
+            Number of rows/columns to sum at each step.
+        step : int
+            Size of step in pixels when tracing.
+        max_shift : float
+            Maximum orthogonal shift (per pixel) for line-tracing (unbinned).
+        max_missed : int
+            Maximum number of steps to miss before a line is lost.
+        min_line_length: float
+            Minimum length of traced feature (as a fraction of the tracing dimension
+            length) to be considered as a useful line.
+        debug_reject_bad: bool
+            Reject lines with suspiciously high SNR (e.g. bad columns)?
+        debug: bool
+            plot arc line traces on image display window?
+        debug_min_points_per_trace: int
+            minimum number of points required for a trace to be considered
+            valid
+        debug_min_relative_peak_height: float
+            minimum height of a peak relative to the its initial value during
+            the tracing
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        spatial_order = params["spatial_order"]
+        spectral_order = params["spectral_order"]
+        id_only = params["id_only"]
+        fwidth = params["fwidth"]
+        min_snr = params["min_snr"]
+        nsum = params["nsum"]
+        step = params["step"]
+        max_shift = params["max_shift"]
+        max_missed = params["max_missed"]
+        min_line_length = params["min_line_length"]
+        debug_reject_bad = params["debug_reject_bad"]
+        debug = params["debug"]
+        min_points = params.get("debug_min_points_per_trace", 0)
+        min_relative_height = params.get("debug_min_relative_peak_height", 0.)
+
+        for ad in adinputs:
+            data_to_fit = []
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            for ext in ad:
+                dispaxis = 2 - ext.dispersion_axis()  # python sense
+                direction = "row" if dispaxis == 1 else "column"
+                peak_to_centroid_func = self._convert_peak_to_centroid(ext)
+                # The peak-to-centroid function always takes the dispersion
+                # coordinate as its first argument, but in_coords and
+                # ref_coords are always (x, y), so provide a single interface
+                # to handle both orientations
+                if dispaxis == 0:
+                    convert_to_centroid = lambda x, y: (x, peak_to_centroid_func(y, x))
+                else:
+                    convert_to_centroid = lambda x, y: (peak_to_centroid_func(x, y), y)
+
+                # Here's a lot of input-checking
+                spec_order = ext.hdr['SPECORDR']
+                extname = f'{ad.filename} Order {spec_order}'
+                start = ext.shape[1 - dispaxis] // 2
+
+                # This is identical to the code in determineWavelengthSolution()
+                data, mask, variance, extract_info = peak_finding.average_along_slit(
+                    ext, center=start, nsum=nsum)
+                fwidth = peak_finding.estimate_peak_width(data, boxcar_size=30)
+                log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
+
+                data, mask, variance, extract_info = peak_finding.average_along_slit(
+                    ext, center=start, nsum=nsum)
+                coeffs = [f"{key}: {value:.2f}" for key, value in
+                          zip(extract_info.param_names,
+                              extract_info.parameters)]
+                log.stdinfo(f"Extracting 1D spectrum for order {spec_order}")
+                log.stdinfo(f"  ±{nsum / 2:.1f} {direction}s "
+                            "around polynomial with " + ", ".join(coeffs))
+
+                # Find peaks; convert width FWHM to sigma
+                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
+                initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
+                    data, widths=widths, mask=mask & DQ.not_signal,
+                    variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
+
+                if len(initial_peaks):
+                    rwidth = 0.42466 * fwidth
+                    slit_length_frac = 50 / ext.shape[1 - dispaxis]
+
+                    traces = []
+                    for peak, peak_value in zip(initial_peaks, peak_values):
+                        # Need to start midway along the slit, which varies
+                        # along the dispersion axis. `extract_info` here is the
+                        # polynomial describing that midway line.
+                        start = extract_info(peak)
+                        traces.extend(tracing.trace_lines(
+                            ext, axis=1 - dispaxis,
+                            start=start, initial=[peak],
+                            rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
+                            nsum=nsum, max_missed=max_missed,
+                            max_shift=max_shift * ybin / xbin,
+                            viewer=self.viewer if debug else None,
+                            min_line_length=min_line_length * slit_length_frac,
+                            min_peak_value=min_relative_height * peak_value))
+
+                    # Remove traces with too few points
+                    traces = [trace for trace in traces if len(trace) >= min_points]
+                    log.stdinfo(f"Traced {len(traces)} lines from "
+                                f"{len(initial_peaks)} peaks")
+
+                    # Traces can extend beyond the edge of the illuminated slit
+                    # if adaptive binning has occurred and there's a feature in
+                    # the unilluminated region (for GNIRS notably the quadrant
+                    # boundary halfway up the detector)
+                    edge_models = [am.table_to_model(row) for row in ext.SLITEDGE]
+                    # Go through each trace, find the location of the slit
+                    # edge across from each point, and remove the point if
+                    # it's beyond the edge (with a small tolerance).
+                    for trace in traces:
+                        inco = trace.input_coordinates(reverse=False)
+                        limits = np.asarray([m([point[1] for point in inco])
+                                             for m in edge_models]).T
+                        for point, lim in zip(inco, limits):
+                            if (point[0] < min(lim) - 0.5 * step or
+                                    point[0] > max(lim) + 0.5 * step):
+                                trace.remove_point(point)
+
+                    # List of traced peak positions
+                    in_coords = np.array([coord for trace in traces for
+                                          coord in trace.input_coordinates()]).T
+                    if in_coords.size == 0:
+                        log.warning("Failed to trace any lines for "
+                                    f"{ad.filename}:{ext.id}")
+                        continue
+
+                else:
+                    log.warning("Failed to find any peaks in "
+                                f"{ad.filename}:{ext.id}")
+                    continue
+
+                # List of "reference" positions (i.e., the coordinate
+                # perpendicular to the line remains constant at its initial value
+                ref_coords = np.array([coord for trace in traces for
+                                       coord in trace.reference_coordinates()]).T
+
+                # Convert all coordinates from peaks to centroids
+                in_coords = np.asarray(convert_to_centroid(*in_coords))
+                ref_coords = np.asarray(convert_to_centroid(*ref_coords))
+
+                shift = in_coords[1-dispaxis] - ref_coords[1-dispaxis]
+                slitpos = ((in_coords[dispaxis] - edge_models[0](in_coords[1-dispaxis])) /
+                           (edge_models[1](in_coords[1-dispaxis]) - edge_models[0](in_coords[1-dispaxis])))
+                data_to_fit.extend(list(zip(*[ref_coords[1-dispaxis], [spec_order] * len(shift), slitpos-0.5, shift])))
+
+            x = np.asarray(data_to_fit).T
+            linefit = Table([y for y in x], names=["initial_mean_pixel", "order", "slit_center", "shift"],
+                            dtype=[np.float32, int, np.float32, np.float32])
+            ad.LINEFIT = linefit
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
     def determineSlitEdgesNew(self, adinputs=None, **params):
         return Spect([]).determineSlitEdges(adinputs, **params)
+
+    def determineWavelengthSolutionNew(self, adinputs=None, **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+
+        for ad in adinputs:
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
 
     def distortionCorrect(self, adinputs=None, **params):
         """
