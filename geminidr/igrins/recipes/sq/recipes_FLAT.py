@@ -131,7 +131,7 @@ def makeProcessedBPM(p):
     p.makeIgrinsBPM() # hotpix mask is created from the flat-off stream and the
                       # deadpix mask is from flat-on stream.
 
-    p.storeBPM()
+    #p.storeBPM()
     return
 
 
