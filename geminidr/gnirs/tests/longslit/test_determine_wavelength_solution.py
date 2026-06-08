@@ -246,6 +246,7 @@ def test_regression_determine_wavelength_solution(
         pixel_scale = ad[0].pixel_scale()  # arcsec / px
         p.viewer = geminidr.dormantViewer(p, None)
 
+        p.mode = 'qa'
         p.determineWavelengthSolution(**{**determine_wavelength_solution_parameters,
                                          **params})
 
