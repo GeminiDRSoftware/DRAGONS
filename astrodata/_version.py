@@ -8,7 +8,7 @@ and to be used in the documentation.
 API = 4
 FEATURE = 2
 BUG = 1
-TAG = ''
+TAG = 'goawavecal'
 
 
 def version(short=False, tag=TAG):

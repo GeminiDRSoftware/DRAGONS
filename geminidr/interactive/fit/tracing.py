@@ -75,6 +75,7 @@ def interactive_trace_apertures(ad, tab_labels, fit1d_params, ui_params: UIParam
         modal_button_label="Trace apertures",
         modal_message="Tracing apertures...",
         ui_params=ui_params,
+        plot_ratios=False,
         turbo_tabs=True
     )
 

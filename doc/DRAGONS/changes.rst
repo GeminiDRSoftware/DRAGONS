@@ -8,6 +8,49 @@
 Change Logs
 ***********
 
+4.2.2
+=====
+
+Bug fixes
+---------
+** geminidr.gmos **
+
+* Prevent ``addIllumMaskToDQ`` from crashing when the GMOS longslit
+  bridges cannot be located in the spatial profile, and instead output a
+  warning.
+
+Compatibility
+-------------
+A change to the behavior of Tabs in bokeh v3.9.0 caused the residual/ratio
+plot in the interactive tools to be corrupted. This release ensures
+compatibility with v3.9.0 as well as earlier versions.
+
+
+4.2.1-goawavecal
+================
+
+Improvements
+------------
+
+This internal (used in GOA) release includes the following improvements to
+the determineWavelengthSolution primitive:
+
+* Check the final fit a-posteriori to verify that it is within a factor of two
+  of the initial fit boundary constraints and rejects it if not
+* In Science-Quality mode, if no arc lines are found for all orders being
+  processed, an exception is raised and processing stops. In Quick-Look mode,
+  the previous behavior of adding a linear wavelength solution based on the
+  headers is unchanged
+* If only one arc line is found, a linear fit based on the headers is shifted
+  to match the one arc line, a warning is generated, and that fit is returned as
+  the wavelength solution
+
+This release also includes functionality in gempy to embed auxillary files
+(intended for eg PDF plot figures) in binary tables in astrodata instances, and
+hence FITS files. This is used for example to capture the PDFs of the arc line
+identifications into the reduced arc FITS files, and a corresponding script
+in gempy to extract them.
+
 4.2.1
 =====
 
