@@ -36,16 +36,17 @@ def test_astropy1d_table_recovery(model):
     assert all(m.meta[k1] is m2.meta[k2] for k1, k2 in zip(keys1, keys2))
 
 
-def test_make_inverse_chebyshev1d():
+def test_make_inverse_chebyshev1d(ntrials=100):
     """Rather simple test of predominantly linear models"""
     rng = np.random.default_rng(10)
-    for trial in range(100):
-        coeffs = {f"c{i + 2}": 0.1 * r for i, r in enumerate(rng.normal(size=(2,)))}
+    for trial in range(ntrials):
+        # Ensure that higher-order terms are small compared to the linear term
+        coeffs = {f"c{i + 2}": 10**(-i-1)*r for i, r in enumerate(rng.normal(size=(2,)))}
         inputs = np.arange(-1, 1.01, 0.01)
-        m = models.Chebyshev1D(degree=3, c0=100, c1=10, **coeffs)
+        m = models.Chebyshev1D(degree=3, c0=0, c1=10, **coeffs)
         outputs = m(inputs)
         minv = am.make_inverse_chebyshev1d(m, sampling=0.05, max_deviation=0.01)
-        np.testing.assert_allclose(minv(outputs), inputs, atol=0.02)
+        np.testing.assert_allclose(minv(outputs), inputs, atol=0.01)
 
 
 @pytest.mark.parametrize("xdeg,ydeg,replace", itertools.product(range(1, 4), range(1, 4), "xy"))

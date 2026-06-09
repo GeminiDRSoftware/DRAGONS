@@ -16,6 +16,14 @@
 #                                  splines) to be converted to/from Tables
 # make_inverse_chebyshev1d:        make a Chebyshev1D model that provides
 #                                  the inverse of the given model
+# create_distortion_model:         create a Chebyshev2D model and inverse to
+#                                  describe a distortion map
+# reduce_dimensionality:           reduce a Chebyshev2D->1D (or 3D->2D) by
+#                                  fixing one of the variables
+# get_named_submodel:              get a submodel by name from a compound model
+# replace_submodel_in_gwcs:        replace a submodel by name in a gWCS object,
+#                                  regardless of where it is in the model tree,
+#                                  and return the new gWCS object
 
 from collections import OrderedDict
 import math
@@ -610,10 +618,8 @@ def make_inverse_chebyshev1d(model, sampling=1.0, rms=None, max_deviation=None):
     """
     This creates a Chebyshev1D model that attempts to be the inverse of
     a specified model that maps from an input space (e.g., pixels) to an
-    output space (e.g., wavelength).
-
-    This only appears to work well enough for polynomials without a lot
-    of curvature.
+    output space (e.g., wavelength). The input model needs to be monotonic
+    and there may be a limit on its curvature.
 
     Parameters
     ----------
