@@ -248,7 +248,7 @@ class CrossDispersed(Spect, Preprocess):
                 world_refpos = None
             ad = self._cut_slits(ad, padding=2)
 
-            for ext in ad:
+            for ext, new_wave_model in zip(ad, xdtools.initial_wave_models(ad)):
                 dispaxis = 2 - ext.dispersion_axis()  # Python Sense
                 specaxis_middle = 0.5 * (ext.shape[dispaxis] - 1)
                 try:
@@ -270,15 +270,7 @@ class CrossDispersed(Spect, Preprocess):
                     spec_order = spec_order.pop()
                     ext.hdr['SPECORDR'] = spec_order
 
-                # Get the central wavelength and dispersion info for this order
-                # and Update the WCS by adding a "first guess" wavelength scale
-                # for this slit
-                order = xdtools.order_info(ad, spec_order)
-                new_wave_model = (models.Shift(-specaxis_middle) |
-                                  models.Scale(order['dispersion']) |
-                                  models.Shift(order['cenwave']))
                 new_wave_model.name = "WAVE"
-
                 for idx, step in enumerate(ext.wcs.pipeline):
                     try:
                         ext.wcs.pipeline[idx] = step.__class__(
@@ -289,7 +281,8 @@ class CrossDispersed(Spect, Preprocess):
                     else:
                         # Update the SKY model so all slit centers point to
                         # the same location
-                        coords = ext.wcs.invert(order['cenwave'], *world_refpos[1:])
+                        coords = ext.wcs.invert(new_wave_model(specaxis_middle),
+                                                *world_refpos[1:])
                         shift = coords[dispaxis] - slit_center
                         sky_model = am.get_named_submodel(step.transform, "SKY")
                         new_sky_model = models.Shift(shift) | sky_model

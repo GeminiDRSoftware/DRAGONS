@@ -1,31 +1,35 @@
 # Functions with a common API that can be imported and used by
 # primitives in the CrossDispersed class
 
+from astropy.modeling import models
+
 from gemini_instruments.gnirs import lookup
 
 
-def order_info(ad, spec_order):
+def initial_wave_models(ad):
     """
-    Returns the central wavelength and dispersion values (in nm) for a
-    given spectral order of a GNIRS XD spectrum.
+    Yields initial wavelength solution models for each extension in the input
 
     Parameters
     ----------
     ad: AstroData
         the AstroData object under consideration
-    spec_order: int
-        the spectral order of interest in the cross-dispersed data
 
-    Returns
-    -------
-    dict: {'cenwave': central wavelength in nm,
-           'dispersion': dispersion in nm}
+    Yields
+    ------
+        a Chebyshev1D model describing the wavelength solution for each
+        extension in the input AstroData
     """
     grating = ad._grating(pretty=True, stripID=True)
     camera = 'Short' if 'Short' in ad.camera() \
         else 'Long' if 'Long' in ad.camera() else None
     config = lookup.dispersion_by_config.get((grating, camera), {})
-    filter_name = lookup.xd_orders.get(spec_order)
-    dispersion = config.get(filter_name)
-    cenwave = ad._grating_order() * ad.central_wavelength(asNanometers=True) / spec_order
-    return {'cenwave': cenwave, 'dispersion': dispersion}
+
+    for ext in ad:
+        spec_order = ext.SLITEDGE["specorder"][0]
+        filter_name = lookup.xd_orders.get(spec_order)
+        dispersion = config.get(filter_name)
+        cenwave = ad._grating_order() * ad.central_wavelength(asNanometers=True) / spec_order
+        npix = ext.shape[1]
+        # Return the model in this form so that it has a ready-made inverse
+        yield models.Shift(-0.5*(npix-1)) | models.Scale(dispersion) | models.Shift(cenwave)
