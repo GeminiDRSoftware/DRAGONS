@@ -17,12 +17,14 @@
 # make_inverse_chebyshev1d:        make a Chebyshev1D model that provides
 #                                  the inverse of the given model
 
+from collections import OrderedDict
 import math
 import re
 
 import numpy as np
 from astropy.modeling import FittableModel, Parameter, fitting, models
 from astropy.modeling.core import Model, CompoundModel
+from astropy.modeling.utils import poly_map_domain
 from astropy.stats import sigma_clip
 from astropy.table import Table
 from astropy import units as u
@@ -604,11 +606,14 @@ def table_to_model(table):
     return model
 
 
-def make_inverse_chebyshev1d(model, sampling=1, rms=None, max_deviation=None):
+def make_inverse_chebyshev1d(model, sampling=1.0, rms=None, max_deviation=None):
     """
     This creates a Chebyshev1D model that attempts to be the inverse of
     a specified model that maps from an input space (e.g., pixels) to an
     output space (e.g., wavelength).
+
+    This only appears to work well enough for polynomials without a lot
+    of curvature.
 
     Parameters
     ----------
@@ -623,10 +628,11 @@ def make_inverse_chebyshev1d(model, sampling=1, rms=None, max_deviation=None):
     """
     order = model.degree
     max_order = order if (rms is None and max_deviation is None) else order + 2
-    incoords = np.arange(*model.domain, sampling)
+    domain = (-1, 1) if model.domain is None else model.domain
+    incoords = np.arange(*domain, sampling)
     outcoords = model(incoords)
     while order <= max_order:
-        m_init = models.Chebyshev1D(degree=order, domain=model(model.domain))
+        m_init = models.Chebyshev1D(degree=order, domain=model(domain))
         fit_it = fitting.LinearLSQFitter()
         m_inverse = fit_it(m_init, outcoords, incoords)
         trans_coords = m_inverse(outcoords)
@@ -714,6 +720,65 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
     # Store this information in case it's wanted
     model.meta.update({"fwd_rms": fwd_rms, "inv_rms": inv_rms})
     return model, m_final, m_inverse
+
+
+def reduce_dimensionality(model, x=None, y=None, z=None):
+    """
+    Evaluate a multidimensional Chebyshev model at specified a specific value
+    of one of the inputs, and return a lower-dimensional Chebyshev model
+    describing the result.
+
+    Parameters
+    ----------
+    model: Chebyshev[N]D model
+    x: float/None
+    y: float/None
+    z: float/None (for 3D input models only)
+
+    Returns
+    -------
+    astropy.modeling.models.Chebyshev[N-1]D
+        a new model describing the result of evaluating the input model at the
+        specified value of one of the inputs.
+    """
+    assert model.__class__.__name__.startswith("Chebyshev")
+    n_inputs = model.n_inputs - 1
+    mapped_inputs = OrderedDict(x=x, y=y)
+    if n_inputs == 2:
+        mapped_inputs["z"] = z
+
+    kwargs = {}
+    coeffs = {}
+    prefixes = [""] if n_inputs == 1 else ["x_", "y_"]
+    input_coord = None
+    i_inputs = 0
+    for i, (k, v) in enumerate(mapped_inputs.items()):
+        if v is None:
+            for kw in ['degree', 'domain', 'window']:
+                kwargs[f"{prefixes[i_inputs]}{kw}"] = getattr(model, f"{k}_{kw}")
+            i_inputs += 1
+        else:
+            # Create a Chebyshev1D model to evaluate the input coordinate at
+            # the specified value, and record which input coordinate we're using
+            input_coord = poly_map_domain(v, domain=getattr(model, f"{k}_domain"), window=getattr(model, f"{k}_window"))
+            i_input_coord = i
+            cheb1d_coeffs = np.zeros(getattr(model, f"{k}_degree") + 1)
+
+    if input_coord is None:
+        raise ValueError("Must specify a value for one of the inputs")
+
+    for pname in model.param_names:
+        orders = [int(x) for x in pname[1::2]]
+        new_pname = "c" + "_".join(str(o) for i, o in enumerate(orders)
+                                   if i != i_input_coord)
+        cheb1d_coeffs[orders[i_input_coord]] = getattr(model, pname).value
+        if new_pname not in coeffs:
+            coeffs[new_pname] = 0
+        coeffs[new_pname] += models.Chebyshev1D.clenshaw(input_coord, cheb1d_coeffs)
+        cheb1d_coeffs[:] = 0.
+
+    new_model = getattr(models, f"Chebyshev{n_inputs}D")(**kwargs, **coeffs)
+    return new_model
 
 
 def get_named_submodel(model, name):

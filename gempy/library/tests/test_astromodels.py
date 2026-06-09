@@ -2,6 +2,8 @@
 Tests for the astromodels module.
 """
 import pytest
+
+import itertools
 import numpy as np
 
 from astropy.modeling import models
@@ -32,6 +34,69 @@ def test_astropy1d_table_recovery(model):
     keys2 = list(m2.meta.keys())
     assert keys1 == keys2
     assert all(m.meta[k1] is m2.meta[k2] for k1, k2 in zip(keys1, keys2))
+
+
+def test_make_inverse_chebyshev1d():
+    """Rather simple test of predominantly linear models"""
+    rng = np.random.default_rng(10)
+    for trial in range(100):
+        coeffs = {f"c{i + 2}": 0.1 * r for i, r in enumerate(rng.normal(size=(2,)))}
+        inputs = np.arange(-1, 1.01, 0.01)
+        m = models.Chebyshev1D(degree=3, c0=100, c1=10, **coeffs)
+        outputs = m(inputs)
+        minv = am.make_inverse_chebyshev1d(m, sampling=0.05, max_deviation=0.01)
+        np.testing.assert_allclose(minv(outputs), inputs, atol=0.02)
+
+
+@pytest.mark.parametrize("xdeg,ydeg,replace", itertools.product(range(1, 4), range(1, 4), "xy"))
+def test_reduce_dimensionality_2d_to_1d(xdeg, ydeg, replace, ntrials=50):
+    rng = np.random.default_rng(10)
+    x, y = np.mgrid[:101, :101]
+    x=x.astype(float).flatten()
+    y=y.astype(float).flatten()
+    for trial in range(ntrials):
+        coeffs = {f"c{i % (xdeg+1)}_{i // (xdeg+1)}": r
+                  for i, r in enumerate(rng.normal(size=(xdeg+1)*(ydeg+1)))}
+        m = models.Chebyshev2D(x_degree=xdeg, y_degree=ydeg,
+                               x_domain=(0,100), y_domain=(0,100), **coeffs)
+        for val in 100 * rng.uniform(size=10):
+            m2 = am.reduce_dimensionality(m, **{replace: val})
+            if replace == "x":
+                outputs2 = m(np.full_like(y, val), y)
+                outputs3 = m2(y)
+            else:
+                outputs2 = m(x, np.full_like(x, val))
+                outputs3 = m2(x)
+            np.testing.assert_allclose(outputs2, outputs3)
+
+
+@pytest.mark.parametrize("xdeg,ydeg,zdeg,replace",
+                         itertools.product(range(1, 4), range(1, 4), range(1, 4), "xyz"))
+def test_reduce_dimensionality_3d_to_2d(xdeg, ydeg, zdeg, replace, ntrials=10):
+    from geminidr.igrins.cheb3d import Chebyshev3D
+    rng = np.random.default_rng(10)
+    x, y, z = np.mgrid[:101, :101, :101]
+    x=x.astype(float).flatten()
+    y=y.astype(float).flatten()
+    z=z.astype(float).flatten()
+    for trial in range(ntrials):
+        coeffs = {f"c{i % (xdeg+1)}_{(i // (xdeg+1)) % (ydeg+1)}_{i // ((xdeg+1)*(ydeg+1))}": r
+                  for i, r in enumerate(rng.normal(size=(xdeg+1)*(ydeg+1)*(zdeg+1)))}
+        m = Chebyshev3D(x_degree=xdeg, y_degree=ydeg, z_degree=zdeg,
+                        x_domain=(0,100), y_domain=(0,100), z_domain=(0,100),
+                        **coeffs)
+        for val in 100 * rng.uniform(size=10):
+            m2 = am.reduce_dimensionality(m, **{replace: val})
+            if replace == "x":
+                outputs2 = m(np.full_like(y, val), y, z)
+                outputs3 = m2(y, z)
+            elif replace == "y":
+                outputs2 = m(x, np.full_like(x, val), z)
+                outputs3 = m2(x, z)
+            else:
+                outputs2 = m(x, y, np.full_like(x, val))
+                outputs3 = m2(x, y)
+            np.testing.assert_allclose(outputs2, outputs3)
 
 
 @pytest.mark.parametrize("k", (1, 2, 3, 4, 5))
