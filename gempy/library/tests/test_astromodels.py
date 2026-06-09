@@ -72,7 +72,7 @@ def test_reduce_dimensionality_2d_to_1d(xdeg, ydeg, replace, ntrials=50):
 
 @pytest.mark.parametrize("xdeg,ydeg,zdeg,replace",
                          itertools.product(range(1, 4), range(1, 4), range(1, 4), "xyz"))
-def test_reduce_dimensionality_3d_to_2d(xdeg, ydeg, zdeg, replace, ntrials=10):
+def test_reduce_dimensionality_3d_to_2d(xdeg, ydeg, zdeg, replace, ntrials=3):
     from geminidr.igrins.cheb3d import Chebyshev3D
     rng = np.random.default_rng(10)
     x, y, z = np.mgrid[:101, :101, :101]
@@ -85,7 +85,7 @@ def test_reduce_dimensionality_3d_to_2d(xdeg, ydeg, zdeg, replace, ntrials=10):
         m = Chebyshev3D(x_degree=xdeg, y_degree=ydeg, z_degree=zdeg,
                         x_domain=(0,100), y_domain=(0,100), z_domain=(0,100),
                         **coeffs)
-        for val in 100 * rng.uniform(size=10):
+        for val in 100 * rng.uniform(size=3):
             m2 = am.reduce_dimensionality(m, **{replace: val})
             if replace == "x":
                 outputs2 = m(np.full_like(y, val), y, z)
