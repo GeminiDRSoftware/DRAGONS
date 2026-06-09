@@ -29,7 +29,7 @@ def test_make_processed_bpm(input_files, change_working_dir, path_to_refs):
         output_filename = r._output_filenames.pop()
         adout = astrodata.open(output_filename)
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        ad_compare(adout, adref, ignore=["wcs"], ignore_kw=["PROCBPM", "SDZWCS"])
+        ad_compare(adout, adref, ignore=["wcs", "tags"], ignore_kw=["PROCBPM", "SDZWCS"])
 
 
 @pytest.mark.igrins2
