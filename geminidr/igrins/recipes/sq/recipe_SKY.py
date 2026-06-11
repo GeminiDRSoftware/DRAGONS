@@ -67,8 +67,8 @@ def newMakeProcessedArc(p):
     p.ADUToElectrons()
     p.stackFrames()  # ignore setReferenceFrame, as user can decide which frame(s) to use
     p.applySlitModel()  # cuts as well
-    p.determineWavelengthSolution()
-    p.determineDistortion()
+    #p.determineWavelengthSolution()
+    #p.determineDistortion()
 
 
 _default = makeProcessedArc

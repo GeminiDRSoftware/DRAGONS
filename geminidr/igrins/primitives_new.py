@@ -1,16 +1,24 @@
+import os
+from importlib import import_module
+
 import numpy as np
 from astropy.io import fits
-from astropy.modeling import models
+from astropy.modeling import fitting, models
+from astropy.stats import sigma_clip
 from astropy.table import Table
+from astropy import units as u
 
 from gwcs.wcs import WCS as gWCS
+from gwcs import coordinate_frames as cf
 
 import astrodata
+from astrodata import wcs as adwcs
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
-from gempy.library import peak_finding, tracing, transform
+from gempy.library import peak_finding, tracing, transform, wavecal
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from gempy.library.astromodels import reduce_dimensionality
 from .primitives_igrins import IGRINS
 from ..core.primitives_crossdispersed import CrossDispersed, Spect
 
@@ -106,7 +114,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         adinputs = super().applySlitModel(adinputs, **params)
-        self.writeOutputs(adinputs, suffix="_intermediateCut", strip=True)
+        #self.writeOutputs(adinputs, suffix="_intermediateCut", strip=True)
         x = np.arange(2048)
         for ad in adinputs:
             for ext in ad:
@@ -409,13 +417,208 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
     def determineSlitEdgesNew(self, adinputs=None, **params):
         return Spect([]).determineSlitEdges(adinputs, **params)
 
-    def determineWavelengthSolutionNew(self, adinputs=None, **params):
+    def determineWavelengthSolution(self, adinputs=None, **params):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
+        nsum = params["nsum"]
+        min_snr = params["min_snr"]
+        in_vacuo = params["in_vacuo"]
+        arc_file = params["linelist"]
+        xdeg = params["dispersion_order"]
+        ydeg = params["xdorder_order"]
         sfx = params["suffix"]
+        debug_reject_bad = False
 
+        # We do some hacking here so that we can use the Linelist class to
+        # handle air-to-vacuum conversions. The "weights" column is actually
+        # the Gaussian width
+        if arc_file is not None:
+            try:
+                linelists = [wavecal.LineList(f) for f in arc_file.split(",")]
+            except OSError:
+                log.warning(f"Cannot read file {arc_file} - "
+                            "using default linelist")
+                arc_file = None
+            else:
+                log.stdinfo(f"Read arc line list(s) {arc_file}")
+        if arc_file is None:
+            linelists = self._get_linelist()
+
+        # Construct arrays of line wavelengths in the units we want, and their
+        # widths in pixels, and we don't need to access the LineList again
+        ref_waves = np.hstack([l.wavelengths(in_vacuo=in_vacuo, units=u.nm)
+                                     for l in linelists])
+        idx = ref_waves.argsort()
+        ref_waves = ref_waves[idx]
+        ref_sigpx = np.hstack([[1.5] * len(l) if l.weights is None else l.weights
+                                       for l in linelists])[idx]
+
+        def _create_fitting_groups(pixloc, sigpx):
+            sigma = sigpx[0]
+            groups = [[0]]
+            for i, (x, s) in enumerate(zip(pixloc[1:], sigpx[1:]), start=1):
+                sigma = max(sigma, s)
+                if x - pixloc[groups[-1][-1]] < 3 * sigma:
+                    groups[-1].append(i)
+                else:
+                    groups.append([i])
+            return groups
+
+        fit_it = fitting.TRFLSQFitter()
+        npix = 2048
+        pixels = np.arange(npix)
+        xcorr = np.zeros((2*npix-1,))
         for ad in adinputs:
+            # First pass to extract spectra and get global shift
+            spectra = []
+            for ext in ad:
+                data, mask, variance, extract_info = peak_finding.average_along_slit(
+                    ext, center=npix//2, nsum=nsum)
+                spectra.append(ext.nddata.__class__(data=data, mask=mask, variance=variance))
+
+                # We can't just put all the wavelengths into wave_model.inverse()
+                # because that may not be monotonic when extrapolated
+                wave_model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+                in_order = np.logical_and(ref_waves >= wave_model(0),
+                                          ref_waves <= wave_model(npix-1))
+                if in_order.sum() == 0:  # nothing to see here
+                    continue
+
+                pixloc = wave_model.inverse(ref_waves[in_order])
+                # Since we haven't matched the lines yet, we don't know their
+                # widths, so just assume stddev=1.5 pixels for all
+                expected = np.zeros((2048,)) + np.sum([np.exp(-(cntr - pixels) ** 2 / 4.5)
+                                   for cntr in pixloc], axis=0)
+                xcorr += np.correlate(expected, data, mode='full')
+
+            # -ve means line peaks are "ahead" of expected
+            global_shift = xcorr.argmax() - (npix-1)
+            log.stdinfo(f"{ad.filename}: global shift of {global_shift} "
+                        "pixels from cross-correlation")
+
+            fitted_lines = []
+            loop_pass = 0
+            for ext, spec, spec_order in zip(ad, spectra, ad.hdr['SPECORDR']):
+                loop_pass += 1
+                wave_model = (models.Shift(global_shift) |
+                              am.get_named_submodel(ext.wcs.forward_transform, "WAVE"))
+                in_order = np.logical_and(ref_waves >= wave_model(0),
+                                          ref_waves <= wave_model(npix-1))
+                if in_order.sum() == 0:
+                    continue
+
+                # Get the lines that appear in this order, and group them if
+                # they're close together so that we can fit them simultaneously
+                order_waves = ref_waves[in_order]
+                pixloc = wave_model.inverse(order_waves)
+                groups = _create_fitting_groups(pixloc, ref_sigpx[in_order])
+                log.stdinfo(f"Order {spec_order}: Fitting {len(order_waves)} "
+                            f"lines in {len(groups)} groups")
+
+                for group in groups:
+                    x1 = max(int(pixloc[group[0]] - 5*ref_sigpx[group[0]] - 5), 0)
+                    x2 = min(int(pixloc[group[-1]] + 5*ref_sigpx[group[-1]] + 6), npix-1)
+                    x = np.arange(x1, x2)
+                    y = np.ma.masked_array(spec.data[x1:x2], mask=spec.mask[x1:x2])
+                    m_init = models.Polynomial1D(degree=1)  # continuum
+                    for i, line in enumerate(group):
+                        g = models.Gaussian1D(amplitude=spec.data[int(pixloc[line])],
+                                              mean=pixloc[line], stddev=ref_sigpx[line])
+                        if i > 1:  # fix the separations of the lines
+                            g.mean.tied = lambda m: m.mean_1 + (pixloc[line] - pixloc[group[0]])
+                        else:
+                            g.mean.bounds=(pixloc[line] - 5, pixloc[line] + 5)
+                        g.stddev.bounds=(0.5 * ref_sigpx[line], 2 * ref_sigpx[line])
+                        m_init += g
+                    m_final = fit_it(m_init, x, y, maxiter=1000)
+                    linestr = "+".join(f"{order_waves[line]:.2f}" for line in group)
+                    if not fit_it.fit_info.success:
+                        print(fit_it.fit_info.message)
+                        continue
+
+                    # Check that line passed min_snr requirement
+                    lines_only = m_final(x) - m_final[0](x)
+                    snr = lines_only.max() / np.sqrt(spec.variance[x[lines_only.argmax()]])
+                    if snr < min_snr:
+                        log.stdinfo(f"Rejecting line(s) at {linestr}nm in "
+                                  f"order {spec_order} with SNR={snr:.1f}")
+                        continue
+
+                    # Store order, pixel location, and wavelength. For a group
+                    # with multiple lines, we store the mean pixel location and
+                    # mean wavelength, since we've only fit a single parameter.
+                    pixel = np.mean([getattr(m_final, f"mean_{i+1}").value
+                                       for i in range(len(group))])
+                    wavelength = np.mean([order_waves[line] for line in group])
+                    log.stdinfo(f"Adding ({spec_order}, {pixel:.2f}, {linestr})"
+                              " to fitted line list")
+                    fitted_lines.append((spec_order, pixel, wavelength))
+
+            # Now perform the fit
+            orders, pixels, waves = [np.asarray(x) for x in zip(*fitted_lines)]
+            fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                       outlier_func=sigma_clip)
+            m_init = models.Chebyshev2D(x_degree=xdeg, y_degree=ydeg,
+                                        x_domain=(0, 2047),
+                                        y_domain=(min(orders), max(orders)))
+            m_final, mask = fit_it(m_init, pixels, orders, waves*orders)
+
+            # This code is comparable to update_wcs_with_solution()
+            tbl_orders = orders[~mask].astype(int)
+            tbl_pixels = pixels[~mask].astype(np.float32)
+            tbl_waves = waves[~mask].astype(np.float32)
+            rms = np.std(m_final(tbl_pixels, tbl_orders) / tbl_orders - tbl_waves)
+            tbl_pixels += 1  # use 1-based for output
+
+            temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=None)
+            temptable.add_columns([[2], [xdeg], [ydeg], [0], [2047], [min(orders)], [max(orders)], [rms]],
+                                  names=("ndim", "xdegree", "ydegree", "xdomain_start",
+                                         "xdomain_end", "ydomain_start", "ydomain_end", "rms"))
+
+            pad_rows = tbl_orders.size - len(temptable.colnames)
+            if pad_rows < 0:
+                tbl_orders = list(tbl_orders) + [0] * (-pad_rows)
+                tbl_pixels = list(tbl_pixels) + [0] * (-pad_rows)
+                tbl_waves = list(tbl_waves) + [0] * (-pad_rows)
+                pad_rows = 0
+
+            fit_table = Table([temptable.colnames + [''] * pad_rows,
+                               list(temptable[0].values()) + [0] * pad_rows,
+                               tbl_orders, tbl_pixels, tbl_waves],
+                              names=("name", "coefficients", "xdorder", "peaks", "wavelengths"),
+                              units=(None, None, None, u.pix, u.nm),
+                              meta=temptable.meta)
+            medium = "vacuo" if in_vacuo else "air"
+            fit_table.meta['comments'] = [
+                'coefficients are based on 0-indexing',
+                'peaks column is 1-indexed',
+                f'calibrated with wavelengths in {medium}']
+            ad.WAVECAL = fit_table
+
+            # Create the wavelength models
+            for ext, spec_order in zip(ad, ad.hdr['SPECORDR']):
+                spectral_frame = ext.wcs.output_frame.frames[0]
+                axis_name = "WAVE" if in_vacuo else "AWAV"
+                new_spectral_frame = cf.SpectralFrame(
+                    axes_order=spectral_frame.axes_order,
+                    unit=spectral_frame.unit, axes_names=(axis_name,),
+                    name=adwcs.frame_mapping[axis_name].description)
+                spatial_frame = cf.CoordinateFrame(naxes=1, axes_type="SPATIAL",
+                                                   axes_order=(1,), unit=[u.arcsec],
+                                                   name="SPATIAL")
+                output_frame = cf.CompositeFrame([new_spectral_frame, spatial_frame], name="world")
+
+                cheb1d = reduce_dimensionality(m_final, y=spec_order)
+                for p, v in zip(cheb1d.param_names, cheb1d.parameters):
+                    if p.startswith("c"):
+                        setattr(cheb1d, p, v / spec_order)
+                cheb1d.inverse = am.make_inverse_chebyshev1d(cheb1d, max_deviation=0.01)
+                cheb1d.name = "WAVE"
+                transform = cheb1d & models.Scale(5.0)  # slit is 5 arcsec
+                ext.wcs = gWCS(ext.wcs.pipeline[:-2] +
+                               [(ext.wcs.pipeline[-2].frame, transform),
+                                (output_frame, None)])
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -742,3 +945,25 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         offset = ad1.phu["QOFFSET"] - ad2.phu["QOFFSET"]
         print(ad1.filename, ad2.filename, offset)
         return abs(offset) <= 1.0
+
+    def _get_linelist(self, wave_model=None, *args, **kwargs):
+        """
+        Returns a list of wavelengths of the arc reference lines used by the
+        primitive `determineWavelengthSolution()`, if the user parameter
+        `linelist=None` (i.e., the default list is requested).
+
+        Parameters
+        ----------
+        wave_model : astroy.modeling.models.Chebyshev1D instance
+            model (with domain) defining the wavelength (range) required
+
+        Returns
+        -------
+        gempy.library.wavecal.LineList object
+            arc line wavelengths (and optional weights)
+        """
+        lookup_dir = os.path.dirname(import_module('.__init__',
+                                                   self.inst_lookups).__file__)
+        filename = os.path.join(lookup_dir, 'linelist.dat')
+        return [wavecal.LineList(os.path.join(lookup_dir, filename))
+                for filename in ('OH.dat', 'HITRAN.dat')]

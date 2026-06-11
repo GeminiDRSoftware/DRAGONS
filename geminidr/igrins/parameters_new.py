@@ -33,6 +33,18 @@ class determineSlitEdgesNewConfig(parameters_spect.determineSlitEdgesConfig):
         self.debug_max_shift = 0.2
 
 
+class determineWavelengthSolutionConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_wavelengthSolutionDetermined", optional=True)
+    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
+    dispersion_order = config.RangeField("Order of fit in dispersion direction",
+                                          int, 4, min=1, max=10, inclusiveMax=True)
+    xdorder_order = config.RangeField("Order of fit as a function of echelle order",
+                                      int, 3, min=2, max=10, inclusiveMax=True)
+    linelist = config.Field("Filename of arc line list", str, None, optional=True)
+    in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, True)
+
+
 class distortionCorrectConfig(parameters_spect.distortionCorrectConfig):
     use_dragons = config.Field("Use DRAGONS code for interpolation?", bool, False)
 
