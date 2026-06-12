@@ -17,6 +17,7 @@ class createDataCubeConfig(config.Config):
 
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
+    # This needs to allow a larger shift than the standard maximum
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.1, min=0.001, max=0.2, inclusiveMax=True)
 
@@ -43,6 +44,7 @@ class determineWavelengthSolutionConfig(config.Config):
                                       int, 3, min=2, max=10, inclusiveMax=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, True)
+    debug_plot = config.Field("Make debug plot?", bool, False)
 
 
 class distortionCorrectConfig(parameters_spect.distortionCorrectConfig):
