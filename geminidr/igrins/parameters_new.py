@@ -17,6 +17,12 @@ class createDataCubeConfig(config.Config):
 
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
+    dispersion_order = config.RangeField("Order of fit in dispersion direction", int,
+                                         3, min=2, max=5, inclusiveMax=True)
+    xdorder_order = config.RangeField("Order of fit as a function of echelle order",
+                                      int, 2, min=2, max=5, inclusiveMax=True)
+    spatial_order = config.RangeField("Order of fit as a function of slit position",
+                                      int, 1, min=1, max=2, inclusiveMax=True)
     # This needs to allow a larger shift than the standard maximum
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.1, min=0.001, max=0.2, inclusiveMax=True)
@@ -39,7 +45,7 @@ class determineWavelengthSolutionConfig(config.Config):
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
     dispersion_order = config.RangeField("Order of fit in dispersion direction",
-                                          int, 4, min=1, max=10, inclusiveMax=True)
+                                          int, 4, min=2, max=10, inclusiveMax=True)
     xdorder_order = config.RangeField("Order of fit as a function of echelle order",
                                       int, 3, min=2, max=10, inclusiveMax=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)

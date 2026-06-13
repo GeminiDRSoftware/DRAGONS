@@ -23,8 +23,10 @@ from gempy.library import peak_finding, tracing, transform, wavecal
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.library.astromodels import reduce_dimensionality
+
 from .primitives_igrins import IGRINS
 from ..core.primitives_crossdispersed import CrossDispersed, Spect
+from .cheb3d import Chebyshev3D, LSQFitterWithOutlierRemoval3D
 
 from recipe_system.utils.decorators import parameter_override
 from . import parameters_new
@@ -283,8 +285,9 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        spatial_order = params["spatial_order"]
-        spectral_order = params["spectral_order"]
+        xdeg = params["dispersion_order"]
+        ydeg = params["spatial_order"]
+        zdeg = params["xdorder_order"]
         id_only = params["id_only"]
         fwidth = params["fwidth"]
         min_snr = params["min_snr"]
@@ -301,7 +304,8 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         for ad in adinputs:
             data_to_fit = []
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-            for ext in ad:
+            nlines = 0
+            for ext, spec_order in zip(ad, spec_orders := ad.hdr['SPECORDR']):
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
                 peak_to_centroid_func = self._convert_peak_to_centroid(ext)
@@ -315,8 +319,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                     convert_to_centroid = lambda x, y: (peak_to_centroid_func(x, y), y)
 
                 # Here's a lot of input-checking
-                spec_order = ext.hdr['SPECORDR']
-                extname = f'{ad.filename} Order {spec_order}'
+                extname = f'{ad.filename} order {spec_order}'
                 start = ext.shape[1 - dispaxis] // 2
 
                 # This is identical to the code in determineWavelengthSolution()
@@ -355,6 +358,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                             start=start, initial=[peak],
                             rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
                             nsum=nsum, max_missed=max_missed,
+                            initial_tolerance=None,
                             max_shift=max_shift * ybin / xbin,
                             viewer=self.viewer if debug else None,
                             min_line_length=min_line_length * slit_length_frac,
@@ -386,13 +390,11 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                     in_coords = np.array([coord for trace in traces for
                                           coord in trace.input_coordinates()]).T
                     if in_coords.size == 0:
-                        log.warning("Failed to trace any lines for "
-                                    f"{ad.filename}:{ext.id}")
+                        # Don't need a warning that there are no traces
                         continue
 
                 else:
-                    log.warning("Failed to find any peaks in "
-                                f"{ad.filename}:{ext.id}")
+                    # Don't need a warning that there were no peaks
                     continue
 
                 # List of "reference" positions (i.e., the coordinate
@@ -406,13 +408,72 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
 
                 shift = in_coords[1-dispaxis] - ref_coords[1-dispaxis]
                 slitpos = ((in_coords[dispaxis] - edge_models[0](in_coords[1-dispaxis])) /
-                           (edge_models[1](in_coords[1-dispaxis]) - edge_models[0](in_coords[1-dispaxis])))
-                data_to_fit.extend(list(zip(*[ref_coords[1-dispaxis], [spec_order] * len(shift), slitpos-0.5, shift])))
+                           (edge_models[1](in_coords[1-dispaxis]) -
+                            edge_models[0](in_coords[1-dispaxis])))
+                data_to_fit.extend(list(zip(*[ref_coords[1-dispaxis], slitpos-0.5,
+                                              [spec_order] * len(shift), shift])))
+                nlines += len(traces)
 
-            x = np.asarray(data_to_fit).T
-            linefit = Table([y for y in x], names=["initial_mean_pixel", "order", "slit_center", "shift"],
-                            dtype=[np.float32, int, np.float32, np.float32])
+            xref, slitpos, order, shift = np.asarray(data_to_fit).T
+            linefit = Table([xref, slitpos, order, shift],
+                            names=["initial_mean_pixel", "slit_center",
+                                   "order", "shift"],
+                            dtype=[np.float32, np.float32, int, np.float32])
             ad.LINEFIT = linefit
+            log.stdinfo(f"Fitting {nlines} lines across all orders")
+
+            # Unlike the regular determineDistortion(), we know we'll have a
+            # sufficient number of lines so can fit directly to the pixel
+            # coordinates, rather than the shift. We fix c0_0_0 and c1_0_0
+            # to be half the domain size, which ensures that the model
+            # produces no shift at the slit center
+            fit_it = LSQFitterWithOutlierRemoval3D(outlier_func=sigma_clip,
+                                                   niter=10)
+            m_init = Chebyshev3D(x_degree=xdeg, y_degree=ydeg, z_degree=zdeg,
+                                 c0_0_0=1023.5, c1_0_0=1023.5,
+                                 x_domain=(0, 2047), y_domain=(-0.5, 0.5),
+                                 z_domain=(min(spec_orders), max(spec_orders)))
+            # Set all coefficients that do not have a slitpos term to be zero
+            # as we want the model to produce no shift at the slit centre
+            for p in m_init.param_names:
+                if p[3] == "0":
+                    getattr(m_init, p).fixed = True
+
+            # Compute 3D polynomial from x->x' and its inverse
+            m_final, fwd_mask = fit_it(m_init, xref, slitpos, order, xref+shift)
+            fwd_rms = np.std((m_final(xref, slitpos, order) - (xref+shift))[~fwd_mask])
+            niter = fit_it.fit_info['niter']
+            log.stdinfo(f"Forward rms={fwd_rms:.3f} pixels with "
+                        f"{fwd_mask.sum()}/{xref.size} outliers in {niter} iterations")
+            m_inverse, inv_mask = fit_it(m_init, xref+shift, slitpos, order, xref)
+            inv_rms = np.std((m_final(xref+shift, slitpos, order) - xref)[~inv_mask])
+            niter = fit_it.fit_info['niter']
+            log.stdinfo(f"Inverse rms={inv_rms:.3f} pixels with "
+                        f"{inv_mask.sum()}/{xref.size} outliers in {niter} iterations")
+
+            # Now add a 2D model to each extension's gWCS
+            for ext, order in zip(ad, spec_orders):
+                model = models.Mapping((0, 1, 1)) | (
+                        reduce_dimensionality(m_final, z=order) & models.Identity(1))
+                model.inverse = models.Mapping((0, 1, 1)) | (
+                        reduce_dimensionality(m_inverse, z=order) & models.Identity(1))
+                try:
+                    frame_index = ext.wcs.available_frames.index("distortion_corrected")
+                except ValueError:
+                    pass
+                else:
+                    log.warning("Deleting existing distortion model in "
+                                f"{ad.filename} order {spec_order}")
+                    ext.wcs = ext.wcs.__class__(
+                        ext.wcs.pipeline[:frame_index - 1] +
+                        [(ext.wcs.pipeline[frame_index - 1].frame,
+                          ext.wcs.pipeline[frame_index].transform)] +
+                        ext.wcs.pipeline[frame_index + 1:]
+                    )
+                distcorr_frame = cf.Frame2D(name="distortion_corrected",
+                                            axes_names=["x", "slitpos"])
+                ext.wcs.insert_frame('rectified', model, distcorr_frame)
+
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
 

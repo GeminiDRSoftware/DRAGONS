@@ -188,13 +188,24 @@ class Chebyshev3D(polynomial.PolynomialBase):
         return np.rollaxis(d, 0, d.ndim)
 
 
-class Fitter3D(fitting.LinearLSQFitter):
+class LSQFitterWithOutlierRemoval3D(fitting.LinearLSQFitter):
     supported_constraints = ["fixed"]
     supports_masked_input = True
 
-    def __init__(self, calc_uncertainties=False):
-        assert not calc_uncertainties  # for now
-        super().__init__(calc_uncertainties=calc_uncertainties)
+    def __init__(self, outlier_func=None, niter=3, **outlier_kwargs):
+        super().__init__(calc_uncertainties=False)
+        self.niter = niter
+        self.outlier_func = outlier_func
+        self.outlier_kwargs = outlier_kwargs
+        self.fit_info = {"niter": None}
+
+    @staticmethod
+    def _deriv_with_constraints(model, param_indices, x, y, z):
+        d = np.array(model.fit_deriv(x, y, z, *model.parameters))
+        if model.col_fit_deriv:
+            return d[param_indices]
+        else:
+            return d[..., param_indices]
 
     def _map_domain_window(self, model, x, y, z):
         """
@@ -298,13 +309,24 @@ class Fitter3D(fitting.LinearLSQFitter):
                 "routine. Maybe check that weights are not null."
             )
 
-        a = None  # need for calculating covariance
-
-        good = ~rhs.mask if masked else slice(None)
-        a = lhs[good]
+        good = ~rhs.mask if masked else np.ones_like(rhs, dtype=bool)
+        niter = 0
         lacoef, resids, rank, sval = np.linalg.lstsq(lhs[good], rhs[good],
                                                      rcond)
+        if self.outlier_func is not None:
+            for _ in range(1, self.niter+1):
+                model_vals = lhs[good] @ lacoef
+                filtered_residuals = self.outlier_func(rhs[good] - model_vals,
+                                                       **self.outlier_kwargs)
+                outlying_points = filtered_residuals.mask
+                if outlying_points.sum() == 0:
+                    break
+                good[good] &= ~outlying_points
+                lacoef, resids, rank, sval = np.linalg.lstsq(
+                    lhs[good], rhs[good], rcond)
+                niter += 1
 
+        self.fit_info["niter"] = niter
         self.fit_info["residuals"] = resids
         self.fit_info["rank"] = rank
         self.fit_info["singular_values"] = sval
@@ -315,4 +337,4 @@ class Fitter3D(fitting.LinearLSQFitter):
         fitting.fitter_to_model_params(model_copy, lacoef.ravel())
 
         model_copy.sync_constraints = True
-        return model_copy
+        return model_copy, ~good
