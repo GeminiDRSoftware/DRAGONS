@@ -1527,9 +1527,8 @@ class Spect(Resample):
                                      "around polynomial with " + ", ".join(coeffs))
 
                     # Find peaks; convert width FWHM to sigma
-                    widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                     initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
-                        data, widths=widths, mask=mask & DQ.not_signal,
+                        data, fwidth=fwidth, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
 
                 # The coordinates are always returned as (x-coords, y-coords)
@@ -2009,10 +2008,9 @@ class Spect(Resample):
                     variance=ext_variance[start_slice])
                 # Find peaks; convert width FWHM to sigma. Copied from
                 # determineDistortion
-                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                 # These are returned sorted by pixel coordinate
                 initial_peaks, _, _ = peak_finding.find_wavelet_peaks(
-                    data, widths=widths, mask=mask & DQ.not_signal,
+                    data, fwidth=fwidth, mask=mask & DQ.not_signal,
                     variance=variance, min_snr=min_snr,
                     reject_bad=False)
 

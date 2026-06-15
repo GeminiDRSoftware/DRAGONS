@@ -579,7 +579,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         Step size along axis in pixels.
     initial_tolerance : float/None
         Maximum perpendicular shift (in pixels) between provided location and
-        first calculation of peak.
+        first calculation of peak. If None, then the start and initial values
+        will be used as the reference coordinates for each line.
     max_shift: float
         Maximum perpendicular shift (in pixels) from pixel to pixel.
     max_missed: int
