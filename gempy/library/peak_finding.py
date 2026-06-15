@@ -649,7 +649,7 @@ def find_wavelet_peaks(data, fwidth=None, widths=None, mask=None, variance=None,
     2D array: peak pixels, peak values, and SNRs (sorted by pixel coordinate)
     """
     if widths is None:
-        widths = 0.42466 * np.arange(0.75, 1.26, 0.05) * fwidth
+        widths = ricker_widths(fwidth)
 
     # Non-linear peaks are OK but saturated ones are not
     mask = ((mask & (DQ.max ^ DQ.saturated)).astype(bool) if mask is not None
@@ -1155,3 +1155,21 @@ def _construct_slit_profile(ext, min_sky_region=50, percentile=80,
         else:
             profile = np.nanmean(masked_data, axis=1)
     return profile, prof_mask
+
+
+def ricker_widths(fwidth):
+    """
+    Get a set of widths to use for the Ricker wavelet based on an expected
+    FWHM. The exact values are somewhat arbitrary, but they are chosen to
+    sample the range of widths around the expected FWHM well.
+
+    Parameters
+    ----------
+    fwidth: float
+        expected FWHM of line-like features to look for
+
+    Returns
+    -------
+    list of floats: widths to use for Ricker wavelet transform
+    """
+    return 0.42466 * np.arange(0.75, 1.26, 0.05) * fwidth
