@@ -605,9 +605,9 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
 
 
 @unpack_nddata
-def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, min_sep=3,
-                       min_frac=0.20, reject_bad=True, pinpoint_index=-1,
-                       halfwidth=None):
+def find_wavelet_peaks(data, fwidth=None, widths=None, mask=None, variance=None,
+                       min_snr=1, min_sep=3, min_frac=0.20, reject_bad=True,
+                       pinpoint_index=-1, halfwidth=None):
     """
     Find peaks in a 1D array using a wavelet method. This uses scipy.signal
     routines, but requires some duplication of that code since the
@@ -619,8 +619,11 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     ----------
     data : 1D array
         The pixel values of the 1D spectrum
+    fwidth : float/None
+        Expected FWHM of line-like features to look for
     widths : array-like
-        Sigma values of line-like features to look for
+        Sigma values of line-like features to look for. Not used if fwidth
+        is provided.
     mask : 1D array (optional)
         Mask (peaks with bad pixels are rejected) - optional
     variance : 1D array (optional)
@@ -645,6 +648,9 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     -------
     2D array: peak pixels, peak values, and SNRs (sorted by pixel coordinate)
     """
+    if widths is None:
+        widths = 0.42466 * np.arange(0.75, 1.26, 0.05) * fwidth
+
     # Non-linear peaks are OK but saturated ones are not
     mask = ((mask & (DQ.max ^ DQ.saturated)).astype(bool) if mask is not None
             else np.zeros_like(data, dtype=bool))
