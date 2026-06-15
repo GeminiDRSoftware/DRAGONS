@@ -620,8 +620,12 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
     # Make a slice around a given row center. No bounds checking
     # as that needs to be done by the calling code.
-    def _slice(center):
-        return slice(center - nsum // 2, center + nsum - nsum // 2)
+    def mkslice(center):
+        start = int(center+0.5) - nsum // 2
+        return slice(start, start + nsum)
+
+    def slice_center(_slice):
+        return 0.5 * (_slice.start + _slice.stop)  # THIS IS WRONG!
 
     # Create profile for centering. This could just be the data (maybe
     # Ricker-filtered) but we use the SNR
@@ -642,9 +646,9 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     if initial_tolerance is None:
         initial_peaks = initial
     else:
-        data, mask, var = func(ext_data[_slice(start)],
+        data, mask, var = func(ext_data[mkslice(start)],
                                mask=None if ext_mask is None
-                               else ext_mask[_slice(start)], variance=None)
+                               else ext_mask[mkslice(start)], variance=None)
         data = _profile_for_centering(data, var, rwidth)
 
         peaks = pinpoint_peaks(data, peaks=initial, mask=mask,
@@ -666,27 +670,26 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     var = np.empty_like(data)
 
     # We're going to make lists of valid step centers to help later
-    step_centers_up = list(np.arange(start, ext_data.shape[0] - nsum / 2,
-                                     step, dtype=int))
-    step_centers_down = list(np.arange(start, nsum / 2, -step, dtype=int))
+    slices_up = [mkslice(s) for s in np.arange(start, ext_data.shape[0] - nsum / 2, step, dtype=int)]
+    slices_down = [mkslice(s) for s in np.arange(start, nsum / 2, -step, dtype=int)]
 
     # Eliminate blocks that are completely masked (e.g., chip gaps, bridges, amp5)
     # Also need to eliminate regions with only one valid column because NDStacker
     # can't compute the pixel-to-pixel variance and hence the S/N can't be calculated
     if ext_mask is not None:
-        for i, s in reversed(list(enumerate(step_centers_up))):
-            if np.bincount((ext_mask[_slice(s)] & DQ.not_signal).min(axis=1))[0] <= 1:
-                step_centers_up[i] = None
-        for i, s in reversed(list(enumerate(step_centers_down))):
-            if np.bincount((ext_mask[_slice(s)] & DQ.not_signal).min(axis=1))[0] <= 1:
-                step_centers_down[i] = None
+        for i, s in reversed(list(enumerate(slices_up))):
+            if np.bincount((ext_mask[s] & DQ.not_signal).min(axis=1))[0] <= 1:
+                slices_up[i] = None
+        for i, s in reversed(list(enumerate(slices_down))):
+            if np.bincount((ext_mask[s] & DQ.not_signal).min(axis=1))[0] <= 1:
+                slices_down[i] = None
 
     # If tracing vertically-dispersed data the coordinates in the Trace will
     # be in (y, x) order and since we need (x, y) elsewhere we reverse them here.
     traces = [Trace((start, peak),
                     reverse_returned_coords=(axis == 0))
               for peak in initial_peaks]
-    for direction, step_centers in zip((1, -1), (step_centers_up, step_centers_down)):
+    for direction, slices in zip((1, -1), (slices_up, slices_down)):
         for trace in traces:
             trace.last_point = trace.starting_point
             trace.active = True
@@ -701,11 +704,11 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             step_index += 1
 
             # Reached the bottom or top?
-            if step_index >= len(step_centers):
+            if step_index >= len(slices):
                 break
 
             # Are we going across a "dead zone", which we don't bin across?
-            if step_centers[step_index] is None:
+            if slices[step_index] is None:
                 latest_lookback_step = None
                 continue
             elif latest_lookback_step is None:  # recover from "dead zone"
@@ -720,9 +723,10 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
             # Make multiple arrays covering nsum to nsum*(largest_missed+1) rows
             # There's always at least one such array
             for i in range(lookback + 1):
-                slices = [_slice(step_centers[step_index-j]) for j in range(i+1)]
-                d, m, v = func(np.concatenate(list(ext_data[s] for s in slices)),
-                               mask=None if ext_mask is None else np.concatenate(list(ext_mask[s] for s in slices)),
+                _slices = [slices[step_index-j] for j in range(i+1)]
+                d, m, v = func(np.concatenate(list(ext_data[s] for s in _slices)),
+                               mask=None if ext_mask is None else
+                               np.concatenate(list(ext_mask[s] for s in _slices)),
                                variance=None)
                 data[i] = _profile_for_centering(d, v, rwidth)
                 if m is not None:
@@ -738,7 +742,8 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                         continue
 
                     for j in range(min(trace.steps_missed + 1, data.shape[0])):
-                        effective_ypos = step_centers[step_index] - 0.5 * j * step
+                        effective_ypos = np.mean([slice_center(s)
+                                                  for s in slices[step_index-j:step_index+1]])
                         shift_tol = max_shift * abs(effective_ypos - trace.last_point[0])
                         predicted_peak = trace.predict_location(effective_ypos, order=1)
                         peak_tol = 5
