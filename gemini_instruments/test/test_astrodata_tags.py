@@ -9,7 +9,7 @@ from .lut_tags import fixture_data as tags_fixture_data
 
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("instr,filename,tag_set",
-                         ([*k]+[v] for k, v in tags_fixture_data.items()))
+                         list([*k]+[v] for k, v in tags_fixture_data.items()))
 def test_descriptor(instr, filename, tag_set):
     path_to_test_data = os.getenv("DRAGONS_TEST")
     if path_to_test_data is None:
