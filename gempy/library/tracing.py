@@ -625,7 +625,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         return slice(start, start + nsum)
 
     def slice_center(_slice):
-        return 0.5 * (_slice.start + _slice.stop)  # THIS IS WRONG!
+        return 0.5 * (_slice.start + _slice.stop - 1)
 
     # Create profile for centering. This could just be the data (maybe
     # Ricker-filtered) but we use the SNR
@@ -680,7 +680,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     # Also need to eliminate regions with only one valid column because NDStacker
     # can't compute the pixel-to-pixel variance and hence the S/N can't be calculated
     for i, _slice in enumerate(all_slices):
-        if (ext_mask is not None and np.bincount((ext_mask[_slice] & DQ.not_signal).min(axis=1))[0] <= 1):
+        if (ext_mask is not None and np.bincount(ext_mask[_slice].min(axis=1))[0] <= 1):
             all_slices[i] = None
 
     start_index = all_slices.index(mkslice(start))
