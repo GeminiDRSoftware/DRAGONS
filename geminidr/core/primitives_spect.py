@@ -2002,7 +2002,7 @@ class Spect(Resample):
                     x_ord, y_ord = spect_ord, 1
                     direction = "column"
 
-                start_slice = slice(start - nsum // 2, start + nsum // 2)
+                start_slice = slice(start - nsum // 2, start + nsum // 2 + 1)
                 data, mask, variance = NDStacker.mean(
                     ext_data[start_slice], mask=ext_mask[start_slice],
                     variance=ext_variance[start_slice])

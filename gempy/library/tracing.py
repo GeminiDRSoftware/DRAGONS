@@ -619,9 +619,11 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         direction = "column"
 
     # Make a slice around a given row center. No bounds checking
-    # as that needs to be done by the calling code.
+    # as that needs to be done by the calling code. If we use 0.5
+    # here to round, then mkslice(center_slice(_slice)) won't
+    # return the _slice, which would be a problem.
     def mkslice(center):
-        start = int(center+0.5) - nsum // 2
+        start = int(center + 0.5) - nsum // 2
         return slice(start, start + nsum)
 
     def slice_center(_slice):
@@ -646,9 +648,10 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     if initial_tolerance is None:
         initial_peaks = initial
     else:
-        data, mask, var = func(ext_data[mkslice(start)],
+        start_slice = mkslice(start)
+        data, mask, var = func(ext_data[start_slice],
                                mask=None if ext_mask is None
-                               else ext_mask[mkslice(start)], variance=None)
+                               else ext_mask[start_slice], variance=None)
         data = _profile_for_centering(data, var, rwidth)
 
         peaks = pinpoint_peaks(data, peaks=initial, mask=mask,
@@ -670,7 +673,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     var = np.empty_like(data)
 
     # Code like this so we don't care how the slice is made from the center
-    all_slices = [mkslice(s) for s in np.arange(start % step, ext_data.shape[0], step, dtype=int)]
+    all_slices = [mkslice(s) for s in np.arange(start % step, ext_data.shape[0], step)]
     if all_slices[0].start < 0:
         all_slices = all_slices[1:]
     if all_slices[-1].stop > ext_data.shape[0]:
