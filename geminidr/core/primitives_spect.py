@@ -2038,6 +2038,9 @@ class Spect(Resample):
                              f"{max_trace_pos or len(initial_peaks)} "
                              f"starting at {direction} {start}")
 
+                # The pinholes have good SNR so we can recenter them
+                # (initial_tolerance is not None) and trace them
+                # without needing to smooth the data (rwidth is None).
                 traces = tracing.trace_lines(
                     # Only need a single `start` value for all lines.
                     ext, axis=dispaxis,
@@ -2516,7 +2519,7 @@ class Spect(Resample):
                                                3*ext.read_noise()) for edge in edges]
                     traces = list(itertools.chain.from_iterable(tracing.trace_lines(
                         diffarr*mult, dispaxis, start=cut, variance=ext.variance,
-                        initial=[edge],
+                        initial=[edge], initial_tolerance=1.0,
                         max_missed=params['debug_max_missed'],
                         step=params['debug_step'], nsum=params['debug_nsum'],
                         max_shift=params['debug_max_shift'],
