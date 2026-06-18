@@ -540,7 +540,7 @@ class Trace:
 
 @unpack_nddata
 def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
-                halfwidth=None, rwidth=None, nsum=10, step=10, initial_tolerance=1.0,
+                halfwidth=None, rwidth=None, nsum=10, step=10, initial_tolerance=None,
                 max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None,
                 min_peak_value=None, min_line_length=0.):
     """
