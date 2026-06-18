@@ -1518,6 +1518,7 @@ class Spect(Resample):
                         # range of the starting and ending rows/columns.
                         log.stdinfo("Finding peaks by extracting {}s {} to {}".
                             format(direction, extract_info.start + 1, extract_info.stop))
+                        start = 0.5 * (extract_info.start + extract_info.stop - 1)
                     else:
                         # For non-straight slits, `extract_info` is the 1D
                         # Chebyshev polynomial that traces the center of the slit.
@@ -1534,7 +1535,7 @@ class Spect(Resample):
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
 
                 # The coordinates are always returned as (x-coords, y-coords)
-                rwidth = 0.42466 * fwidth
+                rwidth = peak_finding.ricker_widths(fwidth)[-1]
 
                 if len(initial_peaks):
                     # The slit length may be smaller than the width of the slice,
