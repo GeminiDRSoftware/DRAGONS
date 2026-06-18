@@ -25,6 +25,10 @@ A change to the behavior of Tabs in bokeh v3.9.0 caused the residual/ratio
 plot in the interactive tools to be corrupted. This release ensures
 compatibility with v3.9.0 as well as earlier versions.
 
+GOA updates
+-----------
+Includes the 4.2.1-goawavecal changes.
+
 
 4.2.1-goawavecal
 ================

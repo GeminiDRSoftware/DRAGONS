@@ -40,7 +40,7 @@ version = '4.2'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-release = '4.2.1'
+release = '4.2.2'
 rtdurl = 'v'+release
 #release = '4.2.x'
 #rtdurl = 'release-'+release
@@ -87,7 +87,7 @@ language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = 'April 2026'
+today = 'June 2026'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 

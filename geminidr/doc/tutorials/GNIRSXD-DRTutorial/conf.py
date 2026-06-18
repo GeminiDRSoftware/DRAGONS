@@ -12,13 +12,13 @@ author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
 version = '4.2'
-release = '4.2.1'
+release = '4.2.2'
 rtdurl = 'v'+release
 #release = '4.2.x'
 #rtdurl = 'release-'+release
 #rtdurl = 'latest'
 
-today = 'April 2026'
+today = 'June 2026'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

@@ -8,6 +8,16 @@
 Release Notes
 *************
 
+V4.2.2
+======
+
+This release includes improvement in handling and flagging problems with
+the automatic wavelength solution calculations.  This brings greater robustness
+to the Gemini Observatory Archive (GOA) products.
+
+The patch includes better handling of issues in finding and masking the GMOS
+longslit "bridges" and a compatibility update for bokeh.
+
 V4.2.1
 ======
 
