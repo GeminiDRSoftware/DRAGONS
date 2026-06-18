@@ -541,7 +541,7 @@ class Trace:
 @unpack_nddata
 def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                 halfwidth=None, rwidth=None, nsum=10, step=10, initial_tolerance=None,
-                max_shift=0.05, max_missed=5, func=NDStacker.median, viewer=None,
+                max_shift=0.05, max_missed=5, func=NDStacker.mean, viewer=None,
                 min_peak_value=None, min_line_length=0.):
     """
     This function traces features along one axis of a two-dimensional image.
@@ -641,8 +641,6 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     if start is None:
         start = ext_data.shape[0] // 2
         log.stdinfo(f"Starting trace at {direction} {start}")
-    else:  # just to be sure it's OK
-        start = int(min(max(start, nsum // 2), ext_data.shape[0] - nsum / 2))
 
     # Get accurate starting positions for all peaks if requested
     if initial_tolerance is None:
@@ -686,7 +684,11 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
         if (ext_mask is not None and np.bincount(ext_mask[_slice].min(axis=1))[0] <= 1):
             all_slices[i] = None
 
-    start_index = all_slices.index(mkslice(start))
+    try:
+        start_index = all_slices.index(mkslice(start))
+    except ValueError:
+        raise ValueError(f"Starting location {start} is too close to "
+                         f"edge of array for nsum={nsum}")
 
     # If tracing vertically-dispersed data the coordinates in the Trace will
     # be in (y, x) order and since we need (x, y) elsewhere we reverse them here.
