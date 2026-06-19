@@ -42,10 +42,10 @@ fixed_parameters_for_determine_distortion = {
 # "_mosaic" suffix
 datasets = [
     # Process Arcs: GMOS-N ---
-    "N20100115S0346_mosaic.fits",  # B600:0.500 EEV
+    # "N20100115S0346_mosaic.fits",  # B600:0.500 EEV
     # "N20130112S0390_mosaic.fits",  # B600:0.500 E2V
     # "N20170609S0173_mosaic.fits",  # B600:0.500 HAM
-    # "N20170403S0452_mosaic.fits",  # B600:0.590 HAM Full Frame 1x1
+    "N20170403S0452_mosaic.fits",  # B600:0.590 HAM Full Frame 1x1
     # "N20170415S0255_mosaic.fits",  # B600:0.590 HAM Central Spectrum 1x1
     # "N20171016S0010_mosaic.fits",  # B600:0.500 HAM, ROI="Central Spectrum", bin=1x2
     # "N20171016S0127_mosaic.fits",  # B600:0.500 HAM, ROI="Full Frame", bin=1x2
