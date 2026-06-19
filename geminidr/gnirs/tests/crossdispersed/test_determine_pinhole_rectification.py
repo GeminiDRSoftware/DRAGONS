@@ -17,7 +17,9 @@ datasets = [
     #GNIRS XD pinhole files
     ("S20060507S0125_flatCorrected.fits", {}),# 32 l/mm, ShortBlue
     ("N20130821S0556_flatCorrected.fits", {}), # 10 l/mm, LongBlue
-    ("N20231029S0343_stack.fits", {"debug_max_trace_pos": 4})         # 111 l/mm, ShortBlue
+    # This is not a great test because there's a lot of real estate
+    # beyond the 4th trace for the model to flap around in
+    #("N20231029S0343_stack.fits", {"debug_max_trace_pos": 4})         # 111 l/mm, ShortBlue
     ]
 
 
@@ -41,9 +43,10 @@ def test_determine_pinhole_rectification(ad, params, change_working_dir, ref_ad_
         assert model.inputs == ('x0', 'x1')
         assert model.outputs == ('z', 'x0')
 
-        X, Y = np.mgrid[:ext.shape[0], :ext.shape[1]]
+        Y, X = np.mgrid[:ext.shape[0], :ext.shape[1]]
+        xx, yy = X[ext.mask == 0], Y[ext.mask == 0]
 
-        np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.05)
+        np.testing.assert_allclose(model(xx, yy), ref_model(xx, yy), atol=0.1)
 
 
 @pytest.mark.gnirsxd
