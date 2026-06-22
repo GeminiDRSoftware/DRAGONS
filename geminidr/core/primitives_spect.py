@@ -2182,6 +2182,7 @@ class Spect(Resample):
         edge1 = params.get('edge1', None)
         edge2 = params.get('edge2', None)
         min_snr = params.get('min_snr', 5.0)
+        nsum = params["debug_nsum"]
         # How far to search (in pixels) to match expected and detected
         # peaks.
         search_rad = params.get('search_radius', 30)
@@ -2297,7 +2298,7 @@ class Spect(Resample):
             # will also be at least this far from the ends of the detector.
             # XD slits can be much more tilted/curved, so need a smaller cut to
             # prevent the edges being too wide.
-            offset = 3
+            hwidth = 3
 
             for ext in ad:
                 dispaxis = 2 - ext.dispersion_axis()
@@ -2312,13 +2313,13 @@ class Spect(Resample):
                 # chosen row/col doesn't significantly affect the slit location
                 collapsed = np.median(ext.data, axis=1-dispaxis)
                 if num_slits == 1:
-                    cut = collapsed[offset:-offset].argmax() + offset
+                    cut = collapsed[nsum:-nsum].argmax() + nsum
 
                 row_or_col = ['row', 'column'][dispaxis]
                 # Use 1-indexed numbers for rows/columns for user-facing output
                 # for easier legibility.
                 log.stdinfo(f"Creating profile from {row_or_col} {cut+1}"
-                             f" ± {offset}")
+                             f" ± {hwidth}")
 
                 # Take the first derivative of flux to find the slit edges.
                 # Left/top edges will be peaks, right/bottom edges troughs, so
@@ -2326,7 +2327,7 @@ class Spect(Resample):
                 diffarr = np.diff(ext.data, axis=1-dispaxis)
 
                 # Take median of a small slice to smooth over cosmic rays:
-                s = slice(cut-offset, cut+offset)
+                s = slice(cut-hwidth, cut+hwidth)
                 if dispaxis == 0:
                     median_slice = np.median(diffarr[s], axis=0)
                 else:
@@ -2375,13 +2376,6 @@ class Spect(Resample):
                     if debug_plots:
                         plt.show()
                     continue
-
-                # We add 0.5. If the slit edge is at the pixel edge
-                # between x and x+1, we want to record it as x+0.5.
-                # Because np.diff() reduces the size of the array by 1,
-                # the peak in the first derivative will be at x.
-                positions_1 = np.asarray(positions_1) + 0.5
-                positions_2 = np.asarray(positions_2) + 0.5
 
                 # Use +ve and -ve weights for left and right edges to assist
                 # with matching the correct "handedness". "Reference" weights
@@ -2528,7 +2522,7 @@ class Spect(Resample):
                         diffarr*mult, dispaxis, start=cut, variance=ext.variance,
                         initial=[edge], initial_tolerance=1.0,
                         max_missed=params['debug_max_missed'],
-                        step=params['debug_step'], nsum=params['debug_nsum'],
+                        step=params['debug_step'], nsum=nsum,
                         max_shift=params['debug_max_shift'],
                         min_peak_value=thresh, halfwidth=4,
                         min_line_length=debug_min_line_length) or [None] if edge else [None]
@@ -2606,8 +2600,12 @@ class Spect(Resample):
                                 plt.show()
 
                             # Perform the fit and create the table row
+                            # We add 0.5. If the slit edge is at the pixel edge
+                            # between x and x+1, we want to record it as x+0.5.
+                            # Because np.diff() reduces the size of the array by 1,
+                            # the peak in the first derivative will be at x.
                             _fit_1d = fit_1D(
-                                in_coords[1], weights=wt,
+                                in_coords[1]+0.5, weights=wt,
                                 domain=[0, ext.shape[dispaxis] - 1],
                                 points=in_coords[0], plot=debug_plots,
                                 **fit1d_params)
@@ -2650,7 +2648,7 @@ class Spect(Resample):
                     log.debug('Appending the table below as "SLITEDGE".')
                     log.debug(ext.SLITEDGE)
                 else:
-                    log.warning("No SLITEDGE table created for {ad.filename}")
+                    log.warning(f"No SLITEDGE table created for {ad.filename}")
                     continue
 
                 # For XD, this is all the work we need to do because the
