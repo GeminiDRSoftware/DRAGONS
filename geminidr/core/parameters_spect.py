@@ -221,7 +221,7 @@ class determineSlitEdgesConfig(config.Config):
     debug_step = config.RangeField("Step size (in pixels) for fitting edges",
                                    int, 20, min=5)
     debug_nsum = config.RangeField("Columns/rows to sum each step when fitting edges",
-                                   int, 10, min=5)
+                                   int, 10, min=5, max=30, inclusiveMax=True)
 
     def validate(self):
         if hasattr(self, 'edge1'):

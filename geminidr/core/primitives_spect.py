@@ -1218,6 +1218,7 @@ class Spect(Resample):
                                                    primitive_name="calculateSensitivity",
                                                    filename_info=filename_info,
                                                    help_text=CALCULATE_SENSITIVITY_HELP_TEXT,
+                                                   plot_ratios=False,
                                                    ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
@@ -2370,13 +2371,6 @@ class Spect(Resample):
                         plt.show()
                     continue
 
-                # We add 0.5. If the slit edge is at the pixel edge
-                # between x and x+1, we want to record it as x+0.5.
-                # Because np.diff() reduces the size of the array by 1,
-                # the peak in the first derivative will be at x.
-                positions_1 = np.asarray(positions_1) + 0.5
-                positions_2 = np.asarray(positions_2) + 0.5
-
                 # Use +ve and -ve weights for left and right edges to assist
                 # with matching the correct "handedness". "Reference" weights
                 # are set to the pixel values to prefer strong gradients
@@ -2522,7 +2516,7 @@ class Spect(Resample):
                         diffarr*mult, dispaxis, start=cut, variance=ext.variance,
                         initial=[edge], initial_tolerance=1.0,
                         max_missed=params['debug_max_missed'],
-                        step=params['debug_step'], nsum=params['debug_nsum'],
+                        step=params['debug_step'], nsum=nsum,
                         max_shift=params['debug_max_shift'],
                         min_peak_value=thresh, halfwidth=4,
                         min_line_length=debug_min_line_length) or [None] if edge else [None]
@@ -2600,8 +2594,12 @@ class Spect(Resample):
                                 plt.show()
 
                             # Perform the fit and create the table row
+                            # We add 0.5. If the slit edge is at the pixel edge
+                            # between x and x+1, we want to record it as x+0.5.
+                            # Because np.diff() reduces the size of the array by 1,
+                            # the peak in the first derivative will be at x.
                             _fit_1d = fit_1D(
-                                in_coords[1], weights=wt,
+                                in_coords[1]+0.5, weights=wt,
                                 domain=[0, ext.shape[dispaxis] - 1],
                                 points=in_coords[0], plot=debug_plots,
                                 **fit1d_params)
@@ -2644,7 +2642,7 @@ class Spect(Resample):
                     log.debug('Appending the table below as "SLITEDGE".')
                     log.debug(ext.SLITEDGE)
                 else:
-                    log.warning("No SLITEDGE table created for {ad.filename}")
+                    log.warning(f"No SLITEDGE table created for {ad.filename}")
                     continue
 
                 # For XD, this is all the work we need to do because the
@@ -2907,22 +2905,44 @@ class Spect(Resample):
                     fit1d.image = image
                     wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
+                bad_solutions = []
+                single_line_solutions = []
                 for ext in ad:
-                    if len(ad) > 1:
-                        log.stdinfo(f"Determining solution for extension {ext.id}")
-
-                    input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
+                    input_data, fit1d = wavecal.get_automated_fit(
                         ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal,
                         absorption=absorption)
                     wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
-                    if not acceptable_fit:
-                        log.warning("No acceptable wavelength solution found")
-                    else:
+                    if fit1d.image.size:
                         figures.append(wavecal.create_pdf_plot(
                             input_data, fit1d.points[~fit1d.mask],
                             fit1d.image[~fit1d.mask],
                             title=f"{ad.filename}:{ext.id}",
                             absorption=absorption))
+                        if fit1d.image.size == 1:
+                            single_line_solutions.append(ext.id)
+                    else:  # no line matches so not an acceptable solution
+                        bad_solutions.append(ext.id)
+
+                if bad_solutions:
+                    msg = f"{ad.filename}: failed to find an acceptable wavelength solution"
+                    if len(ad) > 1:
+                        if len(ad) > len(bad_solutions):
+                            msg += "in extensions " + ", ".join(str(i) for i in bad_solutions)
+                        else:
+                            msg += " in any extensions"
+                    if self.mode == 'sq' and len(ad) == len(bad_solutions):
+                        raise RuntimeError(msg)
+                    log.warning(msg)
+
+                if single_line_solutions:
+                    msg = f"{ad.filename}: a single-line solution has been applied"
+                    if len(ad) > 1:
+                        if len(ad) > len(single_line_solutions):
+                            msg += "in extensions " + ", ".join(str(i) for i in single_line_solutions)
+                        else:
+                            msg += " in all extensions"
+                    log.warning(msg)
+
 
             ad.update_filename(suffix=sfx, strip=True)
             if figures:
@@ -3994,6 +4014,63 @@ class Spect(Resample):
 
         return adinputs
 
+    def monitorWavelengthSolution(self, adinputs=None, **params):
+        """
+        This captures some info from the wavelength solution for the GOA
+        instrument monitoring system into various MWS_ headers for the instrument
+        monitoring system to pick up.
+
+        Values Captured include the polynomial coefficients and RMS from the
+        .WAVECAL table, the central wavelength from both the WCS and central_wavlength()
+        descriptor and the difference between them.
+        :return:
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        tocapture = ('c0', 'c1', 'c2', 'c3', 'rms', 'inv_rms', 'fwidth')
+
+        for ad in adinputs:
+            for ext in ad:
+                wavecal = getattr(ext, 'WAVECAL', None)
+                if wavecal is None:
+                    continue
+
+                for row in wavecal:
+                    # Capture values from WAVEVAL table into monitoring headers
+                    if row['name'] in tocapture:
+                        keyword = 'MWS_' + row['name'].upper()[:4]
+                        if row['name'] == 'inv_rms':
+                            keyword = 'MWS_IRMS'
+                        ext.hdr[keyword] = (row['coefficients'],
+                                            f'WAVECAL {row['name']} coefficient')
+
+                # Get the model and evaluate it at the mean of its domain
+                model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+                if model:
+                    # Central Wavelength check
+                    center = np.mean(model.domain)
+                    model_central_wlen = model(center)
+                    # We want actual_central_wavelength rather than central_wavelength
+                    header_central_wlen = ext.actual_central_wavelength(asNanometers=True)
+
+                    ext.hdr['MWS_DCWL'] = (model_central_wlen - header_central_wlen,
+                                           'Delta between model and header central_wavelength')
+
+                    # Dispersion check
+                    model_dispersion = model(center+0.5) - model(center-0.5)
+                    header_dispersion = ext.dispersion(asNanometers=True)
+                    ext.hdr['MWS_DDIS'] = (model_dispersion - header_dispersion,
+                                           'Delta between model and header dispersion')
+
+
+                # Count the number of arc lines in the wavecal table
+                ext.hdr['MWS_NUML'] = (numpy.count_nonzero(wavecal['peaks']),
+                                       'Number of non-zero peaks in the WAVECAL table')
+
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
 
     def normalizeFlat(self, adinputs=None, **params):
         """
