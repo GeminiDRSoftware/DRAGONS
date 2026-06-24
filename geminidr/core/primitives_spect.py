@@ -1480,7 +1480,7 @@ class Spect(Resample):
                                     "not be correct.".format(direction, extname,
                                                              direction))
                     else:
-                        start = int(wavecal['coefficients'][index])
+                        start = float(wavecal['coefficients'][index])
                     if id_only:
                         try:
                             # Peak locations in pixels are 1-indexed
@@ -1505,14 +1505,21 @@ class Spect(Resample):
 
                 # This is identical to the code in determineWavelengthSolution()
                 if fwidth is None:
-                    data, _, _, _ = peak_finding.average_along_slit(ext, center=start, nsum=nsum)
+                    # We don't have to be strict because we're not using the
+                    # extracted spectrum for anything but a width estimate
+                    data, _, _, _ = peak_finding.average_along_slit(ext, center=start, nsum=nsum, strict=False)
                     fwidth = peak_finding.estimate_peak_width(data, boxcar_size=30)
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
                 if initial_peaks is None:
+                    # If there's a WAVECAL table, then we need to make sure that
+                    # we start by extracting along exactly the same row/column
+                    # as was used for that table. If there isn't one, then we
+                    # can just extract along complete rows/columns for LS, which
+                    # is faster.
                     data, mask, variance, extract_info = peak_finding.average_along_slit(
-                        ext, center=start, nsum=nsum)
-                    if constant_slit:
+                        ext, center=start, nsum=nsum, strict=hasattr(ext, "WAVECAL"))
+                    if isinstance(extract_info, slice):
                         # For (basically) straight slits, `extract_info` is a
                         # range of the starting and ending rows/columns.
                         log.stdinfo("Finding peaks by extracting {}s {} to {}".
@@ -1530,7 +1537,8 @@ class Spect(Resample):
 
                     # Find peaks; convert width FWHM to sigma
                     initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
-                        data, fwidth=fwidth, mask=mask & DQ.not_signal,
+                        data, fwidth=fwidth,
+                        mask=None if mask is None else (mask & DQ.not_signal),
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
 
                 # The coordinates are always returned as (x-coords, y-coords)
@@ -2844,7 +2852,8 @@ class Spect(Resample):
                 if params["center"] is None:
                     try:
                         aptable = ad[0].APERTURE
-                        params["center"] = int(aptable['c0'].data[0])
+                        # Because "center" is user-facing 1-indexed, and c0 isn't
+                        params["center"] = int(aptable['c0'].data[0] + 1)
                     except (AttributeError, KeyError):
                         log.error("Could not find aperture locations in "
                                     f"{ad.filename} - continuing")
@@ -4157,7 +4166,8 @@ class Spect(Resample):
 
                     data, mask, variance, extract_info = peak_finding.average_along_slit(
                         ext, center=ui_params.center, nsum=ui_params.nsum,
-                        offset_from_center=ui_params.offset_from_center)
+                        offset_from_center=ui_params.offset_from_center,
+                        strict=False)
                     if constant_slit:
                         log.stdinfo(f"Extracting 1D spectrum from {direction}s "
                                     f"{extract_info.start + 1} to "

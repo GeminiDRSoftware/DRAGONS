@@ -41,7 +41,8 @@ log = logutils.get_logger(__name__)
 
 @insert_descriptor_values("dispersion_axis")
 def average_along_slit(ext, center=None, offset_from_center=None,
-                       nsum=None, dispersion_axis=None, combiner="mean"):
+                       nsum=None, dispersion_axis=None, combiner="mean",
+                       strict=True):
     """
     Calculates the average along the slit and its pixel-by-pixel variance.
 
@@ -59,6 +60,9 @@ def average_along_slit(ext, center=None, offset_from_center=None,
         Number of rows/columns to combine
     combiner : str
         Method to use for combining
+    strict: bool
+        if False, then extract integer columns/rows rather than fractional
+        ones at the edges of the extraction region
 
     Returns
     -------
@@ -83,11 +87,13 @@ def average_along_slit(ext, center=None, offset_from_center=None,
     if offset_from_center is None:
         offset_from_center = 0
 
+    extract_slice = slice(None)
     if constant_slit:
-        extract_slice = slice(max(0, int(center + 1 - 0.5 * nsum)),
-                              min(npix, int(center + 1 + 0.5 * nsum)))
-    else:
-        extract_slice = slice(None)
+        start = max(-0.5, center - 0.5 * nsum)
+        if not strict or abs(np.modf(start)[0] - 0.5) < 0.001:
+            start = int(start + 0.51)
+            stop = min(npix, start + nsum)
+            extract_slice = slice(start, stop)
 
     # Transpose the data if needed. If the slit is constant, extracting it here
     # is all that is needed.
@@ -95,46 +101,52 @@ def average_along_slit(ext, center=None, offset_from_center=None,
         ext.data, ext.mask, ext.variance,
         transpose=(dispersion_axis == 0), section=extract_slice)
 
-    if constant_slit:
+    if extract_slice.start is not None:
         # Create 1D spectrum; pixel-to-pixel variation is a better indicator
         # of S/N than the VAR plane
         # FixMe: "variance=variance" breaks test_gmos_spect_ls_distortion_determine.
         #  Use "variance=None" to make them pass again.
         data, mask, variance = NDStacker.combine(data, mask=mask, variance=None,
                                                  combiner=combiner)
-
         return data, mask, variance, extract_slice
 
     else:
-        edge1, edge2 = [am.table_to_model(row) for row in ext.SLITEDGE]
-        # Create a polynomial tracing the slit between the two edges.
-        # The coefficients for this polynomial are a combination of
-        # those of the two edge polynomials times the fraction across the
-        # extension where the center line is to be.
-        center_coeffs = [(p1 + p2) * 0.5 for p1, p2
-                         in zip(edge1.parameters, edge2.parameters)]
-        coeffs_dict = {coeff: value for coeff, value in zip(edge1.param_names,
-                                                            center_coeffs)}
-        coeffs_dict['c0'] += offset_from_center
-        slit_polynomial = models.Chebyshev1D(degree=edge1.degree,
-                                             domain=edge1.domain,
-                                             **coeffs_dict)
+        if constant_slit:
+            slit_polynomial = models.Chebyshev1D(degree=0, c0=center,
+                                                 domain=(0, mpix-1))
+        else:
+            edge1, edge2 = [am.table_to_model(row) for row in ext.SLITEDGE]
+            # Create a polynomial tracing the slit between the two edges.
+            # The coefficients for this polynomial are a combination of
+            # those of the two edge polynomials times the fraction across the
+            # extension where the center line is to be.
+            center_coeffs = [(p1 + p2) * 0.5 for p1, p2
+                             in zip(edge1.parameters, edge2.parameters)]
+            coeffs_dict = {coeff: value for coeff, value in zip(edge1.param_names,
+                                                                center_coeffs)}
+            coeffs_dict['c0'] += offset_from_center
+            slit_polynomial = models.Chebyshev1D(degree=edge1.degree,
+                                                 domain=edge1.domain,
+                                                 **coeffs_dict)
 
         centers = np.array([slit_polynomial(n) for n in range(0, mpix)])
         data_out = np.empty([mpix], dtype=np.float32)
-        mask_out = np.empty_like(data_out, dtype=np.uint16)
-        variance_out = np.empty_like(data_out)
+        mask_out = None if mask is None else np.empty_like(data_out, dtype=np.uint16)
+        variance_out = None if variance is None else np.empty_like(data_out)
 
         # Average `nsum` pixels around the center at each column.
         # FIXME: This should ideally respect the "combiner" argument, and handle
         # all the combine methods NDStacker does. (mean, median, wtmean, lmedian)
         for i, center_pix in enumerate(centers):
-            n1 = center_pix + 1 - 0.5 * nsum
-            n2 = center_pix + 1 + 0.5 * nsum
-            nddata = NDAstroData(data[:, i], mask=mask[:, i],
-                                 variance=variance[:, i])
-            data_out[i], mask_out[i], variance_out[i] = combine1d(
-                nddata, n1, n2, average=True)
+            n1 = center_pix - 0.5 * nsum
+            n2 = center_pix + 0.5 * nsum
+            nddata = NDAstroData(data[:, i], mask=None if mask is None else mask[:, i],
+                                 variance=None if variance is None else variance[:, i])
+            data_out[i], m, v = combine1d(nddata, n1, n2, average=True)
+            if m is not None:
+                mask_out[i] = m
+            if v is not None:
+                variance_out[i] = v
 
         # Pass the polynomial for the center instead of the extract slice
         return data_out, mask_out, variance_out, slit_polynomial

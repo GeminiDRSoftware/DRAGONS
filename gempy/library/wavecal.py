@@ -601,16 +601,17 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     if ext.data.ndim > 1:
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         direction = "row" if dispaxis == 1 else "column"
-        const_slit = 'LS' in ext.tags or "TRANSFRM" in ext.phu
-        center = config["center"] or int(0.5 * (ext.shape[1 - dispaxis] - 1))
+        center = config["center"] or (ext.shape[1 - dispaxis] // 2)
+        # We don't need to be strict because the actual extraction
+        # location will be reported
         data, mask, variance, extract_info = peak_finding.average_along_slit(
             ext, center=center, nsum=config["nsum"],
-            combiner=config["combine_method"])
-        if const_slit:
+            combiner=config["combine_method"], strict=False)
+        if isinstance(extract_info, slice):
             logit("Extracting 1D spectrum from {}s {} to {}".
                   format(direction, extract_info.start + 1, extract_info.stop))
             middle = 0.5 * (extract_info.start + extract_info.stop - 1)
-            location = f"{direction} {int(middle)}"
+            location = f"{direction} {middle}"
         else:
             # For non-straight slits, `extract_info` is the 1D
             # Chebyshev polynomial that traces the center of the slit.
@@ -623,7 +624,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
             middle = extract_info(0.5 * (ext.shape[dispaxis] - 1))
             # TODO: this isn't strictly correct, since it implies extraction
             # at a fixed location.
-            location = f"{direction} {int(middle)}"
+            location = f"{direction} {middle}"
     else:
         data = ext.data.copy()
         mask = ext.mask.copy()
@@ -1186,7 +1187,7 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         if ext.data.ndim > 1:
             # TODO: Need to update this from the interactive tool's values
             direction, location = input_data["location"].split()
-            temptable[direction] = int(location)
+            temptable[direction] = float(location)
             temptable["nsum"] = config.nsum
         pad_rows = nmatched - len(temptable.colnames)
         if pad_rows < 0:  # Really shouldn't be the case
