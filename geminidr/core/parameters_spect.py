@@ -145,7 +145,7 @@ class determineDistortionConfig(config.Config):
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.1)
+                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     min_line_length = config.RangeField("Exclude line traces shorter than this fraction of slit length",
                                         float, 0.8, min=0., max=1.)
