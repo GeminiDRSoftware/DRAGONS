@@ -155,7 +155,8 @@ def test_stacking_gain_read_noise_propagation(f2_adinputs, caplog):
     f2_adinputs[1].phu["LNRS"] = 8
     p = F2Image(f2_adinputs)
     ad = p.stackFrames(operation='mean', reject_method='none').pop()
-    assert "Not all inputs have the same gain" in caplog.records[0].message
+    assert any("Not all inputs have the same gain" in rec.msg
+               for rec in caplog.records)
     # Input gains are 4.44 and 4.44/8
     assert_allclose(ad.hdr["GAIN"], 8.88/9)
     # Input read_noises are 11.7 and 5
