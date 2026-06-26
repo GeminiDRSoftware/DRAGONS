@@ -753,7 +753,6 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                                                   for s in all_slices[these_steps]])
                         shift_tol = max_shift * abs(effective_ypos - trace.last_point[0])
                         predicted_peak = trace.predict_location(effective_ypos, order=1)
-                        peak_tol = 5
 
                         peaks, peak_values = pinpoint_peaks(
                             data[j], peaks=[predicted_peak], mask=mask[j],
@@ -761,8 +760,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
 
                         if (not peaks or min_peak_value is not None and
                                 peak_values[0] < min_peak_value or
-                                abs(peaks[0] - trace.last_point[1]) > shift_tol or
-                                abs(peaks[0] - predicted_peak) > peak_tol):
+                                abs(peaks[0] - trace.last_point[1]) > shift_tol):
                             continue
 
                         # A valid peak has been found
