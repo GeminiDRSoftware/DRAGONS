@@ -433,6 +433,8 @@ class CrossDispersed(Spect, Preprocess):
                 # have both edges for each slit.
                 model, m_final_2d, m_inverse_2d = am.create_distortion_model(
                     m_init_2d, dispaxis, incoords, refcoords, fixed_linear=False)
+                log.stdinfo("Distortion model/inverse rms = "
+                            f"{model.meta['fwd_rms']:.3f}/{model.meta['inv_rms']:.3f} pixels")
                 model.name = "RECT"
 
                 # Remove the shift that was prepended when the data were

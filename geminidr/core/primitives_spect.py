@@ -2096,6 +2096,8 @@ class Spect(Resample):
                 # have both edges for each slit.
                 model, m_final_2d, m_inverse_2d = am.create_distortion_model(
                     m_init_2d, dispaxis, in_coords, ref_coords, False)
+                log.stdinfo("Distortion model/inverse rms = "
+                            f"{model.meta['fwd_rms']:.3f}/{model.meta['inv_rms']:.3f} pixels")
                 model.name = "PNHLRECT"
 
                 try:
@@ -2691,6 +2693,8 @@ class Spect(Resample):
                     model, m_final_2d, m_inverse_2d = am.create_distortion_model(
                         m_init_2d, dispaxis, np.asarray(in_coords).T,
                         np.asarray(ref_coords).T, fixed)
+                    log.stdinfo("Distortion model/inverse rms = "
+                                f"{model.meta['fwd_rms']:.3f}/{model.meta['inv_rms']:.3f} pixels")
                     model.name = 'RECT'
 
                     # Put the slit rectification model as the first step in

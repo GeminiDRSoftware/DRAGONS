@@ -39,14 +39,19 @@ def test_determine_pinhole_rectification(ad, params, change_working_dir, ref_ad_
         model = ext.wcs.get_transform('pixels', 'rectified')
         ref_model = ext_ref.wcs.get_transform('pixels', 'rectified')
 
-        assert len(model._parameters) == 8
         assert model.inputs == ('x0', 'x1')
         assert model.outputs == ('z', 'x0')
 
         Y, X = np.mgrid[:ext.shape[0], :ext.shape[1]]
         xx, yy = X[ext.mask == 0], Y[ext.mask == 0]
 
-        np.testing.assert_allclose(model(xx, yy), ref_model(xx, yy), atol=0.1)
+        xt, yt = model(xx, yy)
+        xtt, ytt = model.inverse(xt, yt)
+        np.testing.assert_allclose(xtt, xx, atol=0.05)
+        np.testing.assert_allclose(ytt, yy, atol=0.05)
+
+        np.testing.assert_allclose(model.inverse(xx, yy), ref_model.inverse(xx, yy), atol=0.2)
+        np.testing.assert_allclose(model(xx, yy), ref_model(xx, yy), atol=0.2)
 
 
 @pytest.mark.gnirsxd
@@ -81,8 +86,8 @@ def test_straight_edges_from_pinhole_model(ad, params):
         right_round_trip = t.inverse(*right_transformed)
 
         # These tolerance seem surprisingly high, but the model is not perfect
-        assert np.allclose(left_round_trip[0], x1[x1_on], atol=0.5)
-        assert np.allclose(right_round_trip[0], x2[x2_on], atol=0.5)
+        assert np.allclose(left_round_trip[0], x1[x1_on], atol=0.05)
+        assert np.allclose(right_round_trip[0], x2[x2_on], atol=0.05)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------

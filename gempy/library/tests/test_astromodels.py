@@ -36,6 +36,50 @@ def test_astropy1d_table_recovery(model):
     assert all(m.meta[k1] is m2.meta[k2] for k1, k2 in zip(keys1, keys2))
 
 
+def test_create_distortion_model():
+    """Test of the ability to create a distortion model and its inverse"""
+    # These are actual SLITEDGE models
+    m1 = models.Chebyshev1D(degree=3, c0=176.45779746891014,
+                            c1=193.23784274403934, c2=21.045307058459432,
+                            c3=1.91811981332223, domain=(0,1023))
+    m2 = models.Chebyshev1D(degree=3, c0=276.9670524738892,
+                            c1=187.69722504387903, c2=18.239222297723266,
+                            c3=1.1955380503269126, domain=(0,1023))
+    y = np.arange(1024)
+    x1, x2 = m1(y), m2(y)
+    xorder, yorder = 1, m1.degree
+
+    x1ref, x2ref = x1[511], x2[511]
+    in_coords = np.asarray([list(x1) + list(x2),
+                            list(y) + list(y)])
+    ref_coords = np.asarray([[x1ref] * y.size + [x2ref] * y.size,
+                             list(y) + list(y)])
+    m_init = models.Chebyshev2D(x_degree=xorder, y_degree=yorder,
+                                x_domain=[0, 1023], y_domain=[0, 1023])
+    m2slits, m2final, m2inverse = am.create_distortion_model(
+        m_init, 0, in_coords, ref_coords, fixed_linear=False)
+    m1slit, m1final, m1inverse = am.create_distortion_model(
+        m_init, 0, np.asarray([x1, y]),
+        np.asarray([[x1ref] * y.size, y]), fixed_linear=True)
+
+    assert m2slits.meta['fwd_rms'] < 0.05
+    assert m2slits.meta['inv_rms'] < 0.05
+
+    # Round-trip check. We would like the round-trip to be better, but it's
+    # not actually possible, after experimentation.
+    xt, yt = m2slits.inverse(*m2slits(*in_coords))
+    np.testing.assert_allclose(yt, in_coords[1])
+    np.testing.assert_allclose(xt, in_coords[0], atol=0.1)
+
+    assert m1slit.meta['fwd_rms'] < 0.05
+    assert m1slit.meta['inv_rms'] < 0.05
+
+    # Round-trip check
+    xt, yt = m1slit.inverse(*m1slit(x1, y))
+    np.testing.assert_allclose(yt, y)
+    np.testing.assert_allclose(xt, x1, atol=0.1)
+
+
 def test_make_inverse_chebyshev1d(ntrials=100):
     """Rather simple test of predominantly linear models"""
     rng = np.random.default_rng(10)

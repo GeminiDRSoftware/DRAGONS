@@ -50,11 +50,7 @@ def test_edges_and_slit_centers(filename, path_to_inputs):
         assert np.std(left_transformed[0]) < 0.5
         assert np.std(right_transformed[0]) < 0.5
 
-        # And confirm that performing the round-trip gets up back to the
-        # original coordinates. There's an issue here because it really
-        # needs a quadratic (at least) Chebyshev in x for the forward
-        # transform
         left_round_trip = t.inverse(*left_transformed)
         right_round_trip = t.inverse(*right_transformed)
-        assert np.allclose(left_round_trip[0], x1[x1_on], atol=0.25)
-        assert np.allclose(right_round_trip[0], x2[x2_on], atol=0.25)
+        assert np.allclose(left_round_trip[0], x1[x1_on], atol=0.05)
+        assert np.allclose(right_round_trip[0], x2[x2_on], atol=0.05)
