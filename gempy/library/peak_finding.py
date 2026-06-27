@@ -78,6 +78,9 @@ def average_along_slit(ext, center=None, offset_from_center=None,
     slit_polynomial : `Chebyshev1D` model
         Chebyshev polynomial representing the center of the extracted aperture.
     """
+    if combiner not in ("median", "mean"):
+        raise ValueError("combiner must be 'median' or 'mean'")
+
     constant_slit = 'LS' in ext.tags or "TRANSFRM" in ext.phu
     npix, mpix = ext.shape[1 - dispersion_axis], ext.shape[dispersion_axis]
     if nsum is None:
@@ -147,6 +150,12 @@ def average_along_slit(ext, center=None, offset_from_center=None,
                 mask_out[i] = m
             if v is not None:
                 variance_out[i] = v
+
+            if combiner == "median":
+                data_out[i] = np.median(nddata.data[int(np.round(n1)):int(np.round(n2))+1])
+
+        if combiner == "median" and variance_out is not None:
+            variance_out *= 0.5 * np.sqrt(np.pi)  # Laplace
 
         # Pass the polynomial for the center instead of the extract slice
         return data_out, mask_out, variance_out, slit_polynomial
