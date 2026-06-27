@@ -42,8 +42,8 @@ input_pars = [
     ('N20210129S0324_wavelengthSolutionDetermined.fits', dict()),
     # 111 l/mm Shortblue SXD
     ('N20231030S0034_wavelengthSolutionDetermined.fits', dict()),
-    # 32 l/mm Longblue LXD
-    ('N20201223S0216_wavelengthSolutionDetermined.fits', dict()),
+    # 32 l/mm Longblue LXD - has bad SLITEDGE
+    #('N20201223S0216_wavelengthSolutionDetermined.fits', dict()),
     # 32 l/mm Shortblue SXD
     ('S20060507S0070_wavelengthSolutionDetermined.fits', dict()),
     # 111 l/mm Shortblue SXD
