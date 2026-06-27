@@ -572,15 +572,20 @@ def table_to_model(table):
             # columns must be the same for all rows but the degree of
             # polynomial might be different
             degree = max([int(r.match(p).groups()[0]) for p in param_names
-                          if table[p] is not np.ma.masked])
+                          if table[p] is not np.ma.masked and
+                          not np.isnan(table[p]) and not np.isinf(table[p])])
             domain = [table_dict.get("domain_start", meta.get("DOMAIN_START", 0)),
                       table_dict.get("domain_end", meta.get("DOMAIN_END", 1))]
             model = cls(degree=degree, domain=domain)
         elif ndim == 2:
             r = re.compile("c([0-9]+)_([0-9]+)")
             param_names = list(filter(r.match, table.colnames))
-            xdegree = max([int(r.match(p).groups()[0]) for p in param_names])
-            ydegree = max([int(r.match(p).groups()[1]) for p in param_names])
+            xdegree = max([int(r.match(p).groups()[0]) for p in param_names
+                           if table[p] is not np.ma.masked and
+                           not np.isnan(table[p]) and not np.isinf(table[p])])
+            ydegree = max([int(r.match(p).groups()[1]) for p in param_names
+                           if table[p] is not np.ma.masked and
+                           not np.isnan(table[p]) and not np.isinf(table[p])])
             xdomain = [table_dict.get("xdomain_start", meta.get("XDOMAIN_START", 0)),
                        table_dict.get("xdomain_end", meta.get("XDOMAIN_END", 1))]
             ydomain = [table_dict.get("ydomain_start", meta.get("YDOMAIN_START", 0)),
@@ -652,8 +657,8 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
     transform_axis : int (0 or 1)
         The axis to transform the image along; alternatively, the axis along
         which tracing.trace_lines() performed the trace which produced the
-        `in_coords` and `ref_coords` used. (This is in the Python sense, 0 or 1,
-        not the value returned by the dispaxis() descriptor).
+        `in_coords` and `ref_coords` used. This is in the python sense, so
+        0 = y-axis (features traced vertically).
     in_coords, ref_coords : arrays (2,N) for 2D data
         Lists of coordinates for the model fitting.
     fixed_linear : bool
@@ -679,9 +684,6 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
         domain_start, domain_end = m_init.y_domain
         param_names = [f'c{i}_1' for i in range(m_init.x_degree + 1)]
     domain_centre = 0.5 * (domain_start + domain_end)
-    if fixed_linear:
-        for pn in param_names:
-            getattr(m_init, pn).fixed = True
     shifts = ref_coords[transform_axis] - in_coords[transform_axis]
 
     if debug:
@@ -693,10 +695,53 @@ def create_distortion_model(m_init, transform_axis, in_coords, ref_coords,
     # value of the reference pixel along the dispersion axis
     fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                sigma_clip, sigma=3)
-    m_final, fwd_mask = fit_it(m_init, *in_coords, shifts)
+    if fixed_linear:
+        for pn in param_names:
+            getattr(m_init, pn).fixed = True
     m_inverse, inv_mask = fit_it(m_init, *ref_coords, -shifts)
-    fwd_rms = np.std((m_final(*in_coords) - shifts)[~fwd_mask])
     inv_rms = np.std((m_inverse(*ref_coords) + shifts)[~inv_mask])
+    # Consider an image where the slit edges are cubic functions of y.
+    # The inverse model (ref->input) can be constructed perfectly because
+    # there are only 2 unique reference x-coords and so the coefficients
+    # of a 2D model can be set to the coefficients of each cubic slitedge
+    # at these two x-coords. However, the forward model (input->ref) cannot
+    # be constructed perfectly because there are many input x-coords, with
+    # x_in=x_ref-shift and shift is a cubic function of y. Therefore, the
+    # forward model be of higher order(s). Since the x_in values are
+    # derived from 2 unique x_ref values plus a cubic in y, and the 2D
+    # coefficients are a linear function of x_ref, it seems that the 2D
+    # coefficients must be a linear function of x_in plus a cubic function
+    # of y, so the final 2D polynomial must contain terms up to y^3*y^3=y^6.
+    # If we're fitting a quadratic or higher function in both axes we don't
+    # change the orders.
+    if transform_axis == 1:
+        y_degree = m_init.y_degree
+        x_degree = m_init.x_degree if fixed_linear or y_degree > 1 else m_init.x_degree * 2
+    else:
+        x_degree = m_init.x_degree
+        y_degree = m_init.y_degree if fixed_linear or x_degree > 1 else m_init.y_degree * 2
+    m_init2 = m_init.__class__(x_degree=x_degree, y_degree=y_degree,
+                               x_domain=m_init.x_domain,
+                               y_domain=m_init.y_domain)
+    if fixed_linear:
+        for pn in param_names:
+            getattr(m_init2, pn).fixed = True
+
+    x1, x2 = ref_coords[0].min(), ref_coords[0].max()
+    y1, y2 = ref_coords[1].min(), ref_coords[1].max()
+    yrgrid, xrgrid = np.mgrid[int(y1):int(y2+1), int(x1):int(x2+1)]
+    model_shifts = -m_inverse(xrgrid, yrgrid)
+    if transform_axis == 0:
+        xigrid = xrgrid - model_shifts
+        yigrid = yrgrid
+    else:
+        xigrid = xrgrid
+        yigrid = yrgrid - model_shifts
+    m_final, _ = fit_it(m_init2, xigrid, yigrid, model_shifts)
+    fwd_rms = sigma_clip(m_final(*in_coords) - shifts, sigma=3).std()
+
+    #m_final, fwd_mask = fit_it(m_init2, *in_coords, shifts)
+    #fwd_rms = np.std((m_final(*in_coords) - shifts)[~fwd_mask])
 
     # Add the linear term: the coordinate perpendicular to the trace direction
     for m in (m_final, m_inverse):
