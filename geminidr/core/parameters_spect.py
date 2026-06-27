@@ -143,6 +143,10 @@ class determineDistortionConfig(config.Config):
     fwidth = config.RangeField("Feature width in pixels if reidentifying",
                                float, None, min=1., optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    combine_method = config.ChoiceField("Combine method to use when collapsing each slice", str,
+                                   allowed={"mean": "mean",
+                                            "median": "median"},
+                                   default="mean", optional=False)
     step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.05, min=0.001, max=0.1, inclusiveMax=True)

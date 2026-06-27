@@ -1432,6 +1432,7 @@ class Spect(Resample):
         debug = params["debug"]
         min_points = params.get("debug_min_points_per_trace", 0)
         min_relative_height = params.get("debug_min_relative_peak_height", 0.)
+        combiner = params.get("combine_method", "mean")
 
         fail = False
 
@@ -1507,7 +1508,8 @@ class Spect(Resample):
                 if fwidth is None:
                     # We don't have to be strict because we're not using the
                     # extracted spectrum for anything but a width estimate
-                    data, _, _, _ = peak_finding.average_along_slit(ext, center=start, nsum=nsum, strict=False)
+                    data, _, _, _ = peak_finding.average_along_slit(
+                        ext, center=start, nsum=nsum, combiner=combiner, strict=False)
                     fwidth = peak_finding.estimate_peak_width(data, boxcar_size=30)
                     log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
@@ -1518,7 +1520,8 @@ class Spect(Resample):
                     # can just extract along complete rows/columns for LS, which
                     # is faster.
                     data, mask, variance, extract_info = peak_finding.average_along_slit(
-                        ext, center=start, nsum=nsum, strict=hasattr(ext, "WAVECAL"))
+                        ext, center=start, nsum=nsum, combiner=combiner,
+                        strict=hasattr(ext, "WAVECAL"))
                     if isinstance(extract_info, slice):
                         # For (basically) straight slits, `extract_info` is a
                         # range of the starting and ending rows/columns.
@@ -1575,6 +1578,7 @@ class Spect(Resample):
                             # Only need a single `start` value for all lines.
                             ext, axis=1 - dispaxis,
                             start=start, initial=initial_peaks,
+                            func=getattr(NDStacker, combiner),
                             rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
                             nsum=nsum, max_missed=max_missed,
                             max_shift=max_shift * ybin / xbin,
@@ -1591,6 +1595,7 @@ class Spect(Resample):
                             traces.extend(tracing.trace_lines(
                                 ext, axis=1 - dispaxis,
                                 start=start, initial=[peak],
+                                func=getattr(NDStacker, combiner),
                                 rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
                                 nsum=nsum, max_missed=max_missed,
                                 max_shift=max_shift * ybin / xbin,

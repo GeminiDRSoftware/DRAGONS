@@ -1189,6 +1189,7 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
             direction, location = input_data["location"].split()
             temptable[direction] = float(location)
             temptable["nsum"] = config.nsum
+            temptable["combiner"] = config.combine_method
         pad_rows = nmatched - len(temptable.colnames)
         if pad_rows < 0:  # Really shouldn't be the case
             incoords = list(incoords) + [0] * (-pad_rows)

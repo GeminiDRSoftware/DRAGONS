@@ -20,6 +20,7 @@ class associateSkyConfig(parameters_niri.associateSkyConfig):
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     def setDefaults(self):
+        self.spatial_order = 3
         self.spectral_order = 3
         self.min_snr = 10
         self.max_missed = 5
