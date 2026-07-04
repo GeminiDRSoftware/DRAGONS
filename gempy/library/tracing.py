@@ -680,9 +680,10 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     # Eliminate blocks that are completely masked (e.g., chip gaps, bridges, amp5)
     # Also need to eliminate regions with only one valid column because NDStacker
     # can't compute the pixel-to-pixel variance and hence the S/N can't be calculated
-    for i, _slice in enumerate(all_slices):
-        if (ext_mask is not None and np.bincount(ext_mask[_slice].min(axis=1))[0] <= 1):
-            all_slices[i] = None
+    if ext_mask is not None:
+        for i, _slice in enumerate(all_slices):
+            if np.bincount(ext_mask[_slice].min(axis=1))[0] <= 1:
+                all_slices[i] = None
 
     try:
         start_index = all_slices.index(mkslice(start))
@@ -746,7 +747,7 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
                     if not trace.active:
                         continue
 
-                    for j in range(min(trace.steps_missed + 1, data.shape[0])):
+                    for j in range(min(trace.steps_missed + 1, lookback + 1)):
                         these_steps = (slice(step_index - j, step_index + 1)
                                        if direction == 1 else slice(step_index, step_index + j + 1))
                         effective_ypos = np.mean([slice_center(s)
