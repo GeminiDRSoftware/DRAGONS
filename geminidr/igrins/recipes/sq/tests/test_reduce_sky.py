@@ -24,6 +24,7 @@ def input_files(request, path_to_inputs):
 def test_make_processed_arc(input_files, caldict, change_working_dir, path_to_inputs, path_to_refs):
     r = Reduce()
     r.files = input_files
+    r.recipename = "oldMakeProcessedArc"
     # This avoids issues when running locally since test_make_processed_bpm
     # will add the BPM to the caldb
     r.uparms = {'addDQ:static_bpm': None}
@@ -31,7 +32,6 @@ def test_make_processed_arc(input_files, caldict, change_working_dir, path_to_in
     with change_working_dir():
         r.runr()
         output_filename = r._output_filenames.pop()
-        assert r.recipename == "makeProcessedArc"
         adout = astrodata.open(os.path.join("calibrations", "processed_arc", output_filename))
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
         ad_compare(adout, adref, ignore=["wcs"], ignore_kw=["PROCARC", "ADDMDF", "SDZWCS"])

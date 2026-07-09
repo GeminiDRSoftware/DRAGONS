@@ -3,7 +3,7 @@
 recipe_tags = {'IGRINS-2', 'SKY'}
 
 
-def makeProcessedArc(p):
+def oldMakeProcessedArc(p):
     """
     This recipe performs the standardization and corrections needed to convert
     the raw input dark images into a single stacked dark image. This output
@@ -59,7 +59,7 @@ def makeProcessedArc(p):
     return
 
 
-def newMakeProcessedArc(p):
+def makeProcessedArc(p):
     p.prepare(require_wcs=False)
     p.addDQ()
     p.addVAR(read_noise=True)
@@ -67,8 +67,9 @@ def newMakeProcessedArc(p):
     p.ADUToElectrons()
     p.stackFrames()  # ignore setReferenceFrame, as user can decide which frame(s) to use
     p.applySlitModel()  # cuts as well
-    #p.determineWavelengthSolution()
-    #p.determineDistortion()
+    p.determineWavelengthSolution()
+    p.determineDistortion()
+    p.storeProcessedArc()
 
 
 _default = makeProcessedArc

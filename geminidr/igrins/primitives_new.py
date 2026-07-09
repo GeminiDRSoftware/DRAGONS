@@ -285,9 +285,9 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        xdeg = params["dispersion_order"]
-        ydeg = params["spatial_order"]
-        zdeg = params["xdorder_order"]
+        disp_order = params["dispersion_order"]
+        spat_order = params["spatial_order"]
+        xd_order = params["xdorder_order"]
         id_only = params["id_only"]
         fwidth = params["fwidth"]
         min_snr = params["min_snr"]
@@ -300,6 +300,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         debug = params["debug"]
         min_points = params.get("debug_min_points_per_trace", 0)
         min_relative_height = params.get("debug_min_relative_peak_height", 0.)
+        xpix = np.arange(2048)
 
         for ad in adinputs:
             data_to_fit = []
@@ -319,14 +320,14 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                     convert_to_centroid = lambda x, y: (peak_to_centroid_func(x, y), y)
 
                 # Here's a lot of input-checking
-                extname = f'{ad.filename} order {spec_order}'
                 start = ext.shape[1 - dispaxis] // 2
 
                 # This is identical to the code in determineWavelengthSolution()
-                data, mask, variance, extract_info = peak_finding.average_along_slit(
-                    ext, center=start, nsum=nsum)
-                fwidth = peak_finding.estimate_peak_width(data, boxcar_size=30)
-                log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
+                if fwidth is None:
+                    data, mask, variance, extract_info = peak_finding.average_along_slit(
+                        ext, center=start, nsum=nsum)
+                    fwidth = peak_finding.estimate_peak_width(data, boxcar_size=30)
+                    log.stdinfo(f"Estimated feature width: {fwidth:.2f} pixels")
 
                 data, mask, variance, extract_info = peak_finding.average_along_slit(
                     ext, center=start, nsum=nsum)
@@ -337,15 +338,16 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                 log.stdinfo(f"  ±{nsum / 2:.1f} {direction}s "
                             "around polynomial with " + ", ".join(coeffs))
 
-                # Find peaks; convert width FWHM to sigma
-                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
                 initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
-                    data, widths=widths, mask=mask & DQ.not_signal,
-                    variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
+                    data, fwidth=fwidth, mask=mask & DQ.not_signal,
+                    variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad,
+                    pinpoint_index=-1)
 
                 if len(initial_peaks):
-                    rwidth = 0.42466 * fwidth
-                    slit_length_frac = 50 / ext.shape[1 - dispaxis]
+                    rwidth = peak_finding.ricker_widths(fwidth)[-1]
+                    slit_edges = [am.table_to_model(row) for row in ext.SLITEDGE]
+                    slit_length = np.mean(slit_edges[1](xpix) - slit_edges[0](xpix))
+                    slit_length_frac = slit_length / ext.shape[1 - dispaxis]
 
                     traces = []
                     for peak, peak_value in zip(initial_peaks, peak_values):
@@ -353,38 +355,24 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                         # along the dispersion axis. `extract_info` here is the
                         # polynomial describing that midway line.
                         start = extract_info(peak)
-                        traces.extend(tracing.trace_lines(
-                            ext, axis=1 - dispaxis,
-                            start=start, initial=[peak],
-                            rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
-                            nsum=nsum, max_missed=max_missed,
-                            initial_tolerance=None,
-                            max_shift=max_shift * ybin / xbin,
-                            viewer=self.viewer if debug else None,
-                            min_line_length=min_line_length * slit_length_frac,
-                            min_peak_value=min_relative_height * peak_value))
+                        try:
+                            traces.extend(tracing.trace_lines(
+                                ext, axis=1 - dispaxis,
+                                start=start, initial=[peak],
+                                rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
+                                nsum=nsum, max_missed=max_missed,
+                                initial_tolerance=None,
+                                max_shift=max_shift * ybin / xbin,
+                                viewer=self.viewer if debug else None,
+                                min_line_length=min_line_length * slit_length_frac,
+                                min_peak_value=min_relative_height * peak_value))
+                        except ValueError:  # too close to edge
+                            pass
 
                     # Remove traces with too few points
                     traces = [trace for trace in traces if len(trace) >= min_points]
                     log.stdinfo(f"Traced {len(traces)} lines from "
                                 f"{len(initial_peaks)} peaks")
-
-                    # Traces can extend beyond the edge of the illuminated slit
-                    # if adaptive binning has occurred and there's a feature in
-                    # the unilluminated region (for GNIRS notably the quadrant
-                    # boundary halfway up the detector)
-                    edge_models = [am.table_to_model(row) for row in ext.SLITEDGE]
-                    # Go through each trace, find the location of the slit
-                    # edge across from each point, and remove the point if
-                    # it's beyond the edge (with a small tolerance).
-                    for trace in traces:
-                        inco = trace.input_coordinates(reverse=False)
-                        limits = np.asarray([m([point[1] for point in inco])
-                                             for m in edge_models]).T
-                        for point, lim in zip(inco, limits):
-                            if (point[0] < min(lim) - 0.5 * step or
-                                    point[0] > max(lim) + 0.5 * step):
-                                trace.remove_point(point)
 
                     # List of traced peak positions
                     in_coords = np.array([coord for trace in traces for
@@ -406,50 +394,59 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                 in_coords = np.asarray(convert_to_centroid(*in_coords))
                 ref_coords = np.asarray(convert_to_centroid(*ref_coords))
 
-                shift = in_coords[1-dispaxis] - ref_coords[1-dispaxis]
-                slitpos = ((in_coords[dispaxis] - edge_models[0](in_coords[1-dispaxis])) /
-                           (edge_models[1](in_coords[1-dispaxis]) -
-                            edge_models[0](in_coords[1-dispaxis])))
-                data_to_fit.extend(list(zip(*[ref_coords[1-dispaxis], slitpos-0.5,
+                shift = ref_coords[1-dispaxis] - in_coords[1-dispaxis]
+                slitpos = ext.wcs.get_transform('pixels', 'rectified')(*in_coords)[dispaxis]
+                data_to_fit.extend(list(zip(*[ref_coords[1-dispaxis], slitpos,
                                               [spec_order] * len(shift), shift])))
                 nlines += len(traces)
 
             xref, slitpos, order, shift = np.asarray(data_to_fit).T
-            linefit = Table([xref, slitpos, order, shift],
+            linefit = Table([xref, slitpos, order, -shift],
                             names=["initial_mean_pixel", "slit_center",
-                                   "order", "shift"],
+                                   "order", "offset"],
                             dtype=[np.float32, np.float32, int, np.float32])
             ad.LINEFIT = linefit
             log.stdinfo(f"Fitting {nlines} lines across all orders")
+            good = np.logical_and(abs(slitpos) < 0.5, abs(slitpos) > 0.001)
+            xref = xref[good]
+            slitpos = slitpos[good]
+            order = order[good]
+            shift = shift[good]
 
-            # Unlike the regular determineDistortion(), we know we'll have a
-            # sufficient number of lines so can fit directly to the pixel
-            # coordinates, rather than the shift. We fix c0_0_0 and c1_0_0
-            # to be half the domain size, which ensures that the model
-            # produces no shift at the slit center
+            # As with determineDistortion(), we fit to the shift
             fit_it = LSQFitterWithOutlierRemoval3D(outlier_func=sigma_clip,
-                                                   niter=10)
-            m_init = Chebyshev3D(x_degree=xdeg, y_degree=ydeg, z_degree=zdeg,
-                                 c0_0_0=1023.5, c1_0_0=1023.5,
+                                                   niter=3)
+            m_init = Chebyshev3D(x_degree=disp_order, y_degree=spat_order,
+                                 z_degree=xd_order,
                                  x_domain=(0, 2047), y_domain=(-0.5, 0.5),
                                  z_domain=(min(spec_orders), max(spec_orders)))
             # Set all coefficients that do not have a slitpos term to be zero
             # as we want the model to produce no shift at the slit centre
             for p in m_init.param_names:
-                if p[3] == "0":
+                if p[3] == "0":  # Chebyshev order of spatial component
                     getattr(m_init, p).fixed = True
 
             # Compute 3D polynomial from x->x' and its inverse
-            m_final, fwd_mask = fit_it(m_init, xref, slitpos, order, xref+shift)
-            fwd_rms = np.std((m_final(xref, slitpos, order) - (xref+shift))[~fwd_mask])
+            # Map from the actual pixel location to the reference (vertical)
+            m_final, fwd_mask = fit_it(m_init, xref-shift, slitpos, order, shift)
+            # Put in the linear term so this is a proper coordinate transformation
+            m_final.c0_0_0 = m_final.c1_0_0 = 1023.5
+            fwd_rms = np.std((m_final(xref-shift, slitpos, order) - xref)[~fwd_mask])
             niter = fit_it.fit_info['niter']
             log.stdinfo(f"Forward rms={fwd_rms:.3f} pixels with "
                         f"{fwd_mask.sum()}/{xref.size} outliers in {niter} iterations")
-            m_inverse, inv_mask = fit_it(m_init, xref+shift, slitpos, order, xref)
-            inv_rms = np.std((m_final(xref+shift, slitpos, order) - xref)[~inv_mask])
+            # And the reverse
+            m_inverse, inv_mask = fit_it(m_init, xref, slitpos, order, -shift)
+            m_inverse.c0_0_0 = m_inverse.c1_0_0 = 1023.5
+            inv_rms = np.std((m_inverse(xref, slitpos, order) - (xref-shift))[~inv_mask])
             niter = fit_it.fit_info['niter']
             log.stdinfo(f"Inverse rms={inv_rms:.3f} pixels with "
                         f"{inv_mask.sum()}/{xref.size} outliers in {niter} iterations")
+
+            volfit = Table([m_final.param_names, m_final.parameters,
+                            m_inverse.parameters],
+                           names=["parameter", "forward", "inverse"])
+            ad.VOLFIT = volfit
 
             # Now add a 2D model to each extension's gWCS
             for ext, order in zip(ad, spec_orders):

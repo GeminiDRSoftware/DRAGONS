@@ -28,8 +28,13 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
                                   float, 0.1, min=0.001, max=0.2, inclusiveMax=True)
 
     def setDefaults(self):
+        self.fwidth = None
         self.min_snr = 20
         self.min_line_length = 0.7
+        self.nsum = 10
+        self.step = 10
+        self.max_missed = 0
+        #self.debug_min_points_per_trace = 9
 
 
 class determineSlitEdgesNewConfig(parameters_spect.determineSlitEdgesConfig):
