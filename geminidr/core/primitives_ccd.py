@@ -322,7 +322,7 @@ class CCD(PrimitivesBASE):
                                 self.keyword_comments['OVERSCAN'])
                     ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
                     # By convention, "readnoise" is always in electrons
-                    overrdns = overstd * ext.gain() if ext.is_in_adu() else overstd
+                    overrdns = overstd * gain if ext.is_in_adu() else overstd
                     ext.hdr.set('OVERRDNS', overrdns, self.keyword_comments['OVERRDNS'])
 
                     for desc in ('saturation_level', 'non_linear_level'):
