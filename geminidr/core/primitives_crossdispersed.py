@@ -246,9 +246,11 @@ class CrossDispersed(Spect, Preprocess):
                                                for length in ad[0].shape[::-1]))
             except TypeError:  # probably wcs is None
                 world_refpos = None
-            ad = self._cut_slits(ad, padding=2)
+            adout = self._cut_slits(ad, padding=2)
+            if hasattr(ad, "MDF"):
+                adout.MDF = ad.MDF
 
-            for ext, new_wave_model in zip(ad, xdtools.initial_wave_models(ad)):
+            for ext, new_wave_model in zip(adout, xdtools.initial_wave_models(adout)):
                 dispaxis = 2 - ext.dispersion_axis()  # Python Sense
                 specaxis_middle = 0.5 * (ext.shape[dispaxis] - 1)
                 try:
@@ -261,9 +263,9 @@ class CrossDispersed(Spect, Preprocess):
                 try:
                     spec_order = set(ext.SLITEDGE["specorder"])
                 except KeyError:
-                    if 'XD' in ad.tags:
+                    if 'XD' in adout.tags:
                         raise RuntimeError("No order information found in "
-                                           f"SLITEDGE for {ad.filename}")
+                                           f"SLITEDGE for {adout.filename}")
                 else:
                     if len(spec_order) > 1:
                         raise RuntimeError("Multiple orders found in SLITEDGE")
@@ -300,10 +302,10 @@ class CrossDispersed(Spect, Preprocess):
 
 
             # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
+            adout.update_filename(suffix=sfx, strip=True)
 
-            adoutputs.append(ad)
+            adoutputs.append(adout)
 
         return adoutputs
 
