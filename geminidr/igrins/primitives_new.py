@@ -22,6 +22,7 @@ from gempy.library import astromodels as am
 from gempy.library import peak_finding, tracing, transform, wavecal
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from gempy.adlibrary.manipulate_ad import reassemble_ad
 from gempy.library.astromodels import reduce_dimensionality
 
 from .primitives_igrins import IGRINS
@@ -146,6 +147,54 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                 ext.wcs.set_transform("rectified", "world", wave_model & sky_model)
 
                 # super().applySlitModel() will have done the housekeeping
+
+        return adinputs
+
+    def cleanReadout(self, adinputs=None, **params):
+        """
+
+        Parameters
+        ----------
+        suffix: str
+            Suffix to be added to output files
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        flat = params["flat"]
+        remove_level = params["remove_level"]
+        remove_amp_wise_var = params["remove_amp_wise_var"]
+
+        if flat is None:
+            flat_list = self.caldb.get_processed_flat(adinputs)
+        else:
+            flat_list = (flat, None)
+
+        flat_masks = {}
+        for ad, flat, origin in zip(*gt.make_lists(adinputs, *flat_list,
+                                    force_ad=(1,))):
+            try:
+                mask = flat_masks[flat.filename]
+            except KeyError:
+                mask = reassemble_ad(flat, shape=ad[0].shape)[0].mask
+                flat_masks[flat.filename] = mask
+
+            # Do the division
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the mask from the flat "
+                         f"{flat.filename}{origin_str}")
+            # "mask" is the good pixels
+            ad[0].data = remove_pattern(ad[0].data, mask=(mask & DQ.unilluminated == 0),
+                                        remove_level=remove_level,
+                                        remove_amp_wise_var=remove_amp_wise_var)
+            # Why is the mask not passed here?
+            ad[0].variance = remove_pattern(ad[0].variance, remove_level=1,
+                                            remove_amp_wise_var=False)
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -932,7 +981,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
 
         return adinputs
 
-    def flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=None):
+    def _flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=None):
         # We have to delete the mask and variance because IGRINSDR doesn't do
         # anything with these and they're probably junk.
         for ad in adinputs:
@@ -954,8 +1003,6 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         #timestamp_key = self.timestamp_keys[self.myself()]
         suffix = params["suffix"]
-        remove_level = params["remove_level"]
-        remove_amp_wise_var = params["remove_amp_wise_var"]
         frac_FOV = 1.0
 
         frametypes = [ad.phu.get("FRMTYPE") for ad in adinputs]
@@ -973,24 +1020,20 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
             assert len(groups) == 2
             in_group_a = [ad in groups[0] for ad in adinputs]
 
-        log.stdinfo("Exposures in group A: {}".format([ad.filename for ad, in_a in zip(adinputs, in_group_a) if in_a]))
-        log.stdinfo("Exposures in group B: {}".format([ad.filename for ad, in_a in zip(adinputs, in_group_a) if not in_a]))
         adinputsA = [ad for ad, in_a in zip(adinputs, in_group_a) if in_a]
         adinputsB = [ad for ad, in_a in zip(adinputs, in_group_a) if not in_a]
+        if len(adinputsA) * len(adinputsB) == 0:
+            raise ValueError("Cannot find two groups of exposures for subtraction")
+
+        grp_a_list = "\n    ".join([ad.filename for ad in adinputsA])
+        grp_b_list = "\n    ".join([ad.filename for ad in adinputsB])
+        log.stdinfo(f"Exposures in group A:\n    {grp_a_list}")
+        log.stdinfo(f"Exposures in group B:\n    {grp_b_list}")
         stackedA = self.stackFrames(adinputsA).pop()
         stackedB = self.stackFrames(adinputsB).pop()
 
-        ad_sky = self._get_ad_sky(adinputs[0])
-        mask = ad_sky[0].ORDERMAP != 0
-
         # FIXME should we better to create a new instance of AstroData?
         ad = stackedA.subtract(stackedB)
-        ad[0].data = remove_pattern(stackedA[0].data, mask=mask,
-                                    remove_level=remove_level,
-                                    remove_amp_wise_var=remove_amp_wise_var)
-        ad[0].variance = remove_pattern(stackedA[0].variance, remove_level=1,
-                                        remove_amp_wise_var=False)
-
         # Timestamp and update filename
         #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
         ad.update_filename(suffix=suffix, strip=True)

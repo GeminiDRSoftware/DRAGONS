@@ -1,7 +1,82 @@
 import numpy as np
 
+import astrodata
 from astrodata import wcs as adwcs
 from gempy.utils import logutils
+
+from geminidr.gemini.lookups import DQ_definitions as DQ
+
+
+def reassemble_ad(adinput, shape=None):
+    """
+    This takes an AstroData obejct with multiple extensions and reassembles
+    the data into a single extension, using the array_section descriptors to
+    place the data in the correct location. Pixels masked as either NO_DATA
+    or UNILLUMINATED are not added to the final image and so will be left as
+    zero.
+
+    The header is copied from the first extension, but the various section
+    keywords will be incorrect. This is not considered to be a major issue
+    since the calling code will know that a full image has been created.
+
+    Parameters
+    ----------
+    adinput: AstroData
+        input AD object with multiple extensions
+    shape: tuple/None
+        shape of the output array, if None, the shape is determined from the
+        array_section descriptors
+
+    Returns
+    -------
+        AstroData: object of same subclass as input, with one extension
+    """
+    array_sections = adinput.array_section()
+
+    # Regions not covered by any of the input extensions will be masked
+    # as unilluminated.
+    covered_shape = (max(arrsec.y2 for arrsec in array_sections),
+                     max(arrsec.x2 for arrsec in array_sections))
+    if shape is None:
+        shape = covered_shape
+
+    adout = astrodata.create(adinput.phu)
+    data = np.zeros(shape, dtype=adinput[0].data.dtype)
+    try:
+        mask = np.full(shape, DQ.unilluminated)
+        mask[:covered_shape[0], :covered_shape[1]] = 0
+    except AttributeError:
+        mask = None
+    try:
+        variance = np.zeros(shape, dtype=adinput[0].variance.dtype)
+    except AttributeError:
+        variance = None
+
+    # Rather than create len(adinput) fullsize images and collapse them,
+    # we implement a two-pass approach which requires us to go back and
+    # unmasked regions that will have been masked by subsequent extensions.
+    for ext, arrsec in zip(adinput, array_sections):
+        _slice = arrsec.asslice()
+        if mask is None:
+            data[_slice] += ext.data
+            if variance is not None:
+                variance[_slice] += ext.variance
+        else:
+            illuminated = ext.mask & (DQ.no_data | DQ.unilluminated) == 0
+            data[_slice][illuminated] += ext.data[illuminated]
+            mask[_slice] |= ext.mask
+            if variance is not None:
+                variance[_slice][illuminated] += ext.variance[illuminated]
+
+    if mask is not None:
+        for ext, arrsec in zip(adinput, array_sections):
+            _slice = arrsec.asslice()
+            illuminated = ext.mask & (DQ.no_data | DQ.unilluminated) == 0
+            mask[_slice][illuminated] = ext.mask[illuminated]
+
+    adout.append(adinput[0].nddata.__class__(data=data, mask=mask, variance=variance,
+                                             meta=adinput[0].nddata.meta))
+    return adout
 
 
 def rebin_data(adinput, xbin=1, ybin=1, patch_binning_descriptors=True):

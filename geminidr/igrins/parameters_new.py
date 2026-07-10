@@ -1,5 +1,15 @@
 from gempy.library import config
+from astrodata import AstroData
 from geminidr.core import parameters_spect
+
+
+class cleanReadoutConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_readoutCleaned",
+                          optional=True)
+    remove_level = config.Field("readoutpattern remove level", int, 2)
+    remove_amp_wise_var = config.Field("remove amp-wise variation if True", bool, False)
+    flat = config.ListField("Flatfield frame (needed for order identification",
+                            (str, AstroData), None, optional=True, single=True)
 
 
 class correctFlexureConfig(config.Config):
@@ -81,8 +91,6 @@ class flagDiscrepantPixelsConfig(config.Config):
 
 class makeABNewConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_AB",  optional=True)
-    remove_level = config.Field("readoutpattern remove level", int, 2)
-    remove_amp_wise_var = config.Field("remove amp-wise variation if True", bool, False)
 
 
 class makeSyntheticImageConfig(config.Config):
