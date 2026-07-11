@@ -688,8 +688,11 @@ def trace_lines(data, axis, mask=None, variance=None, start=None, initial=None,
     try:
         start_index = all_slices.index(mkslice(start))
     except ValueError:
-        raise ValueError(f"Starting location {start} is too close to "
-                         f"edge of array for nsum={nsum}")
+        log.debug(f"Starting location {start} is too close to "
+                  f"edge of array for nsum={nsum}")
+        # Regardless of how many traces there are, they share the same start
+        # position so none are valid.
+        return []
 
     # If tracing vertically-dispersed data the coordinates in the Trace will
     # be in (y, x) order and since we need (x, y) elsewhere we reverse them here.
