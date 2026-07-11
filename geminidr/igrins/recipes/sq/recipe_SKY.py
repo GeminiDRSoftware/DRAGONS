@@ -68,6 +68,7 @@ def makeProcessedArc(p):
     p.stackFrames()  # ignore setReferenceFrame, as user can decide which frame(s) to use
     p.applySlitModel()  # cuts as well
     p.determineWavelengthSolution()
+    p.writeOutputs()
     p.determineDistortion()
     p.storeProcessedArc()
 

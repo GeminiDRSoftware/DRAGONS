@@ -37,17 +37,20 @@ def makeStellar(p):
     return
 
 def makeStellarNew(p):
-    p.checkCALDB(caltypes=["processed_flat", "processed_arc"])
+    #p.checkCALDB(caltypes=["processed_flat", "processed_arc"])
     p.prepare(require_wcs=False)
     p.addDQ()
     p.addVAR(read_noise=True, poisson_noise=True)
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
-    p.makeAB() # This will make stacked A-B and do the reference pixel correction.
+    p.makeABNew()  # this will make stacked A-B and do the reference pixel correction.
+    p.cleanReadout()
+    p.flatCorrect()  # cuts as well
+    p.attachWavelengthSolution()
+    return
     p.estimateSlitProfile()
 
     # Here's where we deviate from the IGRINSDR recipe
-    p.flatCorrect()
     p.distortionCorrect(outstream="xshifted")
     p.extractSpectrumUsingProfile(stream="xshifted")
     # Copy the slit profile map

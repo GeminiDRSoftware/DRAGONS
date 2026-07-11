@@ -100,7 +100,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
             mdf_table['y_ccd'] = y_ccd
             mdf_table['specorder'] = mdf_table['slit_id'] + low_order - 1
             mdf_table['slitlength_pixels'] = slitlen_pix
-            mdf_table['slitlength_asec'] = slitlen_pix * ad.pixel_scale()[0]
+            mdf_table['slitlength_asec'] = 5.0
             ad.MDF = mdf_table
             log.stdinfo(f"Adding MDF table for {ad.filename}")
 
@@ -124,7 +124,9 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         #self.writeOutputs(adinputs, suffix="_intermediateCut", strip=True)
         x = np.arange(2048)
         for ad in adinputs:
-            for ext in ad:
+            slitlengths_asec = dict(zip(ad.MDF['specorder'],
+                                        ad.MDF['slitlength_asec']))
+            for ext, spec_order in zip(ad, ad.hdr['SPECORDR']):
                 edge_models = [am.table_to_model(row) for row in ext.SLITEDGE]
                 t = ext.wcs.get_transform('pixels', 'rectified')
                 y1 = edge_models[0](x)
@@ -132,11 +134,13 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                 center = 0.5 * np.mean(t(x, y2)[1] + t(x, y1)[1])
                 width = np.mean(t(x, y2)[1] - t(x, y1)[1])  # of rectified slit
                 m = models.Identity(1) & (models.Shift(-center) | models.Scale(1. / width))
-                ext.wcs.insert_transform("rectified", m, after=False)
+                slitpos_frame = cf.Frame2D(name="slitpos", axes_names=("x", "slitpos"),
+                                           unit=(u.pix, u.dimensionless_unscaled))
+                ext.wcs.insert_frame("rectified", m, slitpos_frame)
                 wave_model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
                 sky_model = am.get_named_submodel(ext.wcs.forward_transform, "SKY")
                 current_pixscale = 3600 * np.sqrt(np.linalg.det(sky_model[-3].matrix))
-                sky_model[-3].matrix *= 5. / current_pixscale  # slit is 5 arcsec
+                sky_model[-3].matrix *= slitlengths_asec[spec_order] / current_pixscale  # slit is 5 arcsec
                 # We then want to remove all shifts (there'll be the CRPIX2
                 # shift, and a second shift from the origin reset after cutting).
                 # We do it like this because the CD matrix may have been rotated
@@ -144,7 +148,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                 for m in sky_model:
                     if m.__class__ == models.Shift:
                         m.offset = 0
-                ext.wcs.set_transform("rectified", "world", wave_model & sky_model)
+                ext.wcs.set_transform("slitpos", "world", wave_model & sky_model)
 
                 # super().applySlitModel() will have done the housekeeping
 
@@ -352,6 +356,9 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         xpix = np.arange(2048)
 
         for ad in adinputs:
+            slitlengths_asec = dict(zip(ad.MDF['specorder'],
+                                        ad.MDF['slitlength_asec']))
+
             data_to_fit = []
             xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
             nlines = 0
@@ -444,7 +451,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                 ref_coords = np.asarray(convert_to_centroid(*ref_coords))
 
                 shift = ref_coords[1-dispaxis] - in_coords[1-dispaxis]
-                slitpos = ext.wcs.get_transform('pixels', 'rectified')(*in_coords)[dispaxis]
+                slitpos = ext.wcs.get_transform('pixels', 'slitpos')(*in_coords)[dispaxis]
                 data_to_fit.extend(list(zip(*[ref_coords[1-dispaxis], slitpos,
                                               [spec_order] * len(shift), shift])))
                 nlines += len(traces)
@@ -497,12 +504,17 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                            names=["parameter", "forward", "inverse"])
             ad.VOLFIT = volfit
 
-            # Now add a 2D model to each extension's gWCS
+            # Now add a 2D model to each extension's gWCS, which also
+            # converts the y-coordinate to uniformly-sized pixels.
             for ext, order in zip(ad, spec_orders):
+                slitlen_pix = slitlengths_asec[order] / ext.pixel_scale()
+                pixscale = ext.pixel_scale()
                 model = models.Mapping((0, 1, 1)) | (
-                        reduce_dimensionality(m_final, z=order) & models.Identity(1))
+                        reduce_dimensionality(m_final, z=order) &
+                        models.Scale(slitlen_pix))
                 model.inverse = models.Mapping((0, 1, 1)) | (
-                        reduce_dimensionality(m_inverse, z=order) & models.Identity(1))
+                        reduce_dimensionality(m_inverse, z=order) &
+                        models.Scale(1. / slitlen_pix))
                 try:
                     frame_index = ext.wcs.available_frames.index("distortion_corrected")
                 except ValueError:
@@ -516,10 +528,27 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                           ext.wcs.pipeline[frame_index].transform)] +
                         ext.wcs.pipeline[frame_index + 1:]
                     )
-                distcorr_frame = cf.Frame2D(name="distortion_corrected",
-                                            axes_names=["x", "slitpos"])
-                ext.wcs.insert_frame('rectified', model, distcorr_frame)
+                distcorr_frame = cf.Frame2D(name="distortion_corrected")
+                ext.wcs.insert_frame('slitpos', model, distcorr_frame)
 
+                # To enable the generic code to work, we need to remove the
+                # slitpos frame and chain the two transforms across it
+                # together. This is a bit grim.
+                frame_index = ext.wcs.available_frames.index('slitpos')
+                ext.wcs = ext.wcs.__class__(
+                    ext.wcs.pipeline[:frame_index - 1] +
+                    [(ext.wcs.pipeline[frame_index - 1].frame,
+                      ext.wcs.pipeline[frame_index - 1].transform |
+                      ext.wcs.pipeline[frame_index].transform)] +
+                    ext.wcs.pipeline[frame_index + 1:])
+
+                # And update the "SKY" model to still give output coordinates
+                # in arcseconds; the "distortion_corrected" frame is in
+                # uniformly-sized pixels.
+                ext.wcs = am.replace_submodel_in_gwcs(ext.wcs, "SKY",
+                                                      models.Scale(pixscale))
+
+            del ad.MDF
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
 
@@ -580,6 +609,9 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         pixels = np.arange(npix)
         xcorr = np.zeros((2*npix-1,))
         for ad in adinputs:
+            slitlengths_asec = dict(zip(ad.MDF['specorder'],
+                                        ad.MDF['slitlength_asec']))
+
             # First pass to extract spectra and get global shift
             spectra = []
             for ext in ad:
@@ -750,7 +782,8 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                         setattr(cheb1d, p, v / spec_order)
                 cheb1d.inverse = am.make_inverse_chebyshev1d(cheb1d, max_deviation=0.01)
                 cheb1d.name = "WAVE"
-                transform = cheb1d & models.Scale(5.0)  # slit is 5 arcsec
+                slit_model = models.Scale(slitlengths_asec[spec_order], name="SKY")
+                transform = cheb1d & slit_model
                 ext.wcs = gWCS(ext.wcs.pipeline[:-2] +
                                [(ext.wcs.pipeline[-2].frame, transform),
                                 (output_frame, None)])

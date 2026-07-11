@@ -100,6 +100,8 @@ class CrossDispersed(Spect, Preprocess):
             # Try to get a slit rectification model from the flat, and, if one
             # exists, insert it before the pixels-to-world transform.
             ad_rect = gt.attach_rectification_model(ad_cut, flat, log=self.log)
+            if hasattr(flat, "MDF"):
+                ad_rect.MDF = flat.MDF
 
             origin_str = f" (obtained from {origin})" if origin else ""
 
