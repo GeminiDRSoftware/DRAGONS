@@ -2177,9 +2177,6 @@ class Spect(Resample):
         debug_step : int
             The number of rows/columns per step. The default value is set per
             instrument/mode, but can be changed if needed.
-        debug_nsum : int
-            The number of rows/columns to sum each step. The default value is
-            set per instrument/mode, but can be changed if needed.
 
         Returns
         -------
