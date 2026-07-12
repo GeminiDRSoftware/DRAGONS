@@ -16,6 +16,7 @@ import itertools
 from importlib import import_module
 
 import matplotlib
+import numpy
 import numpy as np
 from astropy import units as u
 from astropy.io.ascii.core import InconsistentTableError

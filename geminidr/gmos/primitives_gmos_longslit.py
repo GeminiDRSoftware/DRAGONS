@@ -242,13 +242,20 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
                         plt.show()
                         plt.ion()
 
-                    yshift = mshift - maxima[0]
-                    if len(maxima) > 1 or abs(yshift) > mshift:
-                        log.warning(f"{ad.filename}: cross-correlation peak is"
-                                    " untrustworthy so not adding illumination "
-                                    "mask. Please re-run with a specified shift.")
+                    if not maxima:
+                        log.warning(f"{ad.filename}: no peaks found in "
+                                    "cross-correlation, so not adding "
+                                    "illumination mask. Please re-run with a specified shift.")
                         yshift = None
                         log.stdinfo(slit_location_msg)
+                    else:
+                        yshift = mshift - maxima[0]
+                        if len(maxima) > 1 or abs(yshift) > mshift:
+                            log.warning(f"{ad.filename}: cross-correlation peak is"
+                                        " untrustworthy so not adding illumination "
+                                        "mask. Please re-run with a specified shift.")
+                            yshift = None
+                            log.stdinfo(slit_location_msg)
                 else:
                     yshift = shift
 

@@ -225,7 +225,7 @@ class CCD(PrimitivesBASE):
                         # need to match asec location and size
                         pixels = np.arange(asec.y1, asec.y2)
                         data = np.mean(ext.data[asec.y1:asec.y2, x1:x2], axis=axis)
-                        stds = np.std(ext.data[asec.y1:asec.y2, x1:x2], axis=axis)
+                        stds = np.std(ext.data[asec.y1:asec.y2, x1:x2], axis=axis, ddof=1)
                     else:
                         if y1 > asec.y1:  # Bias on top
                             y1 += nbiascontam
@@ -240,17 +240,29 @@ class CCD(PrimitivesBASE):
                         data = np.mean(ext.data[y1:y2, asec.x1:asec.x2], axis=axis)
                         stds = np.std(ext.data[y1:y2, asec.x1:asec.x2], axis=axis)
 
-                    # We have 1 sample (of x2-x1 values) from each of N
-                    # populations each of which has a different population mean,
-                    # (ie the bias leve for that row) but we assume they all
-                    # have the same standard deviation (ie the read noise) and
-                    # we want to estimate that population standard deviation.
-                    # We've calculated the mean (data) and standard deviation
-                    # (stds) of each of the samples, and want to estimate the
-                    # population standard deviation. Because the means are
-                    # different, we can't just calculate the std of all the
-                    # samples.
-                    overstd = np.sqrt(np.mean(stds * stds))
+                    # We have (x2-x1) samples from each of N populations each
+                    # of which has a different population mean, (ie the bias
+                    # level for that row) but we assume they all have the same
+                    # standard deviation (ie the read noise) and we want to
+                    # estimate that population standard deviation.
+                    # We've calculated the mean (data) and estimates of the
+                    # population standard deviation[*] (stds) of each of the set
+                    # of samples, and want to estimate the population standard
+                    # deviation. Because the means are different, we can't just
+                    # calculate the std of all the samples.
+                    # [*] [by which I mean to say we set ddof=1 in the call to
+                    # np.stds to apply the (N/N-1) factor to estimate the
+                    # population standard deviation from the calculaiton of the
+                    # sample standard deviation.
+                    # We use the mean of these per-row population variance
+                    # estimates as our estimate of the global population
+                    # variance. This seems to work well, but I'm not sure if it
+                    # is truly an optimal estimator.
+                    # It turns out that the first and last row of the readout
+                    # often have pixels with massively outlying values, so we
+                    # disregard those samples
+                    trimmedstds = stds[1:-1]
+                    overstd = np.sqrt(np.mean(trimmedstds * trimmedstds))
 
                     # Readnoise descriptor always returns value in electrons
                     if ext.is_in_adu():
@@ -309,7 +321,10 @@ class CCD(PrimitivesBASE):
                     ext.hdr.set('OVERSCAN', previous_overscan + bias_level,
                                 self.keyword_comments['OVERSCAN'])
                     ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
-                    ext.hdr.set('OVERRDNS', overstd, self.keyword_comments['OVERRDNS'])
+                    # By convention, "readnoise" is always in electrons
+                    overrdns = overstd * ext.gain() if ext.is_in_adu() else overstd
+                    ext.hdr.set('OVERRDNS', overrdns, self.keyword_comments['OVERRDNS'])
+
                     for desc in ('saturation_level', 'non_linear_level'):
                         with suppress(AttributeError, KeyError):
                             ext.hdr[ad._keyword_for(desc)] -= bias_level

@@ -328,9 +328,9 @@ def test_regression_determine_wavelength_solution(
             np.testing.assert_allclose(wavelength[indices], ref_wavelength[indices],
                                    atol=tolerance)
             print(f"Test passed for {ad.filename}, extension {wcalibrated_ext.id}")
-        except AssertionError:
+        except AssertionError as e:
             failed = True
-            raise
+            raise AssertionError(f"Test failed for {ad.filename}, extension {wcalibrated_ext.id}\n{repr(model)}\n{repr(ref_model)}")
         finally:
             if write_report:
                 do_report(wcalibrated_ext, ref_ext, failed=failed)
