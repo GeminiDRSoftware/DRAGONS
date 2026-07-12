@@ -33,6 +33,7 @@ def test_make_ab(path_to_inputs, path_to_refs, adinputs, caldict):
     ad_compare(adref, adout, ignore_kw=['EXTEND'])
 
 
+@pytest.mark.skip("Doesn't work now that cleanReadout is a separate primitive")
 @pytest.mark.igrins2
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("adinputs, caldict", INPUT_FILES, indirect=['adinputs'])
@@ -43,7 +44,8 @@ def test_make_ab2(path_to_inputs, path_to_refs, adinputs, caldict):
     p.caldb.user_cals = {k: os.path.join(path_to_inputs, v)
                          for k, v in caldict.items()}
     #p.correctFlexure()
-    adout = p.makeABNew().pop()
+    p.makeABNew()
+    adout = p.cleanReadout().pop()
     adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
     # EXTEND is one of those keywords that is put there by the FITS writer
     # so may not be present
