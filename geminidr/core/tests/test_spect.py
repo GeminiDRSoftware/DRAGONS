@@ -44,7 +44,7 @@ from gwcs.wcs import WCS as gWCS
 from specutils.utils.wcs_utils import air_to_vac
 
 import astrodata, gemini_instruments
-from astrodata.testing import ad_compare, assert_most_close
+from astrodata.testing import ad_compare, assert_most_close, download_from_archive
 from gempy.library import astromodels as am
 from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
