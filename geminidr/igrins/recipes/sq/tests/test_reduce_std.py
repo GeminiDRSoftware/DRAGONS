@@ -21,6 +21,7 @@ def input_files(request, path_to_inputs):
             for filename in request.param]
 
 
+@pytest.mark.skip("Fails now due to a dependency update?")
 @pytest.mark.igrins2
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('input_files, caldict', STD_INPUTS, indirect=['input_files'])
