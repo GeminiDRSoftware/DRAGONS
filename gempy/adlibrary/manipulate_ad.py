@@ -42,11 +42,10 @@ def reassemble_ad(adinput, shape=None):
 
     adout = astrodata.create(adinput.phu)
     data = np.zeros(shape, dtype=adinput[0].data.dtype)
-    try:
-        mask = np.full(shape, DQ.unilluminated)
-        mask[:covered_shape[0], :covered_shape[1]] = 0
-    except AttributeError:
-        mask = None
+
+    # Always create a mask because there may be regions between the input
+    # extensions that need to be flagged as unilluminated.
+    mask = np.full(shape, DQ.unilluminated)
     try:
         variance = np.zeros(shape, dtype=adinput[0].variance.dtype)
     except AttributeError:
@@ -57,10 +56,11 @@ def reassemble_ad(adinput, shape=None):
     # unmasked regions that will have been masked by subsequent extensions.
     for ext, arrsec in zip(adinput, array_sections):
         _slice = arrsec.asslice()
-        if mask is None:
+        if ext.mask is None:
             data[_slice] += ext.data
             if variance is not None:
                 variance[_slice] += ext.variance
+            mask[_slice] = DQ.good
         else:
             illuminated = ext.mask & (DQ.no_data | DQ.unilluminated) == 0
             data[_slice][illuminated] += ext.data[illuminated]
@@ -68,8 +68,8 @@ def reassemble_ad(adinput, shape=None):
             if variance is not None:
                 variance[_slice][illuminated] += ext.variance[illuminated]
 
-    if mask is not None:
-        for ext, arrsec in zip(adinput, array_sections):
+    for ext, arrsec in zip(adinput, array_sections):
+        if ext.mask is not None:
             _slice = arrsec.asslice()
             illuminated = ext.mask & (DQ.no_data | DQ.unilluminated) == 0
             mask[_slice][illuminated] = ext.mask[illuminated]
@@ -114,6 +114,9 @@ def rebin_data(adinput, xbin=1, ybin=1, patch_binning_descriptors=True):
     elif xrebin * yrebin == 1:
         log.stdinfo(f"{adinput.filename} does not need rebinning")
         return adinput
+    elif (xbin % adinput.detector_x_bin() > 0 or
+          ybin % adinput.detector_y_bin() > 0):
+        raise ValueError('New binning must be a multiple of the current binning')
 
     log.stdinfo(f"Rebinning {adinput.filename}")
     for ext, datsec in zip(adinput, adinput.data_section()):
@@ -122,6 +125,10 @@ def rebin_data(adinput, xbin=1, ybin=1, patch_binning_descriptors=True):
         if len(ext_shape) != 2:
             log.warning(f"Cannot rebin {extid} with {len(ext_shape)} dimensions")
             continue
+
+        if ext.shape[1] % yrebin > 0 or ext.shape[0] % xrebin > 0:
+            raise ValueError(f"Cannot rebin {extid} of shape {ext_shape} to "
+                             f"{xbin}x{ybin}")
 
         for attr in (core_attributes + list(ext.nddata.meta['other'].keys())):
             data = getattr(ext, attr, None)
