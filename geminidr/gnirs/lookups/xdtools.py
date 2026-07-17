@@ -30,6 +30,6 @@ def initial_wave_models(ad):
         filter_name = lookup.xd_orders.get(spec_order)
         dispersion = config.get(filter_name)
         cenwave = ad._grating_order() * ad.central_wavelength(asNanometers=True) / spec_order
-        npix = ext.shape[1]
+        npix = ext.shape[0]
         # Return the model in this form so that it has a ready-made inverse
         yield models.Shift(-0.5*(npix-1)) | models.Scale(dispersion) | models.Shift(cenwave)
