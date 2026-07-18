@@ -25,7 +25,7 @@ from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.modeling import Model, models
 from astropy.table import Table, vstack, MaskedColumn
-from gwcs import coordinate_frames as cf
+from gwcs import coordinate_frames as cf, Step
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -700,7 +700,7 @@ class Spect(Resample):
                     dist_frame_index = wcs.available_frames.index('distortion_corrected')
                 except ValueError:
                     # If there's a shift, insert it at the start of the transform
-                    m_distcorr = [('pixels', m_shift)]
+                    m_distcorr = [Step('pixels', m_shift)]
                 else:
                     # Find the latest frame in the arc's gWCS before
                     # "distortion_corrected" that's also in the science.
@@ -737,13 +737,14 @@ class Spect(Resample):
                 sky_model = am.get_named_submodel(ext.wcs.forward_transform, 'SKY')
                 output_frames = ext.wcs.output_frame.frames
 
-                for i, (frame, transform) in enumerate(dist_model):
+                for i, step in enumerate(dist_model):
                     try:
                         next_frame = dist_model[i+1].transform
-                    except (AttributeError, IndexError):
+                    except IndexError:
                         next_frame = cf.Frame2D(name='distortion_corrected')
-                    if transform is not None:
-                        ext.wcs.insert_frame(frame, transform, next_frame)
+                    if step.transform is not None:
+                        ext.wcs.insert_frame(step.frame, step.transform,
+                                             next_frame)
 
                 if wave_model is None:
                     log.warning(f"{arc.filename} extension {ext.id} has "
