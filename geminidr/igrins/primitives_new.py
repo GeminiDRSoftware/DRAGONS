@@ -1,5 +1,6 @@
 import os
 from importlib import import_module
+import copy
 import warnings
 
 from matplotlib import pyplot as plt, colors as mcolors
@@ -511,10 +512,10 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                 pixscale = ext.pixel_scale()
                 model = models.Mapping((0, 1, 1)) | (
                         reduce_dimensionality(m_final, z=order) &
-                        models.Scale(slitlen_pix))
+                        models.Identity(1))
                 model.inverse = models.Mapping((0, 1, 1)) | (
                         reduce_dimensionality(m_inverse, z=order) &
-                        models.Scale(1. / slitlen_pix))
+                        models.Identity(1))
                 try:
                     frame_index = ext.wcs.available_frames.index("distortion_corrected")
                 except ValueError:
@@ -528,19 +529,18 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                           ext.wcs.pipeline[frame_index].transform)] +
                         ext.wcs.pipeline[frame_index + 1:]
                     )
-                distcorr_frame = cf.Frame2D(name="distortion_corrected")
-                ext.wcs.insert_frame('slitpos', model, distcorr_frame)
 
-                # To enable the generic code to work, we need to remove the
-                # slitpos frame and chain the two transforms across it
-                # together. This is a bit grim.
-                frame_index = ext.wcs.available_frames.index('slitpos')
-                ext.wcs = ext.wcs.__class__(
-                    ext.wcs.pipeline[:frame_index - 1] +
-                    [(ext.wcs.pipeline[frame_index - 1].frame,
-                      ext.wcs.pipeline[frame_index - 1].transform |
-                      ext.wcs.pipeline[frame_index].transform)] +
-                    ext.wcs.pipeline[frame_index + 1:])
+                # We form a chain of coordinate frames: pixels -> rectified ->
+                # slitpos -> distcorr_slitpos -> distortion_corrected. The
+                # "distcorr_slitpos" frame is in (corrected_x, slitpos) units.
+                # This may be useful later.
+                distcorr_inter_frame = copy.copy(ext.wcs.slitpos)
+                distcorr_inter_frame.name = "distcorr_slitpos"
+                distcorr_frame = cf.Frame2D(name="distortion_corrected")
+                ext.wcs.insert_frame('slitpos', model, distcorr_inter_frame)
+                ext.wcs.insert_frame(distcorr_inter_frame.name,
+                                     models.Identity(1) & models.Scale(slitlen_pix),
+                                     distcorr_frame)
 
                 # And update the "SKY" model to still give output coordinates
                 # in arcseconds; the "distortion_corrected" frame is in

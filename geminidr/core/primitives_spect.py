@@ -739,11 +739,11 @@ class Spect(Resample):
 
                 for i, step in enumerate(dist_model):
                     try:
-                        next_frame = dist_model[i+1].transform
+                        next_frame = dist_model[i+1].frame
                     except IndexError:
                         next_frame = cf.Frame2D(name='distortion_corrected')
                     if step.transform is not None:
-                        ext.wcs.insert_frame(step.frame, step.transform,
+                        ext.wcs.insert_frame(step.frame.name, step.transform,
                                              next_frame)
 
                 if wave_model is None:

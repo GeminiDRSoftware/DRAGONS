@@ -1,6 +1,6 @@
 from gempy.library import config
 from astrodata import AstroData
-from geminidr.core import parameters_spect
+from geminidr.core import parameters_preprocess, parameters_spect
 
 
 class cleanReadoutConfig(config.Config):
@@ -103,4 +103,11 @@ class maskReferencePixelsConfig(config.Config):
 
 
 class normalizeFlatNewConfig(parameters_spect.normalizeFlatConfig):
-    pass
+    def setDefaults(self):
+        self.threshold = 0.001
+
+
+class thresholdFlatfieldConfig(parameters_preprocess.thresholdFlatfieldConfig):
+    def setDefaults(self):
+        self.lower = 0.001
+

@@ -46,6 +46,7 @@ def makeStellarNew(p):
     p.makeABNew()  # this will make stacked A-B and do the reference pixel correction.
     p.cleanReadout()
     p.flatCorrect()  # cuts as well
+    p.writeOutputs()
     p.attachWavelengthSolution()
     return
     p.estimateSlitProfile()

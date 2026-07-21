@@ -91,6 +91,8 @@ def test_new_make_processed_std(input_files, caldict, change_working_dir, path_t
             c2 = SkyCoord(*ext.wcs(1024, ymid+1)[1:], unit="deg")
             assert c1.separation(c2).arcsec == pytest.approx(5. / slitlen_pix, rel=0.05)
 
-            # The "distortion_corrected" frame should be in uniform pixels
+            # The "distortion_corrected" frame should be in uniform pixels,
+            # but the input pixels are not uniform because the slit width
+            # in pixels varies across the detector.
             t = ext.wcs.get_transform('pixels', 'distortion_corrected')
             assert t(1024, ymid+1)[1] - t(1024, ymid)[1] == pytest.approx(50. / slitlen_pix, rel=0.05)
