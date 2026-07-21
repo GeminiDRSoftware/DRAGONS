@@ -56,14 +56,33 @@ def test_make_processed_arc(input_files, caldict, change_working_dir, path_to_in
         assert r.recipename == "makeProcessedArc"
         output_filename = r._output_filenames.pop()
         adout = astrodata.open(os.path.join("calibrations", "processed_arc", output_filename))
+        adout.write("/Users/chris.simpson/gemini_python/igrins2/pytest_arc.fits", overwrite=True)
 
         assert len(adout) == 24
         np.testing.assert_equal(adout.hdr['SPECORDR'], list(range(70, 94)))
 
         # WCS should be in (wavelength, slit coords in arcsec)
         for ext in adout:
-            ymid = ext.shape[0] // 2
-            wcs1 = ext.wcs(1024, ymid)
+            x, y = 1024, ext.shape[0] // 2
+            wcs1 = ext.wcs(x, y)
             assert len(wcs1) == 2
             slitlen_pix = np.diff(ext.SLITEDGE['c0'] + ext.SLITEDGE['c2'])[0]
-            assert abs(wcs1[1] - ext.wcs(1024, ymid+1)[1]) == pytest.approx(5. / slitlen_pix, rel=0.05)
+            assert abs(wcs1[1] - ext.wcs(x, y+1)[1]) == pytest.approx(5. / slitlen_pix, rel=0.05)
+
+            # And check some intermediate frames: this should be in SLITPOS coords
+            t = ext.wcs.get_transform("pixels", "slitpos")
+            assert t(x, y+1)[1] - t(x, y)[1] == pytest.approx(1. / slitlen_pix, rel=0.05)
+
+            # So should this
+            t = ext.wcs.get_transform("pixels", "distcorr_slitpos")
+            assert t(x, y+1)[1] - t(x, y)[1] == pytest.approx(1. / slitlen_pix, rel=0.05)
+
+            # And check some intermediate frames
+            t = ext.wcs.get_transform("pixels", "distortion_corrected")
+            assert t(x, y+1)[1] - t(x, y)[1] == pytest.approx(50. / slitlen_pix, rel=0.05)
+
+            # Check the round-trip to all intermediate frames
+            for frame in ext.wcs.available_frames[1:-1]:
+                t = ext.wcs.get_transform(ext.wcs.input_frame, frame)
+                xx, yy = t.inverse(*(t(x, y)))
+                assert (xx, yy) == pytest.approx((x, y), abs=0.005)
