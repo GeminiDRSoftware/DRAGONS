@@ -86,7 +86,7 @@ def test_new_make_processed_std(input_files, caldict, change_working_dir, path_t
             ymid = ext.shape[0] // 2
             wcs1 = ext.wcs(1024, ymid)
             assert len(wcs1) == 3
-            slitlen_pix = np.diff(ext.SLITEDGE['c0'] + ext.SLITEDGE['c2'])[0]
+            slitlen_pix = np.diff(ext.SLITEDGE['c0'] - ext.SLITEDGE['c2'])[0]
             c1 = SkyCoord(*wcs1[1:], unit="deg")
             c2 = SkyCoord(*ext.wcs(1024, ymid+1)[1:], unit="deg")
             assert c1.separation(c2).arcsec == pytest.approx(5. / slitlen_pix, rel=0.05)
