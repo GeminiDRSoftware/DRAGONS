@@ -188,9 +188,10 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
             for ext in ad:
                 wave_model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
                 sky_model = am.get_named_submodel(ext.wcs.forward_transform, "SKY")
-                # This is the Mapping, Identity, Const1D that converts y -> (y, 0)
-                # and then the AffineTransform2D, Pix2Sky, RotateNative2Celestial
-                new_sky_model = sky_model[-6:]
+                # This is the AffineTransform2D, Pix2Sky, RotateNative2Celestial
+                new_sky_model = (models.Mapping((0, 0)) |
+                                 (models.Const1D(0) & models.Identity(1)) |
+                                 sky_model[-3:])
                 new_sky_model.name = "SKY"
                 ext.wcs.set_transform("distortion_corrected", "world", wave_model & new_sky_model)
 
@@ -923,7 +924,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
 
             for ext in ad:
                 frame_idx = ext.wcs.available_frames.index('distortion_corrected')
-                model = models.Shift(0) & models.Shift(-26)
+                model = models.Shift(0) & models.Shift(-25)
                 model.inverse = ext.wcs.get_transform(
                     ext.wcs.available_frames[frame_idx],
                     ext.wcs.input_frame)
@@ -936,16 +937,14 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                                 (endpoint_frame, ext.wcs.pipeline[frame_idx].transform)]
                                + ext.wcs.pipeline[frame_idx+1:])
 
-            ad_out = transform.resample_from_wcs(
-                ad[0], 'correction_endpoint', interpolant=interpolant,
-                subsample=subsample, parallel=False, threshold=dq_threshold
-            )
-            for ext in ad[1:]:
-                 ad_out.append(transform.resample_from_wcs(
-                     ext,'correction_endpoint',
-                     interpolant=interpolant, subsample=subsample,
-                     parallel=False, threshold=dq_threshold)[0]
-                )
+            # Cut the output to the size we want
+            for i, ext in enumerate(ad):
+                temp_out = transform.resample_from_wcs(
+                    ext, 'correction_endpoint', interpolant=interpolant,
+                    subsample=subsample, parallel=False, threshold=dq_threshold)
+                if i == 0:
+                    ad_out = astrodata.create(temp_out.phu)
+                ad_out.append(temp_out[0].nddata[:51])
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(),

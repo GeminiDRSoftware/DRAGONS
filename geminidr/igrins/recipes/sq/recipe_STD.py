@@ -48,6 +48,8 @@ def makeStellarNew(p):
     p.flatCorrect()  # cuts as well
     p.attachWavelengthSolution()
     return
+    p.distortionCorrect(outstream="2D")
+    p.writeOutputs(strwam="2D", suffix="_2D")
     p.estimateSlitProfile()
 
     # Here's where we deviate from the IGRINSDR recipe
