@@ -1663,7 +1663,7 @@ class Spect(Resample):
                 for index, step in enumerate(ext.wcs.pipeline[:idx]):
                     if ext.wcs.pipeline[index+1].frame.name in (
                             'distortion_corrected', 'rectified'):
-                        prev_frame, m_distcorr = step
+                        prev_frame, m_distcorr = step.frame, step.transform
 
                         # The model must have a Mapping prior to the Chebyshev2D
                         # model(s) since coordinates have to be duplicated. Find this
