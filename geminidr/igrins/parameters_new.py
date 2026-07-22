@@ -68,11 +68,6 @@ class determineWavelengthSolutionConfig(config.Config):
     debug_plot = config.Field("Make debug plot?", bool, False)
 
 
-class distortionCorrectConfig(parameters_spect.distortionCorrectConfig):
-    use_dragons = config.Field("Use DRAGONS code for interpolation?", bool, False)
-
-
-
 class extractSpectrumUsingProfileConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_myspec",
                           optional=True)

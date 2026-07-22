@@ -122,7 +122,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
 
         adinputs = super().applySlitModel(adinputs, **params)
-        #self.writeOutputs(adinputs, suffix="_intermediateCut", strip=True)
+        #adinputs[0].write(adinputs[0].filename.replace("_slitModelApplied", "_intermediate"), overwrite=True)
         x = np.arange(2048)
         for ad in adinputs:
             slitlengths_asec = dict(zip(ad.MDF['specorder'],
@@ -155,8 +155,51 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
 
         return adinputs
 
+    def attachWavelengthSolution(self, adinputs=None, **params):
+        """
+        Attach the distortion map (a Chebyshev2D model) and the mapping from
+        distortion-corrected pixels to wavelengths (a Chebyshev1D model, when
+        available after successful line matching) from a processed arc, or
+        similar wavelength reference, to the WCS of the input data.
+
+        This IGRINS-2 version of the primitive has to do some clean-up of the
+        gWCS object because the slit-cutting inserts a shift in the spatial
+        (vertical) direction to keep the astrometry of the orders consistent.
+        However, this shift is inserted in units of raw pixels but the
+        distortion model includes a conversion to uniformly-sized pixels and
+        so it's incorrect. Given the way the gWCS has been constructed, we
+        can just simplify the sky model.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            2D spectral images.
+        suffix : str
+            Suffix to be added to output files.
+        arc : :class:`~astrodata.AstroData` or str or None
+            Arc(s) containing distortion map & wavelength calibration.
+        use_same_arc : bool
+            Require the use of the same arc for all frames? If True and
+            more than one arc is returned from the CalDB, then the most
+            commonly-chosen arc is used for all frames.
+        """
+        super().attachWavelengthSolution(adinputs, **params)
+        for ad in adinputs:
+            for ext in ad:
+                wave_model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+                sky_model = am.get_named_submodel(ext.wcs.forward_transform, "SKY")
+                # This is the Mapping, Identity, Const1D that converts y -> (y, 0)
+                # and then the AffineTransform2D, Pix2Sky, RotateNative2Celestial
+                new_sky_model = sky_model[-6:]
+                new_sky_model.name = "SKY"
+                ext.wcs.set_transform("distortion_corrected", "world", wave_model & new_sky_model)
+
+        # Timestamping/housekeeping was handled by the super() call
+        return adinputs
+
     def cleanReadout(self, adinputs=None, **params):
         """
+        Runs the IGRINSDR code.
 
         Parameters
         ----------
@@ -827,6 +870,96 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         return adinputs
 
     def distortionCorrect(self, adinputs=None, **params):
+        """
+        Corrects optical distortion in science frames, using a distortion map
+        that has previously been attached to each input's WCS by
+        attachWavelengthSolution.
+
+        This IGRINS-2 specific version copes with the fact that the origin of
+        the distortion-corrected frame is in the middle of the slit, so having
+        the origin of the output frame at (0, 0) will result in the bottom
+        half of the slit being cropped. We therefore specify an origin when
+        resampling.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            2D spectral images with appropriately-calibrated WCS.
+        suffix : str
+            Suffix to be added to output files.
+        interpolant : str
+            Type of interpolant
+        subsample : int
+            Pixel subsampling factor.
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
+       """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        sfx = params["suffix"]
+        interpolant = params["interpolant"]
+        subsample = params["subsample"]
+        do_cal = params["do_cal"]
+        dq_threshold = params["dq_threshold"]
+
+        if do_cal == 'skip':
+            log.warning('Distortion correction has been turned off.')
+            return adinputs
+
+        fail = False
+        adoutputs = []
+        for ad in adinputs:
+            if not all(['distortion_corrected' in ext.wcs.available_frames
+                        for ext in ad]):
+                log.warning(f"{ad.filename}: cannot perform distortion "
+                            "correction as one or more extensions do not "
+                            "have a distortion map")
+                fail = True
+                adoutputs.append(ad)
+                continue
+
+            for ext in ad:
+                frame_idx = ext.wcs.available_frames.index('distortion_corrected')
+                model = models.Shift(0) & models.Shift(-26)
+                model.inverse = ext.wcs.get_transform(
+                    ext.wcs.available_frames[frame_idx],
+                    ext.wcs.input_frame)
+                # To avoid continually checking whether we're correcting to
+                # "distortion_corrected" or "rectified", rename the frame to
+                # which we're correcting as "correction_endpoint"
+                endpoint_frame = ext.wcs.pipeline[frame_idx].frame
+                endpoint_frame.name = "correction_endpoint"
+                ext.wcs = gWCS([(ext.wcs.input_frame, model),
+                                (endpoint_frame, ext.wcs.pipeline[frame_idx].transform)]
+                               + ext.wcs.pipeline[frame_idx+1:])
+
+            ad_out = transform.resample_from_wcs(
+                ad[0], 'correction_endpoint', interpolant=interpolant,
+                subsample=subsample, parallel=False, threshold=dq_threshold
+            )
+            for ext in ad[1:]:
+                 ad_out.append(transform.resample_from_wcs(
+                     ext,'correction_endpoint',
+                     interpolant=interpolant, subsample=subsample,
+                     parallel=False, threshold=dq_threshold)[0]
+                )
+
+            # Timestamp and update the filename
+            gt.mark_history(ad_out, primname=self.myself(),
+                            keyword=timestamp_key)
+            ad_out.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(ad_out)
+
+        if fail:
+            raise ValueError("One or more input(s) missing distortion "
+                             "calibration; run attachWavelengthSolution first")
+
+        return adoutputs
+
+    def oldDistortionCorrect(self, adinputs=None, **params):
         """
         Corrects the wavelength distortion by shifting all rows so that the
         lines of constant wavelength become vertical. This can currently use
