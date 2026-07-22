@@ -2383,6 +2383,7 @@ class Spect(Resample):
                             # If this is the second edge, we can copy now
                             if edge_id == 1:
                                 model_fits.append(deepcopy(model_fits[-1]))
+                                model_fits[-1]['edge'] = 1
                                 model_fits[-1]['c0'] += slit_lengths[slit_num]
                             else:  # record for later
                                 both_edges = False
@@ -2445,6 +2446,7 @@ class Spect(Resample):
                             if not both_edges:
                                 mfit_other = deepcopy(model_fit)
                                 mfit_other['c0'] -= slit_lengths[slit_num]
+                                mfit_other['edge'] = 0
                                 model_fits.append(mfit_other)
                             model_fits.append(model_fit)
 
