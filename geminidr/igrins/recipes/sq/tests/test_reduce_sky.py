@@ -56,7 +56,6 @@ def test_make_processed_arc(input_files, caldict, change_working_dir, path_to_in
         assert r.recipename == "makeProcessedArc"
         output_filename = r._output_filenames.pop()
         adout = astrodata.open(os.path.join("calibrations", "processed_arc", output_filename))
-        adout.write("/Users/chris.simpson/gemini_python/igrins2/pytest_arc.fits", overwrite=True)
 
         assert len(adout) == 24
         np.testing.assert_equal(adout.hdr['SPECORDR'], list(range(70, 94)))
