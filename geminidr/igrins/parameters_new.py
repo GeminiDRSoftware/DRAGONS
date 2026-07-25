@@ -68,11 +68,11 @@ class determineWavelengthSolutionConfig(config.Config):
     debug_plot = config.Field("Make debug plot?", bool, False)
 
 
-class extractSpectrumUsingProfileConfig(config.Config):
+class extractSpectra(config.Config):
     suffix = config.Field("Filename suffix", str, "_myspec",
                           optional=True)
     extraction_mode = config.Field("Extraction mode", str, "optimal")
-    pixel_per_res_element = config.Field("number of pixel per res. element", float, 0.)
+    #pixel_per_res_element = config.Field("number of pixel per res. element", float, 0.)
     cr_rejection_thresh = config.RangeField("Sigma threshold for cosmic ray rejection", float, 30.,
                                             min=0)
 
@@ -95,6 +95,26 @@ class makeSyntheticImageConfig(config.Config):
 
 class maskReferencePixelsConfig(config.Config):
     pass
+
+
+class measureSlitProfileConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_slitProfileMeasured",
+                          optional=True)
+    order = config.RangeField("Order of polynomial fitted along each resampled row",
+                                 int, 3, min=1)
+    lsigma = config.RangeField("Low rejection in sigma of fit", float, 3,
+                               min=0, optional=True)
+    hsigma = config.RangeField("High rejection in sigma of fit", float, 3,
+                               min=0, optional=True)
+    niter = config.RangeField("Maximum number of rejection iterations", int, 0,
+                              min=0)
+    use_variance = config.Field("Use variance array for weighting?", bool, True)
+    threshold = config.RangeField("Threshold (as a function of maximum flux) "
+                                  "for ignoring pixels in polynomial fit?",
+                                  float, 0.05, min=0, max=1)
+    goodfrac = config.RangeField("Fraction of good pixels in each resampled "
+                                 "row needed to include the row in the profile",
+                                 float, 0.9, min=0, max=1, inclusiveMax=True,)
 
 
 class normalizeFlatNewConfig(parameters_spect.normalizeFlatConfig):

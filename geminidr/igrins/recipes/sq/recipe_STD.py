@@ -29,7 +29,7 @@ def makeStellar(p):
 
     p.makeAB() # This will make stacked A-B and do the reference pixel correction.
     p.estimateSlitProfile()
-    p.extractSpectra()
+    p.extractSpectraSingle()
 
     p.saveTwodspec()
     p.saveDebugImage()
@@ -47,25 +47,12 @@ def makeStellarNew(p):
     p.cleanReadout()
     p.flatCorrect()  # cuts as well
     p.attachWavelengthSolution()
-    return
-    p.distortionCorrect(outstream="2D")
-    p.writeOutputs(strwam="2D", suffix="_2D")
-    p.estimateSlitProfile()
+    p.distortionCorrect(outstream="2D", interpolant="linear")
+    #p.writeOutputs(strwam="2D", suffix="_2D")
+    p.measureSlitProfile(stream="2D")
+    p.transferAttribute(source="2D", attribute="SLITPROF")
+    p.extractSpectra()
 
-    # Here's where we deviate from the IGRINSDR recipe
-    p.distortionCorrect(outstream="xshifted")
-    p.extractSpectrumUsingProfile(stream="xshifted")
-    # Copy the slit profile map
-    p.transferAttribute(stream="xshifted", source="main", attribute="SLITPROFILE_MAP")
-    p.makeSyntheticImage(stream="xshifted")
-    p.transferAttribute(source="xshifted", attribute="data", new_name="SYNTHMAP")
-    p.clearStream(stream="xshifted")
-    p.flagDiscrepantPixels()
-    p.distortionCorrect()
-    p.createDataCube(outstream="2D")
-    p.storeProcessedScience(stream="2D", suffix="_2D")
-    p.extractSpectrumUsingProfile()
-    p.storeProcessedScience(suffix="_1D")
 
 
 def makeStd(p):

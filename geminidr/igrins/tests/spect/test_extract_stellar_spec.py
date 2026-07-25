@@ -27,7 +27,7 @@ def test_extract_stellar_spec(path_to_inputs, path_to_refs, change_working_dir, 
     p.caldb.user_cals = {k: os.path.join(path_to_inputs, v)
                          for k, v in caldict.items()}
     # We want to write this to disk since the wcs will be written then
-    p.extractSpectra()
+    p.extractSpectraSingle()
     with change_working_dir():
         p.writeOutputs()
         adout = astrodata.open(p.adinputs[0].filename)

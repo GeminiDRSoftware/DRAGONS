@@ -5,6 +5,8 @@ import warnings
 
 from matplotlib import pyplot as plt, colors as mcolors
 
+from scipy.interpolate import make_interp_spline, PPoly
+
 import numpy as np
 from astropy.io import fits
 from astropy.modeling import fitting, models
@@ -20,14 +22,15 @@ import astrodata
 from astrodata import wcs as adwcs
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
+from gempy.library.fitting import fit_1D
 from gempy.library import peak_finding, tracing, transform, wavecal
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.adlibrary.manipulate_ad import reassemble_ad
-from gempy.library.astromodels import reduce_dimensionality
 
 from .primitives_igrins import IGRINS
 from ..core.primitives_crossdispersed import CrossDispersed, Spect
+from ..core.primitives_telluric import Telluric
 from .cheb3d import Chebyshev3D, LSQFitterWithOutlierRemoval3D
 
 from recipe_system.utils.decorators import parameter_override
@@ -41,7 +44,7 @@ from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
 
 
 @parameter_override
-class IGRINSNew(IGRINS, CrossDispersed, Spect):
+class IGRINSNew(IGRINS, Telluric, CrossDispersed):
     tagset = {}
 
     def _initialize(self, adinputs=None, **kwargs):
@@ -555,10 +558,10 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                 slitlen_pix = slitlengths_asec[order] / ext.pixel_scale()
                 pixscale = ext.pixel_scale()
                 model = models.Mapping((0, 1, 1)) | (
-                        reduce_dimensionality(m_final, z=order) &
+                        am.reduce_dimensionality(m_final, z=order) &
                         models.Identity(1))
                 model.inverse = models.Mapping((0, 1, 1)) | (
-                        reduce_dimensionality(m_inverse, z=order) &
+                        am.reduce_dimensionality(m_inverse, z=order) &
                         models.Identity(1))
                 try:
                     frame_index = ext.wcs.available_frames.index("distortion_corrected")
@@ -592,6 +595,10 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                 ext.wcs = am.replace_submodel_in_gwcs(ext.wcs, "SKY",
                                                       models.Scale(pixscale))
 
+                t = ext.wcs.get_transform("distcorr_slitpos", "distortion_corrected")
+                print(t)
+                print(t.inverse)
+
             del ad.MDF
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
@@ -599,7 +606,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
         return adinputs
 
     def determineSlitEdgesNew(self, adinputs=None, **params):
-        return Spect([]).determineSlitEdges(adinputs, **params)
+        return Telluric([]).determineSlitEdges(adinputs, **params)
 
     def determineWavelengthSolution(self, adinputs=None, **params):
         log = self.log
@@ -820,7 +827,7 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                                                    name="SPATIAL")
                 output_frame = cf.CompositeFrame([new_spectral_frame, spatial_frame], name="world")
 
-                cheb1d = reduce_dimensionality(m_final, y=spec_order)
+                cheb1d = am.reduce_dimensionality(m_final, y=spec_order)
                 for p, v in zip(cheb1d.param_names, cheb1d.parameters):
                     if p.startswith("c"):
                         setattr(cheb1d, p, v / spec_order)
@@ -910,6 +917,10 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
             log.warning('Distortion correction has been turned off.')
             return adinputs
 
+        # Row of the output image corresponding to slitpos=0.0, i.e., the
+        # centre of the slit
+        slitcen = 25
+
         fail = False
         adoutputs = []
         for ad in adinputs:
@@ -922,29 +933,34 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
                 adoutputs.append(ad)
                 continue
 
-            for ext in ad:
-                frame_idx = ext.wcs.available_frames.index('distortion_corrected')
-                model = models.Shift(0) & models.Shift(-25)
-                model.inverse = ext.wcs.get_transform(
-                    ext.wcs.available_frames[frame_idx],
-                    ext.wcs.input_frame)
-                # To avoid continually checking whether we're correcting to
-                # "distortion_corrected" or "rectified", rename the frame to
-                # which we're correcting as "correction_endpoint"
-                endpoint_frame = ext.wcs.pipeline[frame_idx].frame
-                endpoint_frame.name = "correction_endpoint"
-                ext.wcs = gWCS([(ext.wcs.input_frame, model),
-                                (endpoint_frame, ext.wcs.pipeline[frame_idx].transform)]
-                               + ext.wcs.pipeline[frame_idx+1:])
+            # for ext in ad:
+            #     frame_idx = ext.wcs.available_frames.index('distortion_corrected')
+            #     model = models.Shift(0) & models.Shift(-25)
+            #     model.inverse = ext.wcs.get_transform(
+            #         ext.wcs.available_frames[frame_idx],
+            #         ext.wcs.input_frame)
+            #     # To avoid continually checking whether we're correcting to
+            #     # "distortion_corrected" or "rectified", rename the frame to
+            #     # which we're correcting as "correction_endpoint"
+            #     endpoint_frame = ext.wcs.pipeline[frame_idx].frame
+            #     endpoint_frame.name = "correction_endpoint"
+            #     ext.wcs = gWCS([(ext.wcs.input_frame, model),
+            #                     (endpoint_frame, ext.wcs.pipeline[frame_idx].transform)]
+            #                    + ext.wcs.pipeline[frame_idx+1:])
 
             # Cut the output to the size we want
             for i, ext in enumerate(ad):
                 temp_out = transform.resample_from_wcs(
-                    ext, 'correction_endpoint', interpolant=interpolant,
-                    subsample=subsample, parallel=False, threshold=dq_threshold)
+                    ext, 'distortion_corrected', interpolant=interpolant,
+                    subsample=subsample, parallel=False, threshold=dq_threshold,
+                    output_shape=(51, 2048), origin=(-slitcen, 0))
                 if i == 0:
                     ad_out = astrodata.create(temp_out.phu)
-                ad_out.append(temp_out[0].nddata[:51])
+                ad_out.append(temp_out[0].nddata)
+                # Store in the header for later retrieval.
+                # TODO: How can we avoid hardcoing SLITDELT here?
+                ad_out[-1].hdr['SLITCENT'] = slitcen
+                ad_out[-1].hdr['SLITDELT'] = 0.02
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(),
@@ -958,154 +974,108 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
 
         return adoutputs
 
-    def oldDistortionCorrect(self, adinputs=None, **params):
+    def extractSpectra(self, adinputs=None, **params):
         """
-        Corrects the wavelength distortion by shifting all rows so that the
-        lines of constant wavelength become vertical. This can currently use
-        the IGRINS-2 PLP code or the DRAGONS transform module.
-
-        TODO: This can ultimately be removed once the WCS is properly
-        implemented.
-
-        NB. This also flatfields the data.
-
-        Parameters
-        ----------
-        suffix : str
-            Suffix to be added to output files.
-        interpolant : str
-            Type of interpolant
-        subsample : int
-            Pixel subsampling factor.
-        dq_threshold : float
-            The fraction of a pixel's contribution from a DQ-flagged pixel to
-            be considered 'bad' and also flagged.
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        interpolant = params["interpolant"]
-        subsample = params["subsample"]
-        dq_threshold = params["dq_threshold"]
-        use_dragons = params["use_dragons"]
-
-        adoutputs = []
-        for ad in adinputs:
-            ad_sky = self._get_ad_sky(ad)
-            ap = Apertures(ad_sky[0].SLITEDGE)
-
-            if use_dragons:  # use existing DRAGONS transform module
-                x = np.meshgrid(*(np.arange(length) for length in ad[0].shape[::-1]))[1]
-                t = models.Identity(2)  # ensure array size doesn't change
-                t.inverse = (models.Mapping((0, 1, 1)) |
-                             models.Tabular2D(lookup_table=x+ad_sky[0].SLITOFFSETMAP.T, bounds_error=False,
-                                              fill_value=0) & models.Identity(1))
-                if ad[0].wcs is None:
-                    ad[0].wcs = gWCS([(astrodata.wcs.pixel_frame(naxes=2), t),
-                                      (astrodata.wcs.pixel_frame(naxes=2, name="xshifted"), None)])
-                else:
-                    ad[0].wcs = gWCS([(ad[0].wcs.pipeline[0].frame, t),
-                                      (astrodata.wcs.pixel_frame(naxes=2, name="xshifted"),
-                                       ad[0].wcs.pipeline[0].transform),
-                                      ] + ad[0].wcs.pipeline[1:])
-
-                ad_out = transform.resample_from_wcs(
-                    ad, 'xshifted', interpolant=interpolant,
-                    subsample=subsample, parallel=False,
-                    threshold=dq_threshold
-                )
-
-            else:
-                _ = ap.get_shifted_images(ad[0].SLITPROFILE_MAP,
-                                          ad[0].variance, ad[0].data,
-                                          slitoffset_map=ad_sky[0].SLITOFFSETMAP,
-                                          debug=False)
-                data_shft, variance_map_shft, profile_map_shft, msk1_shft = _
-                ad_out = astrodata.create(ad.phu)
-                new_image = ad[0].nddata.__class__(data=data_shft.astype(np.float32),
-                                                   mask=(~msk1_shft).astype(ad[0].mask.dtype),
-                                                   variance=variance_map_shft.astype(np.float32))
-                ad_out.append(new_image)
-                ad_out[0].SLITPROFILE_MAP = profile_map_shft
-
-            # Timestamp and update the filename
-            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-            ad_out.update_filename(suffix=sfx, strip=True)
-            adoutputs.append(ad_out)
-
-        return adoutputs
-
-    def extractSpectrumUsingProfile(self, adinputs=None, **params):
-        """
-        Extract 1D stellar spectra from 2D spectral data using optimal extraction.
-
-        This method performs optimal extraction of stellar spectra from 2D
-        spectral data, taking into account the spatial profile of the star
-        and the noise characteristics of the detector. The extraction can be
-        performed using different methods and parameters to optimize the
-        signal-to-noise ratio.
-
-        The method performs the following steps:
-        1. Loads flat field and sky data for calibration
-        2. Applies flat field correction
-        3. Performs optimal extraction using the specified method
-        4. Calculates wavelength solution and signal-to-noise ratios
-        5. Returns the extracted 1D spectrum with associated metadata
-
-        Returns
-        -------
-        AstroData
-            A new AstroData object containing the extracted 1D spectrum with
-            the following extensions:
-            - Primary HDU: The extracted 1D spectrum
-            - Variance array: The variance of the extracted spectrum
-            - Wavelengths: The wavelength solution for the spectrum
-            - SN_PER_RESEL: Signal-to-noise ratio per resolution element
-
-        Notes
-        -----
-        - The method requires flat field and sky data to be available through
-          the `_get_ad_flat` and `_get_ad_sky` methods.
-        - The extraction uses the SLITEDGE information to define the extraction
-          apertures.
-        - The wavelength solution is taken from the WVLFIT_RESULTS attribute
-          of the sky data.
-        - The output spectrum includes WCS information in the header for
-          wavelength calibration.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys["extractSpectra"]
-        sfx = params["suffix"]
         extraction_mode = params["extraction_mode"]
-        pixel_per_res_element = params["pixel_per_res_element"]
 
         adoutputs = []
         for ad in adinputs:
-            ad_flat = self._get_ad_flat(ad)
-            ad_sky = self._get_ad_sky(ad)
+            adout = astrodata.create(ad.phu)
+            for ext in ad:
+                data = np.zeros((ext.shape[1],), dtype=ext.data.dtype)
+                mask = np.full((ext.shape[1],), DQ.no_data, dtype=ext.mask.dtype)
+                var = np.zeros_like(data)
+                y, x = np.mgrid[:ext.shape[0], :ext.shape[1]]
 
-            ap = Apertures(ad_sky[0].SLITEDGE)
-            ordermap = ad_sky[0].ORDERMAP
-            ordermap_bpixed = np.ma.array(ordermap, mask=ad_flat[0].mask > 0).filled(0)
+                # Construct an image of the slit position, which is used
+                # to determine the extraction weight of each pixel
+                t = ext.wcs.get_transform("pixels", "slitpos")
+                ext.SLITPOS = t(x, y)[1]
 
-            weight_thresh = None
-            remove_negative = False
-            s_list, v_list = ap.extract_stellar_from_shifted(
-                ordermap_bpixed, ad[0].SLITPROFILE_MAP, ad[0].variance,
-                ad[0].data, ~(ad[0].mask.astype(bool)), weight_thresh=weight_thresh,
-                remove_negative=remove_negative)
+                # Compute the model needed to horizontally shift each row
+                # so as to make the sky lines vertical. We don't care about
+                # the subsequent WCS since we're not going to use that, only
+                # the resampled pixel values.
+                t = ext.wcs.get_transform("distortion_corrected", "pixels")
+                xx = t(x, y)[0]
+                t = models.Identity(2)
+                t.inverse = (models.Mapping((0, 1, 1)) |
+                             models.Tabular2D(lookup_table=xx.T, bounds_error=False,
+                                              fill_value=0) & models.Identity(1))
+                xshifted = astrodata.wcs.pixel_frame(naxes=2, name="xshifted")
+                ext.wcs.insert_frame(ext.wcs.input_frame, t, xshifted)
+                ext_xshifted = transform.resample_from_wcs(
+                    ext, "xshifted",
+                    attributes=["data", "mask", "variance", "SLITPOS"])[0]
 
-            ad_out = astrodata.create(ad.phu)
-            new_image = ad[0].nddata.__class__(data=np.array(s_list, dtype=np.float32),
-                                               variance=np.array(v_list, dtype=np.float32))
-            ad_out.append(new_image)
+                pixels_for_extraction = ext_xshifted.SLITPOS[ext_xshifted.mask == 0]
+                assert pixels_for_extraction.min() >= -0.5
+                assert pixels_for_extraction.max() <= 0.5
 
+                with warnings.catch_warnings(category=RuntimeWarning,
+                                             action="ignore"):
+                    inv_var = np.where(np.logical_and(ext_xshifted.variance > 0, ext_xshifted.mask == 0),
+                                   1. / ext_xshifted.variance, 0)
+
+                # We want to normalize the profile along each column. Since
+                # there's probably both a +ve and -ve beam, we can't simply
+                # use the sum of the profile.
+                slitpos_samples = (np.arange(ext.SLITPROF.shape[0]) - 25) * 0.02
+                spl = make_interp_spline(slitpos_samples, ext.SLITPROF, k=3, axis=0)
+                t, c, k = spl.tck
+                for i, (slitpos, coldata, iv) in enumerate(zip(ext_xshifted.SLITPOS.T,
+                                                               ext_xshifted.data.T,
+                                                               inv_var.T)):
+                    if iv.max() > 0:
+                        ppoly = PPoly.from_spline((t, c[:, i], k))
+                        prof = ppoly(slitpos)
+                        if prof.max() > 0:
+                            roots = ppoly.roots(extrapolate=False)
+                            signal = sorted([abs(ppoly.integrate(a, b))
+                                             for a, b in zip(roots[:-1], roots[1:])],
+                                             reverse=True)
+                            signal_sum = np.sum(signal)
+                            if signal_sum > 0:
+                                frac = np.sum(signal[:2]) / signal_sum
+                                if frac < 0.98:
+                                    print(ext.id, i, frac)
+                                mask[i] = DQ.good
+                                mask[i] = DQ.good
+                                prof /= signal_sum
+                                data[i] = (prof * coldata * iv).sum() / (prof * prof * iv).sum()
+                                var[i] = prof.sum() / (prof * prof * iv).sum()
+
+                if np.all(mask & DQ.no_data):
+                    log.warning(f"No good pixels found for extraction in order {ext.hdr['SPECORDR']}")
+                    continue
+
+                wave_model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+                for f in ext.wcs.output_frame.frames:
+                    if isinstance(f, cf.SpectralFrame):
+                        output_frame = f
+                        break
+                else:
+                    raise ValueError("Cannot find spectral frame in WCS")
+
+                wcs1d = gWCS([(adwcs.pixel_frame(naxes=1), wave_model),
+                              (output_frame, None)])
+                adout.append(ext.nddata.__class__(data=data, mask=mask, variance=var, wcs=wcs1d,
+                                                  meta={'header': ext.hdr.copy()}))
+                if any(np.isnan(data)):
+                    log.warning(f"NaNs in {ad.filename} order {ext.hdr['SPECORDR']}")
+
+            adout.hdr['APERTURE'] = 1
             # Timestamp and update the filename
-            gt.mark_history(ad_out, primname=self.myself(), keyword=timestamp_key)
-            ad_out.update_filename(suffix=sfx, strip=True)
-            adoutputs.append(ad_out)
+            gt.mark_history(adout, primname=self.myself(),
+                            keyword=timestamp_key)
+            adout.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(adout)
+
 
         return adoutputs
 
@@ -1205,34 +1175,72 @@ class IGRINSNew(IGRINS, CrossDispersed, Spect):
 
         return [ad]
 
-    def makeSyntheticImage(self, adinputs=None, **params):
+    def measureSlitProfile(self, adinputs=None, **params):
         """
-        Make a synthetic 2D spectrum image based on the slit profile and order map.
+        Follows the method of Cushing, Vacca, & Rayner (2004, PASP, 116, 362)
+        to measure the slit profile.
 
         Parameters
         ----------
-        suffix : str
-            Suffix to be added to output files.
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        sfx = params["suffix"]
+        timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        order = params["order"]
+        lsigma = params["lsigma"]
+        hsigma = params["hsigma"]
+        niter = params["niter"]
+        use_var = params["use_variance"]
+        threshold = params["threshold"]
+        goodfrac = params["goodfrac"]
 
-        adoutputs = []
         for ad in adinputs:
-            ad_sky = self._get_ad_sky(ad)
-            ap = Apertures(ad_sky[0].SLITEDGE)
+            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                raise ValueError(f"{ad.filename} has not been distortion-"
+                                 "corrected and so the slit profile cannot"
+                                 " be measured.")
 
-            synth_map = ap.make_synth_map(ad_sky[0].ORDERMAP, ad_sky[0].SLITPOSMAP,
-                                          ad[0].SLITPROFILE_MAP, ad[0].data,
-                                          slitoffset_map=ad_sky[0].SLITOFFSETMAP)
+            for ext in ad:
+                npix = ext.shape[1]
+                masked_data = np.ma.masked_array(ext.data, ext.mask, copy=True)
+                masked_data.mask |= (ext.mask & DQ.no_data).astype(bool)
+                weights = 1
+                if use_var:
+                    if ext.variance is None:
+                        log.warning(f"{ad.filename} order {ext.hdr['SPECORDR']}"
+                                    " has no variance array, so cannot use it "
+                                    "to weight the slit profile")
+                    else:
+                        weights = np.where(ext.variance > 0, 1. / ext.variance, 0)
 
-            adout = astrodata.create(ad.phu)
-            adout.append(synth_map.astype(np.float32))
-            adout.update_filename(suffix=sfx, strip=True)
-            adoutputs.append(adout)
+                for _ in range(1):
+                    profile = np.ma.median(masked_data, axis=1)
+                    masked_profile = np.ma.masked_array(
+                        profile[:, np.newaxis].repeat(npix, axis=1), ext.mask)
+                    # Accounts for the mask since calls np.ma.sum()
+                    scale_factors = ((weights * masked_data * masked_profile).sum(axis=0) /
+                                     (weights * masked_profile ** 2).sum(axis=0))
+                    masked_data /= scale_factors
 
-        return adoutputs
+                masked_data.mask |= (scale_factors < threshold * scale_factors.max())
+
+                fit1d = fit_1D(masked_data, function="chebyshev",
+                               domain=(0, npix-1), order=order,
+                               sigma_lower=lsigma, sigma_upper=hsigma,
+                               niter=niter)
+                synth_data = fit1d.evaluate()
+                synth_data[:, np.sum(ext.mask & DQ.no_data, axis=0) > 0] = 0
+                synth_data[ext.mask.astype(bool).sum(axis=1) > goodfrac * npix] = 0
+
+                ext.SLITPROF = synth_data.astype(np.float32)
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
 
     def normalizeFlatNew(self, adinputs=None, **params):
         return Spect([]).normalizeFlat(adinputs, **params)

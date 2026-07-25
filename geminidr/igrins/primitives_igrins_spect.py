@@ -853,7 +853,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
 
         return adinputs
 
-    def extractSpectra(self, adinputs=None, **params):
+    def extractSpectraSingle(self, adinputs=None, **params):
         """
         Extract 1D stellar spectra from 2D spectral data using optimal extraction.
 
@@ -893,7 +893,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys["extractSpectra"]
         suffix = params["suffix"]
         extraction_mode = params["extraction_mode"]
         pixel_per_res_element = params["pixel_per_res_element"]

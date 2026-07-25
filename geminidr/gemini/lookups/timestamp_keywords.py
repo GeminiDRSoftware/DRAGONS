@@ -64,6 +64,7 @@ timestamp_keys = {
     "measureBG": "MEASREBG",
     "measureCC": "MEASRECC",
     "measureIQ": "MEASREIQ",
+    "measureSlitProfile": "SLITPROF",
     "mosaicDetectors": "MOSAIC",
     "multiply": "MULTIPLY",
     "nonlinearityCorrect": "LINCORR",
