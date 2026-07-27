@@ -596,8 +596,6 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                                       models.Scale(pixscale))
 
                 t = ext.wcs.get_transform("distcorr_slitpos", "distortion_corrected")
-                print(t)
-                print(t.inverse)
 
             del ad.MDF
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -784,6 +782,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             tbl_orders = orders[~mask].astype(int)
             tbl_pix = pix[~mask].astype(np.float32)
             tbl_waves = waves[~mask].astype(np.float32)
+            tbl_fitted = m_final(tbl_pix, tbl_orders) / tbl_orders
             rms = np.std(m_final(tbl_pix, tbl_orders) / tbl_orders - tbl_waves)
             tbl_pix += 1  # use 1-based for output
 
@@ -801,9 +800,9 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
             fit_table = Table([temptable.colnames + [''] * pad_rows,
                                list(temptable[0].values()) + [0] * pad_rows,
-                               tbl_orders, tbl_pix, tbl_waves],
-                              names=("name", "coefficients", "xdorder", "peaks", "wavelengths"),
-                              units=(None, None, None, u.pix, u.nm),
+                               tbl_orders, tbl_pix, tbl_waves, tbl_fitted],
+                              names=("name", "coefficients", "xdorder", "peaks", "wavelengths", "fitted"),
+                              units=(None, None, None, u.pix, u.nm, u.nm),
                               meta=temptable.meta)
             medium = "vacuo" if in_vacuo else "air"
             fit_table.meta['comments'] = [
