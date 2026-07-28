@@ -134,6 +134,7 @@ class Reduce:
         self.config_file = args.config
         self._upload = args.upload
         self._output_filenames = None
+        self.processed_filenames = None
         self.recipename = args.recipename if args.recipename else '_default'
 
     @property
@@ -167,10 +168,16 @@ class Reduce:
         <void>
 
         """
-        self._output_filenames = reduce_data(files=self.files, mode=self.mode, drpkg=self.drpkg,
-                                             recipename=self.recipename,
-                                             uparms=self.uparms, ucals=self.ucals, upload=self.upload,
-                                             config_file=self.config_file, suffix=self.suffix)
+        # reduce_data returns a dict of things which become attributes of
+        # the Reduce() instance
+        retdict = reduce_data(
+            files=self.files, mode=self.mode, drpkg=self.drpkg,
+            recipename=self.recipename, uparms=self.uparms, ucals=self.ucals,
+            upload=self.upload, config_file=self.config_file,
+            suffix=self.suffix)
+
+        for k, v in retdict.items():
+            setattr(self, k, v)
 
 
     # -------------------------------- prive -----------------------------------
@@ -311,7 +318,7 @@ def _logheader(recipe, recipename):
     log.status("="*80)
     log.status(logstring)
     log.status("="*80)
-    return
+    return r_actual
 
 
 def _write_final(outputs, suffix):
@@ -503,7 +510,15 @@ def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, 
 
     Returns
     -------
-    <list> : List of files produced by the reduction
+    <dict> : Dict of items to return to the caller:
+                "_output_filenames": List of filenames in the main stream when
+                    the recipe completes
+                "processed_filenames": List of filenames the recipe called
+                    storeProcessedCheese on while it was running
+                "recipename": The actual recipe name used. If reduce_data was
+                called with recipename of None or _default, this will tell you
+                the name of the actual recipe that was used.
+
     """
     if logmode is not None:
         # User requesting an override of the logging mode
@@ -585,14 +600,14 @@ def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, 
 
         pname = primitive_as_recipe.__name__
         log.stdinfo("Found '{}' as a primitive.".format(pname))
-        _logheader(pname, recipename)
+        actual_recipe_name = _logheader(pname, recipename)
         try:
             primitive_as_recipe()
         except Exception as err:
             log.error("Reduce received an unhandled exception.", exc_info=True)
             raise
     else:
-        _logheader(recipe, recipename)
+        actual_recipe_name = _logheader(recipe, recipename)
         try:
             recipe(p)
         except Exception:
@@ -613,4 +628,8 @@ def reduce_data(files, mode='sq', drpkg='geminidr', recipename=None, uparms={}, 
 
     log.stdinfo("reduce completed successfully.")
 
-    return _output_filenames
+    # Return a dictionary, Reduce.runr() sets these as attributes of the
+    # Reduce() instance with the names of the dictionary keywords
+    return {'_output_filenames': _output_filenames,
+            'processed_filenames': p.processed_filenames,
+            'recipename': actual_recipe_name}

@@ -18,7 +18,7 @@ def makeProcessedFlat(p):
         A primitive set matching the recipe_tags.
     """
 
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
@@ -30,6 +30,28 @@ def makeProcessedFlat(p):
     p.stackFlats()
     p.normalizeFlat()
     p.storeProcessedFlat()
+    return
+
+def checkFlatCounts(p):
+    """
+    For checking count levels in flat field.
+
+    Parameters
+    ----------
+    p : PrimitivesBASE object
+        A primitive set matching the recipe_tags.
+    """
+    p.prepare(require_wcs=False)
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.overscanCorrect()
+    # Skip bias subtraction - we do overscan subtraction, so this makes no
+    # difference to the count level
+    # p.biasCorrect(do_cal="force")
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.recordPixelStats(prefix='FLAT')
+    p.writeOutputs(strip=True, suffix='_checkFlatCounts')
     return
 
 _default = makeProcessedFlat

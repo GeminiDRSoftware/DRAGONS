@@ -195,18 +195,6 @@ The filter name is not really needed in this case since there are only Y-band
 frames, but it shows how you could have two selection criteria in
 the expression.
 
-.. note:: For Flamingos-2 data, it is useful to check the World Coordinate
-    System (WCS) of the science data.
-
-    .. code-block::
-
-        checkwcs = Reduce()
-        checkwcs.files = list_of_science_images
-        checkwcs.recipename = 'checkWCS'
-        checkwcs.runr()
-
-    Please see details in :ref:`checkWCS` in the :ref:`tips_and_tricks` chapter.
-
 
 Create a Master Dark
 ====================
@@ -334,8 +322,8 @@ signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
 
 For this dataset the benefit of the ultradeep recipe is subtle.  Below we
-show a zoom-in section of the final image when the complete set of 156 images
-is used.  The image on the left is from the default recipe, the one on the
+show a zoomed-in section of the final image **when the complete set of 156 images
+is used**.  The image on the left is from the default recipe, the one on the
 right is from the ultradeep recipe.
 
 .. image:: _graphics/default.png

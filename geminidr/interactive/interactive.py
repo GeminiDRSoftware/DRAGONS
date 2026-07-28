@@ -4,6 +4,8 @@ from copy import copy
 from enum import Enum, auto
 from functools import cmp_to_key
 
+import numpy as np
+
 from bokeh.core.property.instance import Instance
 from bokeh.layouts import column, row
 from bokeh import models as bm
@@ -20,17 +22,14 @@ from bokeh.models import (
     Spacer,
     Select,
     ColumnDataSource,
-    Whisker,
+    Whisker, InlineStyleSheet,
 )
 
 from geminidr.interactive import server
-from geminidr.interactive.styles import dragons_styles
+from geminidr.interactive.styles import dragons_styles, skip_btn_styles
 from geminidr.interactive.fit.help import DEFAULT_HELP
 from geminidr.interactive.server import register_callback
-from gempy.library.astrotools import (
-    cartesian_regions_to_slices,
-    parse_user_regions,
-)
+from gempy.library import astrotools as at
 from gempy.library.config import FieldValidationError, Config
 
 # Singleton instance, there is only ever one of these
@@ -101,6 +100,7 @@ class PrimitiveVisualizer(ABC):
         help_text=None,
         ui_params=None,
         reinit_live=False,
+        allow_skip=False,
     ):
         """
         Initialize a visualizer.
@@ -131,6 +131,10 @@ class PrimitiveVisualizer(ABC):
             If True, recalculate points on any change (default False). This is
             set in __init__ to PrimitiveVisualizer.reinit_live, but can be
             overridden by subclasses.
+
+        allow_skip : bool
+            if True, add a button allow the user to exit in a way that does
+            not return a fit
         """
         global _visualizer
         _visualizer = self
@@ -162,6 +166,8 @@ class PrimitiveVisualizer(ABC):
         self.can_exit_with_bad_fits = False
 
         self.user_satisfied = False
+
+        self.return_fit = True
 
         legend_html = (
             'Plot Tools<br/><img src="dragons/static/bokehlegend.png" />'
@@ -214,6 +220,21 @@ class PrimitiveVisualizer(ABC):
         # callbacks in bokeh)
         self.submit_button.on_click(self.submit_button_handler)
         self.submit_button.js_on_change("disabled", callback)
+
+        if allow_skip:
+            self.skip_button = Button(
+                align="center",
+                button_type="primary",
+                css_classes=["submit_btn"],
+                label="Skip",
+                name="skip_btn",
+                height=55,
+                stylesheets=skip_btn_styles(),
+            )
+            self.skip_button.on_click(self.skip_button_handler)
+            self.skip_button.js_on_change("disabled", callback)
+        else:
+            self.skip_button = None
 
         abort_callback = CustomJS(
             code="""
@@ -454,6 +475,15 @@ class PrimitiveVisualizer(ABC):
             "will exit completely.",
             cb,
         )
+
+    def skip_button_handler(self):
+        """
+        Tidy up when the no-op button is activated
+        """
+        self.return_fit = False
+
+        # Trigger the callback via disabling the no-op button
+        self.skip_button.disabled = True
 
     # pylint: disable=unused-argument
     def session_ended(self, sess_context, user_satisfied):
@@ -1437,19 +1467,31 @@ class GIRegionModel:
     support_adjacent : bool
         If True, enables adjacency mode where regions cannot overlap, but are
         made visually distinct as they can touch.
+    dtype : dtype
+        used to control how regions are translated
     """
 
-    def __init__(self, domain=None, support_adjacent=False):
+    def __init__(self, domain=None, support_adjacent=False, dtype=int):
         self.region_id = 1
         self.support_adjacent = support_adjacent
         self.listeners = list()
         self.regions = dict()
+        self.dtype = dtype
         if domain:
             self.min_x = domain[0]
             self.max_x = domain[1]
         else:
             self.min_x = None
             self.max_x = None
+
+    @property
+    def integers(self):
+        """A convenience property"""
+        return np.issubdtype(self.dtype, np.integer)
+
+    @property
+    def max_decimals(self):
+        return 0 if self.integers else 2
 
     def add_listener(self, listener):
         """
@@ -1465,7 +1507,7 @@ class GIRegionModel:
         listener : :class:`~geminidr.interactive.interactive.GIRegionListener`
         """
         if not isinstance(listener, GIRegionListener):
-            raise ValueError("must be a BandListener")
+            raise TypeError("must be a BandListener")
         self.listeners.append(listener)
 
     def clear_regions(self):
@@ -1496,18 +1538,30 @@ class GIRegionModel:
             return min(val, max)
 
         for tup in tuples:
-            start = tup.start
-            stop = tup.stop
+            start, stop = tup
+            # For pixel axes, "regions" are given 1-indexed, max-inclusive
+            # but the values plotted are 0-indexed.
+            # We assume that an integer axis means the values are pixels
+            if self.integers:
+                if start is not None:
+                    start -= 1
+                if stop is not None:
+                    stop -= 1
             start = constrain_min(start, self.min_x)
             stop = constrain_max(stop, self.max_x)
             start = constrain_max(start, self.max_x)
             stop = constrain_min(stop, self.min_x)
-            self.adjust_region(self.region_id, start, stop)
-            self.region_id = self.region_id + 1
+            if start == self.min_x:
+                start = None
+            if stop == self.max_x:
+                stop = None
+            if start is not None or stop is not None:
+                self.adjust_region(self.region_id, start, stop)
+                self.region_id = self.region_id + 1
         self.finish_regions()
 
     def load_from_string(self, region_string):
-        self.load_from_tuples(cartesian_regions_to_slices(region_string))
+        self.load_from_tuples(at.parse_user_regions(region_string, dtype=self.dtype))
 
     def adjust_region(self, region_id, start, stop):
         """
@@ -1527,12 +1581,18 @@ class GIRegionModel:
             Ending coordinate of the x range
 
         """
-        if start is not None:
-            start = int(start)
-        if stop is not None:
-            stop = int(stop)
+        if self.integers:
+            if start is not None:
+                start = int(start)
+            if stop is not None:
+                stop = int(stop)
         if start is not None and stop is not None and start > stop:
             start, stop = stop, start
+        elif start == self.max_x and stop is None:
+            stop = start
+        elif start is None and stop == self.min_x:
+            start = stop
+
         if self.support_adjacent:
             # We need to cap our range between existing regions
             for other_id, other_region in self.regions.items():
@@ -1639,6 +1699,19 @@ class GIRegionModel:
                         )
                         self.adjust_region(akey, aregion[0], aregion[1])
                         self.delete_region(bkey)
+
+        # Remove any zero-size regions if there are valid regions
+        for k, v in self.regions.copy().items():
+             if v[0] == v[1] and len(self.regions) > 1:
+                 self.delete_region(k)
+
+        for k, v in self.regions.items():
+            if self.integers:
+                self.adjust_region(k, int(v[0]), int(np.ceil(v[1])))
+            else:
+                self.adjust_region(k, np.round(v[0], decimals=self.max_decimals),
+                                   np.round(v[1], decimals=self.max_decimals))
+
         for listener in self.listeners:
             listener.finish_regions()
 
@@ -1714,11 +1787,16 @@ class GIRegionModel:
         if len(self.regions.values()) == 0:
             return True
         for b in self.regions.values():
-            if (b[0] is None or b[0] <= x) and (b[1] is None or x <= b[1]):
+            if (b[0] is None or b[0] <= x) and (b[1] is None or x <= b[1]) and b[0] != b[1]:
                 return True
         return False
 
     def build_regions(self):
+        """
+        As "contains" is inclusive at both ends, we need to do something
+        for integer axes. Plus the string representation of the regions
+        is 1-indexed for integers. So a region of (5, 10) => "6:11"
+       """
         def none_cmp(x, y):
             if x is None and y is None:
                 return 0
@@ -1734,8 +1812,9 @@ class GIRegionModel:
                 retval = none_cmp(a[1], b[1])
             return retval
 
-        def deNone(val, offset=0):
-            return "" if val is None else val + offset
+        def deNone(val, offset=0, max_decimals=0):
+            return "" if val is None else np.round(val + offset,
+                                                   decimals=self.max_decimals)
 
         if self.regions is None or len(self.regions.values()) == 0:
             return ""
@@ -1743,9 +1822,11 @@ class GIRegionModel:
         sorted_regions = list()
         sorted_regions.extend(self.regions.values())
         sorted_regions.sort(key=cmp_to_key(region_sorter))
+        kwargs = {"offset": 1} if self.integers else {"max_decimals": 2}
         return ", ".join(
             [
-                "{}:{}".format(deNone(b[0], offset=1), deNone(b[1]))
+                "{}:{}".format(deNone(b[0], **kwargs),
+                               deNone(b[1], **kwargs))
                 for b in sorted_regions
             ]
         )
@@ -2090,7 +2171,7 @@ class RegionEditor(GIRegionListener):
             if current != region_text:
                 unparseable = False
                 try:
-                    parse_user_regions(region_text)
+                    at.parse_user_regions(region_text)
                 except ValueError:
                     unparseable = True
                 if not unparseable and re.match(

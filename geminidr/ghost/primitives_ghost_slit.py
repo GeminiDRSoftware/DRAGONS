@@ -14,6 +14,7 @@ import astrodata
 from astrodata.provenance import add_provenance
 
 from gempy.gemini import gemini_tools as gt
+from geminidr import CalibrationNotFoundError
 from geminidr.gemini.lookups import DQ_definitions as DQ
 
 from .polyfit import SlitView
@@ -286,7 +287,12 @@ class GHOSTSlit(GHOST):
         adtemp = astrodata.create(adinputs[0].phu)
         for ad in adinputs:
             for ext in ad:
-                adtemp.append(ext)
+                if (ext.mask is not None and
+                        (ext.mask & DQ.saturated).astype(bool).sum() > 0.1 * ext.mask.size):
+                    log.warning(f"{ad.filename}:{ext.id} is being excluded "
+                                "due to more than 10% saturated pixels")
+                else:
+                    adtemp.append(ext)
         return self.stackFrames([adtemp], operation="median")
 
 
@@ -379,7 +385,7 @@ class GHOSTSlit(GHOST):
             data, var, mask = _scale_and_stack(
                 all_data, all_var, all_mask, np.full((next,), 1./next))
             if operation == "median":  # we keep mask but modify data and var
-                data = np.median(all_data, axis=2)
+                data = np.median(all_data, axis=2).astype(data.dtype)
                 var *= 0.5 * np.pi  # according to Laplace (see nddops.py)
             adout.append(astrodata.NDAstroData(
                 data=data, mask=mask, meta={'header': hdr.copy()}))
@@ -460,7 +466,7 @@ class GHOSTSlit(GHOST):
             if slitflat is None:
                 msg = f"Unable to find slitflat calibration for {ad.filename}"
                 if self.mode == "sq":
-                    raise RuntimeError(msg)
+                    raise CalibrationNotFoundError(msg)
                 log.warning(f"{msg}; calculations may be in error")
                 sv_flat = None
             else:

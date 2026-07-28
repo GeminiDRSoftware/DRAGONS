@@ -60,41 +60,38 @@ show up with the green background.
 
 |verticalpadding|
 
-This will be the case for new data (from late March 2023).  For old data,
-until we fix an issue recently discovered, they will not show up as
-associated calibration and you will have to find them manual as explained
-in the previous section, :ref:`manualBPM`.  We understand the issue and are
-working on a fix.
+If a BPM does not show up, see if you find one using the manual search
+explained in the previous section, :ref:`manualBPM`.
 
 
-Calibration service
--------------------
-The calibration service in DRAGONS 3.1 adds several new features.  One of them
-is the ability to search multiple databases in a serial way, including online
-database, like the Gemini archive.
+.. Calibration service
+.. -------------------
+.. The calibration service in DRAGONS 3.1 adds several new features.  One of them
+.. is the ability to search multiple databases in a serial way, including online
+.. database, like the Gemini archive.
 
-The system will look first in your local database for processed calibration
-and BPMs.  If it does not find anything that matches, it will look in the
-next database.  To activate this feature, in ``~/.dragons/``, create or edit
-the configuration file ``dragonsrc`` as follows:
+.. The system will look first in your local database for processed calibration
+.. and BPMs.  If it does not find anything that matches, it will look in the
+.. next database.  To activate this feature, in ``~/.dragons/``, create or edit
+.. the configuration file ``dragonsrc`` as follows:
 
-.. code-block:: none
+.. .. code-block:: none
 
-    [calibs]
-    databases = ${path_to_my_data}/niriimg_tutorial/playground/cal_manager.db get store
-                https://archive.gemini.edu get
+.. ..     [calibs]
+..     databases = ${path_to_my_data}/niriimg_tutorial/playground/cal_manager.db get store
+..                 https://archive.gemini.edu get
 
-If you know that you will be connected to the internet when you reduce the data,
-you do not need to pre-download the BPM, DRAGONS will find it for you in the
-archive.
+.. If you know that you will be connected to the internet when you reduce the data,
+.. you do not need to pre-download the BPM, DRAGONS will find it for you in the
+.. archive.
 
-If you want to pre-download the BPM without having to search for it, like in the
-previous two sections, you can let DRAGONS find it and download it for you:
+.. If you want to pre-download the BPM without having to search for it, like in the
+.. previous two sections, you can let DRAGONS find it and download it for you:
 
-.. code-block:: none
+.. .. code-block:: none
 
-    $ reduce -r getBPM <file_for_which_you_need_bpm>
-    $ caldb add calibrations/processed_bpm/<the_bpm>
+..     $ reduce -r getBPM <file_for_which_you_need_bpm>
+..     $ caldb add calibrations/processed_bpm/<the_bpm>
 
 
 .. _plot_1d:
@@ -137,31 +134,54 @@ do it.
 .. code-block:: python
     :linenos:
 
-    from scipy.interpolate import BSpline
     import numpy as np
     import matplotlib.pyplot as plt
 
     import astrodata
     import gemini_instruments
+    from gempy.library import astromodels as am
 
     ad = astrodata.open('S20170826S0160_standard.fits')
 
-    sensfunc = ad[0].SENSFUNC
+    sensfunc = am.table_to_model(ad[0].SENSFUNC)
 
-    order = sensfunc.meta['header'].get('ORDER', 3)
-    func = BSpline(sensfunc['knots'].data, sensfunc['coefficients'].data, order)
-    std_wave_unit = sensfunc['knots'].unit
-    std_flux_unit = sensfunc['coefficients'].unit
+    w = ad[0].wcs(np.arange(ad[0].data.size))
 
-    w1 = ad[0].wcs(0)
-    w2 = ad[0].wcs(ad[0].data.size)
+    std_wave_unit = ad[0].SENSFUNC['knots'].unit
+    std_flux_unit = ad[0].SENSFUNC['coefficients'].unit
 
-    x = np.arange(w1, w2)
     plt.xlabel(f'Wavelength ({std_wave_unit})')
     plt.ylabel(f'{std_flux_unit}')
-    plt.plot(x, func(x))
+    plt.plot(w, sensfunc(w))
     plt.show()
 
+
+.. _useful_parameters:
+
+Useful parameters
+=================
+
+skip_primitive
+--------------
+I might happen that you will want or need to not run a primitive in a recipe.
+You could copy the recipe over and edit it.  Or you could invoke the
+``skip_primitive`` parameter to tell DRAGONS to completely skip that step.
+
+Let's say that you want the data aligned but not stacked.  You would do::
+
+    reduce @sci.lis -p stackFrames:skip_primitive=True
+
+
+write_outputs
+-------------
+When debugging or when there's a need to inspect intermediate products, you
+might want to write the output of a specific primitive to disk.  This is done
+with the ``write_outputs`` parameter.
+
+For example, to write the extracted spectrum before it is flux calibrated,
+you would do::
+
+    reduce @sci.lis -p extractSpectra:write_outputs=True
 
 
 

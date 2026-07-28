@@ -3,6 +3,7 @@
 from gempy.library import config
 from geminidr.core import parameters_spect
 from geminidr.core import parameters_preprocess
+from geminidr.core import parameters_telluric
 
 
 def list_of_ints_check(value):
@@ -15,6 +16,11 @@ class associateSkyConfig(parameters_preprocess.associateSkyConfig):
         self.min_skies = 2
 
 
+class attachWavelengthSolutionConfig(parameters_spect.attachWavelengthSolutionConfig):
+    def setDefaults(self):
+        self.use_same_arc = True
+
+
 class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolutionConfig):
     def setDefaults(self):
         self.order = 3
@@ -22,7 +28,6 @@ class determineWavelengthSolutionConfig(parameters_spect.determineWavelengthSolu
         self.debug_min_lines = 100000
         del self.absorption
         del self.wv_band
-        del self.num_atran_lines
     min_snr = config.RangeField("Minimum SNR for peak detection", float, None, min=1., optional=True)
 
 
@@ -32,9 +37,12 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     def setDefaults(self):
         self.spectral_order = 3
         self.min_snr = 7.
-        self.min_line_length = 0.3
+        self.min_line_length = 0.8
         self.debug_reject_bad = False
 
+class findAperturesConfig(parameters_spect.findAperturesConfig):
+    def setDefaults(self):
+        self.min_snr = 10.
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     def setDefaults(self):
@@ -43,8 +51,13 @@ class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
 
 class skyCorrectConfig(parameters_preprocess.skyCorrectConfig):
     def setDefaults(self):
-        self.scale_sky = False #MS: IF for whatever reason the exposure times are different between frames being subtracted, one should have a check to turn this on.  
-        self.offset_sky = False
+        del self.scale
+        del self.zero
+        del self.scale_sky #MS: IF for whatever reason the exposure times are different between frames being subtracted, one should have a check to turn this on.
+        del self.offset_sky
         self.mask_objects = False
         self.dilation = 0.
 
+class telluricCorrectConfig(parameters_telluric.telluricCorrectConfig):
+    def setDefaults(self):
+        self.apply_model = False

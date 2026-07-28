@@ -45,8 +45,8 @@ In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
     browser = your_preferred_browser
 
 The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
-the interactive tools using that browser.  The allowed strings are "safari",
-"chrome", and "firefox".
+the interactive tools using that browser.  The allowed strings are "**safari**",
+"**chrome**", and "**firefox**".
 
 Set up the Local Calibration Manager
 ====================================
@@ -56,6 +56,10 @@ Set up the Local Calibration Manager
     Instructions to configure and use the calibration service are found in
     :ref:`cal_service`, specifically the these sections:
     :ref:`cal_service_config` and :ref:`cal_service_cmdline`.
+
+We recommend that you clean up your working directory (``playground``) and
+start a fresh calibration database (``caldb init -w``) when you start a new
+example.
 
 Create file lists
 =================
@@ -70,7 +74,8 @@ have to do it.  However, DRAGONS provides tools to help you.
 The first step is to create input file lists.  The tool "|dataselect|" helps
 with that.  It uses Astrodata tags and "|descriptors|" to select the files and
 send the filenames to a text file that can then be fed to "|reduce|".  (See the
-|astrodatauser| for information about Astrodata.)
+|astrodatauser| for information about Astrodata  and for a list
+of |descriptors|.)
 
 First, navigate to the ``playground`` directory in the unpacked data package::
 
@@ -78,9 +83,9 @@ First, navigate to the ``playground`` directory in the unpacked data package::
 
 A list for the flats
 --------------------
-The GNRIS flats will be stack together.  Therefore it is important to ensure
+The GNIRS flats will be stacked together.  Therefore it is important to ensure
 that the flats in the list are compatible with each other.  You can use
-`dataselect` to narrow down the selection as required.  Here, we have only
+"|dataselect|" to narrow down the selection as required.  Here, we have only
 the flats that were taken with the science and we do not need extra selection
 criteria.
 
@@ -90,11 +95,11 @@ criteria.
 
 A list for the telluric
 -----------------------
-DRAGONS does not recognize the telluric star as such.  This is because
-the observations are taken like science data and the GNIRS headers do not
-explicitly state that the observation is a telluric standard.  For now, the
-`observation_class` descriptor can be used to differential the telluric
-from the science observations, along with the rejection of the `CAL` tag to
+DRAGONS does not recognize the telluric star as such.  This is because, at
+Gemini, the observations are taken like science data and the GNIRS headers do not
+explicitly state that the observation is a telluric standard.  In most cases,
+the ``observation_class`` descriptor can be used to differentiate the telluric
+from the science observations, along with the rejection of the ``CAL`` tag to
 reject flats and arcs.
 
 ::
@@ -105,7 +110,7 @@ reject flats and arcs.
 A list for the science observations
 -----------------------------------
 
-In our case, the science observations can be selected from the observation
+The science observations can be selected from the observation
 class, ``science``, that is how they are differentiated from the telluric
 standards which are ``partnerCal``.
 
@@ -151,7 +156,7 @@ database:
 
 Master Flat Field
 =================
-GNIRS longslit flat field are normally obtained at night along with the
+GNIRS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.
 
 The GNIRS longslit flatfield requires only lamp-on flats.  Subtracting darks
@@ -163,19 +168,20 @@ The flats will be stacked.
 
     reduce @flats.lis
 
-GNIRS data is affected by a "odd-even" effect where alternate rows in the
-GNIRS science array have gains that differ by approximately 10 percent.  When
-you run ``normalizeFlat`` in interactive mode you can clearly see the two
-levels.
-
-In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  In this case, because
-of the rapid variations around pixel 800, increasing the order could improve
-the final results.  Setting ``order=50`` fits that area well while still
-offering a good fit elsewhere.
+GNIRS data are affected by a "odd-even" effect where alternate rows in the
+GNIRS science array have gains that differ by approximately 10 percent.
+We have added a correction in ``normalizeFlat`` that levels off the rows to
+help with the fit.  Here it works well, in some cases you might see a some
+split when you run ``normalizeFlat`` in interactive mode.  The objective,
+if you see the split, is to get a fit that falls inbetween the
+two sets of points, with a symmetrical residual fit.
 
 Note that you are not required to run in interactive mode, but you might want
 to if flat fielding is critical to your program.
+
+In this case, because of the rapid variations around pixel 800, increasing
+the order could improve the final results.  Setting ``order=50`` fits that
+area well while still offering a good fit elsewhere.
 
 ::
 
@@ -189,15 +195,15 @@ The interactive tools are introduced in section :ref:`interactive`.
 
 Processed Arc - Wavelength Solution
 ===================================
-The wavelength solution for L-band and M-band data is derived from the peaks
-in the telluric transmission in the science frames.  The quality of the
-wavelength solution depends on the resolution and strength of the telluric
-features.
+The wavelength solution for L-band and M-band data are derived from the
+wavelengths of strong peaks in the emission spectrum of the sky.  The
+quality of the wavelength solution depends on the width and strength
+of the telluric features.
 
 Wavelength calibration from peaks is better done in interactive mode
 despite our efforts to automate the process.
 
-To use the sky transmission peaks in the science frames, we invoke the
+To use the emission features in the sky spectrum, we invoke the
 ``makeWavecalFromSkyEmission`` recipe.
 
 ::
@@ -214,7 +220,7 @@ Zooming in:
    :width: 600
    :alt: Arc line identifications
 
-.. note:: If the feature identification were to be incorrrect, often changing
+.. tip:: If the feature identification were to be incorrrect, often changing
     the minimum SNR for peak detection to 5 and recalculating ("Reconstruct points")
     will help find the good solution.
 
@@ -229,11 +235,17 @@ its effective temperature.  To properly scale the sensitivity function (to
 use the star as a spectrophotometric standard), we need to know the star's
 magnitude.  Those are inputs to the ``fitTelluric`` primitive.
 
-From Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
+The default effective temperature of 9650 K is typical of an A0V star, which
+is the most common spectral type used as a telluric standard. Different
+sources give values between 9500 K and 9750 K and, for example,
+Eric Mamajek's list "A Modern Mean Dwarf Stellar Color and Effective
 Temperature Sequence"
 (https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt)
-we find that the effective temperature of an A0V star is about 9700 K. Using
-Simbad, we find that the star has a magnitude of K=4.523.
+quotes the effective temperature of an A0V star as 9700 K. The precise
+value has only a small effect on the derived sensitivity and even less
+effect on the telluric correction, so the temperature from any reliable
+source can be used. Using Simbad, we find that the star has a magnitude
+of K=4.523, which is the closest waveband to our observation.
 
 Instead of typing the values on the command line, we will use a parameter file
 to store them.  In a normal text file (here we name it "hip28910.param"), we write::
@@ -245,7 +257,7 @@ to store them.  In a normal text file (here we name it "hip28910.param"), we wri
 Then we can call the ``reduce`` command with the parameter file.  The telluric
 fitting primitive can be run in interactive mode.
 
-Note that the data is recognized by Astrodata as normal GNIRS longslit science
+Note that the data are recognized by Astrodata as normal GNIRS longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
 recipe (``-r reduceTelluric``), otherwise the default science reduction will be
 run.
@@ -291,7 +303,7 @@ To run the reduction with all the interactive tools activated, set the
     reduce @sci.lis -p interactive=True
 
 The default fits are all good, though the trace can be improved by setting
-the order to 5 (interactively or with ``-p traceApertures:order=5``).
+the order to 4 (interactively or with ``-p traceApertures:order=4``).
 
 The 2D spectrum before extraction looks like this, with blue wavelengths at
 the bottom and the red-end at the top.
@@ -316,6 +328,10 @@ like this.
    :alt: 1D extracted spectrum after telluric correction or before flux calibration
 
 And the final spectrum, corrected for telluric features and flux calibrated.
+
+::
+
+    dgsplot N20180114S0121_1D.fits 1
 
 .. image:: _graphics/gnirsls_Lband10mm_1d.png
    :width: 600

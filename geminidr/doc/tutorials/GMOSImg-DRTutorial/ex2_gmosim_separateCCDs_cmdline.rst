@@ -337,6 +337,11 @@ appear on two CCDs.  This is because the each CCD has been stacked individually
 and because of the dithers some sources ended up moving from to the adjacent
 CCD.
 
+.. figure:: _static/img/N20220627S0115_image.png
+   :align: center
+
+   Final stacked image, with CCD separated.
+
 .. note::
 
     ``ds9`` must be launched by the user ahead of running the display primitive.

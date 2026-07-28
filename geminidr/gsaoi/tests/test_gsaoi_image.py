@@ -11,13 +11,6 @@ from gempy.library import matching
 
 
 @pytest.mark.gsaoi
-def test_placeholder():
-    # Just making sure we have at least one non-slow GSAOI test in case that's what is causing issues in Jenkins
-    pass
-
-
-@pytest.mark.gsaoi
-@pytest.mark.slow
 @pytest.mark.preprocessed_data
 def test_gsaoi_adjust_wcs_no_refcat(change_working_dir, path_to_refs, adinputs):
     with change_working_dir():
@@ -37,7 +30,6 @@ def test_gsaoi_adjust_wcs_no_refcat(change_working_dir, path_to_refs, adinputs):
 
 
 @pytest.mark.gsaoi
-@pytest.mark.slow
 @pytest.mark.preprocessed_data
 def test_gsaoi_resample_to_refcat(path_to_inputs, adinputs):
     """

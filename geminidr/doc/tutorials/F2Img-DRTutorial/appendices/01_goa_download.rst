@@ -38,7 +38,7 @@ Science data
 Navigate to the `GOA webpage <https://archive.gemini.edu/>`_ search form.  Put the data label
 **GS-2013B-Q-15-39** in the ``PROGRAM ID`` text field, and press the ``Search``
 button in the middle of the page. The page will refresh and display a table with
-all the data for this dataset. Since the amount of data is unnecessarily large
+all the data for this dataset. Since the amount of data are unnecessarily large
 for a tutorial (162 files, 0.95 GB), we have narrowed our search to only the
 Y-band data by setting the ``Instrument`` drop-down menu to **F2** and the
 ``Filter`` drop-down menu to **Y**. Now we have only 9 files, 0.05 GB.

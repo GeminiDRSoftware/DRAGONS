@@ -3,20 +3,21 @@
 Tests for the `calculateSensitivity` primitive using GMOS-S and GMOS-N data.
 """
 import numpy as np
+from copy import deepcopy
+import itertools
 import os
 import pytest
 
 from scipy.interpolate import BSpline
 from gwcs import coordinate_frames as cf, WCS as gWCS
 
-import astrodata
-import gemini_instruments
+import astrodata, gemini_instruments
+from astrodata.testing import assert_most_close
 
 from astropy.io import fits
 from astropy import units as u
 from astropy.modeling import models
 
-from astrodata.provenance import provenance_summary
 from gempy.library import astromodels
 from geminidr.gmos import primitives_gmos_spect, primitives_gmos_longslit
 from gempy.utils import logutils
@@ -65,7 +66,7 @@ def test_flux_calibration_with_fake_data():
 
         spline = BSpline(std_wavelength, std_flux, 3)
         wavelength = np.linspace(std_wavelength.min(), std_wavelength.max(), 1000)
-        flux = spline(wavelength)
+        flux = spline(wavelength).astype(np.float32)
         return wavelength, flux
 
     def _create_fake_data(object_name):
@@ -149,6 +150,46 @@ def test_regression_on_flux_calibration(ad, ref_ad_factory, change_working_dir):
     for flux_cal_ext, ref_ext in zip(flux_calibrated_ad, ref_ad):
         np.testing.assert_allclose(
             flux_cal_ext.data, ref_ext.data, atol=1e-4)
+
+
+@pytest.mark.gmosls
+@pytest.mark.preprocessed_data
+@pytest.mark.parametrize("ad", test_datasets, indirect=True)
+def test_flux_calibration_with_resampling(ad, path_to_inputs):
+    """
+    Test the :func:`~geminidr.gmos.GMOSSpect.fluxCalibrate` primitive with
+    combinations of linear and log-linear resampling for both the standard
+    and the science data. This is a combination test for both the
+    resampleToCommonFrame and fluxCalibrate primitives.
+
+    Parameters
+    ----------
+    ad : pytest.fixture (AstroData)
+        Fixture that reads the filename and loads as an AstroData object.
+    path_to_inputs : pytest.fixture
+        Fixture defined in :mod:`astrodata.testing` with the path to the
+        pre-processed input file.
+    """
+    output_fluxes = []
+    wall = ad[0].wcs(np.arange(ad[0].data.size)[ad[0].mask==0])
+    calcsens_params = {"filename": os.path.join(path_to_inputs, "hz44_stis_006.fits")}
+
+    for std_sampling, sci_sampling in itertools.product(["linear", "loglinear"],
+                                                        repeat=2):
+        p = primitives_gmos_longslit.GMOSLongslit([deepcopy(ad)])
+        p.resampleToCommonFrame(output_wave_scale=std_sampling)
+        adstd = p.calculateSensitivity(**calcsens_params)[0]
+        p = primitives_gmos_longslit.GMOSLongslit([deepcopy(ad)])
+        p.resampleToCommonFrame(output_wave_scale=sci_sampling)
+        adout = p.fluxCalibrate(standard=adstd).pop()
+        wout = adout[0].wcs(np.arange(adout[0].data.size))
+        fout = np.interp(wall, wout[adout[0].mask == 0],
+                         adout[0].data[adout[0].mask == 0])
+        output_fluxes.append(fout)
+
+    for fout1, fout2 in list(itertools.combinations(output_fluxes, 2)):
+        assert_most_close(fout1, fout2, max_miss=wall.size // 100, rtol=0.01)
+
 
 
 # --- Helper functions and fixtures -------------------------------------------

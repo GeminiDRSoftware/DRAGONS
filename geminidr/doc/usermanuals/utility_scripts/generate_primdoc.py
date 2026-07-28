@@ -28,7 +28,7 @@ from gempy.library import config
 
 SHORT_DESCRIPTION = "Generate primitive doc from docstrings and pex.config class definitions."
 
-DOCUMENTED_INSTPKG = {'core', 'f2', 'gemini', 'gmos', 'gnirs', 'gsaoi', 'niri'}
+DOCUMENTED_INSTPKG = {'core', 'f2', 'gemini', 'ghost', 'gmos', 'gnirs', 'gsaoi', 'niri'}
 DRPKG = 'geminidr'
 
 PARAMHEADER = 'Parameter defaults and options\n' \
@@ -96,9 +96,12 @@ def get_matching_instpkg(documented_instpkg, drpkg):
     """
 
     drpkg_mod = import_module(drpkg)
-    drpkg_importer = pkgutil.ImpImporter(drpkg_mod.__path__[0])
+    #drpkg_importer = pkgutil.ImpImporter(drpkg_mod.__path__[0])
     instpkgs = []
-    for pkgname, ispkg in drpkg_importer.iter_modules():
+    #for pkgname, ispkg in drpkg_importer.iter_modules():
+    for module_info in pkgutil.iter_modules(drpkg_mod.__path__):
+        pkgname = module_info.name
+        ispkg = module_info.ispkg
         if ispkg:
             if pkgname in documented_instpkg:
                 instpkgs.append(pkgname)
@@ -112,9 +115,12 @@ def get_list_of_modules(instpkg, drpkg):
     """
 
     instpkg_module = import_module(os.extsep.join([drpkg, instpkg]))
-    instpkg_importer = pkgutil.ImpImporter(instpkg_module.__path__[0])
+    #instpkg_importer = pkgutil.ImpImporter(instpkg_module.__path__[0])
     modulenames = []
-    for modulename, ispkg in instpkg_importer.iter_modules():
+    #for modulename, ispkg in instpkg_importer.iter_modules():
+    for module_info in pkgutil.iter_modules(instpkg_module.__path__):
+        modulename = module_info.name
+        ispkg = module_info.ispkg
         if ispkg:
             continue
         modulenames.append(os.extsep.join([instpkg_module.__name__, modulename]))
@@ -212,6 +218,9 @@ def write_parameters_rst(paramclass, destination, module):
                                                        'primitives')
     associated_primname = paramclass.__name__.split('Config')[0]
 
+    #print("KLDEBUG: associated_primodulename=", associated_primodulename)
+    #print("KLDEBUG: associated_primname=", associated_primname)
+
     primmod = import_module(associated_primodulename)
     for name, clss in inspect.getmembers(primmod, inspect.isclass):
         if clss.__module__ == primmod.__name__ and hasattr(clss, 'tagset'):
@@ -223,6 +232,7 @@ def write_parameters_rst(paramclass, destination, module):
                 # with None.
                 if clss.__name__ == 'GMOSLongslit':
                     continue
+
 
             params = clss_instance.params[associated_primname]
 

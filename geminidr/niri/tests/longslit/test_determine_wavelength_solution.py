@@ -36,7 +36,7 @@ determine_wavelength_solution_parameters = {
     'min_snr': None,
     'debug_min_lines': 15,
     'in_vacuo': True,
-    'num_atran_lines': 100,
+    'num_lines': 100,
     "combine_method": "optimal",
     "wv_band": "header",
     "resolution": None
@@ -125,6 +125,7 @@ associated_calibrations_absorp = {
 }
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.nirils
 @pytest.mark.wavecal
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
@@ -170,6 +171,7 @@ def test_regression_determine_wavelength_solution(
     # We don't care about what the wavelength solution is doing at
     # wavelengths outside where we've matched lines
     lines = ref_ad[0].WAVECAL["wavelengths"].data
+    lines = lines[lines > 0]  # column is padded with zeros
     indices = np.where(np.logical_and(ref_wavelength > lines.min(),
                                       ref_wavelength < lines.max()))
     tolerance = 0.5 * (slit_size_in_px * dispersion)

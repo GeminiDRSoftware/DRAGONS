@@ -424,17 +424,16 @@ class FindSourceAperturesModel:
 
                 limits = get_limits(
                     np.nan_to_num(self.profile),
-                    self.prof_mask,
+                    None,  # don't use mask because of -ve beams
                     peaks=peaks,
                     threshold=self.threshold,
-                    min_snr=self.min_snr,
+                    min_snr=0,  # we MUST find a peak
                 )
-
-                log.stdinfo(
-                    f"Found source at {self.direction}: {peaks[0]:.1f}"
-                )
-
-                self.add_aperture(peaks[0], *limits[0])
+                if limits:  # otherwise there will have been a warning
+                    log.stdinfo(
+                        f"Found source at {self.direction}: {peaks[0]:.1f}"
+                    )
+                    self.add_aperture(peaks[0], *limits[0])
 
     def update(self, extras):
         """Update extras in the model."""
@@ -1220,7 +1219,7 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # particular, we depend on extracting some information from the model
         # which was not readily available in the primitive.
         self.ui_params = ui_params
-        self.ui_params.fields["max_separation"].min = 5
+        #self.ui_params.fields["max_separation"].min = 5
         self.ui_params.fields["max_separation"].max = self.model.max_width
 
         if self.ui_params.fields["max_separation"].default is None:
@@ -1237,11 +1236,6 @@ class FindSourceAperturesVisualizer(PrimitiveVisualizer):
         # Not necessary since the TextBox is disabled and so the user cannot
         # set to None.
         self.ui_params.fields["max_separation"].optional = False
-
-        # Make the threshold field fit the proper range (0 - 1, not 0 - 10).
-        self.ui_params.fields["threshold"].min = 0
-        self.ui_params.fields["threshold"].max = 1
-
 
     def add_aperture(self):
         """
@@ -1552,7 +1546,7 @@ def interactive_find_source_apertures(ext, ui_params=None, filename=None, **kwar
     if not filename and hasattr(ext, "orig_filename"):
         filename = ext.orig_filename
     fsav = FindSourceAperturesVisualizer(
-        model, ui_params=ui_params, filename_info=ext.filename
+        model, ui_params=ui_params, filename_info=filename
     )
     interactive_fitter(fsav)
     return fsav.result()

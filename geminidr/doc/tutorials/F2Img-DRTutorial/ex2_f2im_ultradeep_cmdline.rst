@@ -204,17 +204,6 @@ Remember that you can use the ``--expr`` option to select targets with different
 names (``object``) or exposure times (``exposure_time``), or use it with any
 of the datasets |descriptors|.
 
-.. note::
-
-   For Flamingos-2 data, it is useful to check the World Coordinate System (WCS)
-   of the science data.
-
-   ::
-
-       $ reduce -r checkWCS @sci_images.list
-
-   Please see details in :ref:`checkWCS` in the :ref:`tips_and_tricks` chapter.
-
 
 Create a Master Dark
 ====================
@@ -317,8 +306,8 @@ signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
 
 For this dataset the benefit of the ultradeep recipe is subtle.  Below we
-show a zoom-in section of the final image when the complete set of 156 images
-is used.  The image on the left is from the default recipe, the one on the
+show a zoomed-in section of the final image **when the complete set of 156 images
+is used**.  The image on the left is from the default recipe, the one on the
 right is from the ultradeep recipe.
 
 

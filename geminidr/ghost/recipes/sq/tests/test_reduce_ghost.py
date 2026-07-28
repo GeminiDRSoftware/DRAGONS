@@ -46,7 +46,7 @@ def initialize_database(path_to_inputs, filename=CONFIG_FILE):
 
 @pytest.mark.slow
 @pytest.mark.integration_test
-@pytest.mark.ghostspect
+@pytest.mark.ghost_integ
 @pytest.mark.dragons_remote_data
 @pytest.mark.parametrize("progid,file_dict", [[k] + [v] for k, v in list(datasets.items())])
 def test_reduce_ghost(change_working_dir, path_to_inputs, progid, file_dict):

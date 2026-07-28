@@ -169,14 +169,14 @@ Let us select the files that will be used to create the two master biases:
     :linenos:
     :lineno-start: 11
 
-    biastwi = dataselect.select_data(
+    list_of_biastwi = dataselect.select_data(
         all_files,
         ['BIAS'],
         [],
         dataselect.expr_parser("ut_date=='2022-06-13'")
     )
 
-    biassci = dataselect.select_data(
+    list_of_biassci = dataselect.select_data(
         all_files,
         ['BIAS'],
         [],
@@ -195,7 +195,7 @@ filters. It is not really needed in this case.
     :linenos:
     :lineno-start: 24
 
-    flats = dataselect.select_data(
+    list_of_flats = dataselect.select_data(
         all_files,
         ['FLAT'],
         [],
@@ -214,7 +214,7 @@ Finally, the science data can be selected using:
     :linenos:
     :lineno-start: 30
 
-    sci = dataselect.select_data(
+    list_of_science = dataselect.select_data(
         all_files,
         [],
         ['CAL'],
@@ -265,11 +265,11 @@ We create the master bias and add it to the calibration manager as follows:
    :lineno-start: 38
 
    reduce_biastwi = Reduce()
-   reduce_biastwi.files.extend(biastwi)
+   reduce_biastwi.files.extend(list_of_biastwi)
    reduce_biastwi.runr()
 
    reduce_biassci = Reduce()
-   reduce_biassci.files.extend(biassci)
+   reduce_biassci.files.extend(list_of_biassci)
    reduce_biassci.runr()
 
 The ``Reduce`` class is our reduction
@@ -307,7 +307,7 @@ We create the master flat field and add it to the calibration database as follow
     :lineno-start: 45
 
     reduce_flats = Reduce()
-    reduce_flats.files.extend(flats)
+    reduce_flats.files.extend(list_of_flats)
     reduce_flats.runr()
 
 
@@ -332,7 +332,7 @@ will explicitly call the recipe ``reduceSeparateCCDs``:
     :lineno-start: 48
 
     reduce_science = Reduce()
-    reduce_science.files.extend(sci)
+    reduce_science.files.extend(list_of_science)
     reduce_science.recipename = 'reduceSeparateCCDs'
     reduce_science.runr()
 
@@ -345,6 +345,16 @@ of the images and then applied to each of the CCDs separately.
 
 The stacked images of each CCD are in separate extension of the file
 with the ``_image`` suffix.
+
+When you display the image, you will notice that some sources
+appear on two CCDs.  This is because the each CCD has been stacked individually
+and because of the dithers some sources ended up moving from to the adjacent
+CCD.
+
+.. figure:: _static/img/N20220627S0115_image.png
+   :align: center
+
+   Final stacked image, with CCD separated.
 
 The output stack units are in electrons (header keyword BUNIT=electrons).
 The output stack is stored in a multi-extension FITS (MEF) file.  The science

@@ -404,7 +404,7 @@ matching flat nearest in time to the target observation is used to flat field
 the target.  The central wavelength, filter, grating, binning, gain, and
 read speed must match.
 
-Because of the flexure, GMOS longslit flat field are not stacked.  Each is
+Because of the flexure, GMOS longslit flat fields are not stacked.  Each is
 reduced and used individually.  The default recipe takes that into account.
 
 We can send all the flats, regardless of characteristics, to ``Reduce`` and each
@@ -550,8 +550,8 @@ The interactive tools are introduced in section :ref:`interactive`.
 For the standard star observation at central wavelength 795 nm in this
 dataset, ``calculateSensitivity`` with its default parameter values yields a suboptimal number 
 of data points to constrain its sensitivity curve (see the left plot below; click the panel to enlarge). 
-There is a conspicuous gap between 820 and 980 nm -- a result of the amplifier #5 issue and compounded 
-by the presence of telluric absorption redward of around 880 nm. 
+There is a conspicuous gap between 820 and 880 nm -- a result of the amplifier #5 issue and compounded 
+by the presence of telluric absorption redward of around 930 nm. 
 
 To deal with this, we can consider interpolating the (reference) data of the spectrophotometric standard, 
 given that it has a smooth spectrum,  
@@ -570,6 +570,9 @@ we update as follows
     ])
     reduce_std_795nm.runr()
 
+The resulting curve is shown on the right plot (click the panel to enlarge).
+**Notice that we have manually masked three data points**.
+
 .. image:: _graphics/LS_ldred_sens_before.png
    :width: 325
    :alt: Sensitivity function before optimization
@@ -579,8 +582,6 @@ we update as follows
    :width: 325
    :alt: Sensitivity function after optimization
 
-The resulting curve is shown on the right plot (click the panel to enlarge). Notice that we have also tuned other parameters in the 
-interactive tool and have manually masked four data points.  
 
 .. note:: If you wish to inspect the spectrum in aperture 1:
 
@@ -681,12 +682,12 @@ respective variance and data quality (or mask) arrays.
 
         Pixels Extensions
         Index  Content                  Type              Dimensions     Format
-        [ 0]   science                  NDAstroData       (3723,)        float32
-                  .variance             ADVarianceUncerta (3723,)        float32
-                  .mask                 ndarray           (3723,)        uint16
-        [ 1]   science                  NDAstroData       (3723,)        float32
-                  .variance             ADVarianceUncerta (3723,)        float32
-                  .mask                 ndarray           (3723,)        uint16
+        [ 0]   science                  NDAstroData       (3743,)        float32
+                  .variance             ADVarianceUncerta (3743,)        float32
+                  .mask                 ndarray           (3743,)        uint16
+        [ 1]   science                  NDAstroData       (3743,)        float32
+                  .variance             ADVarianceUncerta (3743,)        float32
+                  .mask                 ndarray           (3743,)        uint16
 
         Other Extensions
                        Type        Dimensions

@@ -21,7 +21,7 @@ from astropy.table import Table
 from scipy.interpolate import interp1d
 from scipy.ndimage import binary_dilation
 
-from geminidr import PrimitivesBASE
+from geminidr import PrimitivesBASE, CalibrationNotFoundError
 from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am, astrotools as at
@@ -118,7 +118,7 @@ class Preprocess(PrimitivesBASE):
                                 "Continuing.")
                     continue
                 gain = gt.array_from_descriptor_value(ext, "gain")
-                ext.multiply(gain)
+                ext.multiply(np.float32(gain))  # avoid casting int to float64
 
                 # Update saturation and nonlinear levels with new value. We
                 # allowed these to return lists before this point but now a
@@ -130,10 +130,15 @@ class Preprocess(PrimitivesBASE):
                         continue
                     if kw in ext.hdr:
                         new_value = np.mean(
-                            gain * gt.array_from_descriptor_value(ext, desc))
+                            gain * gt.array_from_descriptor_value(ext, desc),
+                            dtype=np.float64
+                        )
                         # Make sure we update the comment too!
                         new_comment = ext.hdr.comments[kw].replace('ADU', 'electron')
-                        ext.hdr[kw] = (new_value, new_comment)
+                        ext.hdr[kw] = (
+                            float(np.round(new_value, 3)),
+                            new_comment
+                        )
 
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
@@ -320,7 +325,6 @@ class Preprocess(PrimitivesBASE):
                                               if abs(sky_dict[k] - sci_time) <= seconds])
 
                     # Now create a sky list of the appropriate length
-                    print(ad.filename, num_matching_skies, min_skies, len(sky_dict), seconds)
                     if num_matching_skies < min_skies <= len(sky_dict):
                         log.warning(f"Found fewer skies ({num_matching_skies}) "
                                     "matching the time criterion than requested\n"
@@ -402,8 +406,8 @@ class Preprocess(PrimitivesBASE):
                         "correctBackgroundToReference")
         # Check that all images have the same number of extensions
         elif not all(len(ad)==len(adinputs[0]) for ad in adinputs):
-            raise OSError("Number of science extensions in input "
-                                    "images do not match")
+            raise ValueError("Number of science extensions in input images do "
+                             "not match")
         else:
             # Loop over input files
             ref_bg_list = None
@@ -495,8 +499,8 @@ class Preprocess(PrimitivesBASE):
 
             if dark is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed dark listed for "
-                                  f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed dark listed "
+                                                   f"for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no dark was specified")
@@ -812,8 +816,8 @@ class Preprocess(PrimitivesBASE):
 
             if flat is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                   raise OSError("No processed flat listed for "
-                                 f"{ad.filename}")
+                   raise CalibrationNotFoundError("No processed flat listed "
+                                                  f"for {ad.filename}")
                 else:
                    log.warning(f"No changes will be made to {ad.filename}, "
                                "since no flatfield has been specified")
@@ -901,7 +905,6 @@ class Preprocess(PrimitivesBASE):
                             f"{ad.filename}")
                 continue
 
-            in_adu = ad.is_in_adu()
             # It's impossible to do this cleverly with a string of ad.mult()s
             # so use regular maths
             log.status(f"Applying nonlinearity correction to {ad.filename}")
@@ -932,7 +935,9 @@ class Preprocess(PrimitivesBASE):
                         current_value = getattr(ext, desc)()
                         new_value = linearize(
                             [current_value * conv_factor], coeffs)[0] / conv_factor
-                        ext.hdr[ad._keyword_for(desc)] = np.round(new_value, 3)
+                        ext.hdr[ad._keyword_for(desc)] = float(
+                            np.round(new_value, 3)
+                        )
 
             # Timestamp the header and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1082,7 +1087,7 @@ class Preprocess(PrimitivesBASE):
         all_image = all('IMAGE' in ad.tags for ad in adinputs)
         all_spect = all('SPECT' in ad.tags for ad in adinputs)
         if not (all_image ^ all_spect):
-            raise TypeError("All inputs must be either IMAGE or SPECT")
+            raise ValueError("All inputs must be either IMAGE or SPECT")
 
         if all_image:
             mkcat = mkcat_image
@@ -1092,7 +1097,7 @@ class Preprocess(PrimitivesBASE):
             all_spect2d = all(len(ad) == 1 and len(ad[0].shape) == 2
                               for ad in adinputs)
             if not (all_spect1d ^ all_spect2d):
-                raise TypeError("All inputs must either be single-extension "
+                raise ValueError("All inputs must either be single-extension "
                                 "2D spectra or multi-extension 1D spectra")
             # Spectral extraction in this primitive does not subtract the sky
             if (all_spect2d and tolerance > 0 and not
@@ -1475,13 +1480,19 @@ class Preprocess(PrimitivesBASE):
             number of high pixels to reject (for "minmax")
         memory: float/None
             available memory (in GB) for stacking calculations
+        scale: bool
+            scale the sky frames before stacking them?
+        zero: bool
+            apply offets to the sky frames before stacking them?
         reset_sky: bool
             maintain the sky level by adding a constant to the science
             frame after subtracting the sky?
         scale_sky: bool
-            scale each extension of each sky frame to match the science frame?
+            scale each extension of each stacked sky frame to match the
+            science frame?
         offset_sky: bool
-            apply offset to each extension of each sky frame to match science?
+            apply offset to each extension of each stacked sky frame to match
+            the science frame?
         sky: str/AD/list
             sky frame(s) to subtract
         """
@@ -1493,6 +1504,10 @@ class Preprocess(PrimitivesBASE):
         scale_sky = params.get("scale_sky", False)
         offset_sky = params.get("offset_sky", False)
         suffix = params["suffix"]
+        if "zero" not in params.keys():
+            params["zero"] = False
+        if "scale" not in params.keys():
+            params["scale"] = False
         if params["scale"] and params["zero"]:
             log.warning("Both the scale and zero parameters are set. "
                         "Setting zero=False.")

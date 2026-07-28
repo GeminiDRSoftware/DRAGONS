@@ -20,6 +20,8 @@ def parse_args(command_line_args):
                         help='debug')
     parser.add_argument('--ignore_mask', default=False, action="store_true",
                         help='plot all pixels, even those that are masked')
+    parser.add_argument("--thin", default=False, action="store_true",
+                        help='plot thin lines (matplotlib only)')
 
     args = parser.parse_args(command_line_args)
 
@@ -40,7 +42,8 @@ def main(argv=None):
     if args.bokeh:
         plotting.dgsplot_bokeh(ad, args.aperture[0], args.ignore_mask)
     else:
-        plotting.dgsplot_matplotlib(ad, args.aperture[0], args.ignore_mask)
+        kwargs = {'linewidth': 0.5} if args.thin else {}
+        plotting.dgsplot_matplotlib(ad, args.aperture[0], args.ignore_mask, kwargs)
 
 if __name__ == '__main__':
     sys.exit(main())

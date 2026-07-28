@@ -23,7 +23,7 @@ from scipy.interpolate import interp1d
 from geminidr.interactive.controls import Controller, Handler
 from geminidr.interactive.styles import dragons_styles
 
-
+from gempy.library.fitting import fit_1D
 from gempy.library.matching import match_sources
 from gempy.library.peak_finding import cwt_ricker, pinpoint_peaks
 
@@ -963,7 +963,8 @@ class WavelengthSolutionPanel(Fit1DPanel):
                 try:
                     orig_peak = pinpoint_peaks(pinpoint_data, [pixel - xmin],
                                                None)[0][0]
-                    peak = self.model.meta["peak_to_centroid_func"](orig_peak + xmin)
+                    peak = self.model.meta["peak_to_centroid_func"](orig_peak + xmin,
+                                                                    self.model.meta["extraction_center"])
                 except IndexError:  # no peak
                     print("Couldn't find a peak")
                     return
@@ -1197,7 +1198,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
     A Visualizer specific to determineWavelengthSolution
     """
     def __init__(self, *args, absorption=None, **kwargs):
-        self.num_atran_params = None
+        self.num_linelist_params = None
         super().__init__(*args, **kwargs, panel_class=WavelengthSolutionPanel,
                          help_text=DETERMINE_WAVELENGTH_SOLUTION_HELP_TEXT,
                          absorption=absorption)
@@ -1207,8 +1208,8 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         #    labels=["Air", "Vacuum"], active=0)
         #self.reinit_panel.children[-3] = self.widgets["in_vacuo"]
         skip_lines = -3
-        if self.num_atran_params is not None:
-            skip_lines = skip_lines - self.num_atran_params - 1
+        if self.num_linelist_params is not None:
+            skip_lines = skip_lines - self.num_linelist_params - 1
 
         calibration_type = "vacuo" if self.ui_params.in_vacuo else "air"
 
@@ -1222,7 +1223,7 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
         )
 
         self.widgets["in_vacuo"].disabled = True
-        del self.num_atran_params
+        del self.num_linelist_params
 
         self.absorption = absorption
 
@@ -1256,21 +1257,27 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
                     linelist_reinit_params = key.get("atran_linelist_pars")
                     params.reinit_params.remove(key)
                     params.reinit_params = params.reinit_params+linelist_reinit_params
-
+                elif isinstance(key, dict) and "airglow_linelist_pars" in key:
+                    linelist_reinit_params = key.get("airglow_linelist_pars")
+                    params.reinit_params.remove(key)
+                    params.reinit_params = params.reinit_params+linelist_reinit_params
         lst = super().make_widgets_from_parameters(params)
-        # If there are widgets for controlling ATRAN linelist, add
+        # If there are widgets for controlling generated linelist, add
         # a title line above them:
         if linelist_reinit_params is not None:
-            self.num_atran_params = len(linelist_reinit_params)
+            self.num_linelist_params = len(linelist_reinit_params)
             section_title = bm.Div(
-                text="Parameters for ATRAN linelist generation:",
+                text="Parameters for the on-the-fly linelist generation:",
                 align="start", styles={"font-weight":"bold"}, margin=(40,0,20,0))
-            lst.insert((-self.num_atran_params), section_title)
+            lst.insert((-self.num_linelist_params), section_title)
         return lst
 
     def reconstruct_points_additional_work(self, data):
         """Reconstruct the initial points to work with."""
         super().reconstruct_points_additional_work(data)
+        for fit in self.fits:
+            fit.meta["location"] = (f"{fit.meta['location'].split()[0]} "
+                                    f"{self.widgets['center'].value}")
 
         if data is not None:
             for i, _ in enumerate(self.fits):
@@ -1308,6 +1315,32 @@ class WavelengthSolutionVisualizer(Fit1DVisualizer):
             # Reset panel axes
             for panel in self.panels:
                 panel.reset_spectrum_axes()
+
+    def results(self):
+        """Get the results of the interactive fit.
+
+        This gets the list of `~gempy.library.fitting.fit_1D` fits of the data
+        to be used by the caller. We need to override the base class method to
+        handle possible "None" fits which revert to the initial model.
+
+        Returns
+        -------
+        list of `~gempy.library.fitting.fit_1D`
+        """
+        fits = []
+        for fit in self.fits:
+            if fit.fit is None:
+                # Hack a fit1D object that represents the original model with no fitted lines
+                fit1d = fit_1D(np.arange(5), function="chebyshev", order=1,
+                               niter=0)
+                fit1d._models = fit.default_model
+                fit1d.image = None
+                fit1d.points = np.array([])
+                fit1d.mask = np.array([], dtype=bool)
+                fits.append(fit1d)
+            else:
+                fits.append(fit.fit)
+        return fits
 
 
 def get_closest(arr, value):

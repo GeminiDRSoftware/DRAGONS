@@ -7,18 +7,18 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Tutorial Series - GNIRS Longslit Data Reduction with DRAGONS'
-copyright = '2025, Association of Universities for Research in Astronomy'
+copyright = '2026, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The full version, including alpha/beta/rc tags
-version = '4.0'
-#release = '4.0.0'
+version = '5.0_dev'
+#release = '4.2.1'
 #rtdurl = 'v'+release
-#release = '4.0.x'
-#rtfurl = 'release-'+release
+#release = '4.2.x'
+#rtdurl = 'release-'+release
 rtdurl = 'latest'
 
-today = 'May 2025'
+today = 'April 2026'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -77,7 +77,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'TutorialSeries-GMOSLSDRDRAGONS.tex', 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS Documentation',
+    (master_doc, 'TutorialSeries-GNIRSLSDRDRAGONS.tex', 'Tutorial Series - GNIRS Longslit Data Reduction with DRAGONS Documentation',
      'DRAGONS Team', 'manual'),
 ]
 
@@ -90,7 +90,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'tutorialseries-gmoslsdrdragons', 'Tutorial Series - GMOS Longslit Data Reduction with DRAGONS Documentation',
+    (master_doc, 'tutorialseries-gnirslsdrdragons', 'Tutorial Series - GNIRS Longslit Data Reduction with DRAGONS Documentation',
      [author], 1)
 ]
 
@@ -120,6 +120,7 @@ rst_epilog = """
 .. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/usermanual/index.html" target="_blank">Astrodata User Manual</a>`
 
 .. |GNIRSImgTut| replace:: :raw-html:`<a href="http://GNIRSImg-DRTutorial.readthedocs.io/en/{v}">GNIRS Imaging Data Reduction Tutorial</a>`
+.. |GNIRSXDTut| replace:: :raw-html:`<a href="http://GNIRSXD-DRTutorial.readthedocs.io/en/{v}">GNIRS Cross-Dispersed Data Reduction Tutorial</a>`
 .. |DRAGONS| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/en/{v}/" target="_blank">DRAGONS</a>`
 
 .. |RSUserInstall| replace:: :raw-html:`<a href="https://dragons.readthedocs.io/projects/recipe-system-users-manual/en/{v}/install.html" target="_blank">DRAGONS Installation Instructions</a>`

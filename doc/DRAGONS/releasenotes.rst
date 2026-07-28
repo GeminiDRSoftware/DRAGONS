@@ -1,10 +1,64 @@
 .. releasenotes.rst
 
+.. include:: symbols.txt
+
 .. _releasenotes:
 
 *************
 Release Notes
 *************
+
+V4.2.1
+======
+
+This release includes updated GHOST look-up table to account for the
+movement of the slit viewer camera during a recent issue and associated
+work on the hardware.
+
+
+V4.2.0
+======
+
+This release includes new support for Flamingos 2 longslit data.  Full
+support from raw data to telluric and flux calibrated data is available. All
+Flamingos 2 longslit configurations are supported.
+
+The software is now compatible with Numpy 2.
+
+Improvements to various algorithms, especially wavelength calibration, have
+been made.  Various bug fixes and documentation improvements are also included.
+
+V4.1.0
+======
+
+This release includes new support for GNIRS cross-dispersed data.  Full
+support from raw data to telluric and flux calibrated data is available. All
+GNIRS cross-dispersed configurations are supported.   This release builds
+upon the GNIRS longslit support introduced in DRAGONS V4.0.0.
+
+Improvements to various algorithms, especially wavelength calibration, have
+been made.  Various bug fixes and documentation improvements are also included.
+
+V4.0.0
+======
+
+This major release includes new support for near-infrared spectroscopic data.
+Specifically, we are introducing support for GNIRS longslit data.
+
+GNIRS longslit data reduction can now be performed in DRAGONS.  Full support
+from raw data to telluric and flux calibrated data is available. All GNIRS
+wavebands are supported, X, J, H, K, as well as L and M.  All three
+dispersers, 10 l/mm, 32 l/mm, and 111 l/mm are supported.
+
+The software offers algorithms and tools to help with the wavelength
+calibration.  Wavelength calibrations from arc lamp, OH and |O2| sky lines,
+and from telluric features are all supported.  The tutorial includes a
+guide to help you choose the best wavelength calibration method for your data.
+
+Algorithms and tools are includes to help with the measurement of the
+telluric model and the sensitivity function and then for the correction of
+the telluric features present in the data.
+
 
 V3.2.3
 ======
@@ -62,11 +116,6 @@ Science Quality reduction
 For imaging and GMOS longslit spectroscopy, this software should be used
 instead of the Gemini IRAF package.
 
-To install DRAGONS, please follow the installation guide provided in the
-Recipe System User Manual:
-
-  |RSUserInstall|.
-
 
 
 V3.1.0
@@ -98,11 +147,6 @@ Science Quality reduction
 
 For imaging and GMOS longslit spectroscopy, this software should be used
 instead of the Gemini IRAF package.
-
-To install DRAGONS, please follow the installation guide provided in the
-Recipe System User Manual:
-
-  |RSUserInstall|.
 
 
 V3.0.4
@@ -161,8 +205,5 @@ We are working on a science quality package for GMOS longslit but it is not
 ready yet.  We believe that releasing what we have for quicklook inspection
 will nevertheless be useful to our users.
 
-Installation instructions can be found in the Recipe System User Manual at:
-
- |RSUserShow|
 
 

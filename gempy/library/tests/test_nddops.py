@@ -5,7 +5,7 @@ from numpy.testing import (assert_allclose, assert_array_almost_equal,
 
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from gempy.library.nddops import NDStacker, sum1d
+from gempy.library.nddops import NDStacker, combine1d
 
 
 @pytest.fixture
@@ -287,8 +287,7 @@ def test_median_even(func, expected_median, expected_var, testdata, testvar,
     # assert_allclose(out_var, 1.5)
 
 
-@pytest.mark.xfail(reason='review this')
-def test_sum1d():
+def test_combine1d_sum():
     big_value = 10
     data = np.ones((10, ))
     ndd = NDAstroData(data, mask=np.zeros_like(data, dtype=DQ.datatype),
@@ -298,7 +297,7 @@ def test_sum1d():
 
     x1 = -0.5
     for x2 in np.arange(0., 4.5, 0.5):
-        result = sum1d(ndd, x1, x2, proportional_variance=True)
+        result = combine1d(ndd, x1, x2, proportional_variance=True)
         if x2 > 3.5:
             np.testing.assert_almost_equal(4 + big_value * (x2 - 3.5),
                                            result.data)
@@ -311,3 +310,32 @@ def test_sum1d():
             assert result.mask == 1
         else:
             assert result.mask == 0
+
+
+def test_combine1d_average_with_mask():
+    """Confirm that the average is always 1 even if there's a masked bad pixel"""
+    big_value = 10
+    data = np.ones((10, ))
+    ndd = NDAstroData(data, mask=np.zeros_like(data, dtype=DQ.datatype),
+                      variance=np.ones_like(data))
+    ndd.data[4] = big_value
+    ndd.mask[4] = 1
+
+    x1 = -0.5
+    for x2 in np.arange(0., 8.5, 0.5):
+        result = combine1d(ndd, x1, x2, average=True)
+        assert result.data == pytest.approx(1.0)
+
+
+def test_combine_1d_average_and_sum():
+    """Confirm that average and sum give consistent results"""
+    data = np.arange(10)
+    ndd = NDAstroData(data, mask=np.zeros_like(data, dtype=DQ.datatype),
+                      variance=np.ones_like(data))
+    for x1 in np.arange(-0.5, 7.5, 0.9):
+        for x2 in np.arange(x1+0.7, x1+4, 0.8):
+            dx = np.minimum(x2, 9.5) - np.maximum(x1, -0.5)
+            sum1d_result = combine1d(ndd, x1, x2, average=False)
+            avg1d_result = combine1d(ndd, x1, x2, average=True)
+            assert sum1d_result.data / dx == pytest.approx(avg1d_result.data)
+            assert sum1d_result.variance / (dx*dx) == pytest.approx(avg1d_result.variance)

@@ -1,4 +1,4 @@
-# Copyright(c) 2016-2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2016-2026 Association of Universities for Research in Astronomy, Inc.
 #
 #
 #                                                                  gemini_python
@@ -16,6 +16,7 @@ import itertools
 from importlib import import_module
 
 import matplotlib
+import numpy
 import numpy as np
 from astropy import units as u
 from astropy.io.ascii.core import InconsistentTableError
@@ -28,9 +29,8 @@ from gwcs import coordinate_frames as cf
 from gwcs.wcs import WCS as gWCS
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from numpy.f2py.crackfortran import verbose
 from numpy.ma.extras import _ezclump
-from scipy import optimize
+from scipy import ndimage, optimize
 from scipy.signal import find_peaks, correlate
 from specutils import SpectralRegion
 from specutils.utils.wcs_utils import air_to_vac, vac_to_air
@@ -40,12 +40,13 @@ from gemini_instruments.gemini import get_specphot_name
 import geminidr.interactive.server
 from astrodata import AstroData
 from astrodata.provenance import add_provenance
+from geminidr import CalibrationNotFoundError
 from geminidr.core.primitives_resample import Resample
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from geminidr.gemini.lookups import extinction_data as extinct, oh_synthetic_spectra
+from geminidr.gemini.lookups import extinction_data as extinct
 from geminidr.interactive.fit import fit1d
 from geminidr.interactive.fit.aperture import interactive_find_source_apertures
-from geminidr.interactive.fit.tracing import interactive_trace_apertures
+from geminidr.interactive.fit.tracing import interactive_trace_apertures, trace_apertures_data_provider
 from geminidr.interactive.fit.wavecal import WavelengthSolutionVisualizer
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
@@ -54,7 +55,9 @@ from gempy.library import peak_finding, tracing, transform, wavecal
 from gempy.library.config import RangeField
 from gempy.library.fitting import fit_1D
 from gempy.library.matching import KDTreeFitter
+from gempy.library.nddops import NDStacker
 from gempy.library.spectral import Spek1D
+from gempy.adlibrary.embedded_files import embed_file
 from gwcs.utils import CoordinateFrameError
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.utils.md5 import md5sum
@@ -82,7 +85,7 @@ class Spect(Resample):
     def _initialize(self, adinputs, **kwargs):
         super()._initialize(adinputs, **kwargs)
         self._param_update(parameters_spect)
-        self.generated_linelist = False
+        self.generated_linelist = None
 
     def adjustWavelengthZeroPoint(self, adinputs=None, **params):
         """
@@ -136,6 +139,7 @@ class Spect(Resample):
         sfx = params["suffix"]
         center = params["center"]
         shift = params["shift"]
+        min_snr = params["min_snr"]
         max_shift = params["debug_max_shift"]
         verbose = params["verbose"]
 
@@ -181,7 +185,7 @@ class Spect(Resample):
                         "center": center,
                         "nsum": 10,
                         "fwidth": None,
-                        "min_snr": 10,
+                        "min_snr": min_snr,
                         "min_sep": 2,
                         "weighting": "local",
                         "nbright": 0,
@@ -190,6 +194,7 @@ class Spect(Resample):
                         "absorption": False,
                         "debug_min_lines": 15,
                         "debug_alternative_centers": False,
+                        "num_lines": 100,
                     }
 
                 wave_scale = ext.wcs.output_frame.axes_names[0]
@@ -207,8 +212,7 @@ class Spect(Resample):
                 try:
                     input_data = wavecal.get_all_input_data(
                         ext, self, config_dict, linelist=None,
-                        bad_bits=DQ.not_signal, skylines=True,
-                        loglevel=loglevel)
+                        bad_bits=DQ.not_signal)
                 except ValueError:
                     raise ValueError("Something went wrong in finding sky "
                                      "lines - check that the spectrum is being "
@@ -277,6 +281,7 @@ class Spect(Resample):
         method : str ['sources_wcs' | 'sources_offsets' | 'offsets']
             Method to use to compute offsets.
                - 'sources_wcs' matches sources using the WCS
+               - 'wcs' uses the WCS only (aligning based on target coords)
                - 'sources_offset' matches sources using the telescope offset
                - 'offsets' uses the telescope offsets only (QOFFSET keyword).
         fallback : str ['sources_offsets' | 'offsets']
@@ -313,6 +318,22 @@ class Spect(Resample):
         if {len(ad[0].shape) for ad in adinputs} != {2}:
             raise ValueError("All inputs must be two dimensional")
 
+        # We need to subtract the median signal from the slit profile.
+        # In the thermal IR, the background can be highly variable and
+        # corss-correlating a +ve background with a -ve background creates
+        # an xcorr that's a big trough, making it hard to locate a peak.
+        def slit_profile(ext, section=None):
+            raw_profile = peak_finding.stack_slit(ext, section=section)
+            return raw_profile - np.median(raw_profile)
+
+        def slit_pa(ext):
+            """Return the PA of the slit (left-to-right or bottom-to-top)"""
+            coords = [(0, length - 1) for length in ext.shape[::-1]]
+            spataxis = ext.dispersion_axis() - 1  # python sense
+            coords[spataxis] = (np.mean(coords[spataxis]),) * 2
+            slit_ends = ext.wcs.pixel_to_world(*coords)[1]
+            return slit_ends[0].position_angle(slit_ends[1]).to(u.deg).value
+
         # Use first image in list as reference
         refad = adinputs[0]
         ref_sky_model_dict = {i: am.get_named_submodel(
@@ -322,10 +343,12 @@ class Spect(Resample):
             model.name = None
         log.stdinfo(f"Reference image: {refad.filename}")
         refad.phu['SLITOFF'] = 0
+        refpa = slit_pa(refad[0])
+
         if any('sources' in m for m in methods):
-            ref_profile_dict = {i: peak_finding.stack_slit(refad[i], section=region)
+            ref_profile_dict = {i: slit_profile(refad[i], section=region)
                                 for i in range(len(refad))}
-        if 'sources_wcs' in methods:
+        if any('wcs' in m for m in methods):
             # World coords are the same for each slit.
             world_coords = (refad[0].central_wavelength(asNanometers=True),
                             refad.target_ra(), refad.target_dec())
@@ -335,45 +358,63 @@ class Spect(Resample):
                                for k in range(len(refad))}
 
         # The reference doesn't go through the loop so update it now
-        gt.mark_history(adinputs[0], primname=self.myself(), keyword=timestamp_key)
-        adinputs[0].update_filename(suffix=params["suffix"], strip=True)
+        gt.mark_history(refad, primname=self.myself(),
+                        keyword=timestamp_key)
+        refad.update_filename(suffix=params["suffix"], strip=True)
 
         for ad in adinputs[1:]:
             # Go through the slices and record all the offsets
             offsets = []
+            this_pa = slit_pa(ad[0])
+            log.debug(f"PAs of reference and {ad.filename}: {refpa} {this_pa}")
+            pa_diff = abs(refpa - this_pa)
+            flipped = pa_diff > 90
+            if flipped:
+                log.warning(f"Slit flip detected for image {ad.filename} - "
+                            "please check aligned images.")
+                pa_diff -= 180
+            if abs(pa_diff) > 1:
+                log.warning(f"{ad.filename}: slit PA difference of "
+                            f"{abs(pa_diff):.2f} degrees")
+
             for iext, ext in enumerate(ad):
                 offset = None
                 for method in methods:
-                    if method is None:
-                        break
-
                     dispaxis = 2 - ad[0].dispersion_axis()  # python sense
 
                     # Calculate offset determined by header (WCS or offsets)
-                    if method == 'sources_wcs':
+                    if 'wcs' in method:
                         coords = ad[iext].wcs.backward_transform(
                             *world_coords)
                         hdr_offset = ref_coords_dict[iext][dispaxis] - coords[dispaxis]
-                    elif dispaxis == 1:
-                        hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
+                        if flipped:
+                            hdr_offset += (2 * coords[dispaxis] -
+                                           (ext.shape[1 - dispaxis] - 1))
                     else:
-                        hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
+                        if dispaxis == 1:
+                            hdr_offset = refad.detector_y_offset() - ad.detector_y_offset()
+                        else:
+                            hdr_offset = refad.detector_x_offset() - ad.detector_x_offset()
+                        if flipped:
+                            hdr_offset *= -1
 
                     # Cross-correlate to find real offset and compare. Only look
                     # for a peak in the range defined by "tolerance".
                     if 'sources' in method:
-                        profile = peak_finding.stack_slit(ad[iext], section=region)
+                        profile = slit_profile(ad[iext], section=region)
+                        if flipped:
+                            profile = profile[::-1]
                         corr = np.correlate(ref_profile_dict[iext],
                                             profile, mode='full')
                         expected_peak = corr.size // 2 + hdr_offset
                         # It's reasonable to assume that if the source is
-                        # significantly narrower than the size of the slit
+                        # significantly narrower than the length of the slit
                         # remember these widths are "sigma", not FWHM!
                         min_peak_width = (0.05 if ad.is_ao() else 0.25) / ext.pixel_scale()
                         max_peak_width = min(0.25 * profile.size, 20)
                         widths = 10**np.arange(np.log10(min_peak_width),
                                                np.log10(max_peak_width), 0.05)
-                        peaks, snrs = peak_finding.find_wavelet_peaks(
+                        peaks, _, snrs = peak_finding.find_wavelet_peaks(
                             corr, widths=widths,
                             reject_bad=False, pinpoint_index=0)
                         if peaks.size:
@@ -399,8 +440,10 @@ class Spect(Resample):
                         else:
                             log.warning(f"{ad.filename}:{ext.id} Cross-correlation failed")
 
-                        if debug_plots:
+                        if debug_plots:  # pragma: no cover
                             fig, ax = plt.subplots()
+                            print(f"Comparing {ad.filename} to reference {refad.filename} "
+                                  f"(expected peak at {expected_peak - corr.size // 2})")
                             print(f"Using {len(widths)} sigma widths {min_peak_width} to {max_peak_width}")
                             print("Peaks at ", np.asarray(peaks) - corr.size // 2)
                             print(f"Using {offset}")
@@ -410,7 +453,7 @@ class Spect(Resample):
                             ax.set_title(f"{ad.filename}:{ext.id}")
                             plt.show()
 
-                    elif method == 'offsets':
+                    elif method is not None:
                         offset = hdr_offset
 
                     if offset is not None:
@@ -427,32 +470,38 @@ class Spect(Resample):
                 if integer_offsets:
                     offset = np.round(offset)
                 log.stdinfo(f"{ad.filename}: applying offset of {offset:.2f} pixels")
+
                 for iext, ext in enumerate(ad):
-                    wcs = ext.wcs
-                    frames = wcs.available_frames
-                    for input_frame, output_frame in zip(frames[:-1], frames[1:]):
-                        t = wcs.get_transform(input_frame, output_frame)
+                    if flipped:
+                        _slice = (slice(None, None, -1) if dispaxis == 1 else
+                                  (slice(None), slice(None, None, -1)))
+                        ext.reset(ext.data[_slice],
+                                  mask=None if ext.mask is None else ext.mask[_slice],
+                                  variance=None if ext.variance is None else ext.variance[_slice])
+
+                        # Fix the APERTURE table to account for the image flip
                         try:
-                            sky_model = am.get_named_submodel(t, 'SKY')
-                        except IndexError:
+                            aptable = ext.APERTURE
+                        except AttributeError:
                             pass
                         else:
-                            new_sky_model = models.Shift(offset) | ref_sky_model_dict[iext]
-                            new_sky_model.name = 'SKY'
-                            ext.wcs.set_transform(
-                                input_frame, output_frame, t.replace_submodel(
-                                    'SKY', new_sky_model))
-                            break
-                    else:
-                        raise OSError("Cannot find 'SKY' model in WCS for "
-                                      f"{ad.filename}:{ext.id}")
+                            aptable['c0'] = ext.shape[ext.dispersion_axis() - 1] - 1 - aptable['c0']
+                            for i in range(1, 10):
+                                try:
+                                    aptable[f'c{i}'] *= -1
+                                except KeyError:
+                                    break
+                            aplow = -aptable['aper_lower']
+                            aptable['aper_lower'] = -aptable['aper_upper']
+                            aptable['aper_upper'] = aplow
+
+                    new_sky_model = models.Shift(offset) | ref_sky_model_dict[iext]
+                    new_sky_model.name = 'SKY'
+                    ext.wcs = am.replace_submodel_in_gwcs(ext.wcs, 'SKY', new_sky_model)
+
                 ad.phu['SLITOFF'] = offset
             else:
-                no_offset_msg = f"Cannot determine offset for {ad.filename}"
-                if 'sq' in self.mode:
-                    raise OSError(no_offset_msg)
-                else:
-                    log.warning(no_offset_msg)
+                raise RuntimeError(f"Cannot determine offset for {ad.filename}")
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -460,8 +509,8 @@ class Spect(Resample):
 
         return adinputs
 
-    def attachPinholeModel(self, adinputs=None, suffix=None, pinhole=None,
-                           do_cal=None):
+    def attachPinholeRectification(self, adinputs=None, suffix=None, pinhole=None,
+                                   do_cal=None):
         """
         Attach slit rectification models from a processed pinhole file.
 
@@ -513,9 +562,7 @@ class Spect(Resample):
             log.stdinfo(f"{ad.filename}: using the pinhole mask "
                         f"{pinhole.filename}{origin_str}")
             ad = gt.attach_rectification_model(ad, pinhole, log=self.log)
-            try:
-                ad[0].wcs.get_transform("pixels", "rectified")
-            except:
+            if 'rectified' not in ad[0].wcs.available_frames:
                 log.fullinfo("No rectification model from pinhole found "
                              f"for {ad.filename}")
 
@@ -528,7 +575,8 @@ class Spect(Resample):
                                self.myself())
 
         if fail:
-            raise OSError("No suitable pinhole file for one or more input(s)")
+            raise CalibrationNotFoundError("No suitable pinhole file for one "
+                                           "or more input(s)")
 
         return adoutputs
 
@@ -540,6 +588,11 @@ class Spect(Resample):
         available after successful line matching) from a processed arc, or
         similar wavelength reference, to the WCS of the input data.
 
+        The distortion correction must go before the rectification model
+        (if one exists) since the rectification model can make large changes
+        to spatial coordinate, but the distortion model was constructed in
+        the original coordinate frame.
+
         Parameters
         ----------
         adinputs : list of :class:`~astrodata.AstroData`
@@ -548,6 +601,10 @@ class Spect(Resample):
             Suffix to be added to output files.
         arc : :class:`~astrodata.AstroData` or str or None
             Arc(s) containing distortion map & wavelength calibration.
+        use_same_arc : bool
+            Require the use of the same arc for all frames? If True and
+            more than one arc is returned from the CalDB, then the most
+            commonly-chosen arc is used for all frames.
 
         Returns
         -------
@@ -555,18 +612,52 @@ class Spect(Resample):
             Modified input objects with the WCS updated for each extension.
 
         """
+        # TODO? Should we make the distortion model using input
+        # coordinates from the rectified frame?
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
 
         sfx = params["suffix"]
         arc = params["arc"]
+        use_same_arc = params.get("use_same_arc", False)
 
         # Get a suitable arc frame (with distortion map) for every science AD
         if arc is None:
             arc_list = self.caldb.get_processed_arc(adinputs)
         else:
             arc_list = (arc, None)
+
+        # Issue a warning if all inputs with a given central wavelength aren't
+        # all using the same arc. This is beneficial for NIR spectroscopy where
+        # each observation may have its own arc (possibly derived from the sky
+        # emission in its own frames) and the final frame of one observation
+        # may be closer in time to the first frame of the next observation than
+        # it is to the first frame of its own observation.
+        if hasattr(arc_list, 'files') and len(arc_list) > 1:  # it's a CalReturn
+            cenwaves = np.array([ad.central_wavelength(asNanometers=True)
+                                 for ad in adinputs])
+            for cenwave in set(cenwaves):
+                indices = np.where(cenwaves==cenwave)[0]
+                if len(set([arc_list[i][0] for i in indices])) > 1:
+                    warnmsg = "More than one arc is being used"
+                    if len(set(cenwaves)) > 1:
+                        warnmsg += f" for central wavelength {cenwave:.1f}nm"
+                    if use_same_arc:
+                        arcs = [(item, arc_list.files.count(item[0]))
+                                for i, item in enumerate(list(set(arc_list.items())))
+                                if i in indices]
+                        if len(arcs) > 1:
+                            sorted_arcs = sorted(arcs, key=lambda arc: arc[1], reverse=True)
+                            if sorted_arcs[0][1] == sorted_arcs[1][1]:
+                                warnmsg += "; there is no unique most common arc."
+                                use_this_arc = sorted_arcs[0][0]
+                            else:
+                                warnmsg += "; choosing the most common one."
+                                use_this_arc = sorted_arcs[0][0]
+                            for i in indices:
+                                arc_list[i] = use_this_arc
+                    log.warning(warnmsg)
 
         fail = False
 
@@ -638,21 +729,18 @@ class Spect(Resample):
             # one block of reading and verifying them
             distortion_models, wave_models, wave_frames = [], [], []
             for ext in arc:
-                wcs = ext.nddata.wcs
+                wcs = ext.wcs
 
                 # Any failures must be handled in the outer loop processing
                 # ADs, so just set the found transforms to empty and present
                 # the warning at the end
                 try:
-                    if 'distortion_corrected' not in wcs.available_frames:
-                        distortion_models = []
-                        break
-                except AttributeError:
-                    distortion_models = []
-                    break
-
-                m_distcorr = wcs.get_transform(wcs.input_frame,
-                                               'distortion_corrected')
+                    dist_frame_index = wcs.available_frames.index('distortion_corrected')
+                except ValueError:
+                    m_distcorr = None
+                else:
+                    m_distcorr = wcs.get_transform(wcs.available_frames[dist_frame_index - 1],
+                                                   'distortion_corrected')
                 distortion_models.append(m_distcorr)
 
                 try:
@@ -665,14 +753,6 @@ class Spect(Resample):
                     wave_models.append(wave_model)
                     wave_frames.extend([frame for frame in wcs.output_frame.frames
                                         if isinstance(frame, cf.SpectralFrame)])
-
-            if not distortion_models:
-                log.warning("Could not find a 'distortion_corrected' frame "
-                            f"in arc {arc.filename} extension {ext.id} - "
-                            "continuing")
-                if 'sq' in self.mode:
-                    fail = True
-                continue
 
             # Determine whether we're producing a single-extension AD
             # or keeping the number of extensions as-is
@@ -690,27 +770,29 @@ class Spect(Resample):
                 ] * len_ad
                 output_frames = [ad[ref_idx].wcs.output_frame.frames] * len_ad
 
-                # For GMOS with one arc and lots of inputs. The output of either
-                # branch of this code should be a gWCS that ends in
-                # ("distortion_corrected", None) so that the final bit of code can
-                # insert a "world" frame using a munged-together sky model and
-                # wavelength model.
+                # For GMOS with single-extension arc and multiple input extensions
                 if len_ad > 1:
                     # We need to apply the mosaicking geometry, and add the
                     # same distortion correction to each input extension.
                     geotable = import_module('.geometry_conf', self.inst_lookups)
                     transform.add_mosaic_wcs(ad, geotable)
                     for ext in ad:
-                        # TODO: use insert_frame() method
-                        new_pipeline = []
-                        for item in ext.wcs.pipeline:
-                            if item[0].name == 'mosaic':
-                                new_pipeline.extend([(item[0], m_distcorr),
-                                                     (cf.Frame2D(name='distortion_corrected'), None)])
-                                break
-                            else:
-                                new_pipeline.append(item)
-                        ext.wcs = gWCS(new_pipeline)
+                        try:
+                            mosaic_frame_index = ext.wcs.available_frames.index('mosaic')
+                        except ValueError:
+                            continue
+                        if m_distcorr is not None:
+                            # If there's a "rectified" frame after the mosaic,
+                            # then determineDistortion() will have calculated
+                            # a distortion model for that position.
+                            try:
+                                rectified_frame_index = ext.wcs.available_frames.index('rectified')
+                            except ValueError:
+                                rectified_frame_index = -1
+                            ext.wcs.insert_frame(
+                                ext.wcs.available_frames[max(mosaic_frame_index,
+                                                             rectified_frame_index)],
+                                m_distcorr, cf.Frame2D(name='distortion_corrected'))
 
                     # We need to consider the different pixel frames of the
                     # science and arc. The input->mosaic transform of the
@@ -800,16 +882,14 @@ class Spect(Resample):
                         # No mosaicking, so we can just do a shift
                         m_shift = (models.Shift((ad_detsec.x1 - arc_detsec.x1) / xbin) &
                                    models.Shift((ad_detsec.y1 - arc_detsec.y1) / ybin))
-                        m_distcorr = m_shift | m_distcorr
-                    # Create a new pipeline for the gWCS here. We can't use
-                    # insert_frame() because we need to chop off the "world"
-                    # frame at the end (and split a frame from its transform).
-                    # This should work whether or not one or more frames
-                    # (e.g., "rectified") have been added after the input_frame.
-                    new_pipeline = ad[0].wcs.pipeline[:-2] +\
-                                   [(ad[0].wcs.pipeline[-2].frame, m_distcorr),
-                                   (cf.Frame2D(name='distortion_corrected'), None)]
-                    ad[0].wcs = gWCS(new_pipeline)
+                        m_distcorr = (m_shift if m_distcorr is None else
+                                      m_shift | m_distcorr)
+
+                    if m_distcorr is not None:
+                        prior_frame = ('rectified' if 'rectified' in ad[0].wcs.available_frames
+                                       else ad[0].wcs.input_frame)
+                        ad[0].wcs.insert_frame(prior_frame, m_distcorr,
+                                               cf.Frame2D(name='distortion_corrected'))
 
                 if wave_model is None:
                     log.warning(f"{arc.filename} has no wavelength solution")
@@ -817,8 +897,9 @@ class Spect(Resample):
                         fail = True
 
             else:
-                log.warning("Distortion calibration with multiple-extension "
-                            "arcs has not been tested.")
+                if len(ad) != len(arc):
+                    raise ValueError("Number of extensions in science and arc "
+                                     f"are not equal ({len(ad)} != {len(arc)})")
 
                 sky_models, output_frames = [], []
 
@@ -833,14 +914,17 @@ class Spect(Resample):
                     # applying the distortion correction
                     shifts = [c1 - c2 for c1, c2 in zip(ext.detector_section(),
                                                         ext_arc.detector_section())]
-                    dist_model = (models.Shift(shifts[0] / xbin) &
-                                  models.Shift(shifts[1] / ybin)) | dist_model
-                    # This hasn't been tested, but should work in analogy with
-                    # the code above. We can't use insert_frame() here either.
-                    new_pipeline = ext.wcs.pipeline[:-2] +\
-                                   [(ext.wcs.pipeline[-2].frame, m_distcorr),
-                                   (cf.Frame2D(name='distortion_corrected'), None)]
-                    ext.wcs = gWCS(new_pipeline)
+                    if shifts.count(0) < len(shifts):
+                        shift_model = (models.Shift(shifts[0] / xbin) &
+                                      models.Shift(shifts[1] / ybin))
+                        dist_model =  (shift_model if dist_model is None else
+                                       shift_model | dist_model)
+
+                    if dist_model is not None:
+                        prior_frame = ('rectified' if 'rectified' in ext.wcs.available_frames
+                                       else ext.wcs.input_frame)
+                        ext.wcs.insert_frame(prior_frame, dist_model,
+                                             cf.Frame2D(name='distortion_corrected'))
 
                     if wave_model is None:
                         log.warning(f"{arc.filename} extension {ext.id} has "
@@ -848,6 +932,7 @@ class Spect(Resample):
                         if 'sq' in self.mode:
                             fail = True
 
+            # Now we need to remove the last transform and output frame
             for i, (ext, wave_model, wave_frame, sky_model, output_frame) in \
               enumerate(zip(ad, wave_models, wave_frames, sky_models,
                             output_frames)):
@@ -861,8 +946,12 @@ class Spect(Resample):
                     [copy(wave_frame) if isinstance(frame, cf.SpectralFrame)
                      else frame for frame in output_frame], name='world'
                 )
-                ext.wcs.insert_frame('distortion_corrected', t,
-                                     new_output_frame)
+                # Put new transform before world frame
+                ext.wcs.set_transform(ext.wcs.available_frames[-2],
+                                      ext.wcs.output_frame, t)
+                # Replace world frame
+                ext.wcs = gWCS(ext.wcs.pipeline[:-1] +
+                               [(new_output_frame, None)])
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -872,8 +961,8 @@ class Spect(Resample):
                 add_provenance(ad, arc.filename, md5sum(arc.path) or "", self.myself())
 
         if fail:
-            raise OSError("No suitable arc calibration for one or more "
-                          "input(s)")
+            raise CalibrationNotFoundError("No suitable arc calibration for "
+                                           "one or more input(s)")
 
         return adoutputs
 
@@ -1117,11 +1206,12 @@ class Spect(Resample):
 
                 # Get filename to display in visualizer
                 filename_info = getattr(ad, 'filename', '')
+                tab_labels = self._make_tab_labels(ad)
 
                 uiparams = UIParameters(config)
                 visualizer = fit1d.Fit1DVisualizer({"x": all_waves, "y": all_zpt, "weights": all_weights},
                                                    fitting_parameters=all_fp_init,
-                                                   tab_name_fmt=lambda i: f"CCD {i+1}",
+                                                   tab_name_fmt=lambda i: tab_labels[i],
                                                    xlabel=f'Wavelength ({xunits})',
                                                    ylabel=f'Sensitivity ({yunits})',
                                                    domains=all_domains,
@@ -1129,6 +1219,7 @@ class Spect(Resample):
                                                    primitive_name="calculateSensitivity",
                                                    filename_info=filename_info,
                                                    help_text=CALCULATE_SENSITIVITY_HELP_TEXT,
+                                                   plot_ratios=False,
                                                    ui_params=uiparams)
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
@@ -1232,7 +1323,7 @@ class Spect(Resample):
 
                 new_apnum = min(set(range(1, max(existing_apnums) + 2)) -
                                 set(existing_apnums))
-                log.stdinfo(f"Adding new aperture {apnum} to {ad.filename} "
+                log.stdinfo(f"Adding new aperture {new_apnum} to {ad.filename} "
                             f"extension {ext.id}.")
                 new_row['number'] = new_apnum
                 ext.APERTURE.add_row(new_row)
@@ -1304,10 +1395,18 @@ class Spect(Resample):
             length) to be considered as a useful line.
 
         debug_reject_bad: bool
-            Reject lines with suspiciously high SNR (e.g. bad columns)? (Default: True)
+            Reject lines with suspiciously high SNR (e.g. bad columns)?
 
         debug: bool
             plot arc line traces on image display window?
+
+        debug_min_points_per_trace: int
+            minimum number of points required for a trace to be considered
+            valid
+
+        debug_min_relative_peak_height: float
+            minimum height of a peak relative to the its initial value during
+            the tracing
 
         Returns
         -------
@@ -1332,8 +1431,9 @@ class Spect(Resample):
         min_line_length = params["min_line_length"]
         debug_reject_bad = params["debug_reject_bad"]
         debug = params["debug"]
+        min_points = params.get("debug_min_points_per_trace", 0)
+        min_relative_height = params.get("debug_min_relative_peak_height", 0.)
 
-        orders = (max(spectral_order, 1), spatial_order)
         fail = False
 
         for ad in adinputs:
@@ -1344,11 +1444,22 @@ class Spect(Resample):
                 # slits (currently cross-dispersed).
                 constant_slit = 'LS' in ext.tags
                 if debug:
+                    self.viewer.window.frame(n=ext.id)
                     self.viewer.display_image(ext, wcs=False)
                     self.viewer.width = 2
+                    self.viewer.color = "red"
 
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
                 direction = "row" if dispaxis == 1 else "column"
+                peak_to_centroid_func = self._convert_peak_to_centroid(ext)
+                # The peak-to-centroid function always takes the dispersion
+                # coordinate as its first argument, but in_coords and
+                # ref_coords are always (x, y), so provide a single interface
+                # to handle both orientations
+                if dispaxis == 0:
+                    convert_to_centroid = lambda x, y: (x, peak_to_centroid_func(y, x))
+                else:
+                    convert_to_centroid = lambda x, y: (peak_to_centroid_func(x, y), y)
 
                 # Here's a lot of input-checking
                 extname = f'{ad.filename} extension {ext.id}'
@@ -1374,7 +1485,13 @@ class Spect(Resample):
                     if id_only:
                         try:
                             # Peak locations in pixels are 1-indexed
-                            initial_peaks = (ext.WAVECAL['peaks'] - 1)
+                            # These will already have been converted from
+                            # peak-to-centroid, so we want to convert them
+                            # back, since we're tracing peaks
+                            shifts = (peak_to_centroid_func(
+                                ext.WAVECAL['peaks']-1, start) -
+                                      (ext.WAVECAL['peaks']-1))
+                            initial_peaks = ext.WAVECAL['peaks']-1 - shifts
                         except KeyError:
                             log.warning("Cannot find peak locations in {} "
                                         "- identifying lines in middle {}".
@@ -1413,88 +1530,168 @@ class Spect(Resample):
 
                     # Find peaks; convert width FWHM to sigma
                     widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-                    initial_peaks, _ = peak_finding.find_wavelet_peaks(
+                    initial_peaks, peak_values, _ = peak_finding.find_wavelet_peaks(
                         data, widths=widths, mask=mask & DQ.not_signal,
                         variance=variance, min_snr=min_snr, reject_bad=debug_reject_bad)
-                    log.stdinfo(f"Found {len(initial_peaks)} peaks")
+
                 # The coordinates are always returned as (x-coords, y-coords)
                 rwidth = 0.42466 * fwidth
 
-                # Straight slits, such as in longslit, can have all the lines
-                # traced simultaneously since they all have the same starting
-                # point. "Curved" slits need to be handled one-by-one. This is
-                # quite a bit slower, so this block of code does the line
-                # tracing based on the slit involved.
-                if constant_slit:
-                    traces = tracing.trace_lines(
-                        # Only need a single `start` value for all lines.
-                        ext, axis=1 - dispaxis,
-                        start=start, initial=initial_peaks,
-                        rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
-                        nsum=nsum, max_missed=max_missed,
-                        max_shift=max_shift * ybin / xbin,
-                        viewer=self.viewer if debug else None,
-                        min_line_length=min_line_length)
+                if len(initial_peaks):
+                    # The slit length may be smaller than the width of the slice,
+                    # so we need to estimate the slit length and
+                    # "min_line_length" is the fraction of that, not the fraction
+                    # of the slice width.
+                    if ext.mask is not None:
+                        loc = int(np.median(initial_peaks))
+                        if dispaxis == 0:
+                            _slice = ext.mask[loc] & (DQ.unilluminated | DQ.no_data)
+                        else:
+                            _slice = ext.mask[:, loc] & (DQ.unilluminated | DQ.no_data)
+                        slit_length_frac = 1 - ((_slice.argmin() +
+                                                 _slice[::-1].argmin()) / _slice.size)
+                    else:
+                        try:
+                            slit_length_frac = (ad.MDF['slitlength_pixels'] /
+                                                ext.shape[1 - dispaxis])
+                        except (AttributeError, KeyError):
+                            slit_length_frac = 1
+                    slit_length_frac = min(slit_length_frac, 1.0)
 
-                else:
-                    traces = []
-                    for peak in initial_peaks:
-                        # Need to start midway along the slit, which varies
-                        # along the dispersion axis. `extract_info` here is the
-                        # polynomial describing that midway line.
-                        start = extract_info(peak)
-                        traces.extend(tracing.trace_lines(
+                    # Straight slits, such as in longslit, can have all the lines
+                    # traced simultaneously since they all have the same starting
+                    # point. "Curved" slits need to be handled one-by-one. This is
+                    # quite a bit slower, so this block of code does the line
+                    # tracing based on the slit involved.
+                    if constant_slit:
+                        traces = tracing.trace_lines(
+                            # Only need a single `start` value for all lines.
                             ext, axis=1 - dispaxis,
-                            start=start, initial=[peak],
-                            rwidth=rwidth, cwidth=max(int(fwidth), 5), step=step,
+                            start=start, initial=initial_peaks,
+                            rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
                             nsum=nsum, max_missed=max_missed,
                             max_shift=max_shift * ybin / xbin,
                             viewer=self.viewer if debug else None,
-                            min_line_length=0.1))
+                            min_line_length=min_line_length*slit_length_frac)
 
-                # List of traced peak positions
-                in_coords = np.array([coord for trace in traces for
-                                      coord in trace.input_coordinates()]).T
+                    else:
+                        traces = []
+                        for peak, peak_value in zip(initial_peaks, peak_values):
+                            # Need to start midway along the slit, which varies
+                            # along the dispersion axis. `extract_info` here is the
+                            # polynomial describing that midway line.
+                            start = extract_info(peak)
+                            traces.extend(tracing.trace_lines(
+                                ext, axis=1 - dispaxis,
+                                start=start, initial=[peak],
+                                rwidth=rwidth, halfwidth=max(fwidth // 2, 2), step=step,
+                                nsum=nsum, max_missed=max_missed,
+                                max_shift=max_shift * ybin / xbin,
+                                viewer=self.viewer if debug else None,
+                                min_line_length=min_line_length*slit_length_frac,
+                                min_peak_value=min_relative_height*peak_value))
 
-                # We can't do anything if we have no coordinates
-                if in_coords.size == 0:
-                    log.warning("Failed to trace any lines for "
+                    # Remove traces with too few points
+                    traces = [trace for trace in traces if len(trace) >= min_points]
+
+                    # Traces are always returned in (x, y) order, regardless
+                    # of the dispersion axis
+                    log.stdinfo(f"Traced {len(traces)} lines from "
+                                f"{len(initial_peaks)} peaks")
+
+                    # Traces can extend beyond the edge of the illuminated slit
+                    # if adaptive binning has occurred and there's a feature in
+                    # the unilluminated region (for GNIRS notably the quadrant
+                    # boundary halfway up the detector)
+                    try:
+                        edge_models = [am.table_to_model(row)
+                                       for row in ext.SLITEDGE]
+                    except AttributeError:  # no SLITEDGE table
+                        pass
+                    else:
+                        # Go through each trace, find the location of the slit
+                        # edge across from each point, and remove the point if
+                        # it's beyond the edge (with a small tolerance).
+                        for trace in traces:
+                            inco = trace.input_coordinates()
+                            limits = np.asarray([m([point[1-dispaxis] for point in inco])
+                                                 for m in edge_models]).T
+                            for point, lim in zip(inco, limits):
+                                if (point[dispaxis] < min(lim) - 0.5*step or
+                                        point[dispaxis] > max(lim) + 0.5*step):
+                                    trace.remove_point(point)
+
+                    # List of traced peak positions
+                    in_coords = np.array([coord for trace in traces for
+                                          coord in trace.input_coordinates()]).T
+
+                    # We can't do anything if we have no coordinates
+                    if in_coords.size == 0:
+                        log.warning("Failed to trace any lines for "
+                                    f"{ad.filename}:{ext.id}")
+                        continue
+
+                else:
+                    log.warning("Failed to find any peaks in "
                                 f"{ad.filename}:{ext.id}")
                     continue
 
-                # If there's a "rectified" frame, we want to use the pixel
-                # coordinates in *that* frame as input so that the pixels
-                # -> rectified -> distortion_corrected transform works
-                # correctly.
-                try:
-                    t = ext.wcs.get_transform(ext.wcs.input_frame, 'rectified')
-                except CoordinateFrameError:
-                    pass
-                else:
-                    in_coords = np.array(t(*in_coords))
                 # List of "reference" positions (i.e., the coordinate
                 # perpendicular to the line remains constant at its initial value
                 ref_coords = np.array([coord for trace in traces for
                                        coord in trace.reference_coordinates()]).T
 
+                # Convert all coordinates from peaks to centroids
+                in_coords = np.asarray(convert_to_centroid(*in_coords))
+                ref_coords = np.asarray(convert_to_centroid(*ref_coords))
+
+                # If the frame has a rectification model, then we want to
+                # calculate the distortion transform *after* applying this
+                # model. This is important because, if we only have one line
+                # from which to determine the distortion, the model will only
+                # be a function of X and so we need a vertical spectrum.
+                try:
+                    rect_model = ext.wcs.get_transform(ext.wcs.input_frame,
+                                                       "rectified")
+                except CoordinateFrameError:
+                    has_rect_model = False
+                else:
+                    has_rect_model = True
+                    in_coords = rect_model(*in_coords)
+                    # For a vertically-dispersed spectrum, the rectification
+                    # model alters X as a function of Y. Therefore, because
+                    # incoords and ref_coords have different Y for the same X,
+                    # putting them *both* through the rectification model will
+                    # produce different X values, which is not what we want.
+                    # S0 replace the X values in ref_coords with the ones in
+                    # in_coords. Coords are *always* (x, y)
+                    ref_coords[dispaxis] = in_coords[dispaxis]
+
                 # The model is computed entirely in the pixel coordinate frame
                 # of the data, so it could be used as a gWCS object
+                orders = [max(spectral_order, 1), spatial_order]
+                if len(traces) <= spectral_order:
+                    orders[dispaxis] = max(len(traces)-1, 1)
+                    log.warning(f"Only {len(traces)} traces so reducing "
+                                f"spectral order from {spectral_order} to "
+                                f"{orders[dispaxis]}")
                 m_init = models.Chebyshev2D(x_degree=orders[1 - dispaxis],
                                             y_degree=orders[dispaxis],
                                             x_domain=[0, ext.shape[1]-1],
                                             y_domain=[0, ext.shape[0]-1])
 
-                fixed_linear = (spectral_order == 0)
+                fixed_linear = (spectral_order == 0) or len(traces) == 1
                 model, m_final, m_inverse = am.create_distortion_model(
                     m_init, 1-dispaxis, in_coords, ref_coords, fixed_linear)
+                log.stdinfo("Distortion model/inverse rms = "
+                            f"{model.meta['fwd_rms']:.3f}/{model.meta['inv_rms']:.3f} pixels")
 
-                # TODO: Some logging about quality of fit
-                # print(np.min(diff), np.max(diff), np.std(diff))
-
-                if debug:
-                    self.viewer.color = "red"
+                if debug:  # pragma: no cover
+                    self.viewer.color = "green"
+                    n = 10 if constant_slit else 1
                     spatial_coords = np.linspace(ref_coords[dispaxis].min(), ref_coords[dispaxis].max(),
-                                                ext.shape[1 - dispaxis] // (step * 10))
+                                                ext.shape[1 - dispaxis] // (step * n))
+
                     spectral_coords = np.unique(ref_coords[1 - dispaxis])
                     for coord in spectral_coords:
                         if dispaxis == 1:
@@ -1516,8 +1713,25 @@ class Spect(Resample):
                     ext.wcs = gWCS([(cf.Frame2D(name="pixels"), model),
                                     (cf.Frame2D(name="world"), None)])
                 else:
-                    ext.wcs.insert_frame(ext.wcs.input_frame, model,
-                                         cf.Frame2D(name="distortion_corrected"))
+                    try:
+                        frame_index = ext.wcs.available_frames.index("distortion_corrected")
+                    except ValueError:
+                        pass
+                    else:
+                        log.warning("Deleting existing distortion model in "
+                                    f"{ad.filename}:{ext.id}")
+                        ext.wcs = ext.wcs.__class__(
+                            ext.wcs.pipeline[:frame_index-1] +
+                            [(ext.wcs.pipeline[frame_index-1].frame,
+                              ext.wcs.pipeline[frame_index].transform)] +
+                            ext.wcs.pipeline[frame_index+1:]
+                        )
+                    if has_rect_model:
+                        ext.wcs.insert_frame("rectified", model,
+                                             cf.Frame2D(name="distortion_corrected"))
+                    else:
+                        ext.wcs.insert_frame(ext.wcs.input_frame, model,
+                                             cf.Frame2D(name="distortion_corrected"))
 
                 nsuccess += 1
 
@@ -1532,6 +1746,366 @@ class Spect(Resample):
         if fail:
             raise RuntimeError("Failed to create a distortion model for any "
                                "extensions on at least one input file")
+
+        return adinputs
+
+    def distortionCorrect(self, adinputs=None, **params):
+        """
+        Corrects optical distortion in science frames, using a distortion map
+        (a Chebyshev2D model, usually from a processed arc) that has previously
+        been attached to each input's WCS by attachWavelengthSolution.
+
+        If the input image requires mosaicking, then this is done as part of
+        the resampling, to ensure one, rather than two, interpolations.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            2D spectral images with appropriately-calibrated WCS.
+        suffix : str
+            Suffix to be added to output files.
+        interpolant : str
+            Type of interpolant
+        subsample : int
+            Pixel subsampling factor.
+        dq_threshold : float
+            The fraction of a pixel's contribution from a DQ-flagged pixel to
+            be considered 'bad' and also flagged.
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            Modified input objects with distortion correct applied.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        sfx = params["suffix"]
+        interpolant = params["interpolant"]
+        subsample = params["subsample"]
+        do_cal = params["do_cal"]
+        dq_threshold = params["dq_threshold"]
+
+        if do_cal == 'skip':
+            log.warning('Distortion correction has been turned off.')
+            return adinputs
+
+        fail = False
+
+        adoutputs = []
+        for ad in adinputs:
+
+            # We don't check for a timestamp since it's not unreasonable
+            # to do multiple distortion corrections on a single AD object
+
+            for ext in ad:
+                try:
+                    idx_dc = ext.wcs.available_frames.index('distortion_corrected')
+                except (ValueError, AttributeError):
+                    idx_dc = -1
+                try:
+                    idx_r = ext.wcs.available_frames.index('rectified')
+                except (ValueError, AttributeError):
+                    idx_r = -1
+                idx = max(idx_dc, idx_r)
+                have_distcorr = idx > 0
+                if not have_distcorr:
+                    log.warning('No distortion transformation attached to'
+                                f' {ad.filename}, extension {ext.id}')
+                    break
+
+                # The resampling routine currently relies on a no-op forward
+                # distortion model to size the output correctly (while using
+                # the proper inverse for evaluating the sample points), so we
+                # replace that part of the WCS with Identity here. This hack
+                # gets uglier because any origin shift between arc & science
+                # ROIs that has been prefixed to the distortion model needs to
+                # be preserved; get rid of this at a later iteration by
+                # including ROI shifts in their own frame(s).
+
+                new_pipeline = []
+                # Step through the steps in the pipeline, and replace the
+                # forward transform with Identity(2) for the frame names given
+                # in order to keep the output image size the same (the actual
+                # transform of importance is the inverse transform, which
+                # isn't touched).
+                for index, step in enumerate(ext.wcs.pipeline[:idx]):
+                    if ext.wcs.pipeline[index+1].frame.name in (
+                            'distortion_corrected', 'rectified'):
+                        prev_frame, m_distcorr = step
+
+                        # The model must have a Mapping prior to the Chebyshev2D
+                        # model(s) since coordinates have to be duplicated. Find this
+                        for i in range(m_distcorr.n_submodels):
+                            if isinstance(m_distcorr[i], models.Mapping):
+                                break
+                        else:
+                            raise ValueError("Cannot find Mapping")
+
+                        # Now determine the extent of the submodel that
+                        # encompasses the overall 2D distortion, which will be
+                        # a 2D->2D model
+                        for j in range(i + 1, m_distcorr.n_submodels + 1):
+                            try:
+                                msub = m_distcorr[i:j]
+                            except IndexError:
+                                continue
+                            if msub.n_inputs == msub.n_outputs == 2:
+                                break
+                        else:
+                            raise ValueError("Cannot find distortion model")
+
+                        # Name it so we can replace it
+                        m_distcorr[i:j].name = "DISTCORR"
+                        m_dummy = models.Identity(2)
+                        m_dummy.inverse = msub.inverse
+                        new_m_distcorr = m_distcorr.replace_submodel("DISTCORR",
+                                                                     m_dummy)
+                        new_pipeline.append((prev_frame, new_m_distcorr))
+                    else:  # Keep the step unchanged.
+                        new_pipeline.append(step)
+
+                # To avoid continually checking whether we're correcting to
+                # "distortion_corrected" or "rectified", rename the frame to
+                # which we're correcting as "correction_endpoint"
+                new_frame = deepcopy(ext.wcs.pipeline[idx].frame)
+                new_frame.name = "correction_endpoint"
+                new_pipeline.append((new_frame, ext.wcs.pipeline[idx].transform))
+
+                # Now recreate the WCS using the new pipeline.
+                new_pipeline.extend(ext.wcs.pipeline[idx+1:])
+                ext.wcs = gWCS(new_pipeline)
+
+            if not have_distcorr:
+                # TODO: Think about this when we have MOS/XD/IFU
+                if 'sq' in self.mode or do_cal == 'force':
+                    fail = True
+                elif len(ad) == 1:
+                    adoutputs.append(ad)
+                else:
+                    # In further refactoring, the mosaic WCS should get added
+                    # at an earlier stage, separately from resampling.
+                    log.warning('Image will be mosaicked.')
+                    adoutputs.extend(self.mosaicDetectors([ad]))
+                continue
+
+            # Do all the extension WCSs contain a mosaic frame, allowing us to
+            # resample them into a single mosaic at the same time as correcting
+            # distortions (they won't have if the arc wasn't mosaicked)?
+            mosaic = all('mosaic' in ext.wcs.available_frames if ext.wcs is not
+                         None else False for ext in ad)
+
+            if mosaic:
+                ad_out = transform.resample_from_wcs(
+                    ad, 'correction_endpoint', interpolant=interpolant,
+                    subsample=subsample, parallel=False,
+                    threshold=dq_threshold
+                )
+            else:
+                for i, ext in enumerate(ad):
+                    if i == 0:
+                        ad_out = transform.resample_from_wcs(
+                            ext, 'correction_endpoint', interpolant=interpolant,
+                            subsample=subsample, parallel=False,
+                            threshold=dq_threshold
+                        )
+                    else:
+                        ad_out.append(
+                            transform.resample_from_wcs(ext,
+                                                        'correction_endpoint',
+                                                        interpolant=interpolant,
+                                                        subsample=subsample,
+                                                        parallel=False,
+                                                        threshold=dq_threshold)[0]
+                        )
+
+            # The WCS gets updated by resample_from_wcs. We should also make it
+            # save the (inverted) WCS pipeline components prior to resampling
+            # somehow, to allow mapping rectified co-ordinates back to detector
+            # pixels for calibration & inspection purposes.
+
+            # Timestamp and update the filename
+            gt.mark_history(ad_out, primname=self.myself(),
+                            keyword=timestamp_key)
+            ad_out.update_filename(suffix=sfx, strip=True)
+            adoutputs.append(ad_out)
+
+        if fail:
+            raise ValueError("One or more input(s) missing distortion "
+                             "calibration; run attachWavelengthSolution first")
+
+        return adoutputs
+
+    def determinePinholeRectification(self, adinputs=None, **params):
+        """
+        Trace pinhole apertures and create a rectification model.
+
+        Parameters
+        ----------
+        adinputs : list of :class:`~astrodata.AstroData`
+            Science data as 2D spectral images.
+        suffix : str, optional
+            Suffix to be added to output files. Default: "_pinholesTraced".
+        debug_plots : bool, Default: False
+            Create a plot of the traces
+
+        Returns
+        -------
+        list of :class:`~astrodata.AstroData`
+            The input file with a slit rectification model attached.
+
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params['suffix']
+        step = params['step']
+        max_missed = params['max_missed']
+        max_shift = params['max_shift']
+        min_snr = params['min_snr']
+        nsum = params['nsum']
+        min_line_length = params['min_line_length']
+        spect_ord = params['spectral_order']
+        min_trace_pos = params['debug_min_trace_pos']
+        max_trace_pos = params['debug_max_trace_pos']
+        avoidance = params['debug_avoidance']
+
+        fwidth = 3  # An educated guess for pinholes.
+
+        for ad in adinputs:
+
+            log.stdinfo(f"Tracing pinhole apertures in {ad.filename}.")
+            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
+            for ext in ad:
+
+                dispaxis = 2 - ext.dispersion_axis() # Python sense
+                if nsum > ext.shape[dispaxis]:
+                    raise ValueError("{} is larger than the size of the data".format(nsum))
+
+                if params['start_pos']:
+                    start = min(max(params['start_pos'], nsum // 2),
+                                ext.shape[dispaxis] - nsum // 2)
+                else:
+                    start = ext.shape[dispaxis] // 2
+                data, mask, variance = ext.data, ext.mask, ext.variance
+
+                # Make life easier for the poor coder by transposing data if
+                # needed, so that we're always tracing along columns
+                if dispaxis == 0:
+                    ext_data = data
+                    ext_mask = None if mask is None else mask & DQ.not_signal
+                    ext_variance = variance
+                    x_ord, y_ord = 1, spect_ord
+                    direction = "row"
+                else:
+                    ext_data = data.T
+                    ext_mask = None if mask is None else mask.T & DQ.not_signal
+                    ext_variance = variance.T
+                    x_ord, y_ord = spect_ord, 1
+                    direction = "column"
+
+                start_slice = slice(start - nsum // 2, start + nsum // 2)
+                data, mask, variance = NDStacker.mean(
+                    ext_data[start_slice], mask=ext_mask[start_slice],
+                    variance=ext_variance[start_slice])
+                # Find peaks; convert width FWHM to sigma. Copied from
+                # determineDistortion
+                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
+                # These are returned sorted by pixel coordinate
+                initial_peaks, _, _ = peak_finding.find_wavelet_peaks(
+                    data, widths=widths, mask=mask & DQ.not_signal,
+                    variance=variance, min_snr=min_snr,
+                    reject_bad=False)
+
+                if mask is not None:
+                    slit_start = mask.argmin()
+                    slit_end = mask.size - mask[::-1].argmin() - 1
+                    initial_peaks = [p for p in initial_peaks
+                                     if slit_start + avoidance < p < slit_end - avoidance]
+
+                if len(initial_peaks) == 0:
+                    log.error(f"\nNo pinholes found in extension {ext.id}. "
+                              f"Consider lowering the detection \n"
+                              f"threshold, min_snr. (Currently set to {min_snr}.)\n")
+                    raise RuntimeError('No pinholes found.')
+
+                if min_trace_pos is not None and min_trace_pos > len(initial_peaks):
+                    log.warning(f"'min_trace_pos' is set to {min_trace_pos} but "
+                                f"there are only {len(initial_peaks)} peaks. Using "
+                                "only the last peak.")
+                    min_trace_pos = len(initial_peaks) - 1
+
+                log.fullinfo(f"  Found {len(initial_peaks)} peaks in extension "
+                             f"{ext.id}, tracing "
+                             f"numbers {min_trace_pos or 1} to "
+                             f"{max_trace_pos or len(initial_peaks)} "
+                             f"starting at {direction} {start}")
+
+                traces = tracing.trace_lines(
+                    # Only need a single `start` value for all lines.
+                    ext, axis=dispaxis,
+                    start=start,
+                    initial=initial_peaks[min_trace_pos:max_trace_pos],
+                    rwidth=None, halfwidth=max(fwidth // 2, 2),
+                    step=step, nsum=nsum, max_missed=max_missed,
+                    max_shift=max_shift * ybin / xbin,
+                    min_line_length=min_line_length,
+                    initial_tolerance=2.0)
+
+                # List of traced peak positions
+                in_coords = np.array([coord for trace in traces for
+                                      coord in trace.input_coordinates()]).T
+                # List of "reference" positions. These should be equally spaced
+                # in pixel coordinates, so set them to be equally spaced between
+                # the first and last. "trace.starting_point[1]" *always* returns
+                # the coordinate orthogonal to the tracing direction, but if we
+                # want to use the rectified coordinates they must be x-first.
+                try:
+                    t = ext.wcs.get_transform(ext.wcs.input_frame, 'rectified')
+                except CoordinateFrameError:
+                    rectified_pinholes = [trace.starting_point[1]
+                                          for trace in traces]
+                else:
+                    rectified_pinholes = [t(*trace.start_coordinates)[dispaxis]
+                                          for trace in traces]
+                equispaced_coords = np.linspace(rectified_pinholes[0],
+                                                rectified_pinholes[-1],
+                                                len(traces))
+                log.debug("Initial coords are "
+                          f"{[trace.starting_point[1] for trace in traces]}")
+                log.debug(f"Equispaced coords are {equispaced_coords}")
+                ref_coords = np.array([coord for trace, equi_coord in zip(traces, equispaced_coords) for
+                                       coord in trace.reference_coordinates(reference_coord=equi_coord)]).T
+
+                # Create the 2D slit rectification model:
+                m_init_2d = models.Chebyshev2D(
+                    x_degree=x_ord, y_degree=y_ord,
+                    x_domain=[0, ext.shape[1]-1],
+                    y_domain=[0, ext.shape[0]-1])
+                # The `fixed_linear` parameter is False because we should
+                # have both edges for each slit.
+                model, m_final_2d, m_inverse_2d = am.create_distortion_model(
+                    m_init_2d, dispaxis, in_coords, ref_coords, False)
+                model.name = "PNHLRECT"
+
+                try:
+                    ext.wcs.set_transform('pixels', 'rectified', model)
+                except CoordinateFrameError:
+                    ext.wcs.insert_frame(ext.wcs.input_frame, model,
+                                           cf.Frame2D(name='rectified'))
+
+                if params["debug_plots"]:
+                    plt.plot(in_coords[0], in_coords[1], linestyle='',
+                             marker='o')
+                    plt.title(f"Extension {ext.id}")
+                    plt.xlabel("X")
+                    plt.ylabel("Y")
+                    plt.show()
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
 
@@ -1559,8 +2133,11 @@ class Spect(Resample):
             Science data as 2D spectral images.
         suffix : str
             Suffix to be added to output files.
-        spectral_order : int, Default : 3
+        spectral_order : int
             Fitting order in the spectral direction (minimum of 1).
+        min_snr : float
+            Minimum signal-to-noise ratio of peaks to be considered as slit
+            edges
         edges1, edges2 : list
             List (of matching length) of the pixel locations of the edges of
             illuminated regions in the image. `edges1` should be all the top or
@@ -1568,7 +2145,7 @@ class Spect(Resample):
         search_radius : float
             Distance (in pixels) within which to search for the edges of
             illuminated regions.
-        debug_plots : bool, Default: False
+        debug_plots : bool
             Generate plots of several aspects of the fitting process.
         debug_max_missed : int
             The maximum number of steps that can be missed before the trace is
@@ -1594,6 +2171,7 @@ class Spect(Resample):
         # Set up log
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
 
         # Parse parameters
@@ -1601,6 +2179,7 @@ class Spect(Resample):
         spectral_order = params['spectral_order']
         edge1 = params.get('edge1', None)
         edge2 = params.get('edge2', None)
+        min_snr = params.get('min_snr', 5.0)
         # How far to search (in pixels) to match expected and detected
         # peaks.
         search_rad = params.get('search_radius', 30)
@@ -1616,6 +2195,31 @@ class Spect(Resample):
                                                 "order": spectral_order})
 
         def find_slits(mdf, ystep=50):
+            """
+            Find slit locations from an MDF giving their approximate locations.
+
+            This is done by cross-correlating pairs of spatial cuts, separated
+            by "ystep" pixels, to determine the non-verticality of the slits.
+            Then a model of the full image is created from the MDF and this
+            angle, which is cross-correlated with the image, first in the
+            spatial direction, and then in the spectral direction, to better
+            determinezx the slit locations.
+
+            Parameters
+            ----------
+            mdf: Table
+                information about the slit locations in Gemini MDF format
+            ystep: int
+                step in pixels along the dispersion direction
+
+            Returns
+            -------
+            3-tuple of:
+                int:  "row" (along dispersion direction) where edges have been
+                        determined
+                list: pixel locations of lower slit edges at that row
+                list: pixel locations of upper slit edges at that row
+            """
             exp_edges1, exp_edges2 = [], []
             for ext in ad:
                 dispaxis = 2 - ext.dispersion_axis()  # python sense
@@ -1706,11 +2310,9 @@ class Spect(Resample):
                 # chosen row/col doesn't significantly affect the slit location
                 collapsed = np.median(ext.data, axis=1-dispaxis)
                 if num_slits == 1:
-                    cut = collapsed[offset:-offset].argmax()
-                    cut += offset
+                    cut = collapsed[offset:-offset].argmax() + offset
 
                 row_or_col = ['row', 'column'][dispaxis]
-                col_or_row = ['row', 'column'][dispaxis-1]
                 # Use 1-indexed numbers for rows/columns for user-facing output
                 # for easier legibility.
                 log.stdinfo(f"Creating profile from {row_or_col} {cut+1}"
@@ -1729,34 +2331,27 @@ class Spect(Resample):
                     median_slice = np.median(diffarr[:, s], axis=1)
 
                 # Search for position of peaks in the first derivative of flux
-                # in the spatial direction. Setting a value for the std and
-                # minimum peak height is something of an art, and requires
-                # different values between longslit and cross-dispersed data.
-                if num_slits == 1:
-                    min_height = 0.5 * sorted(median_slice)[-3]
-                else:
-                    min_height = at.std_from_pixel_variations(
-                        median_slice, subtract_linear_fits=True)
-                cwidth = 8
+                # in the spatial direction.
+                convolved_median_slice = ndimage.gaussian_filter1d(
+                    median_slice, sigma=2, mode='nearest')
+                noise = at.std_from_pixel_variations(
+                        convolved_median_slice, subtract_linear_fits=False)
+                min_height = min_snr * noise
 
                 # TODO: It's unclear whether find_wavelet_peaks() might be
                 # better for this.
-                positions_1, _ = find_peaks(at.boxcar(median_slice, size=1),
-                                            height=min_height,
-                                            distance=10,
-                                            prominence=min_height,
-                                            wlen=21)
+                positions_1, _ = find_peaks(
+                    convolved_median_slice, height=min_height, distance=10,
+                    prominence=min_height, wlen=21)
                 # find_peaks returns integer values, so use pinpoint_peaks
                 # to better describe the positions.
                 positions_1, _ = peak_finding.pinpoint_peaks(
-                    median_slice, peaks=positions_1, halfwidth=cwidth//2)
-                positions_2, _ = find_peaks(at.boxcar(-median_slice, size=1),
-                                            height=min_height,
-                                            distance=10,
-                                            prominence=min_height,
-                                            wlen=21)
+                    median_slice, peaks=positions_1, halfwidth=4)
+                positions_2, _ = find_peaks(
+                    -convolved_median_slice, height=min_height, distance=10,
+                    prominence=min_height, wlen=21)
                 positions_2, _ = peak_finding.pinpoint_peaks(
-                    -median_slice, peaks=positions_2, halfwidth=cwidth//2)
+                    -median_slice, peaks=positions_2, halfwidth=4)
 
                 log.fullinfo('Found edge candidates at:\n'
                              f'  {name_edge1.capitalize()}: {positions_1}\n'
@@ -1765,6 +2360,7 @@ class Spect(Resample):
                     # Print a diagnostic plot of the profile being fitted.
                     plt.plot(at.boxcar(median_slice, size=1), label='1st-derivative of flux')
                     plt.plot(at.boxcar(-median_slice, size=1), label='Inverse')
+                    plt.plot((0, median_slice.size), (min_height, min_height), 'r-', label='Threshold')
                     plt.xlabel(f'{row_or_col.capitalize()} number')
                     plt.legend()
 
@@ -1778,11 +2374,18 @@ class Spect(Resample):
                         plt.show()
                     continue
 
+                # We add 0.5. If the slit edge is at the pixel edge
+                # between x and x+1, we want to record it as x+0.5.
+                # Because np.diff() reduces the size of the array by 1,
+                # the peak in the first derivative will be at x.
+                positions_1 = np.asarray(positions_1) + 0.5
+                positions_2 = np.asarray(positions_2) + 0.5
+
                 # Use +ve and -ve weights for left and right edges to assist
                 # with matching the correct "handedness". "Reference" weights
                 # are set to the pixel values to prefer strong gradients
                 all_edges = np.r_[positions_1, positions_2]
-                all_edge_weights = median_slice[np.round(
+                all_edge_weights = convolved_median_slice[np.round(
                     np.r_[positions_1, positions_2]).astype(int)]
                 all_edge_weights = np.exp(np.abs(all_edge_weights)/10000) * all_edge_weights/np.abs(all_edge_weights)
                 in_weights = [1, -1]
@@ -1814,8 +2417,8 @@ class Spect(Resample):
                     m_init = m_recenter | m_scale | m_shift | m_recenter.inverse
 
                     pair = [exp_edge1, exp_edge2]
-
                     log.debug(f"Fitting {pair} with {search_rad} {dfactor}")
+
                     with warnings.catch_warnings():
                         warnings.simplefilter('ignore', AstropyUserWarning)
                         if num_slits == 1:
@@ -1834,10 +2437,14 @@ class Spect(Resample):
                             m_final = m_init
                             m_final.offset_2 = x[xx] - expected_center
 
+                        # Match the improved initial model (called m_final)
+                        # to the full list of edges, although the bounds
+                        # will ensure it fits the pair we want.
                         m_final = fit_it2(m_final, pair, all_edges,
-                                         in_weights=in_weights, ref_weights=all_edge_weights)
+                                          in_weights=in_weights,
+                                          ref_weights=all_edge_weights)
 
-                    model_edge1, model_edge2 = m_final([exp_edge1, exp_edge2])
+                    model_edge1, model_edge2 = m_final(pair)
                     actual_edge1 = actual_edge2 = None
                     if len(positions_1):
                         actual_edge1 = positions_1[np.argmin(abs(model_edge1 - positions_1))]
@@ -1865,12 +2472,12 @@ class Spect(Resample):
                         plt.show()
                     continue
 
-                nfound = sum(set([a, b]) != {None} for a, b in zip(edges_1, edges_2))
+                nfound = sum({a, b} != {None} for a, b in zip(edges_1, edges_2))
                 if nfound != len(slit_lengths):
                     log.warning(f"Did not find expected number of {slit_name}s "
                                 f"(found {nfound}, expected {len(slit_lengths)}).")
 
-                if debug_plots:
+                if debug_plots:  # pragma: no cover
                     for pos in edges_1:
                         if pos:
                             plt.axvline(pos, color='Blue', alpha=0.5,
@@ -1893,12 +2500,13 @@ class Spect(Resample):
                 # to help ensure valid points are all considered in the
                 # trace without over-relying on bright points.
                 model_fits = []
-                weights = np.log(np.where(collapsed < 1, 1, collapsed))
+                #weights = np.log(np.where(collapsed < 1, 1, collapsed))
                 for slit_num, (mdf_row, *edges) in enumerate(zip(mdf, edges_1, edges_2)):
                     if slit_name == "order" and 'specorder' in mdf.colnames:
                         this_slit = f"order {mdf_row['specorder']}"
                     else:
                         this_slit = f"{slit_name} {mdf_row['slit_id']}"
+
                     # Trace the edges individually. This isn't the most
                     # efficient way, but MOS masks may not all have the same
                     # starting location. Will need to address this in future.
@@ -1920,7 +2528,7 @@ class Spect(Resample):
                         max_missed=params['debug_max_missed'],
                         step=params['debug_step'], nsum=params['debug_nsum'],
                         max_shift=params['debug_max_shift'],
-                        min_peak_value=thresh, cwidth=cwidth,
+                        min_peak_value=thresh, halfwidth=4,
                         min_line_length=debug_min_line_length) or [None] if edge else [None]
                         for mult, edge, thresh in zip((1, -1), edges, min_peak_values)))
 
@@ -1929,6 +2537,20 @@ class Spect(Resample):
                                     f"{this_slit} so there will "
                                     "be no SLITEDGE entries.")
                         continue
+
+                    # This is used to calculate the weights to apply when
+                    # fitting the trace.  More weight were there is more signal.
+                    # For XD and MOS, we cannot use the whole image, we need
+                    # to focus where the flux is and it has to be done for
+                    # each slit.
+                    buffer = 3
+                    slit_faredge1 = None
+                    slit_faredge2 = None
+                    if traces[0] is not None:
+                        slit_faredge1 = int(np.array(traces[0].input_coordinates(reverse=False)).T[1].min()) - buffer
+                    if traces[1] is not None:
+                        slit_faredge2 = int(np.array(traces[1].input_coordinates(reverse=False)).T[1].max()) + buffer
+
 
                     both_edges = True
                     for edge_id, (loc, edge_name, trace) in enumerate(
@@ -1952,7 +2574,28 @@ class Spect(Resample):
                                          f"{loc+1:.0f} traced from "
                                          f"{row_or_col}s {_min+1:.0f} to {_max+1:.0f}.")
 
+                            # Estimate weights to apply during the fit of the
+                            # the trace.
+                            # First, make the data array "uniform" regardless of dispaxis
+                            data = ext.data if dispaxis == 0 else ext.data.T
+
+                            # Ensure edges are within the image
+                            slit_faredge1 = 0 if (slit_faredge1 is None or slit_faredge1 < 0) \
+                                              else slit_faredge1
+                            slit_faredge2 = data.shape[1] \
+                                if (slit_faredge2 is None or slit_faredge2 > data.shape[1]) \
+                                else slit_faredge2
+
+                            # get the flux distribution along the dispersion axis
+                            collapsed_slit = np.median(
+                                data[:, slit_faredge1:slit_faredge2], axis=1)
+
+                            # Use log - weighting
+                            # to help ensure valid points are all considered in the
+                            # trace without over-relying on bright points.
+                            weights = np.log(np.where(collapsed_slit < 1, 1, collapsed_slit))
                             wt = weights[np.round(in_coords[0]).astype(int)]
+
                             # Create a plot of weights for inspection.
                             if debug_plots:
                                 plt.plot(in_coords[0], wt, label='Weights')
@@ -2008,7 +2651,6 @@ class Spect(Resample):
                     log.warning("No SLITEDGE table created for {ad.filename}")
                     continue
 
-
                 # For XD, this is all the work we need to do because the
                 # rectification models can't be constructed and added to the
                 # WCS objects until after the slits have been cut in a later
@@ -2060,187 +2702,11 @@ class Spect(Resample):
                     log.debug("The WCS for this extension is:")
                     log.debug(ext.wcs)
 
-            # Update the filname suffix.
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
-
-    def distortionCorrect(self, adinputs=None, **params):
-        """
-        Corrects optical distortion in science frames, using a distortion map
-        (a Chebyshev2D model, usually from a processed arc) that has previously
-        been attached to each input's WCS by attachWavelengthSolution.
-
-        If the input image requires mosaicking, then this is done as part of
-        the resampling, to ensure one, rather than two, interpolations.
-
-        Parameters
-        ----------
-        adinputs : list of :class:`~astrodata.AstroData`
-            2D spectral images with appropriately-calibrated WCS.
-        suffix : str
-            Suffix to be added to output files.
-        interpolant : str
-            Type of interpolant
-        subsample : int
-            Pixel subsampling factor.
-        dq_threshold : float
-            The fraction of a pixel's contribution from a DQ-flagged pixel to
-            be considered 'bad' and also flagged.
-
-        Returns
-        -------
-        list of :class:`~astrodata.AstroData`
-            Modified input objects with distortion correct applied.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-
-        sfx = params["suffix"]
-        interpolant = params["interpolant"]
-        subsample = params["subsample"]
-        do_cal = params["do_cal"]
-        dq_threshold = params["dq_threshold"]
-
-        if do_cal == 'skip':
-            log.warning('Distortion correction has been turned off.')
-            return adinputs
-
-        fail = False
-
-        adoutputs = []
-        for ad in adinputs:
-
-            # We don't check for a timestamp since it's not unreasonable
-            # to do multiple distortion corrections on a single AD object
-
-            for ext in ad:
-                try:
-                    idx = ext.wcs.available_frames.index('distortion_corrected')
-                except (ValueError, AttributeError):
-                    have_distcorr = False
-                else:
-                    have_distcorr = idx > 0
-                if not have_distcorr:
-                    log.warning('No distortion transformation attached to'
-                                f' {ad.filename}, extension {ext.id}')
-                    break
-
-                # The resampling routine currently relies on a no-op forward
-                # distortion model to size the output correctly (while using
-                # the proper inverse for evaluating the sample points), so we
-                # replace that part of the WCS with Identity here. This hack
-                # gets uglier because any origin shift between arc & science
-                # ROIs that has been prefixed to the distortion model needs to
-                # be preserved; get rid of this at a later iteration by
-                # including ROI shifts in their own frame(s).
-
-                new_pipeline = []
-                # Step through the steps in the pipeline, and replace the
-                # forward transform with Identity(2) for the frame names given
-                # in order to keep the output image size the same (the actual
-                # transform of importance is the inverse transform, which
-                # isn't touched).
-                for index, step in enumerate(ext.wcs.pipeline[:idx]):
-                    if ext.wcs.pipeline[index+1].frame.name in (
-                            'distortion_corrected', 'rectified'):
-                        prev_frame, m_distcorr = step
-
-                        # The model must have a Mapping prior to the Chebyshev2D
-                        # model(s) since coordinates have to be duplicated. Find this
-                        for i in range(m_distcorr.n_submodels):
-                            if isinstance(m_distcorr[i], models.Mapping):
-                                break
-                        else:
-                            raise ValueError("Cannot find Mapping")
-
-                        # Now determine the extent of the submodel that
-                        # encompasses the overall 2D distortion, which will be
-                        # a 2D->2D model
-                        for j in range(i + 1, m_distcorr.n_submodels + 1):
-                            try:
-                                msub = m_distcorr[i:j]
-                            except IndexError:
-                                continue
-                            if msub.n_inputs == msub.n_outputs == 2:
-                                break
-                        else:
-                            raise ValueError("Cannot find distortion model")
-
-                        # Name it so we can replace it
-                        m_distcorr[i:j].name = "DISTCORR"
-                        m_dummy = models.Identity(2)
-                        m_dummy.inverse = msub.inverse
-                        new_m_distcorr = m_distcorr.replace_submodel("DISTCORR",
-                                                                     m_dummy)
-                        new_pipeline.append((prev_frame, new_m_distcorr))
-                    else:  # Keep the step unchanged.
-                        new_pipeline.append(step)
-
-                # Now recreate the WCS using the new pipeline.
-                new_pipeline.extend(ext.wcs.pipeline[idx:])
-                ext.wcs = gWCS(new_pipeline)
-
-            if not have_distcorr:
-                # TODO: Think about this when we have MOS/XD/IFU
-                if 'sq' in self.mode or do_cal == 'force':
-                    fail = True
-                elif len(ad) == 1:
-                    adoutputs.append(ad)
-                else:
-                    # In further refactoring, the mosaic WCS should get added
-                    # at an earlier stage, separately from resampling.
-                    log.warning('Image will be mosaicked.')
-                    adoutputs.extend(self.mosaicDetectors([ad]))
-                continue
-
-            # Do all the extension WCSs contain a mosaic frame, allowing us to
-            # resample them into a single mosaic at the same time as correcting
-            # distortions (they won't have if the arc wasn't mosaicked)?
-            mosaic = all('mosaic' in ext.wcs.available_frames if ext.wcs is not
-                         None else False for ext in ad)
-
-            if mosaic:
-                ad_out = transform.resample_from_wcs(
-                    ad, 'distortion_corrected', interpolant=interpolant,
-                    subsample=subsample, parallel=False,
-                    threshold=dq_threshold
-                )
-            else:
-                for i, ext in enumerate(ad):
-                    if i == 0:
-                        ad_out = transform.resample_from_wcs(
-                            ext, 'distortion_corrected', interpolant=interpolant,
-                            subsample=subsample, parallel=False,
-                            threshold=dq_threshold
-                        )
-                    else:
-                        ad_out.append(
-                            transform.resample_from_wcs(ext,
-                                                        'distortion_corrected',
-                                                        interpolant=interpolant,
-                                                        subsample=subsample,
-                                                        parallel=False,
-                                                        threshold=dq_threshold)[0]
-                        )
-
-            # The WCS gets updated by resample_from_wcs. We should also make it
-            # save the (inverted) WCS pipeline components prior to resampling
-            # somehow, to allow mapping rectified co-ordinates back to detector
-            # pixels for calibration & inspection purposes.
-
-            # Timestamp and update the filename
-            gt.mark_history(ad_out, primname=self.myself(),
-                            keyword=timestamp_key)
-            ad_out.update_filename(suffix=sfx, strip=True)
-            adoutputs.append(ad_out)
-
-        if fail:
-            raise OSError("One or more input(s) missing distortion "
-                          "calibration; run attachWavelengthSolution first")
-
-        return adoutputs
 
     def determineWavelengthSolution(self, adinputs=None, **params):
         """
@@ -2329,9 +2795,9 @@ class Spect(Resample):
             Water vapour content (as percentile) to be used for ATRAN model
             selection. If "header", then the value from the header is used.
 
-        num_atran_lines: int/None
+        num_lines: int/None
             Maximum number of lines with largest weigths (within a wvl bin) to be
-            included in the generated ATRAN line list.
+            included in the generated line list.
 
         debug : bool
             Enable plots for debugging.
@@ -2373,7 +2839,7 @@ class Spect(Resample):
                 log.warning(f"Cannot read file {arc_file} - "
                             "using default linelist")
             else:
-                self.generated_linelist = False
+                self.generated_linelist = None
                 log.stdinfo(f"Read arc line list {arc_file}")
 
         for ad in adinputs:
@@ -2398,25 +2864,18 @@ class Spect(Resample):
             log.stdinfo(f"Determining wavelength solution for {ad.filename}")
             uiparams = UIParameters(
                     config, reinit_params=["center", "nsum", "min_snr", "min_sep",
-                                           "fwidth", "central_wavelength", "dispersion",
-                                                       "in_vacuo"])
-            if self.generated_linelist:
+                                           "central_wavelength", "dispersion",
+                                           "in_vacuo"])
+            if self.generated_linelist is not None:
                 # Add some extra parameters to the UI when the linelist gets generated on-the-fly
-                linelist_pars = {"atran_linelist_pars": ["num_atran_lines", "resolution", "wv_band"]}
+                if self.generated_linelist == "atran":
+                    linelist_pars = {"atran_linelist_pars": ["num_lines", "resolution", "wv_band"]}
+                elif self.generated_linelist == "airglow":
+                    linelist_pars = {"airglow_linelist_pars": ["num_lines", "resolution"]}
                 uiparams.reinit_params.append(linelist_pars)
 
             uiparams.fields["center"].max = min(
                 ext.shape[ext.dispersion_axis() - 1] for ext in ad)
-
-            # In case when absorption lines are used for wavelength calibration,
-            # we set the data to negative to make absorption lines into emission
-            # lines, and perform all calculations on this negative data.
-            if absorption:
-                calc_ad = deepcopy(ad)
-                for i, data in enumerate(ad.data):
-                   calc_ad[i].data = -data
-            else:
-                calc_ad = ad
 
             # Hold the list of figures to be saved to disk
             figures = []
@@ -2429,16 +2888,15 @@ class Spect(Resample):
                 for ext in ad:
                     axis = 0 if ext.data.ndim == 1 else 2 - ext.dispersion_axis()
                     domains.append([0, ext.shape[axis] - 1])
-                reconstruct_points = partial(wavecal.create_interactive_inputs, calc_ad, p=self,
-                            linelist=linelist, bad_bits=DQ.not_signal)
+                reconstruct_points = partial(wavecal.create_interactive_inputs, ad, p=self,
+                            linelist=linelist, bad_bits=DQ.not_signal, absorption=absorption)
 
-                label_fn = ((lambda i: f"Order {ad.hdr['SPECORDR'][i]}")
-                            if 'XD' in ad.tags else (lambda i: f"Slit {i+1}"))
+                tab_labels = self._make_tab_labels(ad)
 
                 visualizer = WavelengthSolutionVisualizer(
                     reconstruct_points, all_fp_init,
                     modal_message="Re-extracting 1D spectra",
-                    tab_name_fmt=label_fn,
+                    tab_name_fmt=lambda i: tab_labels[i],
                     xlabel="Fitted wavelength (nm)", ylabel="Non-linear component (nm)",
                     domains=domains,
                     absorption=absorption,
@@ -2450,23 +2908,47 @@ class Spect(Resample):
                 geminidr.interactive.server.interactive_fitter(visualizer)
                 for ext, fit1d, image, other in zip(ad, visualizer.results(),
                                                     visualizer.image, visualizer.meta):
-                    if image is not None:
-                        fit1d.image = image
-                        wavecal.update_wcs_with_solution(ext, fit1d, other, config)
+                    fit1d.image = image
+                    wavecal.update_wcs_with_solution(ext, fit1d, other, config)
             else:
-                for ext, calc_ext in zip(ad, calc_ad):
-                    if len(ad) > 1:
-                        log.stdinfo(f"Determining solution for extension {ext.id}")
-
-                    input_data, fit1d, acceptable_fit = wavecal.get_automated_fit(
-                        calc_ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal)
-                    if not acceptable_fit:
-                        log.warning("No acceptable wavelength solution found")
-                    else:
-                        wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
+                bad_solutions = []
+                single_line_solutions = []
+                for ext in ad:
+                    input_data, fit1d = wavecal.get_automated_fit(
+                        ext, uiparams, p=self, linelist=linelist, bad_bits=DQ.not_signal,
+                        absorption=absorption)
+                    wavecal.update_wcs_with_solution(ext, fit1d, input_data, config)
+                    if fit1d.image.size:
                         figures.append(wavecal.create_pdf_plot(
                             input_data, fit1d.points[~fit1d.mask],
-                            fit1d.image[~fit1d.mask], f"{ad.filename}:{ext.id}"))
+                            fit1d.image[~fit1d.mask],
+                            title=f"{ad.filename}:{ext.id}",
+                            absorption=absorption))
+                        if fit1d.image.size == 1:
+                            single_line_solutions.append(ext.id)
+                    else:  # no line matches so not an acceptable solution
+                        bad_solutions.append(ext.id)
+
+                if bad_solutions:
+                    msg = f"{ad.filename}: failed to find an acceptable wavelength solution"
+                    if len(ad) > 1:
+                        if len(ad) > len(bad_solutions):
+                            msg += "in extensions " + ", ".join(str(i) for i in bad_solutions)
+                        else:
+                            msg += " in any extensions"
+                    if self.mode == 'sq' and len(ad) == len(bad_solutions):
+                        raise RuntimeError(msg)
+                    log.warning(msg)
+
+                if single_line_solutions:
+                    msg = f"{ad.filename}: a single-line solution has been applied"
+                    if len(ad) > 1:
+                        if len(ad) > len(single_line_solutions):
+                            msg += "in extensions " + ", ".join(str(i) for i in single_line_solutions)
+                        else:
+                            msg += " in all extensions"
+                    log.warning(msg)
+
 
             ad.update_filename(suffix=sfx, strip=True)
             if figures:
@@ -2476,6 +2958,9 @@ class Spect(Resample):
                     for fig in figures:
                         pdf.savefig(fig, bbox_inches='tight')
                     plt.close()
+
+                # We could add a parameter to enable this if desired
+                embed_file(ad, plot_filename, contenttype='pdf')
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -3085,7 +3570,7 @@ class Spect(Resample):
                 del crmask, skyfit_input
                 gc.collect()
 
-            if debug:
+            if debug:  # pragma: no cover
                 fig, axes = plt.subplots(5, 3, sharex=True, sharey=True,
                                          tight_layout=True)
                 for i, ext in enumerate(ad_tiled):
@@ -3206,8 +3691,8 @@ class Spect(Resample):
 
             if std is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed standard listed for "
-                                  f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed standard "
+                                                   f"listed for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no standard was specified")
@@ -3216,16 +3701,27 @@ class Spect(Resample):
             origin_str = f" (obtained from {origin})" if origin else ""
             log.stdinfo(f"{ad.filename}: using the standard {std.filename}"
                         f"{origin_str}")
-            len_std, len_ad = len(std), len(ad)
-            if len_std not in (1, len_ad):
-                log.warning(f"{ad.filename} has {len_ad} extensions but "
-                            f"{std.filename} has {len_std} extensions so "
-                            "cannot flux calibrate.")
-                continue
 
             if not all(hasattr(ext, "SENSFUNC") for ext in std):
                 log.warning("SENSFUNC table missing from one or more extensions"
                             f" of {std.filename} so cannot flux calibrate")
+                continue
+
+            # Work out which extensions to use for flux calibration
+            std_indices = None
+            std_orders = std.hdr.get('SPECORDR')
+            ad_orders = ad.hdr.get('SPECORDR')
+            len_std, len_ad = len(std), len(ad)
+            if std_orders.count(None) + ad_orders.count(None) == 0:
+                std_indices = [std_orders.index(ad_order) for ad_order in ad_orders]
+            elif len_std == 1:
+                std_indices = [0] * len_ad
+            elif len_std == len_ad:
+                std_indices = list(range(len_ad))
+            if std_indices is None:
+                log.warning(f"{ad.filename} has {len_ad} extensions but "
+                            f"{std.filename} has {len_std} extensions and "
+                            "cannot determine which extensions to use.")
                 continue
 
             # Since 2D flux calibration just uses the wavelength info for the
@@ -3266,10 +3762,11 @@ class Spect(Resample):
                     log.stdinfo(f"{ad.filename}: Correcting for airmass of "
                                 f"{delta_airmass:5.3f}")
 
-
-            for index, ext in enumerate(ad):
-                ext_std = std[min(index, len_std-1)]
+            for index, (ext, std_index)  in enumerate(zip(ad, std_indices)):
+                ext_std = std[std_index]
                 extname = f"{ad.filename} extension {ext.id}"
+                log.debug(f"Flux calibrating {extname} with {std.filename}"
+                          f" extension {ext_std.id}")
 
                 # Create the correct callable function (we may want to
                 # abstract this in the future)
@@ -3311,7 +3808,7 @@ class Spect(Resample):
                 # edges of all pixels.
                 all_coords = [0.5*(length - 1) for length in ext.shape]
                 all_coords[dispaxis] = np.arange(-0.5, ext.shape[dispaxis], 0.5)
-                all_waves = ext.wcs(*all_coords[::-1], with_units=True)
+                all_waves = ext.wcs.pixel_to_world(*all_coords[::-1])
                 if ndim > 1:
                     all_waves = all_waves[0]
 
@@ -3321,9 +3818,25 @@ class Spect(Resample):
                 # Reconstruct the spline and evaluate it at every wavelength
                 sens_factor = sensfunc(waves.to(std_wave_unit).value) * std_flux_unit
                 try:  # conversion from magnitude/logarithmic units
-                    sens_factor = sens_factor.physical
+                    # See comment below
+                    with warnings.catch_warnings(category=RuntimeWarning,
+                                                 action="ignore"):
+                        sens_factor = sens_factor.physical
                 except AttributeError:
                     pass
+
+                # This avoids extrapolative blow-ups when flux-calibrating XD
+                # data that covers the full wavelength range but the standard
+                # only covers a small part.
+                if len(ext.mask.shape) == 2:
+                    if dispaxis == 0:
+                        sens_factor[(np.bitwise_and.reduce(ext.mask, axis=1) & DQ.no_data) > 0] = 0
+                    elif dispaxis == 1:
+                        sens_factor[(np.bitwise_and.reduce(ext.mask) & DQ.no_data) > 0] = 0
+                    else:
+                        raise ValueError(f"dispersion axis {dispaxis} not recognized.")
+                else:
+                    sens_factor[(ext.mask & DQ.no_data) > 0] = 0
 
                 # Apply airmass correction. If none is needed/possible, we
                 # don't need to try to do this
@@ -3338,7 +3851,7 @@ class Spect(Resample):
                         sens_factor *= 10**(0.4 * delta_airmass * extinction_correction)
 
                 final_sens_factor = (sci_flux_unit * sens_factor / pixel_sizes).to(
-                    final_units, equivalencies=u.spectral_density(waves)).value
+                    final_units, equivalencies=u.spectral_density(waves)).value.astype(np.float32)
 
                 if ndim == 2 and dispaxis == 0:
                     ext *= final_sens_factor[:, np.newaxis]
@@ -3439,6 +3952,9 @@ class Spect(Resample):
             Spectra with unilluminated regions.
         suffix : str
             Suffix to append to the filename.
+        debug_min_illuminated_fraction : float
+            at least this much of the pixel must be illuminated to not be
+            masked
 
         Returns
         -------
@@ -3450,6 +3966,7 @@ class Spect(Resample):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         sfx = params["suffix"]
+        min_frac = params["debug_min_illuminated_fraction"]
 
         for ad in adinputs:
             log.stdinfo(f"Masking unilluminated regions in {ad.filename}")
@@ -3483,7 +4000,8 @@ class Spect(Resample):
                     # Compute the two edges.
                     edge1, edge2 = model1(grid[0]), model2(grid[0])
                     # Mask the area between them.
-                    slit = np.logical_and(grid[1] > edge1, grid[1] < edge2)
+                    slit = np.logical_and(grid[1] > edge1 + min_frac - 0.5,
+                                          grid[1] < edge2 - min_frac + 0.5)
 
                     # Add this slit to the image of slits
                     slits |= slit
@@ -3501,6 +4019,63 @@ class Spect(Resample):
 
         return adinputs
 
+    def monitorWavelengthSolution(self, adinputs=None, **params):
+        """
+        This captures some info from the wavelength solution for the GOA
+        instrument monitoring system into various MWS_ headers for the instrument
+        monitoring system to pick up.
+
+        Values Captured include the polynomial coefficients and RMS from the
+        .WAVECAL table, the central wavelength from both the WCS and central_wavlength()
+        descriptor and the difference between them.
+        :return:
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+
+        tocapture = ('c0', 'c1', 'c2', 'c3', 'rms', 'inv_rms', 'fwidth')
+
+        for ad in adinputs:
+            for ext in ad:
+                wavecal = getattr(ext, 'WAVECAL', None)
+                if wavecal is None:
+                    continue
+
+                for row in wavecal:
+                    # Capture values from WAVEVAL table into monitoring headers
+                    if row['name'] in tocapture:
+                        keyword = 'MWS_' + row['name'].upper()[:4]
+                        if row['name'] == 'inv_rms':
+                            keyword = 'MWS_IRMS'
+                        ext.hdr[keyword] = (row['coefficients'],
+                                            f'WAVECAL {row['name']} coefficient')
+
+                # Get the model and evaluate it at the mean of its domain
+                model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+                if model:
+                    # Central Wavelength check
+                    center = np.mean(model.domain)
+                    model_central_wlen = model(center)
+                    # We want actual_central_wavelength rather than central_wavelength
+                    header_central_wlen = ext.actual_central_wavelength(asNanometers=True)
+
+                    ext.hdr['MWS_DCWL'] = (model_central_wlen - header_central_wlen,
+                                           'Delta between model and header central_wavelength')
+
+                    # Dispersion check
+                    model_dispersion = model(center+0.5) - model(center-0.5)
+                    header_dispersion = ext.dispersion(asNanometers=True)
+                    ext.hdr['MWS_DDIS'] = (model_dispersion - header_dispersion,
+                                           'Delta between model and header dispersion')
+
+
+                # Count the number of arc lines in the wavecal table
+                ext.hdr['MWS_NUML'] = (numpy.count_nonzero(wavecal['peaks']),
+                                       'Number of non-zero peaks in the WAVECAL table')
+
+            ad.update_filename(suffix=params["suffix"], strip=True)
+
+        return adinputs
 
     def normalizeFlat(self, adinputs=None, **params):
         """
@@ -3604,6 +4179,7 @@ class Spect(Resample):
                                     ", ".join(coeffs))
 
                     mask |= (DQ.no_data * (variance == 0))  # Ignore var=0 points
+                    mask &= (DQ.max ^ DQ.non_linear)  # allow non-linear pixels to be fit
                     slices = _ezclump((mask & (DQ.no_data | DQ.unilluminated)) == 0)
 
                     masked_data = np.ma.masked_array(data, mask=mask)
@@ -3682,9 +4258,10 @@ class Spect(Resample):
                 else:
                     filename_info = ''
 
+                tab_labels = self._make_tab_labels(ad)
                 visualizer = fit1d.Fit1DVisualizer(reconstruct_points,
                                                    all_fp_init,
-                                                   tab_name_fmt=lambda i: f"Array {i}",
+                                                   tab_name_fmt=lambda i: tab_labels[i],
                                                    xlabel=xaxis_label, ylabel='counts',
                                                    domains=all_domains,
                                                    title="Normalize Flat",
@@ -3875,6 +4452,8 @@ class Spect(Resample):
                                        r + ref_pixels_dict[j][0]).T.astype(int)
                                        for ad, r in zip(adinputs,
                                                         ref_pixels_dict[j])]
+        else:
+            dispaxis = 0
 
         # Gather information from all the spectra (Chebyshev1D model,
         # w1, w2, dw, npix), and compute the final bounds (w1out, w2out)
@@ -3896,8 +4475,12 @@ class Spect(Resample):
                 adinfo.append(model_info)
                 w1_arr[i, iext] = model_info['w1']
                 w2_arr[i, iext] = model_info['w2']
-
             info.append(adinfo)
+
+        # Are we combining multiple spectra with different wavelength settings
+        # into a single spectrum? This is important for later.
+        combining_multiple_wavelengths = (single_spectral and
+                                          len(set(w1_arr.ravel())) > 1)
 
         # Compute the output wavelength range for each extension. We can
         # calculate the overall output range if we're combining to a single
@@ -3927,15 +4510,16 @@ class Spect(Resample):
             # parameters as the 4th is then calculable. First, we copy the
             # start and end wavelengths if those aren't specified. If neither
             # dw nor npix are specified, the behaviour depends on whether we
-            # are resampling to a single wavelength scale: if so, then we want
-            # to preserve the dispersion to avoid undersampling but, if not,
-            # then we want to preserve the number of pixels per extension.
+            # are resampling multiple spectra to a single wavelength scale:
+            # if so, then we want to preserve the dispersion to avoid
+            # undersampling but, if not,  then we want to preserve the number
+            # of pixels per extension.
             while nparams < 3:
                 if w1 is None:
                     w1 = wave_min
                 elif w2 is None:
                     w2 = wave_max
-                elif single_spectral and dw is None:
+                elif combining_multiple_wavelengths and dw is None:
                     w1 = np.full_like(w1, np.nanmin(w1))
                     w2 = np.full_like(w2, np.nanmax(w2))
                     if output_spectral == "linear":
@@ -3944,7 +4528,7 @@ class Spect(Resample):
                     else:
                         # dw has been calculated assuming the spectrum is
                         # linear, so we repeat that assumption
-                        dw = np.array([extinfo['dw'] / extinfo['w2'] - 1
+                        dw = np.array([extinfo['dw'] / extinfo['w2']
                                        for adinfo in info for extinfo in adinfo])
                     dw = np.full_like(w1, dw.min())
                 elif npix is None:
@@ -3958,12 +4542,18 @@ class Spect(Resample):
                     npix = np.ceil((w2 - w1) / dw).astype(int) + 1
                     w2 = w1 + (npix - 1) * dw
                 else:  # loglinear
-                    npix = np.ceil(np.log(w2 / w1) / np.log(1 + dw) - 1)
+                    npix = np.ceil(np.log(w2 / w1) / np.log(1 + dw) - 1).astype(int) + 1
                     w2 = w1 * (1 + dw) ** (npix - 1)
             elif w1 is None:
-                w1 = w2 - (npix - 1) * dw
+                if output_spectral == "linear":
+                    w1 = w2 - (npix - 1) * dw
+                else:  # loglinear
+                    w1 = w2 / (1 + dw) ** (npix - 1)
             elif w2 is None:
-                w2 = w1 + (npix - 1) * dw
+                if output_spectral == "linear":
+                    w2 = w1 + (npix - 1) * dw
+                else:  # loglinear
+                    w2 = w1 * (1 + dw) ** (npix - 1)
             elif output_spectral == "linear":  # dw is None
                 dw = (w2 - w1) / (npix - 1)
             else:  # dw is None and we're loglinearizing
@@ -4017,7 +4607,6 @@ class Spect(Resample):
                 actual_limits = new_wave_model([0, this_npix - 1])
                 w1[iext] = actual_limits.min()
                 w2[iext] = actual_limits.max()
-                yy = new_wave_model([this_npix-3,this_npix-2,this_npix-1])
 
             # Calculation for all extensions
             dw = (w2 - w1) / (npix - 1)
@@ -4097,6 +4686,8 @@ class Spect(Resample):
                 if i == 0 and not new_wave_scale:
                     log.fullinfo(f"{ad.filename}: No interpolation")
                 msg = "Resampling"
+                if this_conserve:
+                    msg += " (with flux conservation)"
                 if new_wave_scale:
                     msg += f" and {output_spectral}izing"
                 dwstr = (f"{dw[iext]:.6f}" if output_spectral == "loglinear"
@@ -4150,7 +4741,8 @@ class Spect(Resample):
                 # Currently this is accurate to <0.1 pixel for GMOS.
                 # TODO? Define APERTURE as a function of wavelength, not pixel.
                 if ndim == 2 and hasattr(ext, 'APERTURE'):
-                    offset = spatial_offset.offset.value
+                    offset = (spatial_offset.offset.value -
+                              origin_dict[iext][1 - dispaxis])
                     log.fullinfo("Shifting aperture locations by "
                                  f"{offset:.2f} pixels")
                     apmodels = [am.table_to_model(row) for row in ext.APERTURE]
@@ -4214,6 +4806,8 @@ class Spect(Resample):
             Show diagnostic plots?
         interactive : bool
             Show interactive interface?
+        debug_allow_skip : bool
+            Allow user to exit GUI and bypass sky subtraction?
 
         Returns
         -------
@@ -4233,6 +4827,7 @@ class Spect(Resample):
         debug_plot = params["debug_plot"]
         fit1d_params = fit_1D.translate_params(params)
         interactive = params["interactive"]
+        allow_skip = params.get("debug_allow_skip", False)
 
         def calc_sky_coords(ad: AstroData, apgrow=0, interactive_mode=False):
             """
@@ -4269,7 +4864,7 @@ class Spect(Resample):
                                 (csc_ext.mask & DQ.not_signal).astype(bool))
 
                 # Create an aggregated aperture mask
-                csc_aperture_mask = (np.zeros_like(csc_ext.data, dtype=bool))
+                csc_aperture_mask = np.zeros_like(csc_ext.data, dtype=bool)
                 try:
                     aptable = csc_ext.APERTURE
                 except AttributeError:
@@ -4283,6 +4878,16 @@ class Spect(Resample):
                         aperture_mask = aperture.aperture_mask(csc_ext, grow=apgrow)
                         csc_aperture_mask |= aperture_mask
 
+                    # This gets the name "pure" because we may wish to make it
+                    # wih apgrow=0 since the -ve beams and likely to be lower
+                    # S/N than the +ve beam.
+                    pure_aperture_mask = csc_aperture_mask.copy()
+                    for beam_shift in csc_ext.nddata.meta.get('negative_beam_offsets', []):
+                        shift = (0, int(np.round(beam_shift)))
+                        if csc_spataxis == 0:
+                            shift = shift[::-1]
+                        csc_aperture_mask |= ndimage.shift(pure_aperture_mask, shift, order=1)
+
                 if csc_ext.variance is None:
                     csc_sky_weights = None
                 else:
@@ -4295,11 +4900,11 @@ class Spect(Resample):
                         csc_sky_weights[zeros] = 1
 
                 # Unmask rows/columns that are all DQ.no_data (e.g., GMOS
-                # chip gaps) to avoid a zillion warnings about insufficient
-                # unmasked points.
+                # chip gaps) or all unilluminated to avoid a zillion warnings
+                # about insufficient unmasked points.
                 if csc_ext.mask is not None:
-                    no_data = (np.bitwise_and.reduce(csc_ext.mask, axis=csc_spataxis) &
-                               DQ.no_data).astype(bool)
+                    no_data = np.logical_and.reduce(
+                        (csc_ext.mask & (DQ.no_data | DQ.unilluminated)).astype(bool), axis=csc_spataxis)
                     if csc_spataxis == 0:
                         csc_sky_mask ^= no_data
                     else:
@@ -4360,6 +4965,77 @@ class Spect(Resample):
         final_parms = list()
         apgrow = None  # for saving selected aperture_grow values, if interactive
 
+        # Look for negative beams from sky subtraction to help with fitting.
+        # We want to mask bad pixels, which means we can't do FFT correlation
+        # which is faster.
+        for ad in adinputs:
+            if self.timestamp_keys['subtractSky'] in ad.phu:
+                # Determine the smallest spatial extent of the extensions
+                # (we assume all the extensions have the same pixel scale)
+                spataxes = np.asarray(ad.dispersion_axis()) - 1
+                min_size = min(ext.shape[spataxis]
+                               for ext, spataxis in zip(ad, spataxes))
+                xcorr_sum = np.zeros((2 * min_size - 1,))
+
+                for ext, spataxis in zip(ad, spataxes):
+                    # If this ext is wider than the minimum, its xcorr will
+                    # be wider and we need to trim it to the same size.
+                    xcorr_slice = (slice(ext.shape[spataxis] - min_size,
+                                         min_size - ext.shape[spataxis])
+                                   if ext.shape[spataxis] > min_size
+                                   else slice(None))
+                    for i in range(ext.shape[1 - spataxis]):
+                        _slice = i if spataxis == 1 else (slice(None), i)
+                        row = np.ma.masked_array(ext.data[_slice] - np.median(ext.data[_slice]),
+                                                 None if ext.mask is None else
+                                                 ext.mask[_slice] & DQ.not_signal)
+                        # Without the "maximum" we get a symmetric xcorr array
+                        xcorr_sum += np.correlate(
+                            np.maximum(row, 0), -row, mode='full')[xcorr_slice]
+
+                # This is expected to be at zero shift
+                peak_location = xcorr_sum.argmin()
+                peak_value = -xcorr_sum[peak_location]
+
+                # The default min_snr=3 for get_extrema() so it will find too
+                # many maxima in xcorr_sum. These should be comparable to the
+                # magnitude of the trough, so set a limit (we have to do the
+                # same calculation to esimate the stddev of the profile as
+                # does get_extrema).
+                stddev = at.std_from_pixel_variations(xcorr_sum, subtract_linear_fits=True)
+                min_snr = max(0.01 * peak_value / stddev, 3)
+
+                # The idea here is that we can have one -ve beam if it's as
+                # strong as the +ve beam, or two if they're at least half as
+                # strong, etc. Because of noise, we add 1 to the denominator.
+                possible_beams = np.array(
+                    sorted([x[:2] for x in peak_finding.get_extrema(
+                        xcorr_sum, remove_edge_maxima=False, min_snr=min_snr) if x[2]],
+                           key=lambda xx: xx[1], reverse=True)).T
+                if possible_beams.size:
+                    deep_enough = [x > peak_value / (i + 2)
+                                   for i, x in enumerate(possible_beams[1])]
+                    # So we find the first trough that's deep enough (True)
+                    # and then find the next trough that isn't (False). All
+                    # these are considered -ve beams. We also have to account
+                    # for there not being any False entries after the True.
+                    if any(deep_enough):
+                        nbeams = ((first_true := np.argmax(deep_enough)) +
+                                  (np.argmin(deep_enough[first_true:]) or
+                                   (len(deep_enough) - first_true)))
+                    else:
+                        nbeams = 0
+                    if nbeams > 0:
+                        beam_offsets = peak_location - possible_beams[0, :nbeams]
+                        log.debug(f"{ad.filename} beam offsets: "+" ".join(
+                            [str(x) for x in beam_offsets]))
+
+                        # Store them somewhere for retrieval later
+                        for ext in ad:
+                            ext.nddata.meta['negative_beam_offsets'] = beam_offsets
+                    else:
+                        log.debug(f"{ad.filename} No negative beams found")
+
         if interactive:
             apgrow = list()
             # build config for interactive
@@ -4397,12 +5073,14 @@ class Spect(Resample):
                                       inclusiveMax=True)
                 }
 
+                tab_labels = self._make_tab_labels(ad)
+
                 # get the fit parameters
                 fit1d_params = fit_1D.translate_params(params)
                 ui_params = UIParameters(config, reinit_params=reinit_params, extras=reinit_extras)
                 visualizer = fit1d.Fit1DVisualizer(lambda ui_params: recalc_fn(ad, ui_params),
                                                    fitting_parameters=[fit1d_params] * len(ad),
-                                                   tab_name_fmt=lambda i: f"Slit {i+1}",
+                                                   tab_name_fmt=lambda i: tab_labels[i],
                                                    xlabel='Row' if spataxis == 0 else 'Column',
                                                    ylabel='Signal',
                                                    domains=all_domains,
@@ -4415,17 +5093,21 @@ class Spect(Resample):
                                                    recalc_inputs_above=True,
                                                    ui_params=ui_params,
                                                    reinit_live=True,
-                                                   mask_glyphs={"aperture": ("inverted_triangle", "lightgray")})
+                                                   mask_glyphs={"aperture": ("inverted_triangle", "lightgray")},
+                                                   allow_skip=allow_skip)
 
                 geminidr.interactive.server.interactive_fitter(visualizer)
 
                 # Pull out the final parameters to use as inputs doing the real fit
                 fit_results = visualizer.results()
                 final_parms_exts = list()
-                apgrow.append(ui_params.values['aperture_growth'])
-                for fit in fit_results:
-                    final_parms_exts.append(fit.extract_params())
-                final_parms.append(final_parms_exts)
+                if fit_results is None:
+                    log.warning("Not performing sky subtraction")
+                else:
+                    apgrow.append(ui_params.values['aperture_growth'])
+                    for fit in fit_results:
+                        final_parms_exts.append(fit.extract_params())
+                    final_parms.append(final_parms_exts)
         else:
             # making fit params into an array even though it all matches
             # so we can share the same final code with the interactive,
@@ -4433,24 +5115,32 @@ class Spect(Resample):
             for ad in adinputs:
                 final_parms.append([fit1d_params] * len(ad))
 
-        for idx, ad in enumerate(adinputs):  # idx for indexing the fit1d params per ext
-            if self.timestamp_keys['distortionCorrect'] not in ad.phu:
-                log.warning(f"{ad.filename} has not been distortion corrected."
-                            " Sky subtraction is likely to be poor.")
-            eidx = 0
-            if apgrow:
-                # get value set in the interactive tool
-                apg = apgrow[idx]
-            else:
-                # get value for aperture growth from config
-                apg = params["aperture_growth"]
-            for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
-                spataxis = ext.dispersion_axis() - 1  # python sense
-                sky = np.ma.masked_array(ext.data, mask=sky_mask)
-                sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
-                                   axis=spataxis, plot=debug_plot).evaluate()
-                ext.data -= sky_model
-                eidx = eidx + 1
+        # Subtract sky unless the user has exited the GUI requesting not to
+        if not (interactive and fit_results is None):
+            for idx, ad in enumerate(adinputs):  # idx for indexing the fit1d params per ext
+                if self.timestamp_keys['distortionCorrect'] not in ad.phu:
+                    log.warning(f"{ad.filename} has not been distortion corrected."
+                                " Sky subtraction is likely to be poor.")
+                eidx = 0
+                if apgrow:
+                    # get value set in the interactive tool
+                    apg = apgrow[idx]
+                else:
+                    # get value for aperture growth from config
+                    apg = params["aperture_growth"]
+
+                for ext, sky_mask, sky_weights in calc_sky_coords(ad, apgrow=apg):
+                    spataxis = ext.dispersion_axis() - 1  # python sense
+                    sky = np.ma.masked_array(ext.data, mask=sky_mask)
+                    sky_model = fit_1D(sky, weights=sky_weights, **final_parms[idx][eidx],
+                                       axis=spataxis, plot=debug_plot).evaluate()
+                    ext.data -= sky_model
+                    eidx = eidx + 1
+
+        for ad in adinputs:
+            # Clean up the meta
+            for ext in ad:
+                ext.nddata.meta.pop('negative_beam_offsets', None)
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -4531,294 +5221,93 @@ class Spect(Resample):
 
         # Main Loop
         for ad in adinputs:
-            for ext in ad:
-
-                # Verify inputs
+            # We need to go through the extensions/apertures to understand
+            # the order of the returned models
+            tab_labels = []
+            for ext, tab_label in zip(ad, self._make_tab_labels(ad)):
                 try:
                     aptable = ext.APERTURE
-                    locations = aptable['c0'].data
-                except (AttributeError, KeyError):
-                    log.warning("Could not find aperture locations in "
-                                f"{ad.filename} extension {ext.id} - continuing")
+                except AttributeError:
+                    continue
+                if len(ad) > 1:
+                    if len(aptable)> 1:
+                        tab_labels.extend([f"{tab_label} Aperture {apnum}" for apnum in aptable["number"]])
+                    else:
+                        tab_labels.append(tab_label)
+                else:
+                    tab_labels.extend([f"Aperture {apnum}" for apnum in aptable["number"]])
+
+            # We don't have any apertures to trace
+            if not tab_labels:
+                log.warning(f"{ad.filename} has no apertures to trace")
+                continue
+
+            # Set up UIParameters for trace_lines() call
+            _config = self.params[self.myself()]
+            _config.update(**params)
+
+            title_overrides = {
+                'max_missed': 'Max Missed',
+                'max_shift':  'Max Shifted',
+                'nsum':       'Lines to sum',
+                'step':       'Tracing step',
+            }
+            ui_params = UIParameters(_config,
+                                     reinit_params=["max_missed", "max_shift", "nsum", "step"],
+                                     title_overrides=title_overrides)
+
+            if interactive:
+                aperture_models = interactive_trace_apertures(
+                    ad, tab_labels, fit1d_params, ui_params=ui_params)
+            else:
+                traced_data = trace_apertures_data_provider(ad, ui_params)
+
+                # This is duplication of code in interactive_trace_apertures
+                other_data = [
+                    [row["number"], row["c0"]] +
+                    [
+                        ext.APERTURE.meta["header"][kw]
+                        for kw in ("DOMAIN_START", "DOMAIN_END")
+                    ]
+                    for ext in ad
+                    for row in (ext.APERTURE if hasattr(ext, "APERTURE") else [])
+                ]
+
+                aperture_models = []
+                for x, y, (apnum, c0, *domain) in zip(
+                        traced_data["x"], traced_data["y"], other_data):
+                    log.fullinfo(f"Aperture at {c0:.1f} traced from {x.min()} "
+                                 f"to {x.max()}")
+                    try:
+                        _fit_1d = fit_1D(y, domain=domain, order=order,
+                                         points=x, **fit1d_params)
+                    # This hides a multitude of sins, including no points
+                    # returned by the trace, or insufficient points to
+                    # constrain fit. We call fit1d with dummy points to
+                    # ensure we get the same type of result as if it had
+                    # been successful.
+                    except (IndexError, np.linalg.linalg.LinAlgError):
+                        log.warning(f"Unable to trace aperture {apnum}")
+                        _fit_1d = fit_1D(np.full_like(y, c0), domain=domain,
+                            order=0, points=y, **fit1d_params)
+
+                    aperture_models.append(_fit_1d.model)
+
+            # Put the aperture models into the APERTURE tables
+            for ext in ad:
+                try:
+                    aptable = ext.APERTURE
+                except AttributeError:
                     continue
 
-                if debug:
-                    self.viewer.display_image(ext, wcs=False)
-                    self.viewer.width = 2
-                    self.viewer.color = "blue"
-
-                # Set up UIParameters for trace_lines() call
-                _config = self.params[self.myself()]
-                _config.update(**params)
-
-                title_overrides = {
-                    'max_missed': 'Max Missed',
-                    'max_shift':  'Max Shifted',
-                    'nsum':       'Lines to sum',
-                    'step':       'Tracing step',
-                }
-                ui_params = UIParameters(_config,
-                                         reinit_params=["max_missed", "max_shift", "nsum", "step"],
-                                         title_overrides=title_overrides)
-
-                if interactive:
-                    aperture_models = interactive_trace_apertures(
-                        ext, fit1d_params, ui_params=ui_params)
-                else:
-                    dispaxis = 2 - ext.dispersion_axis()  # python sense
-                    aperture_models = []
-
-                    # For efficiency, we would like to trace all sources
-                    #  simultaneously (like we do with arc lines), but we need
-                    #  to start somewhere the source is bright enough, and there
-                    #  may not be a single location where that is true for all
-                    #  sources
-                    all_ref_coords = np.array([])
-                    for i, loc in enumerate(locations):
-                        c0 = int(loc + 0.5)
-
-                        # The coordinates are always returned as (x-coords, y-coords)
-                        traces = tracing.trace_aperture(
-                            ext, loc, ui_params, apnum=i,
-                            viewer=self.viewer if debug else None)
-
-                        # List of traced peak positions
-                        in_coords = np.array([coord for trace in traces for
-                                              coord in trace.input_coordinates()]).T
-                        # List of "reference" positions (i.e., the coordinate
-                        # perpendicular to the line remains constant at its
-                        # initial value
-                        ref_coords = np.array([coord for trace in traces for
-                                               coord in trace.reference_coordinates()]).T
-
-                        if ref_coords.size:
-                            if all_ref_coords.size:
-                                all_ref_coords = np.concatenate((all_ref_coords, ref_coords), axis=1)
-                                all_in_coords = np.concatenate((all_in_coords, in_coords), axis=1)
-                            else:
-                                all_ref_coords = ref_coords
-                                all_in_coords = in_coords
-
-                    spectral_coords = np.arange(0, ext.shape[dispaxis], step)
-
-                    for aperture in aptable:
-                        location = aperture['c0']
-                        # Funky stuff to extract the traced coords associated with
-                        # each aperture (there's just a big list of all the coords
-                        # from all the apertures) and sort them by coordinate
-                        # along the spectrum
-                        coords = np.array([list(c1) + list(c2)
-                                           for c1, c2 in zip(all_ref_coords.T, all_in_coords.T)
-                                           if c1[dispaxis] == location])
-                        values = np.array(sorted(coords, key=lambda c: c[1 - dispaxis])).T
-                        ref_coords, in_coords = values[:2], values[2:]
-
-                        # log aperture
-                        if in_coords.size:
-                            min_value = in_coords[1 - dispaxis].min()
-                            max_value = in_coords[1 - dispaxis].max()
-                            log.fullinfo(f"Aperture at {c0:.1f} traced from {min_value} "
-                                         f"to {max_value}")
-
-                        # Find model to transform actual (x,y) locations to the
-                        # value of the reference pixel along the dispersion axis
-                        try:
-                            # pylint: disable=repeated-keyword
-                            _fit_1d = fit_1D(
-                                in_coords[dispaxis],
-                                domain=[0, ext.shape[dispaxis] - 1],
-                                order=order,
-                                points=in_coords[1 - dispaxis],
-                                **fit1d_params)
-
-
-                        # This hides a multitude of sins, including no points
-                        # returned by the trace, or insufficient points to
-                        # constrain fit. We call fit1d with dummy points to
-                        # ensure we get the same type of result as if it had
-                        # been successful.
-                        except (IndexError, np.linalg.linalg.LinAlgError):
-                            log.warning(
-                                f"Unable to trace aperture {aperture['number']}")
-
-                            # pylint: disable=repeated-keyword
-                            _fit_1d = fit_1D(
-                                np.full_like(spectral_coords, c0),
-                                domain=[0, ext.shape[dispaxis] - 1],
-                                order=0,
-                                points=spectral_coords,
-                                **fit1d_params)
-
-                        else:
-                            if debug:
-                                plot_coords = np.array(
-                                    [spectral_coords,
-                                     _fit_1d.evaluate(spectral_coords)]).T
-                                self.viewer.polygon(plot_coords, closed=False,
-                                                    xfirst=(dispaxis == 1), origin=0)
-
-                        aperture_models.append(_fit_1d.model)
-
-                ext.APERTURE = make_aperture_table(aperture_models,
+                num_aps = len(aptable)
+                ext.APERTURE = make_aperture_table(aperture_models[:num_aps],
                                                    existing_table=aptable)
+                aperture_models = aperture_models[num_aps:]
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
-        return adinputs
-
-    def tracePinholeApertures(self, adinputs=None, **params):
-        """
-        Trace pinhole apertures and create a rectification model.
-
-        Parameters
-        ----------
-        adinputs : list of :class:`~astrodata.AstroData`
-            Science data as 2D spectral images.
-        suffix : str, optional
-            Suffix to be added to output files. Default: "_pinholesTraced".
-        debug_plots : bool, Default: False
-            Create a plot of the traces
-
-        Returns
-        -------
-        list of :class:`~astrodata.AstroData`
-            The input file with a slit rectification model attached.
-
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
-        sfx = params['suffix']
-        step = params['step']
-        max_missed = params['max_missed']
-        max_shift = params['max_shift']
-        min_snr = params['min_snr']
-        nsum = params['nsum']
-        min_line_length = params['min_line_length']
-        spect_ord = params['spectral_order']
-        min_trace_pos = params['debug_min_trace_pos']
-        max_trace_pos = params['debug_max_trace_pos']
-
-        fwidth = 3  # An educated guess for pinholes.
-
-        for ad in adinputs:
-
-            log.stdinfo(f"Tracing pinhole apertures in {ad.filename}.")
-            xbin, ybin = ad.detector_x_bin(), ad.detector_y_bin()
-            for ext in ad:
-
-                dispaxis = 2 - ext.dispersion_axis() # Python sense
-                if params['start_pos']:
-                    start = params['start_pos']
-                else:
-                    start = ext.shape[dispaxis] // 2
-                data, mask, variance = ext.data, ext.mask, ext.variance
-
-                # Make life easier for the poor coder by transposing data if
-                # needed, so that we're always tracing along columns
-                if dispaxis == 0:
-                    ext_data = data
-                    ext_mask = None if mask is None else mask & DQ.not_signal
-                    ext_variance = variance
-                    x_ord, y_ord = 1, spect_ord
-                    direction = "row"
-                else:
-                    ext_data = data.T
-                    ext_mask = None if mask is None else mask.T & DQ.not_signal
-                    ext_variance = variance.T
-                    x_ord, y_ord = spect_ord, 1
-                    direction = "column"
-
-                data = ext_data[start, :]
-                mask = ext_mask[start, :]
-                variance = ext_variance[start, :]
-                # Find peaks; convert width FWHM to sigma. Copied from
-                # determineDistortion
-                widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
-                # These are returned sorted by pixel coordinate
-                initial_peaks, _ = peak_finding.find_wavelet_peaks(
-                    data, widths=widths, mask=mask & DQ.not_signal,
-                    variance=variance, min_snr=min_snr,
-                    reject_bad=False)
-
-                if min_trace_pos is not None and min_trace_pos > len(initial_peaks):
-                    log.warning(f"'min_trace_pos' is set to {min_trace_pos} but "
-                                f"there are only {len(initial_peaks)} peaks. Using "
-                                "only the last peak.")
-                    min_trace_pos = len(initial_peaks) - 1
-
-                log.fullinfo(f"  Found {len(initial_peaks)} peaks in extension "
-                             f"{ext.id}, tracing "
-                             f"numbers {min_trace_pos or 1} to "
-                             f"{max_trace_pos or len(initial_peaks)} "
-                             f"starting at {direction} {start}")
-
-                traces = tracing.trace_lines(
-                    # Only need a single `start` value for all lines.
-                    ext, axis=dispaxis,
-                    start=start,
-                    initial=initial_peaks[min_trace_pos:max_trace_pos],
-                    rwidth=None, cwidth=max(int(fwidth), 5),
-                    step=step, nsum=nsum, max_missed=max_missed,
-                    max_shift=max_shift * ybin / xbin,
-                    min_line_length=min_line_length,
-                    initial_tolerance=2.0)
-
-                # List of traced peak positions
-                in_coords = np.array([coord for trace in traces for
-                                      coord in trace.input_coordinates()]).T
-                # List of "reference" positions. These should be equally spaced
-                # in pixel coordinates, so set them to be equally spaced between
-                # the first and last. "trace.starting_point[1]" *always* returns
-                # the coordinate orthogonal to the tracing direction, but if we
-                # want to use the rectified coordinates they must be x-first.
-                try:
-                    t = ext.wcs.get_transform(ext.wcs.input_frame, 'rectified')
-                except CoordinateFrameError:
-                    rectified_pinholes = [trace.starting_point[1]
-                                          for trace in traces]
-                else:
-                    rectified_pinholes = [t(*trace.start_coordinates)[dispaxis]
-                                          for trace in traces]
-                equispaced_coords = np.linspace(rectified_pinholes[0],
-                                                rectified_pinholes[-1],
-                                                len(traces))
-                log.debug("Initial coords are "
-                          f"{[trace.starting_point[1] for trace in traces]}")
-                log.debug(f"Equispaced coords are {equispaced_coords}")
-                ref_coords = np.array([coord for trace, equi_coord in zip(traces, equispaced_coords) for
-                                       coord in trace.reference_coordinates(reference_coord=equi_coord)]).T
-
-                # Create the 2D slit rectification model:
-                m_init_2d = models.Chebyshev2D(
-                    x_degree=x_ord, y_degree=y_ord,
-                    x_domain=[0, ext.shape[1]-1],
-                    y_domain=[0, ext.shape[0]-1])
-                # The `fixed_linear` parameter is False because we should
-                # have both edges for each slit.
-                model, m_final_2d, m_inverse_2d = am.create_distortion_model(
-                    m_init_2d, dispaxis, in_coords, ref_coords, False)
-                model.name = "PNHLRECT"
-
-                try:
-                    ext.wcs.set_transform('pixels', 'rectified', model)
-                except CoordinateFrameError:
-                    ext.wcs.insert_frame(ext.wcs.input_frame, model,
-                                           cf.Frame2D(name='rectified'))
-
-                if params["debug_plots"]:
-                    plt.plot(in_coords[0], in_coords[1], linestyle='',
-                             marker='o')
-                    plt.title(f"Extension {ext.id}")
-                    plt.xlabel("X")
-                    plt.ylabel("Y")
-                    plt.show()
-
-            # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
-
         return adinputs
 
     def transferDistortionModel(self, adinputs=None, suffix=None, source=None):
@@ -4870,6 +5359,11 @@ class Spect(Resample):
 
         # Copy distortion model from ad2 to ad1
         for ad1, ad2 in zip(*gt.make_lists(adinputs, source_files)):
+            if len(ad1) != len(ad2):
+                log.warning(f"Number of extensions in {ad1.filename} and "
+                            f"{ad2.filename} do not match - skipping")
+                continue
+
             fail = False
             distortion_models = []
             for ext1, ext2 in zip(ad1, ad2):
@@ -4882,8 +5376,8 @@ class Spect(Resample):
                     break
                 try:
                     if 'distortion_corrected' not in wcs2.available_frames:
-                        log.warning("Could not find a 'distortion_corrected' frame "
-                            f"in {ad2.filename} extension {ext2.id} - "
+                        log.warning("Could not find a 'distortion_corrected' "
+                            f"frame in {ad2.filename} extension {ext2.id} - "
                             "continuing")
                         fail = True
                         break
@@ -4891,16 +5385,18 @@ class Spect(Resample):
                     fail = True
                     break
                 else:
-                    if 'rectified' not in wcs2.available_frames:
-                        m_distcorr = wcs2.get_transform(wcs2.input_frame, 'distortion_corrected')
-                    else:
-                        m_distcorr = wcs2.get_transform("rectified", 'distortion_corrected')
+                    # Distortion model is the transform immediately before the
+                    # "distortion_corrected" frame, regardless of anything else
+                    frame_index = wcs2.available_frames.index('distortion_corrected')
+                    m_distcorr = wcs2.pipeline[frame_index - 1].transform
                     distortion_models.append(m_distcorr)
+
             if not fail:
                 for ext, dist in zip(ad1, distortion_models):
-                    ext.wcs.insert_frame(ext.wcs.input_frame, dist, cf.Frame2D(name="distortion_corrected"))
-
+                    ext.wcs.insert_frame(ext.wcs.input_frame, dist,
+                                         cf.Frame2D(name="distortion_corrected"))
                 ad1.update_filename(suffix=suffix, strip=True)
+
         return adinputs
 
     def write1DSpectra(self, adinputs=None, **params):
@@ -5041,6 +5537,28 @@ class Spect(Resample):
 
         return adinputs
 
+    @staticmethod
+    def _convert_peak_to_centroid(ext):
+        """
+        Default no-modification function. See the F2Spect version for
+        details on how this should behave for asymmetric line spread
+        functions.
+
+        Parameters
+        ----------
+        ext: single-slice AstroData
+            the extension for which the shifts are to be calculation
+
+        Returns
+        -------
+        callable:
+            a callable that takes two inputs (pixel location of a peak in
+            dispersion direction, pixel location in spatial direction) and
+            returns the pixel location of the centroid in the dispersion
+            direction.
+        """
+        return models.Mapping((0,), n_inputs=2)
+
     def _get_linelist(self, wave_model=None, *args, **kwargs):
         """
         Returns a list of wavelengths of the arc reference lines used by the
@@ -5132,7 +5650,8 @@ class Spect(Resample):
             if isinstance(unit, u.UnrecognizedUnit):
                 # Try chopping off the trailing 's'
                 try:
-                    unit = u.Unit(re.sub(r's$', '', col.unit.name.lower()))
+                    unit = u.Unit(re.sub(r's$', '',
+                                         col.unit.name.lower()))
                 except:
                     unit = None
             if unit is None:
@@ -5144,7 +5663,8 @@ class Spect(Resample):
                 else:
                     if orig_colname == 'FNU':
                         unit = u.Unit("erg cm-2 s-1 Hz-1")
-                    elif orig_colname in ('FLAM', 'FLUX') or np.median(col.data) < 1:
+                    elif (orig_colname in ('FLAM', 'FLUX') or
+                          np.median(col.data) < 1):
                         unit = u.Unit("erg cm-2 s-1 AA-1")
                     else:
                         unit = u.mag
@@ -5153,15 +5673,21 @@ class Spect(Resample):
             # We've created a column called "MAGNITUDE" but it might be a flux
             if col.name == 'MAGNITUDE':
                 try:
-                    unit.to(u.W / u.m ** 3, equivalencies=u.spectral_density(1. * u.m))
+                    unit.to(u.W / u.m ** 3,
+                            equivalencies=u.spectral_density(1. * u.m))
                 except:
                     pass
                 else:
                     col.name = 'FLUX'
 
-        wavecol = spec_table["WAVELENGTH"].quantity
         if in_vacuo is None:
-            in_vacuo = min(wavecol) < 300 * u.nm
+            in_vacuo = min(spec_table["WAVELENGTH"].quantity) < 300 * u.nm
+
+        # The default (and best) specutils vacuum/air conversion has a
+        # singularity in the FUV, so we cut the wavelength scale.
+        # See https://github.com/astropy/specutils/issues/1162
+        spec_table = spec_table[spec_table["WAVELENGTH"] >= 300 * u.nm]
+        wavecol = spec_table["WAVELENGTH"].quantity
 
         if in_vacuo:
             spec_table["WAVELENGTH_VACUUM"] = spec_table["WAVELENGTH"]
@@ -5236,8 +5762,8 @@ class Spect(Resample):
                 lsf = self._line_spread_function(ext)
             else:
                 spataxis = ext.dispersion_axis() - 1  # python sense
-                _slice = tuple(ext.shape[i] // 2 if i == spataxis else None
-                               for i in range(ext.shape))
+                _slice = tuple(length // 2 if i == spataxis else slice(None)
+                               for i, length in enumerate(ext.shape))
                 lsf = self._line_spread_function(ext.__class__(
                     ext.nddata[_slice], phu=ext.phu, is_single=True))
             return lsf.mean_resolution
@@ -5310,6 +5836,22 @@ class Spect(Resample):
                 "refplot_name": refplot_name,
                 "refplot_y_axis_label": refplot_y_axis_label}
 
+    def _make_tab_labels(self, ad):
+        """
+        Create tab labels for generic spectroscopic data.
+
+        Parameters
+        ----------
+        ad : `~astrodata.AstroData`
+            The AstroData object to be processed.
+
+        Returns
+        -------
+        list
+            A list of tab labels for the given AstroData object.
+        """
+        return [f"Extension {i+1}" for i in range(len(ad))]
+
     def _wavelength_model_bounds(self, model=None, ext=None):
         """
         Return a set of model bounds to apply to an approximate wavelength
@@ -5354,14 +5896,16 @@ class Spect(Resample):
                     raise ValueError("Cannot set bounds for model class "
                                      f"{model.__class__.__name__}")
 
+        bounds = {}
         if isinstance(cheb, models.Chebyshev1D):
             for k, v in zip(cheb.param_names, cheb.parameters):
                 if k == 'c0':
-                    bounds = {'c0': (v - 10, v + 10)}
+                    bounds['c0'] = (v - 10, v + 10)
                 elif k == 'c1':
                     bounds['c1'] = (v - 0.05 * abs(v), v + 0.05 * abs(v))
                 else:
-                    bounds[k] = (v - 20, v + 20)
+                    dv = min(20, 0.5 * abs(np.diff(bounds['c1'])[0]))
+                    bounds[k] = (v - dv, v + dv)
         else:
             raise ValueError("Cannot set bounds for model class "
                              f"{model.__class__.__name__}")

@@ -41,3 +41,37 @@ def dragons_styles():
     ]
 
     return stylesheets
+
+def skip_btn_styles():
+    """
+    Returns a list of styles for the "Skip" button that overrides
+    the bokeh default button_type colors.
+
+    It appears to require an InlineStyleSheet.
+    """
+    skip_stylesheet = bm.InlineStyleSheet(
+                css=".bk-btn {\
+                        border: none; \
+                        background-color: #8e7cc3; \
+                        border-radius: 5px;\
+                        font-size: 16px;\
+                        padding: 5px 35px;\
+                        transition: all .2s ease-in-out;\
+                    }\n"
+                    ".bk-btn:active {\
+                        border: none; \
+                        background-color: #8e7cc3;\
+                        filter: brightness(90%);\
+                        -webkit-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;\
+                        -moz-box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;\
+                        box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2) inset;\
+                     }\n"
+                    ".bk-btn:hover {\
+                        border: none;\
+                        background-color: #8e7cc3;\
+                        filter: saturate(90%);\
+                        box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.2);\
+                     }\n"
+            )
+
+    return [skip_stylesheet]

@@ -10,6 +10,7 @@ import numpy as np
 
 from scipy.interpolate import make_interp_spline
 from scipy.signal import find_peaks
+from scipy.stats import gmean
 
 from astropy.convolution import Gaussian1DKernel, convolve
 from astropy.modeling import models
@@ -21,10 +22,10 @@ from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from geminidr.interactive.interactive import UIParameters
 import geminidr.interactive.server
-from ..gemini.lookups import qa_constraints
+from ..gemini.lookups import qa_constraints, airglow_synthetic_spectra
 
 from gempy.library import astromodels as am, astrotools as at
-from gempy.library import convolution, peak_finding
+from gempy.library import convolution, peak_finding, wavecal
 from gempy.library.config import RangeField
 from gempy.library.calibrator import TelluricCalibrator, TelluricCorrector
 from gempy.library.telluric import TelluricModels, TelluricSpectrum
@@ -33,8 +34,7 @@ from gempy.library.wavecal import LineList
 from geminidr.interactive.fit.telluric import TelluricCorrectVisualizer, TelluricVisualizer
 
 from . import parameters_telluric
-
-from datetime import datetime
+from geminidr import CalibrationNotFoundError
 
 
 # geminidr.gemini.lookups
@@ -53,8 +53,77 @@ class Telluric(Spect):
             lsf_module = import_module('.lsf', self.inst_lookups)
         except ModuleNotFoundError:
             pass
+        except AttributeError:
+            pass
         else:
             self._line_spread_function = lsf_module.lsf_factory(self.__class__.__name__)
+
+    def divideByTelluric(self, adinputs=None, **params):
+        """
+        Temporary primitive to do crude telluric correction and flux
+        calibration by dividing by the telluric spectrum
+        """
+        from gempy.library.telluric_models import Planck
+
+        log = self.log
+        sfx = params["suffix"]
+        telluric = params["telluric"]
+        manual_shift = params["pixel_shift"] or 0
+
+        # Get a suitable standard (should have a TELLFIT table)
+        if telluric is None:
+            telluric_list = self.caldb.get_processed_telluric(adinputs)
+        else:
+            telluric_list = (telluric, None)
+
+        for ad, telluric, origin in zip(*gt.make_lists(adinputs, *telluric_list,
+                                    force_ad=(1,))):
+
+            if 'LS' not in ad.tags:
+                log.warning(f"No changes will be made to {ad.filename}, "
+                            "as it's not a longslit spectrum")
+                continue
+
+            if telluric is None:
+                log.warning(f"No changes will be made to {ad.filename}, "
+                            "since no processed telluric was specified")
+                continue
+
+            origin_str = f" (obtained from {origin})" if origin else ""
+            log.stdinfo(f"{ad.filename}: using the processed telluric {telluric.filename}"
+                        f"{origin_str}")
+
+            tellpix = np.arange(telluric[0].data.size)
+            telldata = np.interp(tellpix + manual_shift, tellpix, telluric[0].data,
+                                 left=np.nan, right=np.nan)
+
+            row = list(telluric.HISTORY["primitive"]).index("fitTelluric")
+            # needed to evaluate the stringified version of the args
+            false, true, null = False, True, None
+            fitting_args = eval(telluric.HISTORY["args"][row])
+            magnitude = fitting_args["magnitude"]
+            bbtemp = fitting_args["bbtemp"]
+            abmag = fitting_args["abmag"]
+            w0, f0 = at.Magnitude(magnitude, abmag=abmag).properties()
+            abstr = " (AB)" if abmag else ""
+            log.stdinfo(f"Adopting {magnitude}{abstr} and Teff={bbtemp}K")
+            fluxden_in_flam_units = f0.to(u.W / (u.m ** 2 * u.nm),
+                                          equivalencies=u.spectral_density(w0))
+
+            planck = Planck(temperature=bbtemp)
+            wtelluric = telluric[0].wcs(tellpix)
+            bbspek = (planck(wtelluric) * fluxden_in_flam_units /
+                      planck(w0.to(u.nm).value))
+            correction = telldata / bbspek * telluric.exposure_time() / ad.exposure_time()
+
+            for ext in ad:
+                wsci = ext.wcs(np.arange(ext.nddata.size))
+                this_corr = np.interp(wsci, wtelluric, correction, left=np.nan, right=np.nan)
+                ext.divide(this_corr.astype(np.float32))
+
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
 
     def fitTelluric(self, adinputs=None, **params):
         """
@@ -117,6 +186,11 @@ class Telluric(Spect):
                 title_overrides=title_overrides,
                 placeholders={"magnitude": ""})
 
+            apertures = set(ad.hdr.get('APERTURE')) - {None}
+            aperture_to_use = min(apertures) if apertures else None
+            if len(apertures) > 1:
+                log.warning(f"Multiple apertures found: using {aperture_to_use}")
+
             pixel_shift = None
             for (modify, inter) in iter_list:
                 # Prepare for fitting for each 1D extension. We need to do
@@ -126,9 +200,10 @@ class Telluric(Spect):
                 if pixel_shift != 0:
                     tspek_list = []
                     spectral_indices = []
-                    start = datetime.now()
+                    spectral_order_names = []
                     for i, ext in enumerate(ad):
-                        if len(ext.shape) == 1:
+                        if (len(ext.shape) == 1 and
+                                ext.hdr.get('APERTURE') == aperture_to_use):
                             lsf = self._line_spread_function(ext)
                             axis_name = ext.wcs.output_frame.axes_names[0]
                             in_vacuo = axis_name == "WAVE"
@@ -158,15 +233,17 @@ class Telluric(Spect):
 
                             tspek_list.append(tspek)
                             spectral_indices.append(i)
-                    print(datetime.now() - start, "Making Calibrator() object")
+                            try:
+                                spectral_order_names.append(f"Order {ext.hdr['SPECORDR']}")
+                            except KeyError:
+                                spectral_order_names.append(f"Extension {i+1}")
                     if not tspek_list:
                         raise ValueError(f"No 1D spectra found in {ad.filename}")
                     tcal = TelluricCalibrator(tspek_list, ui_params=uiparams)
-                    print(datetime.now() - start, "Made Calibrator() object")
 
                 if inter:
                     visualizer = TelluricVisualizer(
-                        tcal, tab_name_fmt=lambda i: f"Order {i+1}",
+                        tcal, tab_name_fmt=lambda i: spectral_order_names[i],
                         xlabel="Wavelength (nm)", ylabel=f"Signal ({data_units})",
                         title="Fit Telluric",
                         primitive_name=self.myself(),
@@ -176,10 +253,10 @@ class Telluric(Spect):
                     geminidr.interactive.server.interactive_fitter(visualizer)
                     m_final = visualizer.results()
                 else:
-                    # Before measuring the wavelength shift, we perform a fit
+                    # Before measuring the pixel shift, we perform a fit
                     # so that we have the best model for cross-correlation
                     if modify:
-                        log.stdinfo("Calculating wavelength shift(s)")
+                        log.stdinfo("Calculating pixels shift(s)")
                     m_final, mask = tcal.perform_all_fits()
                 pca_coeffs, fit_models = m_final.fit_results()
 
@@ -190,8 +267,16 @@ class Telluric(Spect):
                         if len(ext.shape) > 1:
                             continue
 
+                        # We need to define "typical" lsf_param values in
+                        # order to evaluate the absorption for xcorr
+                        if lsf_param_names:
+                            pca_parameters = np.r_[pca_coeffs,
+                                                   [gmean(v) for v in lsf_params.values()]]
+                        else:
+                            pca_parameters = pca_coeffs
+
                         pixel_shift = peak_finding.cross_correlate_subpixels(
-                            tspek.nddata, tspek.pca.evaluate(None, pca_coeffs),
+                            tspek.nddata, tspek.pca.evaluate(None, pca_parameters),
                             sampling)
                         if pixel_shift is None:
                             log.warning("Cannot determine cross-correlation"
@@ -201,10 +286,6 @@ class Telluric(Spect):
                             log.stdinfo(f"Shift for extension {ext.id} is "
                                         f"{pixel_shift:.2f} pixels")
                             pixel_shifts.append(pixel_shift)
-
-                        #fig, ax = plt.subplots()
-                        #ax.plot(np.arange(xcorr.size) - xcorr.size // 2, xcorr)
-                        #plt.show()
 
                     if len(ad) > 1:
                         pixel_shift = self._calaculate_mean_pixel_shift(pixel_shifts)
@@ -233,16 +314,19 @@ class Telluric(Spect):
             tellfit_table.meta.update(lsf_param_dict)
             ad.TELLFIT = tellfit_table
 
-            # Also attach data divided by continuum?
-            # Problem with intrinsic absorption not being fitted perfectly
-            for ext, tspek, stellar_mask, tmodel in zip(ad, tcal.spectra, tcal.stellar_mask, m_final.models):
-                absorption = tspek.data / tmodel.continuum(tspek.waves)
-                goodpix = ~(tspek.mask | stellar_mask).astype(bool)
-                spline = make_interp_spline(tspek.waves[goodpix],
-                                            absorption[goodpix], k=3)
-                spline.extrapolate = False  # will return np.nan outside range
-                ext.TELLABS = spline(tspek.waves).astype(ext.data.dtype)
-                #ext.TELLABS2 = absorption
+            # Attach results to correct extensions in telluric AD object
+            result_index = 0
+            for ext in ad:
+                if (len(ext.shape) == 1 and
+                        ext.hdr.get('APERTURE') == aperture_to_use):
+                    tspek = tspek_list[result_index]
+                    absorption = at.divide0(tspek.data, m_final.models[result_index].continuum(tspek.waves))
+                    goodpix = ~(tspek.mask | tcal.stellar_mask[result_index]).astype(bool)
+                    spline = make_interp_spline(tcal.spectra[result_index].waves[goodpix],
+                                                absorption[goodpix], k=3)
+                    spline.extrapolate = False  # will return np.nan outside range
+                    ext.TELLABS = spline(tspek.waves).astype(ext.data.dtype)
+                    result_index += 1
 
             # We have to correct for exposure time and add the SENSFUNC units
             # The models are hardcoded to return the correct units
@@ -274,6 +358,22 @@ class Telluric(Spect):
         function is derived for each extension of each input AD, and an
         airmass correction is also applied.
 
+        Alternatively, the data-derived telluric absorption can be applied,
+        which is stored as a 1D TELLABS array in the telluric, and is simply
+        the ratio of the telluric spectrum to the zero-airmass model spectrum
+        computed by fitTelluric().
+
+        A pixel shift between the telluric spectrum and the science spectrum
+        can be calculated before the correct, and this shift may be permanently
+        applied to the output science spectrum's wavelength solution. The
+        shift is determined by looking at the highest-frequency Fourier
+        component of the corrected spectrum, to identify the "ringing" that
+        arises from a wavelength offset. Note that if apply_model=False and the
+        "data"-derived telluric absorption spectrum is used, then the output
+        science spectrum will be modified to match that of the telluric. If the
+        model absorption spectrum is used, its wavelength scale is obviously
+        correct.
+
         There is no need for the TELLFIT table to be on a spectrum taken
         with the same set-up or even the same instrument as the input ADs.
 
@@ -286,6 +386,22 @@ class Telluric(Spect):
             of telluric absorption fit
         apply_model: bool
             apply a correction from the PCA model rather than the data?
+        interactive: bool
+            run primitive interactively using GUI?
+        shift_tolerance: float/None
+            minimum allowed tolerance when calculating pixel shift between
+            telluric and science spectra. If None, then no shift is
+            calculated. If a shift is less than this value, then it is not
+            applied.
+        apply_shift: bool
+            apply the pixel shift permanently to the wavelength solution of
+            the corrected science spectrum?
+        pixel_shift: float/None
+            apply a shift of this value, or (if None), calculate the pixel
+            shift between the telluric and science spectra
+        delta_airmass: float/None
+            if not None, override the header airmass of the telluric by adding
+            this value to the airmass of the science spectrum
         do_cal: str ["procmode" | "force" | "skip"]
             Perform this calibration? ("skip" skips, the others will attempt
             but be OK if no suitable calibration is found)
@@ -302,7 +418,6 @@ class Telluric(Spect):
         manual_shift = params["pixel_shift"]
         user_airmass = params["delta_airmass"]
         do_cal = params["do_cal"]
-        sampling = 10
 
         if do_cal == 'skip':
             log.warning("Telluric correction has been turned off.")
@@ -324,8 +439,8 @@ class Telluric(Spect):
 
             if telluric is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed telluric listed for "
-                                  f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed telluric "
+                                                   f"listed for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no processed telluric was specified")
@@ -335,26 +450,63 @@ class Telluric(Spect):
             log.stdinfo(f"{ad.filename}: using the processed telluric {telluric.filename}"
                         f"{origin_str}")
 
+            # In case there are multiple apertures in the telluric
+            apertures = set(ad.hdr.get('APERTURE')) - {None}
+            aperture_to_use = min(apertures) if apertures else None
+
             # Check that all the necessary extensions exist, or bail
             try:
                 tellfit = telluric.TELLFIT
             except AttributeError:
-                if apply_model:
-                    log.warning(f"{ad.filename}: no TELLFIT table on processed telluric"
-                                f" {telluric.filename} so cannot apply correction.")
-                    continue
+                has_model = False
+                # if apply_model:
+                #     log.warning(f"{ad.filename}: no TELLFIT table on processed telluric"
+                #                 f" {telluric.filename} so cannot apply correction.")
+                #     continue
                 header = {}  # can still progress
             else:
+                has_model = True
                 header = tellfit.meta['header']
                 pca_name = header['pca_name']
                 pca_coeffs = tellfit['PCA coefficients'].data
-            if not apply_model:
-                if not all(hasattr(ext_telluric, "TELLABS") for ext_telluric in telluric
-                           if len(ext_telluric.shape) == 1):
-                    log.warning(f"{ad.filename}: one or more 1D extensions on"
-                                f"standard {telluric.filename} are missing a "
-                                "TELLABS spectrum. Continuing.")
+
+            has_data = True
+            tellabs_dict = {}
+            for ext_telluric in telluric:
+                if (ext_telluric.hdr.get('APERTURE') == aperture_to_use and
+                        len(ext_telluric.shape) == 1):
+                    try:
+                        tellabs = ext_telluric.TELLABS
+                    except AttributeError:
+                        tellabs_dict = {}  # makes it easier to find errors
+                        has_data = False
+                        break
+                    else:
+                        # Save the telluric spectrum as a spline so that it
+                        # can be interpolated onto any wavelength solution
+                        # order=3 seems to cause some ringing, and order=1 is
+                        # what the TelluricCorrector uses anyway
+                        tell_waves = ext_telluric.wcs(np.arange(
+                            ext_telluric.data.size))
+                        tellabs_dict[ext_telluric.hdr.get('SPECORDR')] = \
+                            make_interp_spline(tell_waves[~np.isnan(tellabs)],
+                                               tellabs[~np.isnan(tellabs)], k=1)
+
+            # TODO: If we're interactive we can override apply_model if necessary
+            if not interactive:
+                if apply_model and not has_model:
+                    log.warning(f"{ad.filename} has no TELLFIT model but "
+                                "apply_model=True. Continuing.")
                     continue
+                elif not apply_model and not has_data:
+                    log.warning(f"{ad.filename}: one or more 1D extensions on"
+                                f" standard {telluric.filename} are missing a"
+                                " TELLABS spectrum. Continuing.")
+                    continue
+            elif not (has_data and has_model):
+                log.warning(f"{ad.filename} does not have the necessary "
+                            "telluric information to be used. Continuing.")
+                continue
 
             # We're hot to go! (as Chappell Roan would say)
             # First is to get a cross-correlation estimate, unless one has
@@ -372,7 +524,8 @@ class Telluric(Spect):
             pixel_shifts = []
             tell_int_splines = []
             tellabs_data = []
-            for ext, ext_telluric in zip(ad, telluric):
+
+            for ext in ad:
                 if len(ext.shape) > 1:
                     continue
 
@@ -403,13 +556,12 @@ class Telluric(Spect):
                     spline = make_interp_spline(wconv, tconv, axis=-1, k=3)
                     spline.extrapolate = False
                     tell_int_splines.append(spline.antiderivative())
-                    print("TELL INT SPLINE", wconv.min(), wconv.max())
 
                 if pixel_shift is None:
                     if apply_model:
                         trans = convolution.resample(tspek.waves, wconv, tconv)
                     else:
-                        trans = ext_telluric.TELLABS
+                        trans = tellabs_dict[ext.hdr.get('SPECORDR')](tspek.waves)
 
                     # Old cross-correlation method
                     #pixel_shift = peak_finding.cross_correlate_subpixels(
@@ -417,29 +569,37 @@ class Telluric(Spect):
                     #pixel_shift = 0.01 * np.round(pixel_shift * 100)
 
                     pixels = np.arange(ext.shape[0])
-                    dx_all = np.arange(-10, 10.001, 0.05)
-                    fft_all = np.zeros_like(dx_all)
+                    # We want to avoid integer shifts since they produce
+                    # artifacts because there's no interpolation and smoothing
+                    dx_all = np.arange(-5.1667, 5.1667, 0.33333)
+                    fft_all = np.empty_like(dx_all)
                     for i, dx in enumerate(dx_all):
                         shift_trans = np.interp(pixels + dx, pixels, trans,
                                                 left=np.nan, right=np.nan)
-                        fft_all[i] = abs(np.fft.fft(at.divide0(ext.data,
-                                                               shift_trans))[0])
+                        # Avoid edge effects by clipping pixels
+                        fft_all[i] = abs(np.fft.fft(at.divide0(ext.data[10:-10],
+                                                               shift_trans[10:-10]))[0])
+
                     try:
-                        best = peak_finding.pinpoint_peaks(-fft_all, [fft_all.argmin()])[0]
+                        best = peak_finding.pinpoint_peaks(
+                            -fft_all, [fft_all.argmin()], halfwidth=3)[0]
                     except IndexError:
                         log.warning("Cannot determine cross-correlation"
                                     f"peak for {ext.id}")
                         pixel_shift = None  # needs to exist for later
                     else:
-                        pixel_shift = 0.01 * np.round(np.interp(best, np.arange(fft_all.size), dx_all))
+                        pixel_shift = np.round(np.interp(
+                            best[0], np.arange(fft_all.size), dx_all), decimals=2)
                         log.stdinfo(f"Shift for extension {ext.id} is "
                                     f"{pixel_shift:.2f} pixels")
                         pixel_shifts.append(pixel_shift)
 
-                tellabs_data.append(ext_telluric.TELLABS)
+                if has_data:
+                    # Interpolate telluric spectrum onto science wavelengths
+                    tellabs_data.append(tellabs_dict[ext.hdr.get('SPECORDR')](tspek.waves))
 
             if len(pixel_shifts) > 1:
-                pixel_shift = self._calaculate_mean_pixel_shift(pixel_shifts)
+                pixel_shift = self._calculate_mean_pixel_shift(pixel_shifts)
             # i.e., pixel shift has been calculated
             if (pixel_shift and manual_shift is None and
                     abs(pixel_shift) < shift_tolerance):
@@ -498,13 +658,11 @@ class Telluric(Spect):
                                      tellabs_data=tellabs_data,
                                      tell_int_splines=tell_int_splines)
 
-            print("REINIT PARAMS")
-            print(tcal.reinit_params)
-
             if interactive:
+                tab_labels = self._make_tab_labels(ad)
                 data_units = "adu" if ad.is_in_adu() else "electron"
                 visualizer = TelluricCorrectVisualizer(
-                    tcal, tab_name_fmt=lambda i: f"Order {i+1}",
+                    tcal, tab_name_fmt=lambda i: tab_labels[i],
                     xlabel="Wavelength (nm)", ylabel=f"Signal ({data_units})",
                     title="Telluric Correct",
                     primitive_name=self.myself(),
@@ -516,14 +674,15 @@ class Telluric(Spect):
             else:
                 tcal.perform_all_fits()
 
-            i_model = 0
+            if apply_shift:
+                log.stdinfo(f"Applying shift of {pixel_shift} pixels "
+                            f"to {ad.filename}")
+            abs_spectra = tcal.absorption_spectra()
             for ext in ad:
                 if len(ext.shape) > 1:
                     continue
 
-                ext.divide(tcal.abs_final[i_model])
-                i_model += 1
-
+                ext.divide(next(abs_spectra))
                 if apply_shift:
                     ext.wcs.insert_transform(
                         ext.wcs.input_frame, models.Shift(pixel_shift),
@@ -547,7 +706,145 @@ class Telluric(Spect):
                          "shifts. Not shifting data.")
         return None
 
-    def _get_atran_linelist(self, wave_model=None, ext=None, config=None):
+    def _get_airglow_linelist(self, wave_model, ext, config):
+        """
+        Return a list of airglow spectral lines to be matched in the wavelength
+        calibration, and a reference plot of a convolved synthetic spectrum,
+        to aid the user in making the correct identifications (which is
+        an attribute of the LineList object).
+
+        The spectrum is constructed within a particular wavelength
+        range from a high-resolution list of line wavelengths and
+        brightnesses, by convolving it to a lower spectral resolution.
+
+        In the region beyond 2.3um the airglow lines
+        are virtually absent, however the atmosphere emission (T~280K) is getting
+        stronger, and so the telluric absorption becomes prominent. Therefore
+        in the region beyond 2.3um we use ATRAN spectrum to calculate linelist
+        and reference spectrum, and stitch it to the airglow spectrum.
+
+        The linelist can be generated on-the-fly by finding peaks in the
+        convolved spectrum, or read from disk if there exists a suitable
+        list for this instrumental setup.
+
+        Parameters
+        ----------
+        wave_model: ``astropy.modeling.models.Chebyshev1D``
+            the current wavelength model (pixel -> wavelength), with an
+            appropriate domain describing the illuminated region
+        ext: single-slice ``AstroData``
+            the extension for which a sky spectrum is being constructed
+        config: ``config.Config`` object
+            containing various parameters
+
+        Returns
+        -------
+        ``wavecal.Linelist``
+            list of lines to match, including data for a reference plot
+        """
+
+        log = self.log
+        airglow_path = list(airglow_synthetic_spectra.__path__).pop()
+        resolution = config.get("resolution") or self._get_resolution(ext)
+        num_lines = config.get("num_lines")
+        in_vac = config.get("in_vacuo", True)
+        medium = 'vacuum' if in_vac else 'air'
+
+        # The wave_model's domain describes the illuminated region
+        wave_model_bounds = self._wavelength_model_bounds(wave_model, ext)
+        try:
+            domain = wave_model.domain
+        except AttributeError:
+            for m in wave_model:
+                if hasattr(m, 'domain'):
+                    domain = m.domain
+                    break
+            else:
+                raise ValueError("No domain in wavelength model")
+        start_wvl, end_wvl = (np.sort(wave_model(domain)) +
+                              np.asarray(wave_model_bounds['c0']) -
+                              np.mean(wave_model_bounds['c0']))
+
+        dw = 0.02 * start_wvl / resolution
+        refplot_waves = np.arange(start_wvl, end_wvl, dw)
+        refplot_data = np.zeros_like(refplot_waves)
+        airglow_linelist = wavecal.LineList(os.path.join(airglow_path,
+                                                    "ohlist_v2.0_rev_o2_added.dat"))
+        wlines = airglow_linelist.vacuum_wavelengths(units="nm")
+        indices = np.logical_and(wlines > start_wvl, wlines < end_wvl)
+        for wline, fline in zip(wlines[indices], airglow_linelist.weights[indices]):
+            sigma = 0.42 * wline / resolution
+            refplot_data += fline * np.exp(-0.5 * ((refplot_waves - wline) / sigma) ** 2)
+
+        if end_wvl < wlines[0]:
+            order_str = ""
+            if  'SPECORDR' in ext.hdr:
+                order = ext.hdr.get('SPECORDR')
+                order_str = f" for order {order}"
+            self.log.warning(f"Synthetic airglow spectrum does not cover wavelengths below {int(wlines[0])}nm; no linelist will be generated{order_str}.")
+
+
+        # Around 2300 nm is roughly where the OH lines die off and the telluric spectrum
+        #  starts dominating
+        if end_wvl > 2314:
+            refplot_data = refplot_data[refplot_waves < 2314]
+            refplot_waves = refplot_waves[refplot_waves < 2314]
+
+            atran_data = self._get_atran_linelist(wave_model=wave_model, ext=ext,
+                                                  config=config, for_airglow=True)
+            # Scale atran data to more or less match the observed spectrum and 
+            # airglow spectrum intensity
+            refplot_data = np.concatenate((refplot_data, 3000 * atran_data[1, :]))
+            refplot_waves = np.concatenate((refplot_waves, atran_data[0, :]))
+
+        refplot_spec = np.asarray([refplot_waves, refplot_data], dtype=np.float32)
+
+        airglow_linelist = (f'airglow_linelist_{start_wvl:.0f}-{end_wvl:.0f}'
+                    f'_r{resolution:.0f}_nl{num_lines:.0f}.dat')
+        try:
+            linelist = LineList(os.path.join(airglow_path, airglow_linelist))
+            log.stdinfo(f"Using generic linelist {airglow_linelist}")
+        except FileNotFoundError:
+            try:  # prevent using previously-created linelist (for now)
+                linelist = LineList(airglow_linelist)
+                log.stdinfo("Using previously-created linelist in current "
+                            f"directory {airglow_linelist}")
+            except FileNotFoundError:
+                # We will need to create one on the fly
+                linelist = None
+
+        if linelist is None:
+            # Invert spectrum because we want the wavelengths of troughs
+            linelist_data = make_linelist(refplot_spec,
+                                          resolution=resolution,
+                                          num_lines=num_lines)
+            header = (f"Sky airglow emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm\n"
+                      f"Generated by convolving the high-resolution OH linelist computed by\n"
+                      f"Rousselot et al., 2000, A & A, 354, 1134, "
+                      f"with O2 and other lines added from Oliva et al. (2015, A&A 581, A47) table 2,\n"
+                      f"and O2 lines added from Hanuschik (2003, A&A 407, 1157) table 9,\n"
+                      f" (with wavelengths transformed from air_to_vacuum using Morton (2000, ApJS, 130, 403)),\n"
+                      f" to the approximate resolution of the observation R={int(resolution)}.\n"
+                      f"The lines in the region beyond 2300nm were calculated using ATRAN synthetic spectrum \n"
+                      f"(Lord, S. D., 1992, NASA Technical Memorandum 103957)\n"
+                      "units nanometer\n"
+                      "wavelengths in VACUUM")
+            np.savetxt(airglow_linelist, linelist_data[:, 0], fmt=['%.3f'], header=header)
+            linelist = LineList(airglow_linelist)
+
+        refplot_y_axis_label = "Intensity"
+        refplot_name = ('Synthetic spectrum of night-sky emission '
+                        f'(R={int(resolution)})')
+
+        refplot_data = {"refplot_spec": refplot_spec.T,
+                "refplot_name": refplot_name,
+                "refplot_y_axis_label": refplot_y_axis_label}
+
+        linelist.reference_spectrum = refplot_data
+        return linelist
+
+
+    def _get_atran_linelist(self, wave_model=None, ext=None, config=None, for_airglow=False):
         """
         Return a list of spectral lines to be matched in the wavelength
         calibration, and a reference plot of a convolved synthetic spectrum,
@@ -578,6 +875,9 @@ class Telluric(Spect):
         site = {'Gemini-North': 'mk', 'Gemini-South': 'cp'}[observatory]
         altitude = {'Gemini-North': 13825, 'Gemini-South': 8980}[observatory]
         wv_band = config.get("wv_band", "header")
+        num_lines = config.get("num_lines")
+        in_vac = config.get("in_vacuo", True)
+        medium = 'vacuum' if in_vac else 'air'
         if wv_band == "header":
             wv_band = ext.raw_wv()
             if wv_band is None:
@@ -591,7 +891,7 @@ class Telluric(Spect):
         else:
             wv_content = qa_constraints.wvBands[observatory].get(str(wv_band))
 
-        resolution = self._get_resolution(ext)
+        resolution = config.get("resolution") or self._get_resolution(ext)
         # The wave_model's domain describes the illuminated region
         wave_model_bounds = self._wavelength_model_bounds(wave_model, ext)
         try:
@@ -606,17 +906,21 @@ class Telluric(Spect):
         start_wvl, end_wvl = (np.sort(wave_model(domain)) +
                               np.asarray(wave_model_bounds['c0']) -
                               np.mean(wave_model_bounds['c0']))
-
+        
+        # We are generating a small bit between ~2300 and 2500nm to add to the
+        # airglow reference spectrum
+        if for_airglow:
+            start_wvl = 2314
+        
         # A linelist may be in the Gemini lookup directory, or one may
         # have been created in the cwd
         atran_linelist = (f'atran_linelist_{site}_{start_wvl:.0f}-{end_wvl:.0f}'
-                          f'_wv{wv_content:.0f}_r{resolution:.0f}.dat')
+                          f'_wv{wv_content:.0f}_r{resolution:.0f}_nl{num_lines:.0f}.dat')
         try:
             linelist = LineList(os.path.join(LOOKUPS_PATH, atran_linelist))
             log.stdinfo(f"Using generic linelist {atran_linelist}")
         except FileNotFoundError:
             try:  # prevent using previously-created linelist (for now)
-                linelist = LineList("X")
                 linelist = LineList(atran_linelist)
                 log.stdinfo("Using previously-created linelist in current "
                             f"directory {atran_linelist}")
@@ -631,59 +935,85 @@ class Telluric(Spect):
         atran_models = Table.read(atran_file)
         waves = atran_models['wavelength']
         data = atran_models[f"{site}_wv{wv_content * 1000:.0f}_za48"]
+        sampling = abs(np.diff(waves).mean())
+
+        # We may need to extend the ATRAN spectrum blueward if it doesn't go
+        # far enough
+        npix = int((np.min(waves) - start_wvl) / sampling)
+        if npix > 0:
+            data = np.r_[np.ones(npix), data]
+            waves = np.r_[np.min(waves) - np.arange(npix) * sampling, waves]
 
         # Convolve the appropriate wavelength region with a Gaussian of
         # constant FWHM (only works if wavelength scale is linear)
         wave_range = np.logical_and(waves >= start_wvl, waves <= end_wvl)
-        sampling = abs(np.diff(waves).mean())
         sigma_pix = 0.42 * 0.5 * (start_wvl + end_wvl) / resolution / sampling
         atran_spec = convolve(data[wave_range], Gaussian1DKernel(sigma_pix),
                               boundary='extend')
+        if end_wvl < waves[0]:
+            order_str = ""
+            if  'SPECORDR' in ext.hdr:
+                order = ext.hdr.get('SPECORDR')
+                order_str = f" for order {order}"
+            self.log.warning(f"ATRAN spectrum does not cover wavelengths below {int(waves[0])}nm; no linelist will be generated{order_str}.")
+
         refplot_spec = np.asarray([waves[wave_range], atran_spec],
                                   dtype=np.float32)
 
+        # Resample to match the airglow spectra
+        dw = 0.02 * start_wvl / resolution
+        resampling = max(int(dw / sampling), 1)
+        refplot_spec = refplot_spec[:, ::resampling]
+        
         # Resample the reference spectrum so it has about twice as many pixels
         # as the data, to avoid too much plotting overhead
-        resampling = max(int(0.5 * atran_spec.size / np.diff(domain)[0]), 1)
-        refplot_spec = refplot_spec[:, ::resampling]
+        # resampling = max(int(0.5 * atran_spec.size / np.diff(domain)[0]), 1)
+        # refplot_spec = refplot_spec[:, ::resampling]
+
+        refplot_spec[1] = 1 - refplot_spec[1]
+        if for_airglow:
+            return refplot_spec
 
         if linelist is None:
             # Invert spectrum because we want the wavelengths of troughs
-            refplot_spec[1] = 1 - refplot_spec[1]
             linelist_data = make_linelist(refplot_spec,
                                           resolution=resolution,
-                                          num_lines=config.get('num_atran_lines', 50))
-            # In L and M bands, the sky spectrum has emission where the ATRAN
-            # spectrum has absorption, so keep the inverted version for display.
-            # But if we're actually matching absorption features, then we want
-            # to display the original version, so revert it.
-            if absorption:
-                refplot_spec[1] = 1 - refplot_spec[1]
+                                          num_lines=config.get('num_lines', 50))
+            if linelist_data is None:
+                linelist = LineList()
+            else:
+                header = (f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm\n"
+                          f"Generated at R={int(resolution)} from ATRAN synthetic spectrum "
+                          "(Lord, S. D., 1992, NASA Technical Memorandum 103957)\n"
+                          "Model parameters:\n"
+                          f"Obs altitude: {altitude}ft, Obs latitude: 39 degrees,\n"
+                          f"Water vapor overburden: {wv_content * 1000:.0f} microns,"
+                          "Number of atm. layers: 2,\n"
+                          "Zenith angle: 48 deg, Wavelength range: 1-6 microns, Smoothing R:0\n"
+                          "units nanometer\n"
+                          "wavelengths IN VACUUM")
+                #np.savetxt(atran_linelist, linelist_data, fmt=['%.3f', '%.3f'], header=header)
+                np.savetxt(atran_linelist, linelist_data[:, 0], fmt=['%.3f'], header=header)
+                linelist = LineList(atran_linelist)
 
-            header = (f"Sky emission line list: {start_wvl:.0f}-{end_wvl:.0f}nm\n"
-                      f"Generated at R={int(resolution)} from ATRAN synthetic spectrum "
-                      "(Lord, S. D., 1992, NASA Technical Memorandum 103957)\n"
-                      "Model parameters:\n"
-                      f"Obs altitude: {altitude}ft, Obs latitude: 39 degrees,\n"
-                      f"Water vapor overburden: {wv_content * 1000:.0f} microns,"
-                      "Number of atm. layers: 2,\n"
-                      "Zenith angle: 48 deg, Wavelength range: 1-6 microns, Smoothing R:0\n"
-                      "units nanometer\n"
-                      "wavelengths IN VACUUM")
-            #np.savetxt(atran_linelist, linelist_data, fmt=['%.3f', '%.3f'], header=header)
-            np.savetxt(atran_linelist, linelist_data[:, 0], fmt=['%.3f'], header=header)
-            linelist = LineList(atran_linelist)
+        # In L and M bands, the sky spectrum has emission where the ATRAN
+        # spectrum has absorption, so keep the inverted version for display.
+        # But if we're actually matching absorption features, then we want
+        # to display the original version, so revert it.
+        if absorption:
+            refplot_spec[1] = 1 - refplot_spec[1]
 
-        refplot_name = (f'ATRAN spectrum (Alt={altitude}ft, WV={wv_content}mm,'
-                        f'AM=1.5, R={resolution:.0f})')
-        refplot_y_axis_label = ("Atmospheric transmission" if absorption else
-                                "Inverse atm. transmission")
+        # Don't provide a reference spectrum if the linelist is empty
+        if len(linelist) > 0:
+            refplot_name = (f'ATRAN spectrum (Alt={altitude}ft, WV={wv_content}mm,'
+                            f'AM=1.5, R={resolution:.0f})')
+            refplot_y_axis_label = ("Atmospheric transmission" if absorption else
+                                    "Inverse atm. transmission")
+            refplot_data = {"refplot_spec": refplot_spec.T,
+                    "refplot_name": refplot_name,
+                    "refplot_y_axis_label": refplot_y_axis_label}
+            linelist.reference_spectrum = refplot_data
 
-        refplot_data = {"refplot_spec": refplot_spec.T,
-                "refplot_name": refplot_name,
-                "refplot_y_axis_label": refplot_y_axis_label}
-
-        linelist.reference_spectrum = refplot_data
         return linelist
 
 
@@ -751,22 +1081,31 @@ def make_linelist(spectrum, resolution=1000, num_bins=10, num_lines=50):
 
     # For the final line list select n // 10 peaks with largest weights
     # within each of 10 wavelength bins.
-    bin_edges = np.linspace(0, flux.size + 1, num_bins + 1)
+
+    # atran and airglow spectra might have slightly different samplings,
+    # so when combined in case of airglow > 2300nm, we need to use
+    # wavelengths rather than pixel indices for bin edges
+    bin_edges_wvl = np.linspace(wavelength[0], wavelength[-1], num_bins + 1)
+    bin_edges = np.array([np.abs(wavelength - wvl).argmin() for wvl in bin_edges_wvl])
+
     best_pixel_peaks = trim_peaks(pixel_peaks, weights, bin_edges,
                                   nlargest=(num_lines + num_bins - 1) // num_bins,
                                   sort=True)
 
+    if best_pixel_peaks.size == 0:
+        return None
+
     # Pinpoint peak positions, and cull any peaks that couldn't be fit
     # (keep_bad will return location=NaN)
-    atran_linelist = np.vstack(peak_finding.pinpoint_peaks(
+    linelist = np.vstack(peak_finding.pinpoint_peaks(
         flux, peaks=best_pixel_peaks[:, 0], halfwidth=2, keep_bad=True)).T
-    atran_linelist = atran_linelist[~np.isnan(atran_linelist).any(axis=1)]
+    linelist = linelist[~np.isnan(linelist).any(axis=1)]
 
     # Convert back to wavelengths
-    atran_linelist[:, 0] = np.interp(atran_linelist[:, 0],
+    linelist[:, 0] = np.interp(linelist[:, 0],
                                   np.arange(wavelength.size),
                                   wavelength)
-    return atran_linelist
+    return linelist
 
 
 def find_outliers(data, sigma=3, cenfunc=np.median):
@@ -809,6 +1148,10 @@ class LineSpreadFunction(ABC):
         assert len(ext.shape) == 1, "Input is not 1-dimensional"
         npix = ext.shape[0]
         self.all_waves = ext.wcs(np.arange(npix))
+        # Handle the case where we have a 1D slice of a higher-dimension
+        # image, which will return additional axes
+        if isinstance(self.all_waves, tuple):
+            self.all_waves = self.all_waves[0]
         self.dispersion = abs(np.median(np.diff(self.all_waves)))
         # For lack of any better estimate, but these should get overridden
         # in the relevant subclass
@@ -825,7 +1168,7 @@ class LineSpreadFunction(ABC):
 
         Parameters
         ----------
-        waves: array
+        waves: sequence
             provides min and max wavelengths for output convolved spectra
         w: array
             wavelengths of thing to be convolved
@@ -841,7 +1184,7 @@ class LineSpreadFunction(ABC):
         """
         convolution_list = self.convolutions(**kwargs)
         dw = sum(x[1] for x in convolution_list)
-        w1, w2 = waves.min() - 1.05 * dw, waves.max() + 1.05 * dw
+        w1, w2 = np.min(waves) - 1.05 * dw, np.max(waves) + 1.05 * dw
         windices = np.logical_and(w > w1, w < w2)
         spectra = data[..., windices]
         for conv_func, dw in convolution_list:

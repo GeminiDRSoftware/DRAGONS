@@ -1,4 +1,4 @@
-# Copyright(c) 2017-2023 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2017-2026 Association of Universities for Research in Astronomy, Inc.
 
 import numpy as np
 from datetime import datetime
@@ -594,6 +594,9 @@ def match_sources(incoords, refcoords, radius=2.0):
     int array of length N:
         index of matched sources in the reference list (-1 means no match)
     """
+    if np.asarray(incoords).size == 0:
+        return np.array([], dtype=int)
+
     try:
         iter(incoords[0])
     except TypeError:

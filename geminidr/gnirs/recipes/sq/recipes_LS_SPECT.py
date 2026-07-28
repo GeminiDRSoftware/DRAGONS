@@ -4,22 +4,22 @@ Default is "reduceScience".
 """
 recipe_tags = {'GNIRS', 'SPECT', 'LS'}
 
+
 def reduceScience(p):
     """
-    To be updated as development continues: This recipe processes GNIRS longslit
-    spectroscopic data, currently up to basic spectral extraction without telluric correction.
+    Reduce GNIRS longslit spectroscopic data, including stacking, extraction,
+    telluric correction, and flux calibration.
 
     Parameters
     ----------
     p : :class:`geminidr.gnirs.primitives_gnirs_longslit.GNIRSLongslit`
-
     """
     # todo: [Chris] I suspect scaleCountsToReference() could go back in but presumably hasn't been looked at whether it does something weird. skyCorrectFromSlit() should probably work OK, but it might also be better if it's before adjustWCSToReference(), so any residual sky is removed before that resampling takes place.
     p.prepare()
     p.addDQ()
-    # p.nonlinearityCorrect() # non-linearity correction tbd
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     # p.darkCorrect() # no dark correction for GNIRS LS data
     p.flatCorrect()
     p.attachWavelengthSolution()
@@ -31,7 +31,6 @@ def reduceScience(p):
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame(conserve=True)
-    # p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()
     p.skyCorrectFromSlit()  # This needs testing.
@@ -45,18 +44,19 @@ def reduceScience(p):
 
 def reduceTelluric(p):
     """
-    todo: add docstring
+    Reduce GNIRS longslit observations of a telluric standard, including
+    fitting the telluric absorption features to provide an absorption profile
+    and a sensitivity function.
 
     Parameters
     ----------
     p : :class:`geminidr.gnirs.primitives_gnirs_longslit.GNIRSLongslit`
-
     """
     p.prepare()
     p.addDQ()
-    # p.nonlinearityCorrect() # non-linearity correction tbd
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.flatCorrect()
     p.attachWavelengthSolution()
     p.adjustWavelengthZeroPoint()
@@ -90,6 +90,7 @@ def  makeWavecalFromSkyEmission(p):
     p.addDQ()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.flatCorrect()
     p.stackFrames()
     p.determineWavelengthSolution()
@@ -110,9 +111,9 @@ def  makeWavecalFromSkyAbsorption(p):
     """
     p.prepare()
     p.addDQ()
-    # p.nonlinearityCorrect() # non-linearity correction tbd
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.flatCorrect()
     p.attachWavelengthSolution()
     p.copyInputs(instream="main", outstream="with_distortion_model")
@@ -123,7 +124,6 @@ def  makeWavecalFromSkyAbsorption(p):
     p.distortionCorrect()
     p.adjustWCSToReference()
     p.resampleToCommonFrame(output_wave_scale='reference', trim_spectral=True)
-    #p.scaleCountsToReference()
     p.stackFrames()
     p.findApertures()
     p.determineWavelengthSolution(absorption=True)

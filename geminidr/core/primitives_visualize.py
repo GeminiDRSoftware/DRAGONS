@@ -663,7 +663,7 @@ class Visualize(PrimitivesBASE):
                     "center": center,
                     "lower": lower,
                     "upper": upper,
-                    "dispersion": w_dispersion,
+                    "dispersion": float(w_dispersion),
                     "wavelength_units": w_units,
                     "id": np.round(center + offset),
                     "intensity": _intensity,

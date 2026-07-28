@@ -31,7 +31,8 @@ def test_resample_and_linearize(input_ad_list, caplog):
     assert {len(ad) for ad in ads} == {1}
     assert {ad[0].shape[0] for ad in ads} == {3868}
     assert {'ALIGN' in ad[0].phu for ad in ads}
-    _check_params(caplog.records, 'w1=508.343 w2=1088.393 dw=0.150 npix=3868')
+    wpars = 'w1=508.343 w2=1088.393 dw=0.150 npix=3868'
+    assert any(wpars in record.message for record in caplog.records)
 
 
 @pytest.mark.gmosls
@@ -39,7 +40,8 @@ def test_resample_and_linearize(input_ad_list, caplog):
 def test_resample_and_linearize_with_w1_w2(input_ad_list, caplog):
     p = GMOSLongslit(input_ad_list)
     p.resampleToCommonFrame(dw=0.15, w1=700, w2=850)
-    _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
+    wpars = 'w1=700.000 w2=850.000 dw=0.150 npix=1001'
+    assert any(wpars in record.message for record in caplog.records)
 
 
 @pytest.mark.gmosls
@@ -47,7 +49,8 @@ def test_resample_and_linearize_with_w1_w2(input_ad_list, caplog):
 def test_resample_and_linearize_with_npix(input_ad_list, caplog):
     p = GMOSLongslit(input_ad_list)
     p.resampleToCommonFrame(dw=0.15, w1=700, npix=1001)
-    _check_params(caplog.records, 'w1=700.000 w2=850.000 dw=0.150 npix=1001')
+    wpars = 'w1=700.000 w2=850.000 dw=0.150 npix=1001'
+    assert any(wpars in record.message for record in caplog.records)
 
 
 @pytest.mark.gmosls
@@ -67,7 +70,8 @@ def test_resample_linearize_trim_and_stack(input_ad_list, caplog):
 
     assert len(ads) == len(test_datasets)
     assert len({ad[0].shape[0] for ad in ads}) == 1
-    _check_params(caplog.records, 'w1=614.812 w2=978.862 dw=0.150 npix=2428')
+    wpars = 'w1=614.812 w2=978.862 dw=0.150 npix=2428'
+    assert any(wpars in record.message for record in caplog.records)
 
     adout = p.stackFrames()
     assert len(adout) == 1
@@ -80,22 +84,26 @@ def test_resample_linearize_trim_and_stack(input_ad_list, caplog):
 def test_resample_only(input_ad_list, caplog):
     p = GMOSLongslit(input_ad_list)
     p.resampleToCommonFrame(output_wave_scale="reference")
-    _check_params(caplog.records, 'w1=614.870 w2=978.802 dw=0.151 npix=2407')
+    wpars = 'w1=614.870 w2=978.802 dw=0.151 npix=2407'
+    assert any(wpars in record.message for record in caplog.records)
 
     caplog.clear()
     adout = p.resampleToCommonFrame(dw=0.15)
     assert 'ALIGN' in adout[0].phu
-    _check_params(caplog.records, 'w1=614.870 w2=978.920 dw=0.150 npix=2428')
+    wpars = 'w1=614.870 w2=978.920 dw=0.150 npix=2428'
+    assert any(wpars in record.message for record in caplog.records)
 
     # # This will raise an error as explained in parameters_spect.py
     # with pytest.raises(ValueError):
     #     p.resampleToCommonFrame(output_wave_scale="reference")
-    # # _check_params(caplog.records, 'w1=508.489 w2=1088.232 dw=0.151 npix=3840')
+    # # wpars = 'w1=508.489 w2=1088.232 dw=0.151 npix=3840'
+    # # assert any(wpars in record.message for record in caplog.records)
     # #
     # # caplog.clear()
     # # adout = p.resampleToCommonFrame(dw=0.15)
     # # assert 'ALIGN' in adout[0].phu
-    # # _check_params(caplog.records, 'w1=508.489 w2=1088.239 dw=0.150 npix=3866')
+    # # wpars = 'w1=508.489 w2=1088.239 dw=0.150 npix=3866'
+    # # assert any(wpars in record.message for record in caplog.records)
 
 
 @pytest.mark.gmosls
@@ -103,21 +111,17 @@ def test_resample_only(input_ad_list, caplog):
 def test_resample_only_and_trim(input_ad_list, caplog):
     p = GMOSLongslit(input_ad_list)
     p.resampleToCommonFrame(trim_spectral=True, output_wave_scale="reference")
-    _check_params(caplog.records, 'w1=614.870 w2=978.802 dw=0.151 npix=2407')
+    wpars = 'w1=614.870 w2=978.802 dw=0.151 npix=2407'
+    assert any(wpars in record.message for record in caplog.records)
 
     caplog.clear()
     adout = p.resampleToCommonFrame(dw=0.15)
     assert 'ALIGN' in adout[0].phu
-    _check_params(caplog.records, 'w1=614.870 w2=978.920 dw=0.150 npix=2428')
+    wpars = 'w1=614.870 w2=978.920 dw=0.150 npix=2428'
+    assert any(wpars in record.message for record in caplog.records)
 
 
 # Local Fixtures and Helper Functions -----------------------------------------
-def _check_params(records, expected):
-    for record in records:
-        if record.message.startswith('Resampling and linearizing'):
-            assert expected in record.message
-
-
 @pytest.fixture(scope='function')
 def input_ad_list(path_to_inputs):
     """

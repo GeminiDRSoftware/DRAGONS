@@ -21,8 +21,8 @@ Tutorial Series - GHOST Data Reduction with DRAGONS
    datasets
    cal_service
    ex1_ghost_stdonetarget
+   issues_and_limitations
 ..   tips_and_tricks
-..   issues_and_limitations
 
 
 Indices and tables

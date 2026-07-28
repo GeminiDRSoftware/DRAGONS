@@ -26,6 +26,14 @@ def gaussian_constant_fwhm(w0, dw, fwhm):
     return z / z.sum()
 
 
+def truncated_gaussian_constant_fwhm(w0, dw, fwhm, trunc):
+    """A truncated Gaussian with specified FWHM"""
+    sigma = 0.42466 * fwhm
+    z = np.exp(-0.5 * (dw / sigma) ** 2)
+    z[abs(dw) > trunc] = 0
+    return z / z.sum()
+
+
 def boxcar(w0, dw, width):
     """A boxcar of full-width width nm"""
     z = abs(dw) <= 0.5 * width
@@ -119,6 +127,8 @@ def resample(wout, w, data):
     rev_out = any(diffs < 0)
     if rev_out and not all(diffs < 0):
         raise ValueError("Output wavelength array is not monotonic")
+    if np.min(wout) < np.min(w) or np.max(wout) > np.max(w):
+        raise ValueError("Output wavelength array extends beyond input array")
 
     _slice = slice(None, None, -1) if rev_in else slice(None)
     spline = make_interp_spline(w[_slice], data[_slice], axis=-1, k=3)

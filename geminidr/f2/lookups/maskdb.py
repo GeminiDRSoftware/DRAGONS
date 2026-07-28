@@ -4,5 +4,5 @@
 # and mask definition file (MDF) lookup tables for F2
 
 illumMask_dict = {
-    'F2_IMAGE_11': 'f2_image_illumination.fits',
+    'F2_IMAGE_11': 'f2_image_illumination.fits.bz2',
 }

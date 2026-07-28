@@ -43,7 +43,7 @@ def test_showrecipes_on_gnirs():
     for i in range(len(expected_answers)):
         assert expected_answers[i] in answer
 
-
+@pytest.mark.gnirsls
 @pytest.mark.dragons_remote_data
 def test_showrecipes_on_gnirs_ls():
     file_location = download_from_archive(GNIRS_LS)
@@ -64,6 +64,7 @@ def test_showrecipes_on_gnirs_ls():
         assert gnirs_ls_answer[i] in answer
 
 
+@pytest.mark.gnirsxd
 @pytest.mark.dragons_remote_data
 def test_showrecipes_on_gnirs_xd():
     file_location = download_from_archive(GNIRS_XD)
@@ -74,7 +75,6 @@ def test_showrecipes_on_gnirs_xd():
         # "!!! No recipes were found for this file !!!"
         "Recipes available for the input file: ",
         "   geminidr.gnirs.recipes.sq.recipes_XD_SPECT::reduceScience",
-        "   geminidr.gnirs.recipes.sq.recipes_XD_SPECT::reduceScienceWithAdjustmentFromSkylines",
     ]
 
     answer = showrecipes(file_location)
@@ -251,6 +251,7 @@ def test_showrecipes_on_niri():
         assert niri_answer[i] in answer
 
 
+@pytest.mark.nirils
 @pytest.mark.dragons_remote_data
 def test_showrecipes_on_niri_ls():
     file_location = download_from_archive(NIRI_LS)
@@ -290,6 +291,7 @@ def test_showrecipes_on_f2():
         assert f2_answer[i] in answer
 
 
+@pytest.mark.f2ls
 @pytest.mark.dragons_remote_data
 def test_showrecipes_on_f2_ls():
     file_location = download_from_archive(F2_LS)

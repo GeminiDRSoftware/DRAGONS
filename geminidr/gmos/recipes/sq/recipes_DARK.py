@@ -6,12 +6,11 @@ recipe_tags = {'GMOS', 'CAL', 'DARK'}
 
 from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
 
-
 def makeProcessedDark(p):
     """
     This recipe performs the standardization and corrections needed to convert
     the raw input dark images into a single stacked dark image. This output
-    processed bias is stored on disk using storeProcessedDark and has a name
+    processed dark is stored on disk using storeProcessedDark and has a name
     equal to the name of the first input bias image with "_dark.fits" appended.
 
     Parameters
@@ -20,7 +19,7 @@ def makeProcessedDark(p):
         A primitive set matching the recipe_tags.
     """
 
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ(add_illum_mask=False)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
@@ -29,7 +28,6 @@ def makeProcessedDark(p):
     p.addVAR(poisson_noise=True)
     # Force "varclip" due to large number of CRs
     p.stackDarks(reject_method="varclip")
-    p.makeIRAFCompatible()
     p.storeProcessedDark()
     return
 

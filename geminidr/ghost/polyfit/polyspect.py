@@ -856,7 +856,7 @@ class Polyspect(object):
 
         .. math::
 
-           M = (R_\\textrm{mat} \cdot A_\\textrm{mat})^{-1}
+           M = (R_\\textrm{mat} \\cdot A_\\textrm{mat})^{-1}
 
         This is computationally complicated, but since the matrices are square
         and :math:`A_\\textrm{mat}` is diagonal, we can do this explicitly:

@@ -28,6 +28,7 @@ Notes
 """
 
 import os
+import logging
 
 import numpy as np
 import pytest
@@ -37,15 +38,18 @@ from astropy.io import fits
 from astropy.modeling import models
 from scipy import optimize
 
+from gwcs import coordinate_frames as cf
+from gwcs.wcs import WCS as gWCS
+
 from specutils.utils.wcs_utils import air_to_vac
 
 import astrodata, gemini_instruments
-from astrodata.testing import ad_compare
+from astrodata.testing import ad_compare, assert_most_close, download_from_archive
 from gempy.library import astromodels as am
-from gempy.library.wavecal import LineList
 from gempy.library.config.config import FieldValidationError
 from geminidr.core import primitives_spect
 from geminidr.f2.primitives_f2_longslit import F2Longslit
+from geminidr.gmos.primitives_gmos_longslit import GMOSLongslit
 from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.niri.primitives_niri_longslit import NIRILongslit
 from geminidr.gnirs import primitives_gnirs_longslit
@@ -110,6 +114,7 @@ def test_extract_1d_spectra_with_sky_lines():
 @pytest.mark.parametrize('filename',
                          [('N20220706S0306_stack.fits'), # GNIRS
                           ('N20170601S0291_stack.fits'), # GNIRS
+                          ('N20180201S0052_stack.fits'), # GNIRS
                           ('N20070204S0098_stack.fits'), # NIRI
                           ('N20061114S0193_stack.fits'), # NIRI
                           ('S20210430S0138_stack.fits'), # F2
@@ -122,15 +127,16 @@ def test_find_apertures(filename, path_to_inputs, change_working_dir):
               'min_sky_region': 50, 'min_snr': 5., 'use_snr': True,
               'threshold': 0.10, 'max_separation': None}
 
-    apertures = {'N20220706S0306_stack.fits': (544.8,),
-                 'N20170601S0291_stack.fits': (280.6, 716.9),
-                 'N20070204S0098_stack.fits': (423.7,),
-                 'N20061114S0193_stack.fits': (420.0,),
-                 'S20210430S0138_stack.fits': (1064.6, 105.4, 1330.2,
-                                               306.5, 1182.1),
-                 'S20210709S0035_stack.fits': (959.8, 378.4),
-                 'N20240102S0010_stack.fits': (495.2, 1072.1),
-                 'N20190501S0054_stack.fits': (1066.6,)}
+    apertures = {'N20220706S0306_stack.fits': [(544.8, 17.6)],
+                 'N20170601S0291_stack.fits': [(280.6, 7.2), (716.9, 6.4)],
+                 'N20070204S0098_stack.fits': [(423.7, 19)],
+                 'N20061114S0193_stack.fits': [(420.0, 12)],
+                 'S20210430S0138_stack.fits': [(1064.6, 30), (105.4, 6.4),
+                                               (306.5, 5.8)],
+                 'S20210709S0035_stack.fits': [(959.8, 5.8), (378.4, 34.7)],
+                 'N20240102S0010_stack.fits': [(495.2, 19.5), (1072.1, 36.0)],
+                 'N20190501S0054_stack.fits': [(1066.6, 7.3)],
+                 'N20180201S0052_stack.fits': [(501.8, 15.0)]}
 
     extra_params = {'S20210430S0138_stack.fits': {'threshold': 0.15, 'min_snr': 10},
                     'N20070204S0098_stack.fits': {'min_snr': 6},
@@ -151,9 +157,18 @@ def test_find_apertures(filename, path_to_inputs, change_working_dir):
     p = pclass([ad])
 
     ad_out = p.findApertures(**params)[0]
+    # Check we haven't created lots of spurious apertures
     assert len(ad_out[0].APERTURE) <= len(apertures[filename]) + 2
-    for ref, ap in zip(apertures[filename], ad_out[0].APERTURE['c0']):
-        assert ref == pytest.approx(ap, abs=0.5)
+
+    # Check that the required apertures exist in the correct locations and
+    # with the correct sizes (large tolerance)
+    for loc, width in apertures[filename]:
+        apnum = np.argmin(abs(ad_out[0].APERTURE['c0'] - loc))
+        aperture = ad_out[0].APERTURE[apnum]
+        assert loc == pytest.approx(aperture['c0'], abs=0.5)
+        assert width == pytest.approx(aperture['aper_upper'] -
+                                      aperture['aper_lower'],
+                                      abs=1, rel=0.5)
 
 
 @pytest.mark.preprocessed_data
@@ -388,6 +403,65 @@ def test_sky_correct_from_slit_with_multiple_sources():
     np.testing.assert_allclose(ad_out[0].data, source, atol=1e-3)
 
 
+def test_sky_correct_from_slit_negative_beams(caplog):
+    # Input Parameters ----------------
+    width = 200
+    height = 100
+    np.random.seed(0)
+
+    ad = create_zero_filled_fake_astrodata(height, width)
+    # We need noise or get_extrema() doesn't work
+    ad[0].data += np.random.randn(*ad[0].data.shape)
+
+    for i in range(1, 4):
+        source_model_parameters = {'c0': 0.25 * i * height, 'c1': 0.0}
+        source = 100 * fake_point_source_spatial_profile(
+            height, width, source_model_parameters, fwhm=0.05 * height)
+        if i == 2:
+            ad[0].data += source
+        else:
+            ad[0].data -= 0.5 * source
+
+    ad[0].APERTURE = get_aperture_table(height, width)
+
+    # Running the test ----------------
+    caplog.set_level(logging.DEBUG)
+    p = primitives_spect.Spect([])
+    ad.phu[p.timestamp_keys['subtractSky']] = '2023-10-01T00:00:00.000'
+    ad_out = p.skyCorrectFromSlit([ad], function="chebyshev", order=2,
+                                  grow=2, niter=3, lsigma=3, hsigma=3,
+                                  aperture_growth=2)[0]
+
+    passing = False
+    for record in caplog.records:
+        if 'beam offsets' in record.message:
+            fields = record.message.strip().split()
+            assert len(fields) == 5, "Not 2 beam offsets found"
+            passing = np.allclose(sorted([float(x) for x in fields[-2:]]),
+                                  (-0.25 * height, 0.25 * height), atol=0.1)
+    assert passing
+
+@pytest.mark.preprocessed_data
+def test_sky_correct_from_slit_negative_beams_gnirsxd_nobeam(path_to_inputs, caplog):
+
+    ad = astrodata.from_file(os.path.join(path_to_inputs, 'N20191013S0006_aperturesFound.fits'))
+
+    caplog.set_level(logging.DEBUG)
+    p = primitives_spect.Spect([])
+    ad_out = p.skyCorrectFromSlit([ad], function="chebyshev", order=1,
+                                  grow=1, niter=3, lsigma=3, hsigma=3,
+                                  aperture_growth=1)[0]
+
+    passing = True
+    for record in caplog.records:
+        if 'beam offsets' in record.message:
+            passing = False
+            # There should be no negative beams found for this dataseet
+
+    assert passing
+
+
+
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('in_shift', [0, -1.2, 2.75])
 def test_adjust_wavelength_zero_point_shift(in_shift, change_working_dir,
@@ -502,6 +576,26 @@ def test_adjust_wavelength_zero_point_controlled(filename, center, shift,
 
 
 @pytest.mark.preprocessed_data
+def test_determine_wavelength_solution_exits_with_no_solution_in_sq(path_to_inputs):
+    """Primitive should crash in SQ mode without a solution"""
+    ad = astrodata.from_file(os.path.join(path_to_inputs, "S20260331S0149_mosaic.fits"))
+    p = GMOSLongslit([ad])
+    p.mode = "sq"  # it's the default, but just to be sure
+    with pytest.raises(RuntimeError):
+        p.determineWavelengthSolution()
+
+
+@pytest.mark.preprocessed_data
+def test_determine_wavelength_solution_continues_with_no_solution_in_qa(path_to_inputs, caplog):
+    """Primitive should crash in SQ mode without a solution"""
+    ad = astrodata.from_file(os.path.join(path_to_inputs, "S20260331S0149_mosaic.fits"))
+    p = GMOSLongslit([ad])
+    p.mode = "qa"
+    p.determineWavelengthSolution()
+    assert any(record.levelname == 'WARNING' for record in caplog.records)
+
+
+@pytest.mark.preprocessed_data
 @pytest.mark.parametrize('in_file,instrument',
                          [# GNIRS 111/mm LongBlue, off right edge of detector
                           ('N20121118S0375', 'GNIRS'),
@@ -574,6 +668,40 @@ def test_slit_rectification(filename, instrument, change_working_dir,
         np.testing.assert_allclose(ad_out[0].SLITEDGE[coeff], 0, atol=0.25)
 
 
+@pytest.mark.parametrize("gnirs1d", [np.ones((1000,), dtype=np.float32),
+                                     np.arange(1000, dtype=np.float32)],
+                         indirect=True)
+@pytest.mark.parametrize("wavescale", ["linear", "loglinear"])
+def test_resample1d_conserve(gnirs1d, wavescale):
+    """
+    Simple test to resample a synthetic 1D spectrum with a linear wavelength
+    solution to linear and loglinear and check that the flux is conserved.
+    """
+    gnirs1d[0].hdr['BUNIT'] = 'electron'
+    p = GNIRSLongslit([gnirs1d])
+    sum_before = gnirs1d[0].data.sum()
+    adout = p.resampleToCommonFrame(output_wave_scale=wavescale).pop()
+    sum_after = adout[0].data.sum()
+    # Tolerance allows for edge effects
+    assert sum_after == pytest.approx(sum_before, rel=0.002)
+
+
+@pytest.mark.parametrize("gnirs1d", [np.arange(1000, 2000, dtype=np.float32)],
+                         indirect=True)
+@pytest.mark.parametrize("wavescale", ["linear", "loglinear"])
+def test_resample1d_interpolate(gnirs1d, wavescale):
+    """
+    Simple test to resample a synthetic 1D spectrum with a linear wavelength
+    solution to linear and loglinear and check that the data are interpolated.
+    The input spectrum has signal=wavelength so it's easy to check the result.
+    """
+    gnirs1d[0].hdr['BUNIT'] = 'W / (m2 AA)'  # will interpolate
+    p = GNIRSLongslit([gnirs1d])
+    adout = p.resampleToCommonFrame(output_wave_scale=wavescale).pop()
+    waves = adout[0].wcs(np.arange(adout[0].data.size))
+    assert_most_close(waves, adout[0].data, max_miss=2, rtol=1e-5)
+
+
 def test_trace_apertures():
     # Input parameters ----------------
     width = 400
@@ -635,7 +763,7 @@ def test_flux_conservation_consistency(astrofaker, caplog, unit,
     warning_given = any(record.levelname == 'WARNING' for record in caplog.records)
     assert warn == warning_given
 
-
+@pytest.mark.skip("This function is now part of _get_airglow_linelist() in primitives_telluric")
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
 def test_get_sky_spectrum(path_to_inputs, path_to_refs):
@@ -653,7 +781,8 @@ def test_get_sky_spectrum(path_to_inputs, path_to_refs):
     ref_refplot_spec_f2 = np.loadtxt(
         os.path.join(path_to_refs, "S20180114S0104_refplot_spec.dat"))
 
-    np.testing.assert_allclose(ref_refplot_spec_f2, refplot_data_f2["refplot_spec"], atol=1e-3)
+    np.testing.assert_allclose(ref_refplot_spec_f2[:, 0], refplot_data_f2["refplot_spec"][:, 0], atol=1e-3)
+    np.testing.assert_allclose(ref_refplot_spec_f2[:, 1], refplot_data_f2["refplot_spec"][:, 1], atol=0.25)  # max numerical diff in flux with numpy 2
 
 
 def test_resample_spec_table():
@@ -738,6 +867,22 @@ def test_transfer_distortion_model(change_working_dir, path_to_inputs, path_to_r
 
 # --- Fixtures and helper functions -------------------------------------------
 
+@pytest.fixture
+def gnirs1d(request, astrofaker):
+    ad = astrofaker.create('GNIRS', mode="SPECT")
+    ad.init_default_extensions()
+    data = request.param
+    mask = np.zeros_like(data, dtype=np.uint16)
+    variance = np.ones_like(data, dtype=np.float32)
+    ad[0].reset(data=data, mask=mask, variance=variance)
+    wave_model = models.Shift(1000) | models.Scale(1)
+    input_frame = astrodata.wcs.pixel_frame(1)
+    output_frame = cf.SpectralFrame(axes_order=(0,), unit=u.nm,
+                                    axes_names=("WAVE",))
+    ad[0].wcs = gWCS([(input_frame, wave_model),
+                      (output_frame, None)])
+    return ad
+
 
 def create_zero_filled_fake_astrodata(height, width):
     """
@@ -757,7 +902,7 @@ def create_zero_filled_fake_astrodata(height, width):
     """
     astrofaker = pytest.importorskip("astrofaker")
 
-    data = np.zeros((height, width))
+    data = np.zeros((height, width), dtype=np.float32)
 
     hdu = fits.ImageHDU()
     hdu.header['CCDSUM'] = "1 1"

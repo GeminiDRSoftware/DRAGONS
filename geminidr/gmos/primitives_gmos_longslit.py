@@ -20,6 +20,7 @@ from astropy import visualization as vis
 from astropy.modeling import models, fitting
 
 from geminidr.gemini.lookups import DQ_definitions as DQ
+from geminidr import CalibrationNotFoundError
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library.fitting import fit_1D
@@ -211,7 +212,7 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
                 row_medians = at.boxcar(row_medians, size=2)
                 #print(row_medians.min(), row_medians.max())
 
-                if debug_plot:
+                if debug_plot:  # pragma: no cover
                     plt.ioff()
                     fig, ax = plt.subplots()
                     ax.plot(row_medians / row_medians.max(), 'b-')
@@ -229,11 +230,11 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
                     # Only keep maxima if the fitted peak value is close to
                     # the actual peak (should remove single-pixel peaks)
                     extrema = peak_finding.get_extrema(xcorr, remove_edge_maxima=False)
-                    if debug_plot:
+                    if debug_plot:  # pragma: no cover
                         print(extrema)
                     maxima = [int(x[0] + 0.5) for x in extrema if x[2]]
 
-                    if debug_plot:
+                    if debug_plot:  # pragma: no cover
                         xpixels = row_medians.size // 2 - mshift + np.arange(xcorr.size)
                         ax.plot(xpixels, xcorr / xcorr.max(), 'r-')
                         ax.plot([row_medians.size // 2] * 2, [0, 1], 'r:')
@@ -241,13 +242,20 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
                         plt.show()
                         plt.ion()
 
-                    yshift = mshift - maxima[0]
-                    if len(maxima) > 1 or abs(yshift) > mshift:
-                        log.warning(f"{ad.filename}: cross-correlation peak is"
-                                    " untrustworthy so not adding illumination "
-                                    "mask. Please re-run with a specified shift.")
+                    if not maxima:
+                        log.warning(f"{ad.filename}: no peaks found in "
+                                    "cross-correlation, so not adding "
+                                    "illumination mask. Please re-run with a specified shift.")
                         yshift = None
                         log.stdinfo(slit_location_msg)
+                    else:
+                        yshift = mshift - maxima[0]
+                        if len(maxima) > 1 or abs(yshift) > mshift:
+                            log.warning(f"{ad.filename}: cross-correlation peak is"
+                                        " untrustworthy so not adding illumination "
+                                        "mask. Please re-run with a specified shift.")
+                            yshift = None
+                            log.stdinfo(slit_location_msg)
                 else:
                     yshift = shift
 
@@ -435,9 +443,9 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
             rows_val, cols_val = \
                 np.mgrid[-border:height+border, -border:width+border]
 
-            slit_response_data = model_2d_data(cols_val, rows_val)
+            slit_response_data = model_2d_data(cols_val, rows_val).astype(np.float32)
             slit_response_mask = np.pad(mask, border, mode='edge')  # ToDo: any update to the mask?
-            slit_response_std = model_2d_std(cols_val, rows_val)
+            slit_response_std = model_2d_std(cols_val, rows_val).astype(np.float32)
             slit_response_var = slit_response_std ** 2
 
             del cols_fit, cols_val, rows_fit, rows_val
@@ -477,7 +485,7 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
             ad_outputs.append(slit_response_ad)
 
             # Plotting ------
-            if debug_plot:
+            if debug_plot:  # pragma: no cover
 
                 log.info("Creating plots")
                 palette = copy(plt.cm.cividis)
@@ -912,9 +920,9 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
 
             if slit_illum_ad is None:
                 if self.mode in ['sq'] or do_cal == 'force':
-                    raise OSError(
-                        "No processed slit illumination listed for {}".format(
-                            ad.filename))
+                    raise CalibrationNotFoundError(
+                        "No processed slit illumination listed for "
+                        f"{ad.filename}")
                 else:
                     log.warning(
                         "No changes will be made to {}, since no slit "

@@ -25,7 +25,8 @@ class core_stacking_config(config.Config):
     """Parameters relevant to ALL stacking primitives"""
     suffix = config.Field("Filename suffix", str, "_stack", optional=True)
     apply_dq = config.Field("Use DQ to mask bad pixels?", bool, True)
-    statsec = config.Field("Section for statistics", str, None, optional=True, check=statsec_check)
+    statsec = config.Field("Section for statistics (1-indexed, inclusive-max, x-first)",
+                           str, None, optional=True, check=statsec_check)
     operation = config.ChoiceField("Averaging operation", str,
                                    allowed = {"mean": "arithmetic mean",
                                               "wtmean": "variance-weighted mean",
@@ -49,6 +50,8 @@ class core_stacking_config(config.Config):
     debug_pixel = config.RangeField("Debugging pixel location", int, None,
                                     min=0, optional=True)
     save_rejection_map = config.Field("Save rejection map?", bool, False)
+    debug_old_normalization = config.Field("Revert to old normalization method",
+                                           bool, False)
 
 class stackFramesConfig(core_stacking_config):
     separate_ext = config.Field("Handle extensions separately?", bool, True)

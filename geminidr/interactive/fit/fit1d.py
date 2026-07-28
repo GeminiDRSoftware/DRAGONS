@@ -46,7 +46,7 @@ from geminidr.interactive.interactive import (
     FitQuality,
 )
 from geminidr.interactive.interactive_config import interactive_conf
-from gempy.library.astrotools import cartesian_regions_to_slices
+from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
 
 
@@ -92,7 +92,7 @@ class InteractiveModel(ABC):
             model is updated
         """
         if not callable(listener):
-            raise ValueError("Listeners must be callables")
+            raise TypeError("Listeners must be callables")
 
         self.listeners.append(listener)
 
@@ -467,12 +467,16 @@ class InteractiveModel1D(InteractiveModel):
             }
 
         goodpix = np.array(
-            [m not in [self.UserMasked.name] + self.extra_mask_names for m in self.mask]
+            [m not in [self.UserMasked.name, self.BandMasked.name] +
+             self.extra_mask_names for m in self.mask]
         )
 
         self.quality = FitQuality.BAD
 
         if goodpix.sum():
+            # We're no longer sending "regions" to fit_1D because we're
+            # excluding those pixels here
+            regions = fitparms.pop("regions", "no regions")
             new_fit = fit_1D(
                 self.y[goodpix],
                 points=self.x[goodpix],
@@ -482,6 +486,8 @@ class InteractiveModel1D(InteractiveModel):
                 else self.weights[goodpix],
                 **fitparms,
             )
+            if regions != "no regions":
+                fitparms["regions"] = regions
 
             # For splines, "rank" is the number of spline pieces; for
             # Chebyshevs it's effectively the number of fitted points (max
@@ -498,7 +504,7 @@ class InteractiveModel1D(InteractiveModel):
 
                 elif self.fit is None:
                     self.quality = FitQuality.BAD
-                    self.fit = new_fit
+                    #self.fit = new_fit
 
                 else:
                     # Modify the fit_1D object with a shift by ugly hacking
@@ -509,6 +515,8 @@ class InteractiveModel1D(InteractiveModel):
                     self.fit.points = new_fit.points
                     self.fit.mask = new_fit.mask
                     self.quality = FitQuality.POOR  # else stay BAD
+        elif self.default_model is not None:
+            self.fit = None
 
         if self.quality != FitQuality.BAD:  # don't update if it's BAD
             if "residuals" in self.data.data:
@@ -524,9 +532,10 @@ class InteractiveModel1D(InteractiveModel):
     def update_mask(self):
         """Update the mask based on the current fit. The mask in the bokeh
         object is the size of the input data, but the mask returned by the
-        fit is only the size of the non-user/band/other-masked pixels."""
+        fit is only the size of the non-user/other-masked pixels."""
         goodpix = np.array(
-            [m not in [self.UserMasked.name] + self.extra_mask_names for m in self.mask]
+            [m not in [self.UserMasked.name, self.BandMasked.name] +
+             self.extra_mask_names for m in self.mask]
         )
 
         mask = self.mask.copy()
@@ -1068,6 +1077,9 @@ class Fit1DPanel:
 
         default_model : callable
             function to evaluate model if self.fit is None
+
+        initial_fit : callable
+            the initial fit created before the Visualizer
         """
         # Just to get the doc later
         self.visualizer = visualizer
@@ -1088,7 +1100,7 @@ class Fit1DPanel:
         prep_fit1d_params_for_fit1d(fitting_parameters)
 
         # Avoids having to check whether this is None all the time
-        band_model = GIRegionModel(domain=domain)
+        band_model = GIRegionModel(domain=domain, dtype=x.dtype)
 
         self.model = interactive_model_class(
             fitting_parameters,
@@ -1158,11 +1170,7 @@ class Fit1DPanel:
         # Initializing regions here ensures the listeners are notified of the
         # changes to regions.
         if fitting_parameters.get("regions") is not None:
-            region_tuples = cartesian_regions_to_slices(
-                fitting_parameters["regions"]
-            )
-
-            band_model.load_from_tuples(region_tuples)
+            band_model.load_from_string(fitting_parameters["regions"])
 
         # TODO refactor? this is dupe from band_model_handler hacking it in
         # here so I can account for the initial state of the band model (which
@@ -1230,6 +1238,8 @@ class Fit1DPanel:
             ylabel=self.ylabel,
             model=self.model,
             enable_user_masking=self.enable_user_masking,
+            plot_ratios=plot_ratios,
+            plot_residuals=plot_residuals,
         )
 
         if self.enable_regions:
@@ -1594,6 +1604,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         panel_class=Fit1DPanel,
         reinit_live=False,
         mask_glyphs=None,
+        allow_skip=False,
         **kwargs,
     ):
         """Initializes the Fit1DVisualizer and its parent class.
@@ -1666,12 +1677,17 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             The class of Panel to use in each tab. This allows specific
             operability for each primitive since most of the functions that do
             the work are methods of this class.
+
         reinit_live : bool
             If True, some buttons and parameters will recalculate the data
             points immediately.  If False, the reinit button will be disabled
             until the user clicks the "Recalculate" button. Default is False.
-        mask_glyphs: dict/None
+
+        mask_glyphs : dict/None
             glyphs for rendering additional masks
+
+        allow_skip : bool
+            add a button to allow exit and return unmodified data?
         """
         super().__init__(
             title=title,
@@ -1681,6 +1697,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             help_text=help_text,
             ui_params=ui_params,
             reinit_live=reinit_live,
+            allow_skip=allow_skip,
         )
         self.layout = None
         self.recalc_inputs_above = recalc_inputs_above
@@ -1898,7 +1915,12 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             sizing_mode="stretch_width",
         )
 
-        for btn in (self.submit_button, self.abort_button):
+        buttons = (self.abort_button,)
+        if self.skip_button is not None:
+            buttons += (self.skip_button,)
+        buttons += (self.submit_button,)
+
+        for btn in buttons:
             btn.align = "end"
             btn.margin = (0, 5, 0, 0)
             btn.width = 212
@@ -1909,8 +1931,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
             self.submit_button.align = "end"
 
             abort_submit_buttons = row(
-                self.abort_button,
-                self.submit_button,
+                *buttons,
                 align="end",
                 stylesheets=dragons_styles(),
             )
@@ -1926,8 +1947,7 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
 
         else:
             top_row = column(
-                self.abort_button,
-                self.submit_button,
+                *buttons,
                 align="end",
                 stylesheets=dragons_styles(),
                 css_classes=["top-row"],
@@ -2078,7 +2098,8 @@ class Fit1DVisualizer(interactive.PrimitiveVisualizer):
         -------
         list of `~gempy.library.fitting.fit_1D`
         """
-        return [fit.fit for fit in self.fits]
+        if self.return_fit:
+            return [fit.fit for fit in self.fits]
 
 
 def prep_fit1d_params_for_fit1d(fit1d_params):
@@ -2124,6 +2145,7 @@ def fit1d_figure(
     xlabel=None,
     ylabel=None,
     model=None,
+    fit_line_legend=None,
     plot_ratios=True,
     plot_residuals=True,
     enable_user_masking=True,
@@ -2151,6 +2173,9 @@ def fit1d_figure(
 
     model : InteractiveModel1D
         object containing the fit information
+
+    fit_line_legend : str/None
+        string to include in legend for fit line
 
     plot_ratios : bool
         make a ratios plot?
@@ -2194,12 +2219,14 @@ def fit1d_figure(
         **model.mask_rendering_kwargs(),
     )
 
+    kwargs = {"legend_label": fit_line_legend} if fit_line_legend else {}
     p_main.line(
         x=xline,
         y=yline,
         source=model.evaluation,
         line_width=3,
         color="crimson",
+        **kwargs
     )
 
     if plot_residuals:
@@ -2266,6 +2293,10 @@ def fit1d_figure(
         tabs = bm.Tabs(
             tabs=[], sizing_mode="stretch_width", stylesheets=dragons_styles()
         )
+        try:  # needed for bokeh 3.9
+            tabs.link_layouts = True
+        except AttributeError:  # bokeh < 3.9
+            pass
 
         tabs.tabs.append(bm.TabPanel(child=p_resid, title="Residuals"))
         tabs.tabs.append(bm.TabPanel(child=p_ratios, title="Ratios"))

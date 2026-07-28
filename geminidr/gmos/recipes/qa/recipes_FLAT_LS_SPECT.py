@@ -6,7 +6,7 @@ Default is "reduce".
 recipe_tags = {'GMOS', 'SPECT', 'LS', 'FLAT'}
 
 def makeProcessedFlat(p):
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
@@ -18,7 +18,6 @@ def makeProcessedFlat(p):
     p.stackFrames()
     p.normalizeFlat()
     p.thresholdFlatfield()
-    p.makeIRAFCompatible()
     p.storeProcessedFlat()
 
 _default = makeProcessedFlat

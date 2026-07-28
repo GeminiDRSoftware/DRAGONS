@@ -108,13 +108,14 @@ large.)
     ../playdata/example1/S20230417S0038.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
     ../playdata/example1/S20230417S0039.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
     ../playdata/example1/S20230417S0040.fits                                Bias   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 1, 'red': 1, 'slitv': 2}   {'blue': 'slow', 'red': 'medium', 'slitv': 'standard'}
+
 ..    ../playdata/example1/bpm_20220601_ghost_blue_11_full_4amp.fits           BPM                                   1                                   1                                                     slow
 ..    ../playdata/example1/bpm_20220601_ghost_red_11_full_4amp.fits            BPM                                   1                                   1                                                     slow
 
 
 Bad Pixel Mask
 ==============
-Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are now handled as
+Starting with DRAGONS v3.1, the bad pixel masks (BPMs) are handled as
 calibrations.  They are downloadable from the archive instead of being
 packaged with the software. They are automatically associated like any other
 calibrations.  This means that the user can now download the BPMs along with
@@ -293,7 +294,7 @@ the calibrations as they are created.
 Reduce the Flats
 ----------------
 The flats have a 1x1 binning and must match the read mode of the science
-data.  If the science data is binned, the software will bin the 1x1 flats
+data.  If the science data are binned, the software will bin the 1x1 flats
 to match. Reducing the flats takes a little time because of the step to
 trace each of the echelle orders.
 
@@ -332,7 +333,7 @@ Arcs
 The arcs have a 1x1 binning, the read mode does not matter.  It does save
 processing if they are of the same read mode as the flats as otherwise they will need
 their own flats with a matching read mode as well as their own biases.  If the science
-data is binned, the software will bin the 1x1 arcs to match.
+data are binned, the software will bin the 1x1 arcs to match.
 
 A minimum of three arc exposures are required in each arm to eliminate cosmic rays
 (which can look very similar to arc lines). At the time these data were taken,
@@ -487,7 +488,7 @@ scaled to match the level of the first frame and then stacked.  By default,
 the ``scaleCountsToReference`` primitive only scales by the exposure time
 (which is the same for all these exposures), so no scaling will occur.
 This choice of default is to prevent erroneous scaling factors being calculated
-when the signal-to-noise ratio in the data is low, but that is not the case
+when the signal-to-noise ratio in the data are low, but that is not the case
 here so we can trust the ratios calculated by the software.  Setting a tolerance
 of 1 indicates that the calculated ratios should be used whatever they are,
 whereas a value of, for example, 0.1 means that the ratio should only be used
@@ -618,7 +619,7 @@ possible configurations:
     the December 2023 FTrun in two-object mode or with one of the IFUs stowed
     you may see "ripple" artifacts in your data due to contamination of the
     sky fibres by light from the target(s). Using
-    ``-p extractSpectra:sky_subtract=False weighting=uniform`` may help.
+    ``-p extractSpectra:sky_subtract=False extractSpectra:weighting=uniform`` may help.
 
 
 It is possible to write the spectra to a text file with ``write1DSpectra``,
@@ -688,7 +689,7 @@ object, you can do this within a python session as follows:
   import astrodata, gemini_instruments
   from gempy.library.spectral import Spek1D
   ad = astrodata.open("S20230416S0079_blue001_full.fits")
-  spectrum1d = Spek1D(ad[0]).asSpectrum1D()
+  spectrum1d = Spek1D(ad[0]).asSpectrum()
 
 Note that you need to specify ``ad[0]`` to obtain the first aperture
 (the target).
@@ -702,5 +703,5 @@ so you should run
 
   reduce -r makeIRAFCompatible S20230416S0079_red001_dragons.fits
 
-which will create a file ``S20230416S0079_red001_irafCompatible.fits`` that
-IRAF can read. Note, however, that this file is **incompatible with DRAGONS**.
+which will create a file ``S20230416S0079_red001_dragons_irafCompatible.fits`` that
+IRAF can read. Note, however, that this file is now **incompatible with DRAGONS**.

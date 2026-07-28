@@ -1,4 +1,4 @@
-# Copyright(c) 2018-2020 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2018-2026 Association of Universities for Research in Astronomy, Inc.
 #
 """
 transform.py
@@ -1156,7 +1156,8 @@ class DataGroup:
                 # Set up the functions to call to transform this attribute
                 jobs = []
                 if np.issubdtype(arr.dtype, np.unsignedinteger):
-                    for j in range(0, 16):
+                    nbits = arr.itemsize * 8
+                    for j in range(0, nbits):
                         bit = 2 ** j
                         if bit == cval or np.sum(arr & bit) > 0:
                             key = ((attr,bit), output_corners)
@@ -1172,8 +1173,12 @@ class DataGroup:
                 # Perform the jobs (in parallel, if we can)
                 for (key, arr, kwargs) in jobs:
                     args = (arr, mapping, key, output_array_shape)
+                    # VAR can produce negative values near "walls" so use
+                    # a linear interpolant instead.
+                    this_interpolant = ("linear" if key == "variance"
+                                        else interpolant)
                     kwargs.update({'dtype': self.output_dict[attr].dtype,
-                                   'interpolant': interpolant,
+                                   'interpolant': this_interpolant,
                                    'subsample': subsample,
                                    'jfactor': jfactor})
                     if parallel:
@@ -1320,7 +1325,7 @@ class DataGroup:
         isinf = np.isinf(input_array)
         if isnan.any() or isinf.any():
             log.warning(f"There are {isnan.sum()} NaN and {isinf.sum()} inf "
-                        f"values in the {output_key} array. Setting to zero.")
+                        f"values in the {output_key[0]} array. Setting to zero.")
             input_array[isnan | isinf] = 0
 
         # We want to transform any DQ bit arrays into floats so we can sample
@@ -1618,10 +1623,11 @@ def resample_from_wcs(ad, frame_name, attributes=None, interpolant="linear",
     AstroData: single-extension AD with suitable WCS
     """
     array_attributes = ['data', 'mask', 'variance']
-    for k, v in ad.nddata[0].meta['other'].items():
-        if isinstance(v, np.ndarray) and v.shape == ad[0].data.shape:
-            array_attributes.append(k)
     is_single = ad.is_single
+    for k, v in ad.nddata[0].meta['other'].items():
+        if (isinstance(v, np.ndarray) and
+                v.shape == (ad if is_single else ad[0]).data.shape):
+            array_attributes.append(k)
 
     # It's not clear how much checking we should do here but at a minimum
     # we should probably confirm that each extension is purely data. It's
@@ -1639,6 +1645,8 @@ def resample_from_wcs(ad, frame_name, attributes=None, interpolant="linear",
     # Create the blocks (individual physical detectors)
     if is_single:
         blocks = [Block(ad)]
+    elif len(ad) == 1:
+        blocks = [Block(ad[0])]
     else:
         array_info = gt.array_information(ad)
         blocks = [Block(ad[arrays], shape=shape) for arrays, shape in
@@ -1744,13 +1752,14 @@ def resample_from_wcs(ad, frame_name, attributes=None, interpolant="linear",
 
         # array_section only has meaning now if the inputs were from a
         # single physical array
-        if len(blocks) == 1:
-            all_arrsec = np.array([ext.array_section() for ext in ad]).T
-            ad_out.hdr[keywords['array']] = \
-                '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
-                               for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
-        else:
-            del ad_out.hdr[keywords['array']]
+        if keywords['array'] in ad_out.hdr:
+            if len(blocks) == 1:
+                all_arrsec = np.array([ext.array_section() for ext in ad]).T
+                ad_out.hdr[keywords['array']] = \
+                    '[' + ','.join('{}:{}'.format(min(c1) + 1, max(c2))
+                                   for c1, c2 in zip(all_arrsec[::2], all_arrsec[1::2])) + ']'
+            else:
+                del ad_out.hdr[keywords['array']]
 
     # Try to assign an array name for this based on commonality
     if not is_single:

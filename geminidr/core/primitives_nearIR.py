@@ -95,7 +95,7 @@ class NearIR(Bookkeeping):
         Parameters
         ----------
         dark_lo_thresh, dark_hi_thresh: float, optional
-            Range of data values (always in ADUs) outside which pixels in the
+            Range of data values (always in electrons) outside which pixels in the
             input dark are considered bad (eg. -20 and 100, but these defaults
             vary by instrument). A limit of None is not applied and all pixels
             are considered good at that end of the range.
@@ -136,32 +136,33 @@ class NearIR(Bookkeeping):
         try:
             flat = adinputs[0]
         except IndexError:
-            raise OSError("A SET OF FLATS IS REQUIRED INPUT")
+            raise ValueError("A SET OF FLATS IS REQUIRED INPUT")
         try:
             dark = self.streams['darks'][0]
         except (KeyError, TypeError, IndexError):
-            raise OSError("A SET OF DARKS IS REQUIRED INPUT")
+            raise ValueError("A SET OF DARKS IS REQUIRED INPUT")
 
         for dark_ext, flat_ext in zip(dark, flat):
             msg = "BPM Flat Mask Lower < > Upper Limit: {} < > {}"
             log.stdinfo(msg.format(flat_lo, flat_hi))
             flat_mask = np.ma.masked_outside(flat_ext.data, flat_lo, flat_hi)
 
-            msg = "BPM Dark Mask Lower < > Upper Limit: {} < > {} ADU\n" \
-                  "                                    ({} < > {})"
             bunit = dark_ext.hdr.get('BUNIT', 'ADU').upper()
-            if bunit in ('ELECTRON', 'ELECTRONS'):
-                conv = dark_ext.gain()
-            elif bunit == 'ADU':
-                conv = 1
-            else:
+            if bunit not in ('ELECTRON', 'ELECTRONS', 'ADU'):
                 raise ValueError("Input units for dark should be ADU or "
                                  "ELECTRON, not {}".format(bunit))
-            log.stdinfo(msg.format(dark_lo, dark_hi,
-                                   conv*dark_lo, conv*dark_hi))
-            # create the mask -- darks (hot pixels)
+
+            msg = "BPM Dark Mask Lower < > Upper Limit: {} < > {} electrons\n" #\
+                  #"                                    ({} < > {})"
+            if bunit == 'ADU':
+                msg += "                                    ({:.2f} < > {:.2f}) ADU"
+                log.stdinfo(msg.format(dark_lo, dark_hi,
+                                   dark_lo/dark_ext.gain(), dark_hi/dark_ext.gain()))
+            else:
+                log.stdinfo(msg.format(dark_lo, dark_hi))
             dark_mask = np.ma.masked_outside(dark_ext.data,
-                                             conv*dark_lo, conv*dark_hi)
+                                             dark_lo / dark_ext.gain(),
+                                             dark_hi / dark_ext.gain())
 
             # combine masks and write to bpm file
             data_mask = np.ma.mask_or(np.ma.getmaskarray(dark_mask),
@@ -639,9 +640,12 @@ class NearIR(Bookkeeping):
             only 510 rows but read out synchronously with the "bottom" 510 rows although this "bottom" 
             quad has 512 rows.
         clean: str, Default: "skip"
-            Must be one of "skip" or "default". Note "force" option doesn't exist for this FFT method.
+            Must be one of "skip", "default" or "force".
             skip: Skip this routine entirely when called from a recipe.
             default: Apply the pattern subtraction to each quadrant of the image.
+            force: Force pattern subtraction from every row in each quadrant (irrespective of
+                   sigma_fact).
+
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -657,7 +661,6 @@ class NearIR(Bookkeeping):
         periodicity = params["periodicity"]
         smoothing_extent = params["smoothing_extent"]
         pad_rows = params["pad_rows"]
-
 
         if clean == "skip":
             log.stdinfo("Skipping cleanFFTReadout since 'clean' is set to 'skip'")
@@ -702,12 +705,11 @@ class NearIR(Bookkeeping):
                             _ind = np.argmin(np.abs(row_freq - 1/periodicity)) ##find the index closest to the principal target frequency
                             a_mean, a_median, a_std = sigma_clipped_stats(amp[_ind-win_size:_ind+win_size], sigma=2.0)
                             amp_threshold = a_mean + sigma_fact * a_std
-
                             mask = []
-                            if np.interp(1/periodicity, row_freq, amp)>amp_threshold: ##if principal target frequency stands out then automatically clean its harmonics
+                            if clean == "force" or np.interp(1/periodicity, row_freq, amp)>amp_threshold: ##if principal target frequency stands out then automatically clean its harmonics
                                 counter = 1
-                                while int(counter*1/periodicity*num_samples) <= (num_samples-1):
-                                    mask.append(int(counter*1/periodicity*num_samples)) 
+                                while int(counter*1/periodicity*num_samples) <= (num_samples//2):
+                                    mask.append(int(counter*1/periodicity*num_samples))
                                     counter += 1
                                 rows_cleaned += 1
 
@@ -756,8 +758,8 @@ class NearIR(Bookkeeping):
                                 else:
                                     mask = deepcopy(MSK)
 
-                                median_collapsed_signal[mask] = np.NAN
-                                mean_collapsed_signa[mask] = np.NAN
+                                median_collapsed_signal[mask] = np.nan
+                                mean_collapsed_signa[mask] = np.nan
 
                                 ## for intra-quad, level to the same value. Note that when there is a strong gradient in the quad, this method will fail 
                                 for _ind in np.arange(len(median_collapsed_signal))[mask]:

@@ -57,7 +57,7 @@ def test_addReferenceCatalog(niri_image, caplog):
     except AssertionError:
         for record in caplog.records:
             if (record.levelname == 'WARNING' and
-                    "appears to be down" in record.message):
+                    "No catalog returned" in record.message):
                 pytest.skip(record.message)
         raise
 

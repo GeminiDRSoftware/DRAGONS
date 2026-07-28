@@ -4,7 +4,7 @@ include tox.ini
 include gempy/library/config/README
 
 recursive-include geminidr *.dat
-recursive-include geminidr *.fits *.html *.css *.js *.ico *.png *.xml *.svg *.json
+recursive-include geminidr *.fits *.fits.bz2 *.html *.css *.js *.ico *.png *.xml *.svg *.json
 recursive-include gempy *.c
 recursive-include gempy *.pyx
 recursive-include gempy/share/man/man1 *

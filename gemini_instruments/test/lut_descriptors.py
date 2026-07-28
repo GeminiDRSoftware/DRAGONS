@@ -121,7 +121,7 @@ fixture_data = {
         ('mdf_row_id', None),
         ('nominal_atmospheric_extinction', 0.0),
         ('nominal_photometric_zeropoint', [None]),
-        ('non_linear_level', [176008]),
+        ('non_linear_level', [201600]),
         ('object', 'J0219-3925b (place inside slit)'),
         ('observation_class', 'science'),
         ('observation_id', 'GS-2014A-Q-55-493'),

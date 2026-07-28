@@ -6,9 +6,12 @@ IRAF-processed files compatible with the other system.
 # TODO: write unit tests for irafcompat
 
 import re
+import astrodata
 
 def pipeline2iraf(ad, verbose=False):
-        
+
+    if "GMOS" in ad.tags and 'Hamamatsu' in ad.detector_name(pretty=True):
+        trim_like_iraf(ad, verbose)
     if "GMOS" in ad.tags:
         compat_with_iraf_GMOS(ad, verbose)
     elif "F2" in ad.tags:
@@ -18,6 +21,25 @@ def pipeline2iraf(ad, verbose=False):
             print("Data type not supported, {}".format(ad.filename))
          
     return
+
+def trim_like_iraf(ad, verbose):
+    rows = 48 // ad.detector_y_bin()
+    for ext in ad:
+        if verbose:
+            print(f"Trimming {rows} rows and 1 column from ext id {ext.id}")
+        ext.reset(ext.nddata[rows:, 1:])
+
+        if hasattr(ext, 'OBJMASK'):
+            if verbose:
+                print(f"Trimming OBJMASK")
+            ext.OBJMASK = ext.OBJMASK[rows:, 1:]
+
+        if hasattr(ext, 'OBJCAT'):
+            if verbose:
+                print(f"Adjusting OBJCAT")
+            ext.OBJCAT['X_IMAGE'] = [x-1. for x in ext.OBJCAT['X_IMAGE']]
+            ext.OBJCAT['Y_IMAGE'] = [y-rows for y in ext.OBJCAT['Y_IMAGE']]
+
 
 def compat_with_iraf_GMOS(ad, verbose):
 
@@ -143,17 +165,20 @@ def _copy_wcs_to_phu(ad):
     MOS mask IRAF tasks expect the WCS to be in the PHU.  IRAF's gmosaic copies
     the WCS to the PHU.
     """
+    # We don't just copy the header values from ad[0].hdr here because those
+    # only get updated from the ad's WCS object when we write a FITS file, so
+    # they will likely have wrong values if the recipe has done stacking or
+    # similar since it last wrote a file.
 
-    ad.phu.set('CTYPE1', ad[0].hdr['CTYPE1'], 'For IRAF compatibility')
-    ad.phu.set('CRPIX1', ad[0].hdr['CRPIX1'], 'For IRAF compatibility')
-    ad.phu.set('CRVAL1', ad[0].hdr['CRVAL1'], 'For IRAF compatibility')
-    ad.phu.set('CTYPE2', ad[0].hdr['CTYPE2'], 'For IRAF compatibility')
-    ad.phu.set('CRPIX2', ad[0].hdr['CRPIX2'], 'For IRAF compatibility')
-    ad.phu.set('CRVAL2', ad[0].hdr['CRVAL2'], 'For IRAF compatibility')
-    ad.phu.set('CD1_1', ad[0].hdr['CD1_1'], 'For IRAF compatibility')
-    ad.phu.set('CD1_2', ad[0].hdr['CD1_2'], 'For IRAF compatibility')
-    ad.phu.set('CD2_1', ad[0].hdr['CD2_1'], 'For IRAF compatibility')
-    ad.phu.set('CD2_2', ad[0].hdr['CD2_2'], 'For IRAF compatibility')
+    # If you're calling makeIRAFCompatible on anything other than a 2D image,
+    # may the force be with you...
+    keywords = ['CTYPE1', 'CTYPE2', 'CRPIX1', 'CRPIX2', 'CRVAL1', 'CRVAL2',
+                'CD1_1', 'CD1_2', 'CD2_1', 'CD2_2']
+
+    wcs_dict = astrodata.fits.gwcs_to_fits(ad[0], ad.phu)
+    for keyword in wcs_dict:
+        if keyword in keywords:
+            ad.phu.set(keyword, wcs_dict[keyword], 'For IRAF compatibility')
     if 'EQUINOX' in ad[0].hdr:
         ad.phu.set('EQUINOX', ad[0].hdr['EQUINOX'], 'For IRAF compatibility')
 

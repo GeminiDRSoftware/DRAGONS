@@ -31,18 +31,18 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 # -- Project information -----------------------------------------------------
 
 project = 'DRAGONS Tutorial - Flamingos-2 Data Reduction'
-copyright = '2025, Association of Universities for Research in Astronomy'
+copyright = '2026, Association of Universities for Research in Astronomy'
 author = 'DRAGONS Team'
 
 # The short X.Y version
 #version = astrodata.version(short=True)
-version = '4.0-dev'
+version = '5.0_dev'
 
 # The full version, including alpha/beta/rc tags
 #release = astrodata.version()
-#release = '3.2.2'
+#release = '4.2.1'
 #rtdurl = 'v'+release
-#release = '3.2.x'
+#release = '4.2.x'
 #rtdurl = 'release-'+release
 rtdurl = 'latest'
 
@@ -87,7 +87,7 @@ language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-today = '2025'
+today = 'April 2026'
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
@@ -216,11 +216,11 @@ epub_exclude_files = ['search.html']
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
 #    'astrodata': ('https://astrodata-user-manual.readthedocs.io/en/latest/', None),
-    'astropy': ('http://docs.astropy.org/en/stable/', None),
+    'astropy': ('https://docs.astropy.org/en/stable/', None),
     #'gemini_instruments': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
     #'geminidr': ('https://dragons-recipe-system-programmers-manual.readthedocs.io/en/latest/', None),
-    'matplotlib': ('https://matplotlib.org/', None),
-    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
     'python': ('https://docs.python.org/3', None),
 }
 

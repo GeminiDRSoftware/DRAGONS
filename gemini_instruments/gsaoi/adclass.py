@@ -83,6 +83,10 @@ class AstroDataGsaoi(AstroDataGemini):
 
         return central_wavelength
 
+    @astro_data_descriptor
+    def detector_y_offset(self):
+        return -super().detector_y_offset()
+
     @returns_list
     @use_keyword_if_prepared
     @astro_data_descriptor

@@ -2,7 +2,7 @@
 
 .. include:: symbols.txt
 
-.. _gnirs_Kband111mm_red_cmdline:
+.. _gnirsls_Kband111mm_red_cmdline:
 
 **********************************************************************************************************
 Example 4 -  K-band 2.33 micron Longslit Point Source (111 l/mm grating) - Using the "reduce" command line
@@ -48,8 +48,8 @@ In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
     browser = your_preferred_browser
 
 The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
-the interactive tools using that browser.  The allowed strings are "safari",
-"chrome", and "firefox".
+the interactive tools using that browser.  The allowed strings are "**safari**",
+"**chrome**", and "**firefox**".
 
 Set up the Local Calibration Manager
 ====================================
@@ -59,6 +59,10 @@ Set up the Local Calibration Manager
     Instructions to configure and use the calibration service are found in
     :ref:`cal_service`, specifically the these sections:
     :ref:`cal_service_config` and :ref:`cal_service_cmdline`.
+
+We recommend that you clean up your working directory (``playground``) and
+start a fresh calibration database (``caldb init -w``) when you start a new
+example.
 
 Create file lists
 =================
@@ -73,7 +77,8 @@ have to do it.  However, DRAGONS provides tools to help you.
 The first step is to create input file lists.  The tool "|dataselect|" helps
 with that.  It uses Astrodata tags and "|descriptors|" to select the files and
 send the filenames to a text file that can then be fed to "|reduce|".  (See the
-|astrodatauser| for information about Astrodata.)
+|astrodatauser| for information about Astrodata  and for a list
+of |descriptors|.)
 
 First, navigate to the ``playground`` directory in the unpacked data package::
 
@@ -81,9 +86,9 @@ First, navigate to the ``playground`` directory in the unpacked data package::
 
 A list for the flats
 --------------------
-The GNRIS flats will be stack together.  Therefore it is important to ensure
+The GNIRS flats will be stacked together.  Therefore it is important to ensure
 that the flats in the list are compatible with each other.  You can use
-`dataselect` to narrow down the selection as required.  Here, we have only
+"|dataselect|" to narrow down the selection as required.  Here, we have only
 the flats that were taken with the science and we do not need extra selection
 criteria.
 
@@ -102,13 +107,13 @@ Often two are taken.  We will use both in this case and stack them later.
 
 A list for the telluric
 -----------------------
-DRAGONS does not recognize the telluric star as such.  This is because
-the observations are taken like science data and the GNIRS headers do not
+DRAGONS does not recognize the telluric star as such.  This is because, at
+Gemini, the observations are taken like science data and the GNIRS headers do not
 explicitly state that the observation is a telluric standard.  For now, the
 ``observation_class`` descriptor can be used to differential the telluric
 from the science observations, along with the rejection of the ``CAL`` tag to
-reject flats and arcs. The ``observation_class`` can be "partnerCal" or
-"progCal".  In this case, it is "progCal".
+reject flats and arcs. The ``observation_class`` can be ``partnerCal`` or
+``progCal``.  In this case, it is ``progCal``.
 
 ::
 
@@ -119,7 +124,7 @@ reject flats and arcs. The ``observation_class`` can be "partnerCal" or
 A list for the science observations
 -----------------------------------
 
-In our case, the science observations can be selected from the observation
+The science observations can be selected from the observation
 class, ``science``, that is how they are differentiated from the telluric
 standards which are ``partnerCal`` or ``progCal``.
 
@@ -165,7 +170,7 @@ database:
 
 Master Flat Field
 =================
-GNIRS longslit flat field are normally obtained at night along with the
+GNIRS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.
 
 The GNIRS longslit flatfield requires only lamp-on flats.  Subtracting darks
@@ -177,19 +182,18 @@ The flats will be stacked.
 
     reduce @flats.lis
 
-GNIRS data is affected by a "odd-even" effect where alternate rows in the
-GNIRS science array have gains that differ by approximately 10 percent.  When
-you run ``normalizeFlat`` in interactive mode you can clearly see the two
-levels.
-
-In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  In this case, the fit
-can be improved by activating the sigma clipping with one iteration, setting
-the low sigma to 2 instead of 3, and setting the "grow" parameter to 2.
+GNIRS data are affected by a "odd-even" effect where alternate rows in the
+GNIRS science array have gains that differ by approximately 10 percent.
+We have added a correction in ``normalizeFlat`` that levels off the rows to
+help with the fit.  Here it works well, in some cases you might see a some
+split when you run ``normalizeFlat`` in interactive mode.  The objective,
+if you see the split, is to get a fit that falls inbetween the
+two sets of points, with a symmetrical residual fit.
 
 Note that you are not required to run in interactive mode, but you might want
-to if flat fielding is critical to your program.  Run it interactively and
-see for yourself the difference the adjustments make in this case.
+to if flat fielding is critical to your program.  In this case, the fit
+can be improved by activating the sigma clipping with one iteration, setting
+the low sigma to 2 instead of 3, and setting the "grow" parameter to 2.
 
 ::
 
@@ -216,7 +220,7 @@ It is impossible to have an accurate solution from the arc alone.
 
 The other difficulty is that the OH and O\ :sub:`2`\  lines are absent in that regime.  There
 are no emission lines.  There are however a large number of telluric
-absorption lines.
+absorption lines in the target's spectrum.
 
 Therefore, we will use the arc lamp solution as the starting point for the
 calculation of the solution derived from the telluric absorption lines.
@@ -241,13 +245,13 @@ https://www.gemini.edu/instrumentation/gnirs/calibrations#Arc
 The arc we are processing was taken with the Argon lamp.
 
 Once the coarse arc is calculated it will automatically be added to the
-calibration database.  We do not want that arc to ever be used during the
+calibration database.  We do **not** want that arc to ever be used during the
 reduction of the science data.  So we immediately remove it from the database.
 We will feed it to the next step, the only one that needs it, manually.
 
 ::
 
-    reduce @arcs.lis -p flatCorrect:flat=N20210407S0177_flat.fits interactive=True
+    reduce @arcs.lis -p interactive=True
     caldb remove N20210407S0181_arc.fits
 
 .. image:: _graphics/gnirsls_Kband111mm_red_arcID.png
@@ -262,7 +266,7 @@ The telluric absorption lines solution
 Because only the telluric absorption lines provide a good spectral coverage
 in this configuration, we are forced to use them.
 
-To use the sky lines in the science frames instead of the lamp arcs, we
+To use the telluric absorption lines in the science frames instead of the lamp arcs, we
 invoke the ``makeWavecalFromSkyAbsorption`` recipe.  It will get the arc lamp
 solution from the calibration manager automatically and use it as an initial
 approximation.
@@ -271,19 +275,22 @@ It is strongly recommended to use the interactive mode to visually confirm
 that lines have been properly identified and if not manually identify the
 lines.
 
-In this case, the automatic identification is correct and no further action
-is needed.
-
-If manually identification was needed, the first step would be to clear the
-lines and then use "i" to identify lines correctly with the help of the top
-plot.  After a few have been identified across the **entire** spectrum,
-click "Identify Lines" to fill in more lines automatically.
-
 ::
 
     reduce @sci.lis -r makeWavecalFromSkyAbsorption --user_cal processed_arc:N20210407S0181_arc.fits -p  interactive=True
 
-Zooming in on the sky lines, we can better spot discrepancies, if any.
+In this case, indeed, there is a discrepancy.
+
+.. image:: _graphics/gnirsls_Kband111mm_red_tellmatch_initial.png
+   :width: 600
+   :alt: Initial sky lines identification showing a discrepancy
+
+
+The first step to correct the situation is to clear the
+lines and then use "i" to identify lines correctly with the help of the top
+plot.   After a few have been identified across the **entire** spectrum,
+click "Identify Lines" to fill in more lines automatically.
+
 
 .. image:: _graphics/gnirsls_Kband111mm_red_tellmatch.png
    :width: 600
@@ -319,7 +326,7 @@ to store them.  In a normal text file (here we name it "hip92386.param"), we wri
 Then we can call the ``reduce`` command with the parameter file.  The telluric
 fitting primitive can be run in interactive mode.
 
-Note that the data is recognized by Astrodata as normal GNIRS longslit science
+Note that the data are recognized by Astrodata as normal GNIRS longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
 recipe (``-r reduceTelluric``), otherwise the default science reduction will be
 run.

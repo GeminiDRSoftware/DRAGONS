@@ -41,6 +41,7 @@ class adjustWavelengthZeroPointConfig(config.Config):
                                 min=1, optional=True)
     shift = config.RangeField("Shift to apply in pixels (None: determine automatically)",
                               float, 0, min=-2048, max=2048, optional=True)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
     verbose = config.Field("Print extra information", bool, False,
                            optional=True)
     debug_max_shift = config.RangeField("Maximum shift to allow (in pixels)",
@@ -58,14 +59,16 @@ class adjustWCSToReferenceConfig(config.Config):
     suffix = config.Field("Filename suffix",
                           str, "_wcsCorrected", optional=True)
     method = config.ChoiceField("Alignment method", str,
-                                allowed={"sources_wcs": "Match sources using WCS",
-                                         "sources_offsets": "Match sources using telescope offsets",
+                                allowed={"sources_wcs": "Cross-correlate slit profile using WCS",
+                                         "sources_offsets": "Cross-correlate slit profile using telescope offsets",
+                                         "wcs": "Use WCS (no adjustment)",
                                          "offsets": "Use telescope offsets only"},
                                 default="sources_wcs", optional=False)
     fallback = config.ChoiceField("Fallback method", str,
-                                  allowed={"sources_offsets": "Match sources using telescope offsets",
+                                  allowed={"sources_offsets": "Cross-correlate slit profile using telescope offsets",
+                                           "wcs": "Use WCS (no adjustment)",
                                            "offsets": "Use telescope offsets only"},
-                                  default="offsets", optional=True)
+                                  default="wcs", optional=True)
     region = config.Field("Pixel section for measuring the spatial profile",
                            str, None, optional=True, check=validate_regions_int)
     tolerance = config.RangeField("Maximum distance from the header offset, "
@@ -75,8 +78,8 @@ class adjustWCSToReferenceConfig(config.Config):
     debug_plots = config.Field("Plot the cross-correlation function?", bool, False)
 
 
-class attachPinholeModelConfig(parameters_generic.calRequirementConfig):
-    suffix = config.Field("Filename suffix", str, "_pinholeModelAttached", optional=True)
+class attachPinholeRectificationConfig(parameters_generic.calRequirementConfig):
+    suffix = config.Field("Filename suffix", str, "_pinholeRectificationAttached", optional=True)
     pinhole = config.Field("Pinhole frame", (str, AstroData), None, optional=True)
 
 
@@ -84,6 +87,8 @@ class attachWavelengthSolutionConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_wavelengthSolutionAttached", optional=True)
     arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
                            optional=True, single=True)
+    use_same_arc = config.Field("Use the same arc for all inputs with the same central wavelength?",
+                                bool, False, optional=False)
 
 
 class calculateSensitivityConfig(config.core_1Dfitting_config):
@@ -142,16 +147,63 @@ class determineDistortionConfig(config.Config):
     max_shift = config.RangeField("Maximum shift per pixel in line position",
                                   float, 0.05, min=0.001, max=0.1)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
-    min_line_length = config.RangeField("Exclude line traces shorter than this fraction of spatial dimension",
-                                        float, 0., min=0., max=1.)
+    min_line_length = config.RangeField("Exclude line traces shorter than this fraction of slit length",
+                                        float, 0.8, min=0., max=1.)
     debug_reject_bad = config.Field("Reject lines with suspiciously high SNR (e.g. bad columns)?", bool, True)
+    debug_min_points_per_trace = config.RangeField("Minimum number of points per trace", int, 1, min=1)
     debug = config.Field("Display line traces on image display?", bool, False)
+
+
+class determinePinholeRectificationConfig(config.Config):
+    """
+    Configuration for the determinePinholeRectification() primitive.
+
+    While the primitive itself should be useable with various modes, it has
+    only been tested with cross-dispersed so far (September 2023). Parameters
+    thoughtare therefore left unspecified here, and should be defined in parameter
+    files more specific to the mode.
+    """
+    suffix = config.Field("Filename suffix",
+                          str, "_pinholeRectificationDetermined", optional=True)
+    start_pos = config.RangeField("Row or column to start tracing at (default: halfway)",
+                                  int, None, min=0, inclusiveMin=True, optional=True)
+    max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
+                                   int, 5, min=0)
+    max_shift = config.RangeField("Maximum shift per pixel in line position",
+                                  float, 0.05, min=0.001, max=0.3,
+                                  inclusiveMax=True)
+    min_line_length = config.RangeField("Minimum line length as a fraction of array",
+                                        float, 0, min=0, max=1, inclusiveMin=True,
+                                        inclusiveMax=True)
+    min_snr = config.RangeField("Minimum SNR for apertures", float, 10., min=0.)
+    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
+    spectral_order = config.RangeField("Order of fit in spectral direction",
+                                       int, 3, min=1)
+    # These exist in case excluding some of the pinhole traces is desired. This
+    # is important for GNIRS but may not be the case for other instruments/
+    # modes, so the defaults here are to use all traces found.
+    debug_min_trace_pos = config.RangeField("First pinhole trace to use",
+                                            dtype=int, default=None, min=1, optional=True)
+    debug_max_trace_pos = config.RangeField("Last pinhole trace to use",
+                                            dtype=int, default=None, min=1, optional=True)
+    debug_avoidance = config.RangeField("Number of pixels from edge of slit to ignore pinholes",
+                                        float, 3., min=0)
+    debug_plots = config.Field("Create diagnostic plots of traces", bool, False)
+
+    def validate(self):
+        if (self.debug_max_trace_pos is not None and
+                self.debug_min_trace_pos is not None and
+                self.debug_max_trace_pos < self.debug_min_trace_pos):
+            raise ValueError("debug_max_trace_pos cannot be less than debug_min_trace_pos")
 
 
 class determineSlitEdgesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined", optional=True)
     spectral_order = config.RangeField("Fitting order in spectral direction",
                                        int, 3, min=1)
+    min_snr = config.RangeField("Minimum SNR for edge detection", float, 10., min=0.1,
+                                optional=False)
     edge1 = config.RangeField("Left/lower edge of illuminated region",
                               float, None, min=1)
     edge2 = config.RangeField("Right/upper edge of illuminated region",
@@ -200,8 +252,8 @@ class determineWavelengthSolutionConfig(config.core_1Dfitting_config):
                                    check=list_of_ints_check)
     debug_alternative_centers = config.Field("Try alternative wavelength centers?", bool, False)
     interactive = config.Field("Display interactive fitter?", bool, False)
-    num_atran_lines = config.RangeField("Number of lines in ATRAN line list", int, 50.,
-                                              min=10, max=300, inclusiveMax=True)
+    num_lines = config.RangeField("Number of lines in the generated line list", int, 50.,
+                                              min=10, max=1000, inclusiveMax=True)
     wv_band = config.ChoiceField("Water Vapor constraint", str,
                                    allowed={"20": "20%-ile",
                                             "50": "50%-ile",
@@ -291,7 +343,7 @@ class findAperturesConfig(config.Config):
     use_snr = config.Field("Use signal-to-noise ratio rather than data in "
                            "collapsed profile?", bool, True)
     threshold = config.RangeField("Threshold for automatic width determination",
-                                  float, 0.1, min=0, max=1, fix_end_to_max=True)
+                                  float, 0.1, min=0, max=1)
     interactive = config.Field("Use interactive interface", bool, False)
     max_separation = config.RangeField("Maximum separation from target location (arcsec)",
                                        int, None, min=1, inclusiveMax=True, optional=True)
@@ -523,6 +575,12 @@ class linearizeSpectraConfig(config.Config):
 class maskBeyondSlitConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit",
                           optional=True)
+    debug_min_illuminated_fraction = config.RangeField(
+        "Minimum fraction of pixel that must be illuminated to not be masked",
+        float, 0.9, min=0., max=1., inclusiveMax=True)
+
+class monitorWavelengthSolutionConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_wavelengthSolutionMonitoring", optional=True)
 
 class normalizeFlatConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_normalized", optional=True)
@@ -530,11 +588,13 @@ class normalizeFlatConfig(config.core_1Dfitting_config):
     offset_from_center = config.Field("Offset in pixels from center of slit",
                                       int, None, optional=True)
     nsum = config.RangeField('Number of rows/columns to average (about "center")', int, 10, min=1)
+    regions = config.Field("Sample regions. (eg. 100:150,251:264)", str, None, optional=True)
     threshold = config.RangeField("Threshold for flagging unilluminated pixels",
                                   float, 0.01, min=0.0001, max=1.0)
     interactive = config.Field("Interactive fitting?", bool, False)
 
     def setDefaults(self):
+        self.niter = 1
         self.order = 20
 
 
@@ -561,7 +621,7 @@ class resampleToCommonFrameConfig(config.Config):
     output_wave_scale = config.ChoiceField("Output wavelength scale", str,
                                            allowed={"reference": "Reference input",
                                                     "linear": "Linear",
-                                                    #"loglinear": "Log-linear",
+                                                    "loglinear": "Log-linear",
                                                     },
                                            default="linear", optional=False)
     dq_threshold = config.RangeField("Fraction from DQ-flagged pixel to count as 'bad'",
@@ -613,6 +673,7 @@ class skyCorrectFromSlitConfig(config.core_1Dfitting_config):
     aperture_growth = config.RangeField("Aperture avoidance distance (pixels)", float, 2, min=0)
     debug_plot = config.Field("Show diagnostic plots?", bool, False)
     interactive = config.Field("Run primitive interactively?", bool, False)
+    debug_allow_skip = config.Field("Allow 'Skip' exit from interactive mode?", bool, False)
 
     def setDefaults(self):
         self.order = 5
@@ -629,8 +690,7 @@ class traceAperturesConfig(config.core_1Dfitting_config):
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
                                    int, 5, min=0)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True,
-                                  fix_end_to_max=True)
+                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True)
     nsum = config.RangeField("Number of lines to sum",
                              int, 10, min=1)
     step = config.RangeField("Step in rows/columns for tracing",
@@ -642,49 +702,8 @@ class traceAperturesConfig(config.core_1Dfitting_config):
 
     def setDefaults(self):
         del self.function
+        self.niter = 1
         self.order = 2
-
-
-class tracePinholeAperturesConfig(config.Config):
-    """
-    Configuration for the tracePinholeApertures() primitive.
-
-    While the primitive itself should be useable with various modes, it has
-    only been tested with cross-dispersed so far (September 2023). Parameters
-    thoughtare therefore left unspecified here, and should be defined in parameter
-    files more specific to the mode.
-    """
-    suffix = config.Field("Filename suffix",
-                          str, "_pinholeAperturesTraced", optional=True)
-    start_pos = config.RangeField("Row or column to start tracing at (default: halfway)",
-                                  int, None, min=0, inclusiveMin=True, optional=True)
-    max_missed = config.RangeField("Maximum number of steps to miss before a line is lost",
-                                   int, 5, min=0)
-    max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.3,
-                                  inclusiveMax=True)
-    min_line_length = config.RangeField("Minimum line length as a fraction of array",
-                                        float, 0, min=0, max=1, inclusiveMin=True,
-                                        inclusiveMax=True)
-    min_snr = config.RangeField("Minimum SNR for apertures", float, 10., min=0.)
-    nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
-    step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
-    spectral_order = config.RangeField("Order of fit in spectral direction",
-                                       int, 3, min=1)
-    # These exist in case excluding some of the pinhole traces is desired. This
-    # is important for GNIRS but may not be the case for other instruments/
-    # modes, so the defaults here are to use all traces found.
-    debug_min_trace_pos = config.RangeField("First pinhole trace to use",
-                                            dtype=int, default=None, min=1, optional=True)
-    debug_max_trace_pos = config.RangeField("Last pinhole trace to use",
-                                            dtype=int, default=None, min=1, optional=True)
-    debug_plots = config.Field("Create diagnostic plots of traces", bool, False)
-
-    def validate(self):
-        if (self.debug_max_trace_pos is not None and
-                self.debug_min_trace_pos is not None and
-                self.debug_max_trace_pos < self.debug_min_trace_pos):
-            raise ValueError("debug_max_trace_pos cannot be less than debug_min_trace_pos")
 
 
 def wavelength_units_check(value):

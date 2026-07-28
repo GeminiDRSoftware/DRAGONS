@@ -20,6 +20,7 @@ def test_fix_cosmic_rays(ad_slit):
     - Check that all simulated CR are removed from test data
     - Check shape of output data matches shape of input
     """
+    random.seed(0)
     modded_coords, sums = [], []
     shapes = ad_slit.shape
     for ext in ad_slit:

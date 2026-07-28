@@ -13,7 +13,7 @@ redshift quasar. We will use this observation to show how to recognize when
 the light from the second order shows up and how to correct for it using the
 interactive tools.
 
-The particularity with this data is that the setting is quite
+The particularity with this data are that the setting is quite
 red and the second order shows up in the spectrum. The configuration uses the
 OG515 blocking filter and the second order light appears at 1030nm.
 

@@ -297,7 +297,7 @@ def create_twilight_inputs():
     }
 
     root_path = os.path.join("./dragons_test_inputs/")
-    module_path = "geminidr/gmos/longslit/test_slit_illumination_correct/inputs"
+    module_path = "geminidr/gmos/longslit/test_slit_illum_correct/inputs"
     path = os.path.join(root_path, module_path)
     os.makedirs(path, exist_ok=True)
     cwd = os.getcwd()

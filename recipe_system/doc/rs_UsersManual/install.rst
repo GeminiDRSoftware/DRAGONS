@@ -73,9 +73,7 @@ installer are provided in the table below.
       arm64 machines can run x86 binaries via the Rosetta interface.  It is
       seamless.
 
-The current version of DRAGONS has been tested with Python 3.10.  At the time
-of this writing, Miniforge installs Python 3.10 by default.  (Other version
-of Python can subsequently be installed.)
+The current version of DRAGONS has been tested with Python 3.12.
 
 To install, run the installer that you have downloaded.
 Type the following in a terminal, replacing the ``.sh`` file name with the name
@@ -151,13 +149,13 @@ The content of the `~/.condarc` file should look like this (the order matters)::
 The next step is to create a virtual environment and install the DRAGONS
 software and its dependencies in it.  The name of the environment can be
 anything you like.  Here we use "dragons" as the name and we request
-Python 3.10.
+Python 3.12.
 
 ::
 
-    $ conda create -n dragons python=3.10 "numpy<2" dragons ds9
+    $ conda create -n dragons python=3.12 dragons ds9
 
-.. note:: DRAGONS is not currently compatible with the recent release of `numpy`
+.. .. note:: DRAGONS is not currently compatible with the recent release of `numpy`
           version 2.  We're working on it.  In the meantime, ensure that
           `numpy` v1 is installed.
 
@@ -169,17 +167,6 @@ You will need to activate the environment whenever you start a new shell.
 If you are planning to use it all the time, you might want to add the
 command to your ``.bash_profile``, after the "conda init" block.
 
-.. .. note::
-    For Linux users only.
-
-..    As a side note, if you are going to use PyRAF regularly, for example to
-    reduce Gemini data not yet supported in DRAGONS, you should install the
-    ``iraf-all`` and ``pyraf-all`` conda packages as well.
-
-.. ..    $ conda create -n geminiconda python=3.10 iraf-all pyraf-all ds9 dragons
-
-..    DRAGONS and the Recipe System do not need IRAF or PyRAF, however. See the
-..    Gemini website for information on how to configure IRAF (|geminiiraf_link|)
 
 .. _configure:
 
@@ -212,7 +199,7 @@ On a new installation, you will need to configure ``ds9`` buffer
 configurations::
 
     $ cd ~
-    $ cp $CONDA_PREFIX/lib/python3.10/site-packages/gempy/numdisplay/imtoolrc ~/.imtoolrc
+    $ cp $CONDA_PREFIX/lib/python3.12/site-packages/gempy/numdisplay/imtoolrc ~/.imtoolrc
     $ vi .bash_profile   # or use your favorite editor
 
       Add this line to the .bash_profile:

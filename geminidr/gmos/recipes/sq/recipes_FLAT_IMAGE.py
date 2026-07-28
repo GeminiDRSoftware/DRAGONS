@@ -6,7 +6,6 @@ recipe_tags = {'GMOS', 'IMAGE', 'CAL', 'FLAT'}
 
 from geminidr.gmos.recipes.sq.recipes_common import makeIRAFCompatible
 
-
 def makeProcessedFlat(p):
     """
     This recipe performs the standardization and corrections needed to
@@ -20,7 +19,7 @@ def makeProcessedFlat(p):
     p : PrimitivesBASE object
         A primitive set matching the recipe_tags.
     """
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ()
     p.addVAR(read_noise=True)
     p.overscanCorrect()
@@ -29,7 +28,6 @@ def makeProcessedFlat(p):
     p.addVAR(poisson_noise=True)
     p.stackFlats()
     p.normalizeFlat()
-    p.makeIRAFCompatible()
     p.storeProcessedFlat()
     return
 

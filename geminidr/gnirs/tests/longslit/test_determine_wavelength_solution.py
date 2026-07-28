@@ -39,7 +39,7 @@ determine_wavelength_solution_parameters = {
     'min_snr': None,
     'debug_min_lines': None,
     'in_vacuo': True,
-    'num_atran_lines': None,
+    'num_lines': None,
     "combine_method": "optimal",
     "wv_band": "header",
     "resolution": None
@@ -227,6 +227,7 @@ associated_calibrations_absorp = {
 
 
 # Tests Definitions ------------------------------------------------------------
+@pytest.mark.gnirsls
 @pytest.mark.wavecal
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
@@ -245,6 +246,7 @@ def test_regression_determine_wavelength_solution(
         pixel_scale = ad[0].pixel_scale()  # arcsec / px
         p.viewer = geminidr.dormantViewer(p, None)
 
+        p.mode = 'qa'
         p.determineWavelengthSolution(**{**determine_wavelength_solution_parameters,
                                          **params})
 
@@ -269,6 +271,11 @@ def test_regression_determine_wavelength_solution(
     # We don't care about what the wavelength solution is doing at
     # wavelengths outside where we've matched lines
     lines = ref_ad[0].WAVECAL["wavelengths"].data
+    lines = lines[lines > 0]  # column is padded with zeros
+
+    if lines.size == 0:
+        return
+
     indices = np.where(np.logical_and(ref_wavelength > lines.min(),
                                       ref_wavelength < lines.max()))
     tolerance = 0.5 * (slit_size_in_px * dispersion)

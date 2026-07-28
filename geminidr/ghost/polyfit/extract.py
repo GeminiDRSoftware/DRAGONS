@@ -413,7 +413,10 @@ class Extractor(object):
                                     f"({x_ix[0]}-{x_ix[-1]})")
                         saturation_warning = True
             print("\n")
-            log.stdinfo(f"{(self.badpixmask & DQ.cosmic_ray).astype(bool).sum()} CRs found")
+            # Push the number of CRs found into an attribute of extract for the
+            # primitive to try and retrieve for instrument monitoring
+            self.crsfound = (self.badpixmask & DQ.cosmic_ray).astype(bool).sum()
+            log.stdinfo(f"{self.crsfound} CRs found")
             if self.arm.mode == 'high':
                 log.stdinfo("(due to scattered light, the topmost pixel in HR"
                             " is often incorrectly flagged)")

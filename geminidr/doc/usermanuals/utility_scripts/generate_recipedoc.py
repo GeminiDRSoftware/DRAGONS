@@ -22,7 +22,7 @@ import textwrap
 
 SHORT_DESCRIPTION = "General documentation for recipes."
 
-DOCUMENTED_INSTPKG = {'f2', 'gmos', 'gnirs', 'gsaoi', 'niri'}
+DOCUMENTED_INSTPKG = {'f2', 'ghost', 'gmos', 'gnirs', 'gsaoi', 'niri'}
 DRPKG = 'geminidr'
 
 def parse_args(command_line_args):
@@ -129,9 +129,12 @@ def get_matching_instpkg(documented_instpkg, drpkg):
     packages are in the approved list and are indeed packages.
     """
     drpkg_mod = import_module(drpkg)
-    drpkg_importer = pkgutil.ImpImporter(drpkg_mod.__path__[0])
+    #drpkg_importer = pkgutil.ImpImporter(drpkg_mod.__path__[0])
     instpkgs = []
-    for pkgname, ispkg in drpkg_importer.iter_modules():
+    #for pkgname, ispkg in drpkg_importer.iter_modules():
+    for module_info in pkgutil.iter_modules(drpkg_mod.__path__):
+        pkgname = module_info.name
+        ispkg = module_info.ispkg
         if ispkg:
             if pkgname in documented_instpkg:
                 instpkgs.append(pkgname)
@@ -144,9 +147,12 @@ def get_list_of_recipe_modules(instpkg, drpkg, context):
     Keep only first level modules, it does not look in packages.
     """
     instpkg_module = import_module(os.extsep.join([drpkg, instpkg, 'recipes', context]))
-    instpkg_importer = pkgutil.ImpImporter(instpkg_module.__path__[0])
+    #instpkg_importer = pkgutil.ImpImporter(instpkg_module.__path__[0])
     modulenames = []
-    for modulename, ispkg in instpkg_importer.iter_modules():
+    #for modulename, ispkg in instpkg_importer.iter_modules():
+    for module_info in pkgutil.iter_modules(instpkg_module.__path__):
+        modulename = module_info.name
+        ispkg = module_info.ispkg
         if ispkg:
             continue
         modulenames.append(os.extsep.join([instpkg_module.__name__, modulename]))

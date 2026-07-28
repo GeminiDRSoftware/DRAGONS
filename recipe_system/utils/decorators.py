@@ -288,6 +288,14 @@ def parameter_override(fn):
         # calling function contains a self that is also a primitive
         toplevel = _top_level_primitive()
 
+        # The first thing on the stack is the decorator, so check the name
+        # of the function calling that... don't indent or log if it's the
+        # same as this primitive.
+        try:
+            caller = inspect.stack()[1].function
+        except (AttributeError, IndexError):
+            caller = None
+
         # Start with the config file to get list of parameters
         # Copy to avoid permanent changes; shallow copy is OK
         if pname not in pobj.params:
@@ -300,7 +308,8 @@ def parameter_override(fn):
 
         # Find user parameter overrides
         params = userpar_override(pname, list(config), pobj.user_params)
-        set_logging(pname)
+        if caller != pname:
+            set_logging(pname)
 
         if toplevel:
             for k, v in kwargs.items():
@@ -350,6 +359,7 @@ def parameter_override(fn):
                 try:
                     fnargs = dict(config.items())
                     ret_value = fn(pobj, adinputs=adinputs, **fnargs)
+                    assert_expected_dtypes(ret_value)
                 except Exception:
                     zeroset()
                     raise
@@ -364,13 +374,46 @@ def parameter_override(fn):
                         raise TypeError("Single AstroData instance passed to "
                                         "primitive, should be a list")
                     ret_value = fn(pobj, adinputs=adinputs, **dict(config.items()))
+                    assert_expected_dtypes(ret_value)
                 except Exception:
                     zeroset()
                     raise
 
         if write_after:
             pobj.writeOutputs(stream=outstream)
-        unset_logging()
+        if caller != pname:
+            unset_logging()
         gc.collect()
         return ret_value
     return gn
+
+
+# Enforce the expected dtypes between primitives, to catch NumPy 2 issues:
+def assert_expected_dtypes(adinputs):
+    msg = ""
+    for ad in adinputs:
+        for n, ext in enumerate(ad):
+            emsg = f'  File {ad.filename}, AstroData ext {n}:\n'
+            initlen = len(emsg)
+            ndd = ext.nddata.window[(slice(0, 1),) * len(ext.shape)]
+            if ndd.data.dtype.itemsize > 4:  # int/float with max 32 bits
+                emsg += f'    data:        {ndd.data.dtype}\n'
+            if ndd.uncertainty is not None and (
+                ndd.uncertainty.array.dtype.kind != 'f' or
+                ndd.uncertainty.array.dtype.itemsize != 4  # expect float32
+            ):
+                emsg += f'    uncertainty: {ndd.uncertainty.array.dtype}\n'
+            if ndd.mask is not None and (
+                ndd.mask.dtype.kind != 'u' or
+                ndd.mask.dtype.itemsize > 2  # uint16 for Gemini data; OK?
+            ):
+                emsg += f'    mask:        {ndd.mask.dtype}\n'
+            # The other attribute that gets to >1MB in practice is OBJMASK:
+            if hasattr(ext, 'OBJMASK') and ext.OBJMASK.dtype.itemsize > 1:
+                mesg += f'    OBJMASK:     {ext.OBJMASK.dtype}\n'
+            if len(emsg) > initlen:
+                msg += emsg
+    if msg:
+        raise AssertionError(
+            f'Produced unexpected output data type(s):\n\n{msg}'
+        )

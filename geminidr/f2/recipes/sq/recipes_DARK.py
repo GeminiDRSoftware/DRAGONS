@@ -22,9 +22,9 @@ def makeProcessedDark(p):
 
     p.prepare()
     p.addDQ(add_illum_mask=False)
-    p.nonlinearityCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.stackDarks()
     p.storeProcessedDark()
     return

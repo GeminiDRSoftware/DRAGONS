@@ -1,4 +1,4 @@
-# Copyright(c) 2019-2024 Association of Universities for Research in Astronomy, Inc.
+# Copyright(c) 2019-2026 Association of Universities for Research in Astronomy, Inc.
 
 """
 peaks.py
@@ -30,7 +30,7 @@ from scipy import interpolate, optimize, signal
 
 from astrodata import NDAstroData
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from gempy.library.nddops import NDStacker, sum1d
+from gempy.library.nddops import NDStacker, combine1d
 from gempy.utils import logutils
 
 from . import astrotools as at, astromodels as am
@@ -74,7 +74,7 @@ def average_along_slit(ext, center=None, offset_from_center=None,
     slit_polynomial : `Chebyshev1D` model
         Chebyshev polynomial representing the center of the extracted aperture.
     """
-    constant_slit = 'LS' in ext.tags
+    constant_slit = 'LS' in ext.tags or "TRANSFRM" in ext.phu
     npix, mpix = ext.shape[1 - dispersion_axis], ext.shape[dispersion_axis]
     if nsum is None:
         nsum = npix
@@ -125,19 +125,16 @@ def average_along_slit(ext, center=None, offset_from_center=None,
         mask_out = np.empty_like(data_out, dtype=np.uint16)
         variance_out = np.empty_like(data_out)
 
-        # Sum `nsum` pixels around the center at each column.
+        # Average `nsum` pixels around the center at each column.
+        # FIXME: This should ideally respect the "combiner" argument, and handle
+        # all the combine methods NDStacker does. (mean, median, wtmean, lmedian)
         for i, center_pix in enumerate(centers):
             n1 = center_pix + 1 - 0.5 * nsum
             n2 = center_pix + 1 + 0.5 * nsum
             nddata = NDAstroData(data[:, i], mask=mask[:, i],
                                  variance=variance[:, i])
-            data_out[i], mask_out[i], variance_out[i] = sum1d(nddata, n1, n2)
-
-        # Divide by number of pixels summed to get the mean.
-        # FIXME: This should ideally respect the "combiner" argument, and handle
-        # all the combine methods NDStacker does. (mean, median, wtmean, lmedian)
-        data_out /= nsum
-        variance_out /= nsum ** 2
+            data_out[i], mask_out[i], variance_out[i] = combine1d(
+                nddata, n1, n2, average=True)
 
         # Pass the polynomial for the center instead of the extract slice
         return data_out, mask_out, variance_out, slit_polynomial
@@ -246,7 +243,11 @@ def estimate_peak_width(data, mask=None, boxcar_size=None, nlines=None):
             widths.append(width)
         goodpix[lo:hi] = False
         niters += 1
-    return sigma_clip(widths).mean()
+
+    if len(widths) == 0:
+        return None
+    else:
+        return sigma_clip(widths).mean()
 
 
 def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):
@@ -404,7 +405,10 @@ def get_extrema(profile, prof_mask=None, min_snr=3, remove_edge_maxima=True):
         l = 0 if lowest == 0 else apertures[lowest-1]
         r = 0 if lowest == len(apertures)-1 else apertures[lowest+1]
         if extrema[lowest*2+1][1] < median:
-            merge_with_neighbor(lowest)
+            if len(order) > 1:
+                merge_with_neighbor(lowest)
+            else:  # this is the only peak so we've not found anything
+                return []
         else:
             apertures[lowest] = apnext
             apnext += 1
@@ -602,7 +606,8 @@ def find_apertures(ext, max_apertures, min_sky_region, percentile,
 
 @unpack_nddata
 def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, min_sep=3,
-                       min_frac=0.20, reject_bad=True, pinpoint_index=-1):
+                       min_frac=0.20, reject_bad=True, pinpoint_index=-1,
+                       halfwidth=None):
     """
     Find peaks in a 1D array using a wavelet method. This uses scipy.signal
     routines, but requires some duplication of that code since the
@@ -632,15 +637,23 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
         which index (in the wavelet-transformed array, ordered by "widths")
         should be used for determining more the more accurate peak positions
         (None => use untransformed data)
+    halfwidth: int / Nonw
+        half-width of the centering box; None will use a value derived from
+        the "widths" parameter
 
     Returns
     -------
-    2D array: peak pixels and SNRs (sorted by pixel coordinate)
+    2D array: peak pixels, peak values, and SNRs (sorted by pixel coordinate)
     """
-    mask = mask.astype(bool) if mask is not None else np.zeros_like(data, dtype=bool)
+    # Non-linear peaks are OK but saturated ones are not
+    mask = ((mask & (DQ.max ^ DQ.saturated)).astype(bool) if mask is not None
+            else np.zeros_like(data, dtype=bool))
 
     max_width = max(widths)
     window_size = 4 * max_width + 1
+    edge = 2.35482 * np.median(widths)  # edge-avoidance = FWHM
+    if halfwidth is None:
+        halfwidth = int(np.ceil(0.5 * (edge - 1)))
 
     # If no variance is supplied we estimate S/N from pixel-to-pixel variations
     # (do this before any smoothing)
@@ -686,7 +699,6 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     # Turn into array and remove those too close to the edges
     peaks = np.array(new_peaks)
-    edge = 2.35482 * np.median(widths)
     peaks = peaks[np.logical_and(peaks > edge, peaks < len(data) - 1 - edge)]
 
     # Remove peaks very close to unilluminated/no-data pixels
@@ -702,8 +714,8 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     # Clip the really noisy parts of the data and get more accurate positions
     #pinpoint_data[snr < 0.5] = 0
-    peaks = pinpoint_peaks(pinpoint_data, peaks=peaks, mask=mask,
-                           halfwidth=int(0.5*np.median(widths)))[0]
+    peaks, values = pinpoint_peaks(pinpoint_data, peaks=peaks, mask=mask,
+                                   halfwidth=halfwidth)
 
     # Clean up peaks that are too close together
     while True:
@@ -712,12 +724,15 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
             break
         i = np.argmax(diffs < min_sep)
         # Replace with mean of re-pinpointed points
-        new_peaks = pinpoint_peaks(pinpoint_data, peaks=peaks[i:i+2])[0]
+        new_peaks = pinpoint_peaks(pinpoint_data, peaks=peaks[i:i+2])
         del peaks[i+1]
-        if new_peaks:
-            peaks[i] = np.mean(new_peaks)
+        del values[i+1]
+        if new_peaks[0]:
+            peaks[i] = np.mean(new_peaks[0])
+            values[i] = np.mean(new_peaks[1])
         else:  # somehow both peaks vanished
             del peaks[i]
+            del values[i]
 
     #final_peaks = [p for p in peaks if snr[int(p + 0.5)] > min_snr]
     final_peaks = peaks
@@ -726,9 +741,9 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
     # Remove suspiciously bright peaks and return as array of
     # locations and SNRs, sorted by location
     if reject_bad:
-        good_peaks = reject_bad_peaks(list(zip(final_peaks, peak_snrs)))
+        good_peaks = reject_bad_peaks(list(zip(final_peaks, values, peak_snrs)))
     else:
-        good_peaks = list(zip(final_peaks, peak_snrs))
+        good_peaks = list(zip(final_peaks, values, peak_snrs))
     #print("KLDEBUG: T=", np.array(sorted(good_peaks)).T)
 
     # When no peaks are found the array is an empty list.  When called,
@@ -739,7 +754,7 @@ def find_wavelet_peaks(data, widths=None, mask=None, variance=None, min_snr=1, m
 
     T = np.array(sorted(good_peaks)).T
     if not T.size:
-        T = np.array([[],[]])
+        T = np.array([[],[], []])
     return T
 
 
@@ -872,17 +887,17 @@ def reject_bad_peaks(peaks):
 
     Parameters
     ----------
-    peaks: sequence of 2-tuples:
-        peak location and "strength" (e.g., SNR) of peaks
+    peaks: sequence of 3-tuples:
+        peak location, value, and "strength" (e.g., SNR) of peaks
 
     Returns
     -------
-    sequence of 2-tuples:
+    sequence of 3-tuples:
         accepted elements of input list
     """
     diff = 3  # Compare 1st brightest to 4th brightest
-    peaks.sort(key=lambda x: x[1])  # Sort by SNR
-    while len(peaks) > diff and (peaks[-1][1] / peaks[-(diff + 1)][1] > 3):
+    peaks.sort(key=lambda x: x[2])  # Sort by SNR
+    while len(peaks) > diff and (peaks[-1][2] / peaks[-(diff + 1)][2] > 3):
         del peaks[-1]
     return peaks
 
@@ -969,7 +984,9 @@ def get_limits(data, mask=None, variance=None, peaks=[], threshold=0, min_snr=3,
         lower, upper = extrema[i-1][0], extrema[i+1][0]
         targets = [threshold * extrema[i][1] +
                    (1 - threshold) * extrema[j][1] for j in (i-1, i+1)]
-        i1, i2, p = int(lower), int(upper+1), int(true_peak+0.5)
+        # 0.999 is needed to avoid bringing in an extra pixel if the upper
+        # limit is the last pixel (or unmasked pixel) in the data
+        i1, i2, p = int(lower), int(upper+0.999), int(true_peak+0.5)
 
         limits = []
         for target, _slice in zip(targets, (slice(i1, p+2), slice(p-1, i2+1))):
@@ -980,7 +997,7 @@ def get_limits(data, mask=None, variance=None, peaks=[], threshold=0, min_snr=3,
                 warnings.simplefilter("ignore", UserWarning)
                 spline = at.fit_spline_to_data(
                     data[_slice], mask=None if mask is None else mask[_slice],
-                    variance=0.01 * stddev[_slice]**2, k=min(npts-1, 3))
+                    variance=0.01 * stddev[_slice]**2, k=1)
 
             limit = peak_limit(spline, true_peak-_slice.start,
                                0 if _slice.start==i1 else npts-1,

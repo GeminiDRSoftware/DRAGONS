@@ -12,15 +12,16 @@ from gempy.library import astrotools as at
 
 from geminidr.interactive.interactive import (
     connect_region_model, FitQuality)
+from geminidr.interactive.interactive_config import interactive_conf
 from ..controls import Controller
 from .fit1d import (
-    Fit1DPanel, Fit1DVisualizer, InfoPanel, fit1d_figure, Fit1DRegionListener,
-    InteractiveModel, InteractiveModel1D)
+    Fit1DPanel, Fit1DVisualizer, Glyph, InfoPanel, fit1d_figure,
+    Fit1DRegionListener, InteractiveModel, InteractiveModel1D)
 from ..styles import dragons_styles
 
 from gempy.library.telluric_models import Planck, get_good_pixels
 
-from .help import TELLURIC_CORRECT_HELP_TEXT
+from .help import FIT_TELLURIC_HELP_TEXT, TELLURIC_CORRECT_HELP_TEXT
 
 
 ############################ stuff for fitTelluric ############################
@@ -121,18 +122,17 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
         for k, v in self.fitting_parameters.items():
             if k in vis.calibrator.fit_params:
                 vis.calibrator.fit_params[k][self.my_fit_index] = v
-                print(f"Updating {k} to value {v}")
 
         # Update the user mask. Since this method is called as soon as
         # a mask is updated in one panel, we know that changes could only
         # have happened to this panel
         mask = [m not in ('good', self.SigmaClipped.name) for m in self.mask]
-        print("STARTING PERFORM FIT")
+        # print("STARTING PERFORM FIT")
         vis.calibrator.user_mask[self.my_fit_index][~vis.calibrator.mask[self.my_fit_index]] = np.asarray(mask)
 
         # This is where we diverge because of the complexity of Telluric
         def fn():
-            # Perform the fit
+            # Perform the fit.
             m_final, new_mask = vis.calibrator.perform_fit(
                 self.my_fit_index, sigma_clipping=self.sigma_clip)
             #for k, v in zip(m_final.param_names, m_final.parameters):
@@ -143,7 +143,7 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
             # based on sigma-clipping
             start_pix = 0
             for i, (fit, nparams) in enumerate(zip(vis.fits, m_final.nparams)):
-                ngoodpix = (~vis.calibrator.mask[i]).sum()
+                ngoodpix = (~(vis.calibrator.mask[i] | vis.calibrator.user_mask[i])).sum()
                 # Obviously this naming is ridiculous!
                 fit.fit = m_final.models[i]
                 # The mask being returned is the size of the originally good
@@ -151,9 +151,8 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
                 # user in the UI. But the update_mask() method only wants
                 # points that were used in the fit, i.e., not those that
                 # had been masked by the user/stellar absorption features.
-                user_masked = np.asarray([m in (self.UserMasked.name, "stellar") for m in fit.mask])
-                fit.fit.mask = new_mask[start_pix:start_pix+ngoodpix][~user_masked]
-                #print(i, start_pix, start_pix+ngoodpix, new_mask.size)
+                # This is handled by update_mask()
+                fit.fit.mask = new_mask[start_pix:start_pix+ngoodpix]
                 fit.update_mask()
                 start_pix += ngoodpix
 
@@ -184,8 +183,8 @@ class TelluricInteractiveModel1D(InteractiveModel1D):
                 fit.notify_listeners()
 
             # Set *all* fits to BAD if we don't have enough points to constrain
-            total_good = np.sum(fit.data.data['mask'].count('good')
-                                for fit in vis.fits)
+            total_good = np.sum([fit.data.data['mask'].count('good')
+                                for fit in vis.fits])
             if total_good < len(m_final.parameters):
                 for fit in self.fits:
                     fit.quality = FitQuality.BAD
@@ -284,10 +283,11 @@ class TelluricPanel(Fit1DPanel):
         p_main, p_supp = fit1d_figure(width=self.width, height=self.height,
                                       xpoint=self.xpoint, ypoint=self.ypoint,
                                       xlabel=self.xlabel, ylabel=self.ylabel,
+                                      fit_line_legend="fit",
                                       model=self.model, plot_ratios=False,
                                       enable_user_masking=True)
         p_main.line(x='waves', y='continuum', source=self.model.aux_data,
-                    line_width=2, color='blue')
+                    line_width=2, color='blue', legend_label="airmass=0")
 
         if self.enable_regions:
             self.model.band_model.add_listener(Fit1DRegionListener(self.update_regions))
@@ -326,9 +326,11 @@ class TelluricPanel(Fit1DPanel):
         p_intrinsic.width_policy = 'fit'
         p_intrinsic.sizing_mode = 'stretch_width'
         p_intrinsic.step(x='waves', y='corrected', source=self.model.aux_data,
-                         line_width=2, color="crimson")
-        intrinsic_line = p_intrinsic.step(x='waves', y='intrinsic_spectrum', source=self.model.aux_data,
-                         line_width=2, color="blue", mode="center")
+                         line_width=2, color="crimson", legend_label="corrected")
+        intrinsic_line = p_intrinsic.step(
+            x='waves', y='intrinsic_spectrum', source=self.model.aux_data,
+            line_width=2, color="blue", mode="center", legend_label="intrinsic"
+        )
         # We only want to scale to the intrinsic spectrum
         p_intrinsic.y_range.renderers = [intrinsic_line]
 
@@ -373,12 +375,15 @@ class TelluricPanel(Fit1DPanel):
 
         good = get_good_pixels(model.x, model.aux_data.data['waves'])
 
-        absorption = model.y / model.aux_data.data['continuum'][good]
+        absorption = at.divide0(model.y, model.aux_data.data['continuum'][good])
         goodpix = [m == 'good' for m in model.mask]
-        spline = make_interp_spline(model.x[goodpix],
-                                    absorption[goodpix], k=3)
-        spline.extrapolate = False  # will return np.nan outside range
-        model.aux_data.data['telluric_data'] = spline(model.aux_data.data['waves'])
+        if np.sum(goodpix) > 3:
+            spline = make_interp_spline(model.x[goodpix],
+                                        absorption[goodpix], k=3)
+            spline.extrapolate = False  # will return np.nan outside range
+            model.aux_data.data['telluric_data'] = spline(model.aux_data.data['waves'])
+        else:
+            model.aux_data.data['telluric_data'] = np.ones_like(model.aux_data.data['waves'])
 
 
 class TelluricVisualizer(Fit1DVisualizer):
@@ -424,7 +429,7 @@ class TelluricVisualizer(Fit1DVisualizer):
         self.actively_fitting = True
         super().__init__(init_data, all_fp_init,
                          **kwargs, panel_class=TelluricPanel,
-                         help_text=TELLURIC_CORRECT_HELP_TEXT,
+                         help_text=FIT_TELLURIC_HELP_TEXT,
                          turbo_tabs=True,
                          reinit_live=False,
                          mask_glyphs={"stellar": ("inverted_triangle", "red")}
@@ -482,7 +487,7 @@ class TelluricVisualizer(Fit1DVisualizer):
         # suppressed fitting when creating the Panels (special for Telluric)
         self.fits[0].perform_fit()
         for lsf_param in self.calibrator.lsf_parameter_bounds:
-            print("LSF_PARAM", lsf_param, getattr(self.fitted_model, lsf_param))
+            # print("LSF_PARAM", lsf_param, getattr(self.fitted_model, lsf_param))
             self.ui_params.values[lsf_param] = getattr(self.fitted_model, lsf_param).value
         # Ensures that the calibrator knows the lsf_scaling params have been set
         self.calibrator.set_fitting_params(self.ui_params)
@@ -623,6 +628,8 @@ class TelluricVisualizer(Fit1DVisualizer):
 ############################ stuff for telluricCorrect ############################
 
 class InteractiveTelluricCorrection(InteractiveModel1D):
+    Good = Glyph("data", "circle", interactive_conf().bokeh_data_color)
+
     def __init__(self, visualizer):
         self.visualizer = visualizer
         self.my_fit_index = len(visualizer.fits)
@@ -667,10 +674,12 @@ class TelluricCorrectPanel(Fit1DPanel):
         p_main, _ = fit1d_figure(width=self.width, height=self.height,
                                  xpoint=self.xpoint, ypoint=self.ypoint,
                                  xlabel=self.xlabel, ylabel=self.ylabel,
+                                 fit_line_legend="corrected spectrum",
                                  model=self.model, plot_residuals=False,
                                  plot_ratios=False, enable_user_masking=False)
         # Since we only have "good" points, we don't need a legend
-        p_main.legend.visible = False
+        # -- or so I thought, but I've been overruled.
+        # p_main.legend.visible = False
         self.p_main = p_main
         self.reset_view()
         return [p_main]
@@ -705,6 +714,7 @@ class TelluricCorrectVisualizer(Fit1DVisualizer):
 
         super().__init__(init_data, all_fp_init,
                          **kwargs, panel_class=TelluricCorrectPanel,
+                         help_text=TELLURIC_CORRECT_HELP_TEXT,
                          turbo_tabs=True, reinit_live=True,
                          )
 
@@ -735,7 +745,9 @@ class TelluricCorrectVisualizer(Fit1DVisualizer):
         def _shift_pixels(row, shift):
             # Update the pixel shift value in the TextInput widget, which
             # will update the Slider and the model
-            row.children[-1].value = self.calibrator.reinit_params["pixel_shift"] + shift
+            row.children[-1].value = np.round(
+                self.calibrator.reinit_params["pixel_shift"] + shift,
+                decimals=3)
 
         if shiftpixel_row is not None:
             buttons = []

@@ -7,7 +7,7 @@ from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from ..common import build_group_id
 
 from .lookup import detector_properties, nominal_zeropoints, read_modes
-from .lookup import dispersion_by_config
+from .lookup import dispersion_by_config, xd_orders
 from .lookup import pixel_scale
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
@@ -46,7 +46,13 @@ class AstroDataGnirs(AstroDataGemini):
     @astro_data_tag
     def _type_thruslit(self):
         if 'Acq' not in self.phu.get('SLIT', ''):
-            return TagSet(['THRUSLIT'], if_present=['IMAGE'])
+            tagset = ['THRUSLIT']
+            prism = self.phu.get('PRISM', '')
+            if 'MIR' in prism:
+                tagset.append('LS')
+            elif 'XD' in prism:
+                tagset.append('XD')
+            return TagSet(tagset, if_present=['IMAGE'])
 
     @astro_data_tag
     def _type_spect(self):
@@ -77,11 +83,6 @@ class AstroDataGnirs(AstroDataGemini):
     def _type_standard(self):
         if self.phu.get('PROCSTND'):
             return TagSet(['STANDARD', 'CAL'])
-
-    @astro_data_tag
-    def _type_telluric(self):
-        if self.phu.get('PROCTELL'):
-            return TagSet(['TELLURIC', 'CAL'])
 
     @returns_list
     @astro_data_descriptor
@@ -122,8 +123,11 @@ class AstroDataGnirs(AstroDataGemini):
             camera = 'Long'
         else:
             camera = None
-
-        filter = str(self.filter_name(pretty=True))[0]
+        if "XD" in self.tags:
+            order = self._grating_order()
+            filter = xd_orders.get(order, None)
+        else:
+            filter = str(self.filter_name(pretty=True))[0]
         dispersion = dispersion_by_config.get((grating, camera), {}).get(filter)
 
         if dispersion is None:
@@ -699,6 +703,8 @@ class AstroDataGnirs(AstroDataGemini):
         """
         try:
             slit = self.phu['SLIT'].replace(' ', '')
+            # Fix inconsistency in 1.00arcsec slit name
+            slit = slit.replace('1.0arcsec', '1.00arcsec')
         except KeyError:
             return None
         return gmu.removeComponentID(slit) if stripID or pretty else slit

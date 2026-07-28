@@ -12,12 +12,8 @@ import astrodata
 import gemini_instruments
 import numpy as np
 
-import geminidr
 from astrodata.testing import download_from_archive
-from geminidr.gmos.primitives_gmos_image import GMOSImage
 from gempy.utils import logutils
-from recipe_system.cal_service import UserDB
-from recipe_system.cal_service.caldb import CalReturn
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
 
@@ -44,7 +40,7 @@ def test_make_processed_flat(
     flat_fnames : list
         Contains the flat names that will be reduced.
     master_bias : str
-        Contains the name of the master flat.
+        Contains the name of the master bias.
     path_to_inputs : fixture
         Custom fixture that defines where the input data is stored.
     """
@@ -53,64 +49,17 @@ def test_make_processed_flat(
 
     with change_working_dir():
         logutils.config(file_name=f"log_flat_{flat_fnames[0].split('.')[0]}.txt")
+
+        # All retrieval of BPM from archive
+        with open("test.cfg", "w") as f:
+            f.write("[calibs]\n")
+            f.write("databases = https://archive.gemini.edu get\n")
+
         r = Reduce()
-
-        # TODO map actual bpms and update reference files as needed
-        # just getting to a baseline passing test first
-        def patch(clazz, name, replacement):
-            def wrap_original(orig):
-                # when called with the original function, a new function will be returned
-                # this new function, the wrapper, replaces the original function in the class
-                # and when called it will call the provided replacement function with the
-                # original function as first argument and the remaining arguments filled in by Python
-
-                def wrapper(*args, **kwargs):
-                    return replacement(orig, *args, **kwargs)
-
-                return wrapper
-
-            orig = getattr(clazz, name)
-            setattr(clazz, name, wrap_original(orig))
-
-        def mock_get_processed_bpm(orig, self, adinputs, caltype, *args, **kwargs):
-            if caltype != 'processed_bpm':
-                return orig(self, adinputs, caltype, *args, **kwargs)
-            bpmfiles = []
-            for ad in adinputs:
-                inst = ad.instrument()  # Could be GMOS-N or GMOS-S
-                xbin = ad.detector_x_bin()
-                ybin = ad.detector_y_bin()
-                det = ad.detector_name(pretty=True)[:3]
-                amps = '{}amp'.format(3 * ad.phu['NAMPS'])
-                mos = '_mosaic' if (ad.phu.get(geminidr.gemini.lookups.timestamp_keywords.timestamp_keys['mosaicDetectors'])
-                                    or ad.phu.get(geminidr.gemini.lookups.timestamp_keywords.timestamp_keys['tileArrays'])) else ''
-                mode_key = '{}_{}_{}{}_{}'.format(inst, det, xbin, ybin, amps)
-
-                db_matches = sorted((k, v) for k, v in geminidr.gmos.lookups.maskdb.bpm_dict.items() \
-                                    if k.startswith(mode_key) and k.endswith(mos))
-
-                # If BPM(s) matched, use the one with the latest version number suffix:
-                if db_matches:
-                    bpm = db_matches[-1][1]
-                else:
-                    bpm = None
-
-                if bpm is None:
-                    bpmfiles.append(bpm)
-                else:
-                    # Prepend standard path if the filename doesn't start with '/'
-                    bpm_dir = os.path.join(os.path.dirname(geminidr.gmos.lookups.maskdb.__file__), 'BPM')
-                    bpmfiles.append(bpm if bpm.startswith(os.path.sep) else os.path.join(bpm_dir, bpm))
-
-            return CalReturn(bpmfiles, [None]*len(bpmfiles))
-
-        # I can't get monkeypatch to do the right thing, we don't have a UserDB instance yet...
-        # TODO remove all of this mocking and drive the test off of bpm cal matching with new bpms and new refs
-        patch(UserDB, "_get_calibrations", mock_get_processed_bpm)
-
         r.files = [download_from_archive(f) for f in flat_fnames]
         r.mode = 'qa'
         r.ucals = normalize_ucals(calibration_files)
+        r.config_file = 'test.cfg'
         r.runr()
 
         # Delete files that won't be used

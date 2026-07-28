@@ -6,18 +6,21 @@
 The DRAGONS Team
 ****************
 
+DRAGONS logo created by Bruno Quint.
+    The DRAGONS logo uses the Python blue and the Gemini yellow.  The
+    DRAGONS represent the D and G of DRAGONS; the G is for Gemini in the
+    DRAGONS acronym, Data Reduction for Astronomy from Gemini Observatory
+    North and South.
+
 Current DRAGONS Team
 ====================
 (Alphabetical order)
 
-* Dan Avner
-* Daniel Berke
 * Paul Hirst
 * Kathleen Labrie
 * Chris Simpson
 * Olesja Smirnova
 * Monika Soraisam
-* D.J. Teal
 * James Turner
 * Bill Vacca
 
@@ -26,10 +29,14 @@ Past DRAGONS Team Members
 (Alphabetical order)
 
 * Ken Anderson
+* Dan Avner
+* Daniel Berke
 * Ricardo Cárdenes
 * Simon Conseil
 * Oliver Oberdorf
 * Bruno Quint
+* Mark Rawlings
+* D.J. Teal
 * Joanna Thomas-Osip
 
 Special Thanks

@@ -14,4 +14,4 @@ resolution mode.
 
    ex1_ghost_stdonetarget_dataset
    ex1_ghost_stdonetarget_cmdline
-..   ex1_ghost_stdonetarget_api
+   ex1_ghost_stdonetarget_api

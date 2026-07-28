@@ -44,8 +44,8 @@ In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
     browser = your_preferred_browser
 
 The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
-the interactive tools using that browser.  The allowed strings are "safari",
-"chrome", and "firefox".
+the interactive tools using that browser.  The allowed strings are "**safari**",
+"**chrome**", and "**firefox**".
 
 Set up the Local Calibration Manager
 ====================================
@@ -70,7 +70,8 @@ have to do it.  However, DRAGONS provides tools to help you with that.
 The first step is to create input file lists.  The tool "|dataselect|" helps
 with that.  It uses Astrodata tags and "|descriptors|" to select the files and
 send the filenames to a text file that can then be fed to "|reduce|".  (See the
-|astrodatauser| for information about Astrodata.)
+|astrodatauser| for information about Astrodata  and for a list
+of |descriptors|.)
 
 First, navigate to the ``playground`` directory in the unpacked data package::
 
@@ -79,9 +80,9 @@ First, navigate to the ``playground`` directory in the unpacked data package::
 
 A list for the flats
 --------------------
-The GNRIS flats will be stack together.  Therefore it is important to ensure
+The GNIRS flats will be stacked together.  Therefore it is important to ensure
 that the flats in the list are compatible with each other.  You can use
-`dataselect` to narrow down the selection as required.  Here, we have only
+"|dataselect|" to narrow down the selection as required.  Here, we have only
 the flats that were taken with the science and we do not need extra selection
 criteria.
 
@@ -103,7 +104,7 @@ Often two are taken.  We will use both in this case and stack them later.
 A list for the science observations
 -----------------------------------
 
-In our case, the science observations can be selected from the observation
+The science observations can be selected from the observation
 class, ``science``, that is how they are differentiated from the telluric
 standards which are ``partnerCal``.
 
@@ -154,7 +155,7 @@ database:
 
 Master Flat Field
 =================
-GNIRS longslit flat field are normally obtained at night along with the
+GNIRS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.
 
 .. todo:: discuss the odd-even problem.  probably with the interactive tool

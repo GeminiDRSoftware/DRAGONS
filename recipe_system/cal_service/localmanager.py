@@ -170,25 +170,33 @@ class LocalManager:
         if self.fsc.database_url.startswith('sqlite:///'):
             db_path = self.fsc.database_url[10:]
         else:
-            raise LocalManagerError(ERROR_CANT_WIPE,
+            raise LocalManagerError(ERROR_CANT_CREATE,
                                     "Non SQLite database URL. This is not "
                                     "currently supported within DRAGONS")
 
-        if os.path.exists(db_path) and wipe:
-            try:
-                os.remove(db_path)
-            except Exception as err:
-                raise LocalManagerError(ERROR_CANT_WIPE,
-                                        "Failed to remove {db_path}") from err
-
+        if os.path.exists(db_path):
+            if wipe:
+                try:
+                    os.remove(db_path)
+                except Exception as err:
+                    raise LocalManagerError(
+                        ERROR_CANT_WIPE,
+                        "Failed to remove {db_path}") from err
+            else:
+                # DB File exists and wipe==False. There's no technical reason not to allow this,
+                # but DRAGONS policy is not to.
+                raise LocalManagerError(
+                    ERROR_CANT_CREATE,
+                    "Database file exists and wipe=True was not specified")
 
         try:
+            self.session = db.sessionfactory(reload=True)
             log.debug(f"Creating Tables with dburl: {self.fsc.database_url}")
             create_tables(self.session)
             self.session.commit()
         except OperationalError as err:
             message = (f"There was an error when trying to create the database "
-                       f"{db_path}. Please, check your path and permissions.")
+                       f"{db_path}. Please check your path and permissions.")
             raise LocalManagerError(ERROR_CANT_CREATE, message) from err
 
     @ensure_db_file

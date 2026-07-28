@@ -1,5 +1,10 @@
 .. ex1_gnirsim_twostars_dataset.rst
 
+.. role:: raw-html(raw)
+   :format: html
+
+.. |verticalpadding| replace:: :raw-html:`<br>`
+
 .. _twostars_dataset:
 
 *********************************

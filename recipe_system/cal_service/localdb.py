@@ -37,7 +37,7 @@ class LocalDB(CalDB):
     def __init__(self, dbfile, name=None, valid_caltypes=None, procmode=None,
                  get_cal=True, store_cal=True, log=None, force_init=False):
         if not localmanager_available:
-            raise ValueError(f"Cannot initialize local database {name} as"
+            raise ValueError(f"Cannot initialize local database {name} as "
                              "localmanager could not be imported.\n"
                              f"{import_error}")
 

@@ -383,7 +383,7 @@ class ImageDisplay:
         nbytes = pix.size * pix.itemsize
         self._writeHeader(opcode,self._MEMORY, -nbytes, x, y, frame, 0)
 
-        status = self._write(pix.tostring())
+        status = self._write(pix.tobytes())
         return status
 
     def readData(self,x,y,pix):
@@ -539,12 +539,12 @@ class ImageDisplay:
 
         """Write request to image display"""
 
-        a = n.array([tid,thingct,subunit,0,x,y,z,t],dtype=n.uint16)
+        a = n.array([tid,thingct,subunit,0,x,y,z,t],dtype=int).astype(n.uint16)
         # Compute the checksum
         sum = n.add.reduce(a,dtype=n.uint16)
         sum = 0xffff - (sum & 0xffff)
         a[3] = sum
-        self._write(a.tostring())
+        self._write(a.tobytes())
 
     def close(self, os_close=os.close):
 

@@ -39,16 +39,27 @@ Here is a copy of the table for quick reference.
 | BPM                 || bpm_20100716_gnirs_gnirsn_11_full_1amp.fits |
 +---------------------+----------------------------------------------+
 
+Setting up
+==========
+First navigate to your work directory in the unpacked data package.
+
+::
+
+    cd <path>/gnirsls_tutorial/playground
+
+The first steps are to import libraries, set up the calibration manager,
+and set the logger.
+
 Configuring the interactive interface
-=====================================
+-------------------------------------
 In ``~/.dragons/``, add the following to the configuration file ``dragonsrc``::
 
     [interactive]
     browser = your_preferred_browser
 
 The ``[interactive]`` section defines your preferred browser.  DRAGONS will open
-the interactive tools using that browser.  The allowed strings are "safari",
-"chrome", and "firefox".
+the interactive tools using that browser.  The allowed strings are "**safari**",
+"**chrome**", and "**firefox**".
 
 Importing libraries
 -------------------
@@ -64,7 +75,7 @@ Importing libraries
     from gempy.adlibrary import dataselect
 
 The ``dataselect`` module will be used to create file lists for the
-biases, the flats, the arcs, the standard, and the science observations.
+biases, the flats, the arcs, the telluric star, and the science observations.
 The ``Reduce`` class is used to set up and run the data
 reduction.
 
@@ -90,10 +101,23 @@ Set up the Calibration Service
     :ref:`cal_service`, specifically the these sections:
     :ref:`cal_service_config` and :ref:`cal_service_api`.
 
+We recommend that you clean up your working directory (``playground``) and
+delete the old calibration database before you start.  Create a fresh one.
+
+Start a fresh calibration database (``caldb.init(wipe=True)``) when you
+start a new example.
+
 Create file lists
 =================
-The next step is to create input file lists.  The module ``dataselect`` helps
-with that.  It uses Astrodata tags and |descriptors| to select the files and
+This data set contains science and calibration frames. For some programs, it
+could contain different observed targets and different exposure times
+depending on how you like to organize your raw data.
+
+The DRAGONS data reduction pipeline does not organize the data for you.
+You have to do it. However, DRAGONS provides tools to help you with that.
+
+The next step is to create input file lists.  The module "|dataselect|" helps.
+It uses Astrodata tags and |descriptors| to select the files and
 store the filenames to a Python list that can then be fed to the ``Reduce``
 class. (See the |astrodatauser| for information about Astrodata and for a list
 of |descriptors|.)
@@ -118,9 +142,9 @@ We show several usage examples below.
 
 A list for the flats
 --------------------
-The GNRIS flats will be stack together.  Therefore it is important to ensure
+The GNIRS flats will be stacked together.  Therefore it is important to ensure
 that the flats in the list are compatible with each other.  You can use
-`dataselect` to narrow down the selection as required.  Here, we have only
+"|dataselect|" to narrow down the selection as required.  Here, we have only
 the flats that were taken with the science and we do not need extra selection
 criteria.
 
@@ -132,7 +156,7 @@ criteria.
 
 A list for the arcs
 -------------------
-The GNIRS longslit arc was obtained at the end of the science observation.
+The GNIRS longslit arc were obtained at the end of the science observation.
 Often two are taken.  We will use both in this case and stack them later.
 
 .. code-block:: python
@@ -144,11 +168,11 @@ Often two are taken.  We will use both in this case and stack them later.
 
 A list for the telluric
 -----------------------
-DRAGONS does not recognize the telluric star as such.  This is because
-the observations are taken like science data and the GNIRS headers do not
-explicitly state that the observation is a telluric standard.  For now, the
-`observation_class` descriptor can be used to differential the telluric
-from the science observations, along with the rejection of the `CAL` tag to
+DRAGONS does not recognize the telluric star as such.  This is because, at
+Gemini, the observations are taken like science data and the GNIRS headers do not
+explicitly state that the observation is a telluric standard.  In most cases,
+the ``observation_class`` descriptor can be used to differentiate the telluric
+from the science observations, along with the rejection of the ``CAL`` tag to
 reject flats and arcs.
 
 .. code-block:: python
@@ -165,9 +189,9 @@ reject flats and arcs.
 A list for the science observations
 -----------------------------------
 
-The science observations can be selected from the observation
-class, ``science``, that is how they are differentiated from the telluric
-standards which are ``partnerCal``.
+The science observations can be selected from the "observation class"
+``science``.  This is how they are differentiated from the telluric
+standards which are set to ``partnerCal``.
 
 First, let's have a look at the list of objects.
 
@@ -204,7 +228,7 @@ objects we could add the object name in the expression.
         all_files,
         [],
         ['CAL'],
-        dataselect.expr_parser('object=="SDSSJ162449.00+321702.0"')
+        dataselect.expr_parser('observation_class=="science" and object=="SDSSJ162449.00+321702.0"')
     )
 
 Bad Pixel Mask
@@ -230,7 +254,7 @@ To add the BPM included in the data package to the local calibration database:
 
 Master Flat Field
 =================
-GNIRS longslit flat field are normally obtained at night along with the
+GNIRS longslit flat fields are normally obtained at night along with the
 observation sequence to match the telescope and instrument flexure.
 
 The GNIRS longslit flatfield requires only lamp-on flats.  Subtracting darks
@@ -246,17 +270,17 @@ The flats will be stacked.
     reduce_flats.files.extend(flats)
     reduce_flats.runr()
 
-GNIRS data is affected by a "odd-even" effect where alternate rows in the
-GNIRS science array have gains that differ by approximately 10 percent.  When
-you run ``normalizeFlat`` in interactive mode you can clearly see the two
-levels.
-
-In interactive mode, the objective is to get a fit that falls inbetween the
-two sets of points, with a symmetrical residual fit.  In this case, order=30
-worked well.
+GNIRS data are affected by a "odd-even" effect where alternate rows in the
+GNIRS science array have gains that differ by approximately 10 percent.
+We have added a correction in ``normalizeFlat`` that levels off the rows to
+help with the fit.  Here it works well, in some cases you might see a some
+split when you run ``normalizeFlat`` in interactive mode.  The objective
+if you see the split is to get a fit that falls inbetween the
+two sets of points, with a symmetrical residual fit.
 
 Note that you are not required to run in interactive mode, but you might want
-to if flat fielding is critical to your program.
+to if flat fielding is critical to your program.  For example, in this case
+adjusting the order to 30 significantly improves the fit.
 
 .. code-block:: python
     :linenos:
@@ -295,9 +319,9 @@ Because the slit length does not cover the whole array, we want to know where
 the unilluminated areas are located and ignore them when the distortion
 correction is calculated (along with the wavelength solution).  That information
 is measured during the creation of the flat field and stored in the processed
-flat.   Right now, the association rules do not automatically associate
-flats to arcs, therefore we need to specify the processed flat on the
-command line.  Using the flat is optional but it is recommended.
+flat.   Using the flat is optional but it is recommended. In any case, if a
+matching flat exists, it will be picked up automatically by the calibration
+manager.
 
 
 .. code-block:: python
@@ -306,7 +330,6 @@ command line.  Using the flat is optional but it is recommended.
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
-    reduce_arcs.uparms = dict([('flatCorrect:flat', reduce_flats.output_filenames[0])])
     reduce_arcs.runr()
 
 The primitive ``determineWavelengthSolution``, used in the recipe, has an
@@ -318,10 +341,7 @@ interactive mode. To activate the interactive mode:
 
     reduce_arcs = Reduce()
     reduce_arcs.files.extend(arcs)
-    reduce_arcs.uparms = dict([
-                ('flatCorrect:flat', reduce_flats.output_filenames[0]),
-                ('interactive', True),
-                ])
+    reduce_arcs.uparms = dict([('interactive', True),])
     reduce_arcs.runr()
 
 
@@ -360,7 +380,7 @@ F stars".*, Table 2, we find that the effective temperature of an A2.5IV star
 is about 8150 K. Using Simbad, we find that the star has a magnitude of
 K=3.925.
 
-Note that the data is recognized by Astrodata as normal GNIRS longslit science
+Note that the data are recognized by Astrodata as normal GNIRS longslit science
 spectra.  To calculate the telluric correction, we need to specify the telluric
 recipe (``reduceTelluric``), otherwise the default science reduction will be
 run.
@@ -379,7 +399,7 @@ run.
                 ])
     reduce_telluric.runr()
 
-Using a Chebyshev polynomial of order 10 leads to a fit that better follows
+Using a spline3 of order 10 leads to a fit that better follows
 the continuum without being too wavy.  The fit might look a bit high in the
 blue but remember that this is a region where the telluric absorption becomes
 important.
@@ -387,6 +407,11 @@ important.
 .. image:: _graphics/gnirsls_Kband32mm_tellfit.png
    :width: 600
    :alt: fit to the telluric standard
+
+.. image:: _graphics/gnirsls_Kband32mm_tellfitmodel.png
+   :width: 600
+   :alt: the corrected spectrum using the fitTelluric model.
+
 
 Science Observations
 ====================
@@ -411,9 +436,10 @@ typical and why the default is set to do nothing.
    them automatically. Each extracted spectrum is stored in an individual
    extension in the output multi-extension FITS file.
 
-   The automatic source detection in this case does find two extra spurious
-   sources at the extreme left edge of the cross-section.  They are not real
-   sources.  Just ignore them or remove them in interactive mode.
+   The automatic source detection in this case does find one extra spurious
+   sources at the extreme left edge of the cross-section.  It is not a real
+   source.  Just ignore it or remove it in interactive mode.
+
 
 This is what one raw image looks like.
 
@@ -436,13 +462,13 @@ spectrum.
 To run the reduction with all the interactive tools activated, set the
 ``interactive`` parameter to ``True``.
 
-At the ``traceApertures`` step, the fit one gets automatically for this source
-is perfectly reasonable, well within the envelope of the source aperture.
-To improve the fit, one could activate sigma clipping and increase to number
-of iteration to 1 to get a straighter fit that ignores the deviant points at
-the edges of the spectrum. This can be done manually with the interactive
-tool (try it), or on the command line by adding ``-p traceApertures:niter=1``
-to the ``reduce`` call.
+The primitive ``findApertures`` finds the source automatically. If it were
+to find spurious sources, or sources you are simply not interested in, you
+can remove them by pointing the cursor on them and by pressing ``d``.
+
+It does not make a big difference in this case but at the ``fitTelluric``
+step we can adjust the offset to ``0.1`` to better remove the telluric features.
+
 
 .. code-block:: python
     :linenos:
@@ -450,10 +476,7 @@ to the ``reduce`` call.
 
     reduce_science = Reduce()
     reduce_science.files.extend(scitarget)
-    reduce_science.uparms = dict([
-                        ('traceApertures:niter', 1),
-                        ('interactive', True),
-                        ])
+    reduce_science.uparms = dict([('interactive', True)])
     reduce_science.runr()
 
 The 2D spectrum before extraction looks like this, with blue wavelengths at
@@ -481,6 +504,12 @@ like this.
    :alt: 1D extracted spectrum after telluric correction or before flux calibration
 
 And the final spectrum, corrected for telluric features and flux calibrated.
+
+::
+
+   from gempy.adlibrary import plotting
+   ad = astrodata.open(reduce_science.output_filenames[0])
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={})
 
 .. image:: _graphics/gnirsls_Kband32mm_1d.png
    :width: 600

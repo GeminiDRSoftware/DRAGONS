@@ -19,7 +19,10 @@ class GNIRSLineSpreadFunction(LineSpreadFunction):
         self.slit_width_pix =  self.slit_width_arcsec / ext.pixel_scale()
         self.grating = float(ext.disperser(pretty=True).split('/')[0])
         self.resolution = 1700 * (0.3 / self.slit_width_arcsec) * (self.grating / 32)
-        self.mean_resolution = self.resolution
+        # "mean_resolution" (as used by ATRAN) cannot be better than that provided by
+        # a 2-pixel slit
+        self.mean_resolution = min(self.resolution,
+                                   ext.actual_central_wavelength() / (2 * abs(ext.dispersion())))
 
     def convolutions(self, lsf_scaling=1):
         resolution = self.resolution / lsf_scaling

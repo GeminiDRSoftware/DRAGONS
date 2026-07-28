@@ -18,7 +18,8 @@ def ad_min():
     phu.header.set('CCDSUM', '1 1')
 
     # Create a simple data HDU with a zero BPM
-    sci = fits.ImageHDU(data=np.ones((1024, 1024,)), name='SCI')
+    sci = fits.ImageHDU(data=np.ones((1024, 1024,), dtype=np.float32),
+                        name='SCI')
     sci.header.set('CCDSUM', '1 1')
     sci.header.set('DATASEC', '[1:1024,1:1024]')
     sci.header.set('DETSEC', '[1:1024,1:1024]')

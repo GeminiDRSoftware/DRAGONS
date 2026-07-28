@@ -78,8 +78,9 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to D. J. Teal (dillon.teal@noirlab.edu). If the behavior is concerning
-Dr. Teal, you can instead reach out to Bill Vacca (bill.vacca@noirlab.edu).
+reported to Kathleen Labrie (kathleen.labrie@noirlab.edu). If the behavior 
+is concerning Dr. Labrie, you can instead reach out to Bill Vacca 
+(bill.vacca@noirlab.edu).
 
 All complaints will be reviewed and investigated promptly and fairly.
 

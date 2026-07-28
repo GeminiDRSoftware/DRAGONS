@@ -9,7 +9,7 @@ recipe_tags = {'GMOS', 'SPECT', 'LS', 'SLITILLUM'}
 
 
 def makeProcessedSlitIllum(p):
-    p.prepare()
+    p.prepare(require_wcs=False)
     p.addDQ(static_bpm=None)
     p.addVAR(read_noise=True)
     p.overscanCorrect()
@@ -18,7 +18,6 @@ def makeProcessedSlitIllum(p):
     p.addVAR(poisson_noise=True)
     p.stackFrames()
     p.makeSlitIllum()
-    p.makeIRAFCompatible()
     p.storeProcessedSlitIllum()
 
 

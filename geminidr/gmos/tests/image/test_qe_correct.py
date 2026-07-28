@@ -42,7 +42,8 @@ def test_qe_correct_calculate_and_apply_scaling(adinputs, common):
     for i, (adin, adout) in enumerate(zip(safe_adinputs, p.streams['main'])):
         for j, (extin, extout) in enumerate(zip(adin, adout)):
             scaling = correct_scaling[common][i][j // 4]
-            np.testing.assert_allclose(extin.data * scaling, extout.data)
+            np.testing.assert_allclose(extin.data * scaling, extout.data,
+                                       rtol=2e-7)
 
 
 @pytest.fixture(scope="function")

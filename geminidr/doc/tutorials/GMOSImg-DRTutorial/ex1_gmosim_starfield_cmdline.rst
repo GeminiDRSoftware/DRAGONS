@@ -282,10 +282,6 @@ The output stack is stored in a multi-extension FITS (MEF) file.  The science
 signal is in the "SCI" extension, the variance is in the "VAR" extension, and
 the data quality plane (mask) is in the "DQ" extension.
 
-.. note::  Depending on your version of Astropy, you might see a lot of
-    Astropy warnings about headers and coordinates system.  You can safely
-    ignore them.
-
 Below are one of the raw images and the final stack:
 
 .. figure:: _static/img/N20170614S0201.png

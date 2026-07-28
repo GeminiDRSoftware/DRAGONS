@@ -1,7 +1,7 @@
 import sys
-import astrodata, ghost_instruments
-from ghostdr.ghost.primitives_ghost_spect import GHOSTSpect
-from ghostdr.ghost.polyfit import GhostArm, SlitView
+import astrodata, gemini_instruments
+from ..primitives_ghost_spect import GHOSTSpect
+from ..polyfit import GhostArm, SlitView
 from gempy.library import tracing
 from astropy.io import fits
 import numpy as np

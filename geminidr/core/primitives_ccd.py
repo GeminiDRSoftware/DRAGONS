@@ -12,7 +12,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
 from gempy.library.fitting import fit_1D
 
-from geminidr import PrimitivesBASE
+from geminidr import PrimitivesBASE, CalibrationNotFoundError
 from recipe_system.utils.md5 import md5sum
 from . import parameters_ccd
 
@@ -73,8 +73,8 @@ class CCD(PrimitivesBASE):
 
             if bias is None:
                 if 'sq' in self.mode or do_cal == 'force':
-                    raise OSError("No processed bias listed for "
-                                  f"{ad.filename}")
+                    raise CalibrationNotFoundError("No processed bias listed "
+                                                   f"for {ad.filename}")
                 else:
                     log.warning(f"No changes will be made to {ad.filename}, "
                                 "since no bias was specified")
@@ -164,6 +164,7 @@ class CCD(PrimitivesBASE):
         sfx = params["suffix"]
         fit1d_params = fit_1D.translate_params(params)
         # We need some of these parameters for pre-processing
+
         function = (fit1d_params.pop("function") or "none").lower()
         lsigma = params["lsigma"]
         hsigma = params["hsigma"]
@@ -207,7 +208,7 @@ class CCD(PrimitivesBASE):
                 if not isinstance(ext_gain, list):
                     ext_gain = [ext_gain] * len(ext_osec)
                 elif len(ext_gain) != len(ext_osec):
-                    raise ValueError('Readnoise descriptor does not match overscan.')
+                    raise ValueError('Gain descriptor does not match overscan.')
 
 
                 for osec, asec, rdnoise, gain in zip(ext_osec, mapped_asec, ext_rdnoise, ext_gain):
@@ -221,10 +222,10 @@ class CCD(PrimitivesBASE):
                             x1 += 1
                             x2 -= nbiascontam
                         sigma = rdnoise / np.sqrt(x2 - x1)
-
                         # need to match asec location and size
                         pixels = np.arange(asec.y1, asec.y2)
                         data = np.mean(ext.data[asec.y1:asec.y2, x1:x2], axis=axis)
+                        stds = np.std(ext.data[asec.y1:asec.y2, x1:x2], axis=axis, ddof=1)
                     else:
                         if y1 > asec.y1:  # Bias on top
                             y1 += nbiascontam
@@ -234,11 +235,36 @@ class CCD(PrimitivesBASE):
                             y2 -= nbiascontam
 
                         sigma = rdnoise / np.sqrt(y2 - y1)
-
                         # needs to match asec location and size
                         pixels = np.arange(asec.x1, asec.x2)
                         data = np.mean(ext.data[y1:y2, asec.x1:asec.x2], axis=axis)
+                        stds = np.std(ext.data[y1:y2, asec.x1:asec.x2], axis=axis)
 
+                    # We have (x2-x1) samples from each of N populations each
+                    # of which has a different population mean, (ie the bias
+                    # level for that row) but we assume they all have the same
+                    # standard deviation (ie the read noise) and we want to
+                    # estimate that population standard deviation.
+                    # We've calculated the mean (data) and estimates of the
+                    # population standard deviation[*] (stds) of each of the set
+                    # of samples, and want to estimate the population standard
+                    # deviation. Because the means are different, we can't just
+                    # calculate the std of all the samples.
+                    # [*] [by which I mean to say we set ddof=1 in the call to
+                    # np.stds to apply the (N/N-1) factor to estimate the
+                    # population standard deviation from the calculaiton of the
+                    # sample standard deviation.
+                    # We use the mean of these per-row population variance
+                    # estimates as our estimate of the global population
+                    # variance. This seems to work well, but I'm not sure if it
+                    # is truly an optimal estimator.
+                    # It turns out that the first and last row of the readout
+                    # often have pixels with massively outlying values, so we
+                    # disregard those samples
+                    trimmedstds = stds[1:-1]
+                    overstd = np.sqrt(np.mean(trimmedstds * trimmedstds))
+
+                    # Readnoise descriptor always returns value in electrons
                     if ext.is_in_adu():
                         sigma /= gain
 
@@ -256,6 +282,7 @@ class CCD(PrimitivesBASE):
 
                     if function == "none":
                         bias = data
+
                     else:
                         fit1d = fit_1D(np.ma.masked_array(data, mask=mask),
                                        points=pixels,
@@ -263,6 +290,7 @@ class CCD(PrimitivesBASE):
                                        function=function, **fit1d_params)
                         bias = fit1d.evaluate(np.arange(data.size))
                         sigma = fit1d.rms
+
 
                     # using "-=" won't change from int to float
                     if axis == 1:
@@ -293,6 +321,10 @@ class CCD(PrimitivesBASE):
                     ext.hdr.set('OVERSCAN', previous_overscan + bias_level,
                                 self.keyword_comments['OVERSCAN'])
                     ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
+                    # By convention, "readnoise" is always in electrons
+                    overrdns = overstd * ext.gain() if ext.is_in_adu() else overstd
+                    ext.hdr.set('OVERRDNS', overrdns, self.keyword_comments['OVERRDNS'])
+
                     for desc in ('saturation_level', 'non_linear_level'):
                         with suppress(AttributeError, KeyError):
                             ext.hdr[ad._keyword_for(desc)] -= bias_level

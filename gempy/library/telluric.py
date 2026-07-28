@@ -220,8 +220,8 @@ class TelluricSpectrum:
                         interp_params[k] = v
                 except TypeError:
                     fixed_params[k] = v
-            print("FIXED ", fixed_params)
-            print("INTERP", interp_params)
+            # print("FIXED ", fixed_params)
+            # print("INTERP", interp_params)
             if interp_params:
                 pca_data = np.stack([self.lsf.convolve_and_resample(
                     self.waves, w_pca, t_pca, **fixed_params,
@@ -312,7 +312,7 @@ class TelluricSpectrum:
             self.waves, mask=stellar_mask))
         stellar_mask = np.zeros_like(stellar_mask)
         for _slice in masked_slices:
-            if abs(self.waves[_slice.stop] -
+            if abs(self.waves[_slice.stop - 1] -
                    self.waves[_slice.start]) <= max_contiguous:
                 stellar_mask[_slice] = True
         if grow > 0:

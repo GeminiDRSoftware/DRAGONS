@@ -16,9 +16,9 @@ def reduceScience(p):
     """
     p.prepare()
     p.addDQ()
-    p.nonlinearityCorrect() # non-linearity correction tbd even for gemini iraf
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
+    p.nonlinearityCorrect()
     p.darkCorrect()
     p.flatCorrect()
     p.attachWavelengthSolution()
@@ -37,6 +37,7 @@ def reduceScience(p):
     p.storeProcessedScience(suffix="_2D")
     p.extractSpectra()
     p.telluricCorrect()
+    p.fluxCalibrate()
     p.storeProcessedScience(suffix="_1D")
 
 
@@ -52,7 +53,7 @@ def reduceTelluric(p):
     """
     p.prepare()
     p.addDQ()
-    p.nonlinearityCorrect() # non-linearity correction tbd even for gemini iraf
+    p.nonlinearityCorrect()
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
     p.darkCorrect()
@@ -72,7 +73,7 @@ def reduceTelluric(p):
     p.traceApertures()
     p.extractSpectra()
     p.fitTelluric()
-    p.storeProcessedScience(suffix="_1D")
+    p.storeProcessedTelluric()
 
 
 def  makeWavecalFromSkyEmission(p):
@@ -88,16 +89,28 @@ def  makeWavecalFromSkyEmission(p):
 
     p.prepare()
     p.addDQ()
-    p.addVAR(read_noise=True)
     p.ADUToElectrons()
     p.addVAR(poisson_noise=True, read_noise=True)
     p.darkCorrect()
     p.flatCorrect()
     p.stackFrames()
-    p.makeIRAFCompatible()
     p.determineWavelengthSolution()
     p.determineDistortion()
     p.storeProcessedArc(force=True)
     p.writeOutputs()
 
 _default = reduceScience
+
+def joinSpectra(p):
+    """
+    Join spectra from different configurations, eg JH and HK, or
+    R3K J, H, K.
+
+    Inputs are 1D spectra.  It is recommended to use maskBeyondRegions
+    to mask the diverging signal at the edges of the spectra before
+    sending them here to be joined.
+
+    Scaling is forced.
+    """
+    p.resampleToCommonFrame(conserve=True)
+    p.stackFrames(scale=True, suffix="_1Djoined")

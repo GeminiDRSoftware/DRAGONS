@@ -10,11 +10,30 @@
 # version of argon.dat
 #
 # Created by P. Ingraham Apr 06/2005
-8115.3110
-8264.5230
-8424.6480
-8521.4420
-8667.9440
+#8115.3110 # wrong wavelenght
+#8264.5230 # wrong wavelenght
+#8424.6480 # wrong wavelenght
+#8521.4420 # wrong wavelenght
+#8667.9440 # wrong wavelenght
+6967.35200 # Keck
+7069.16700 # Keck
+7149.01200 # Keck
+7274.94000 # Keck
+7386.01400 # Keck
+7505.93500 # Keck
+7516.72100 # Keck
+7637.20800 # Keck
+7725.88700 # Keck
+7950.36200 # Keck
+8008.35900 # Keck
+8016.99000 # Keck
+8105.92100 # Keck
+8117.54200 # Keck
+8266.7930	#	NOAO
+8410.52100 # Keck
+8426.96300 # Keck
+8523.78300 # Keck
+8670.32500 # Keck
 9125.4697	#	NOAO
 9227.0293	#	NOAO
 9294.1299	#	NOAO

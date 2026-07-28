@@ -8,6 +8,7 @@ from copy import deepcopy
 from itertools import zip_longest
 
 import astrodata, gemini_instruments
+from astrodata.provenance import clone_provenance, clone_history
 
 from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import parameter_override, capture_provenance
@@ -169,6 +170,9 @@ class Bookkeeping(PrimitivesBASE):
                     # extensions than ad2.
                     adout.append(ext1)
 
+            clone_provenance(ad2.PROVENANCE, adout)
+            clone_history(ad2.HISTORY, adout)
+
             adoutputs.append(adout)
 
         return adoutputs
@@ -321,6 +325,10 @@ class Bookkeeping(PrimitivesBASE):
         tags: str/None
             Tags which frames must match to be selected
         """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        log.debug("Removing inputs with tags: {}".format(tags))
+
         if tags is None:
             return adinputs
         required_tags = tags.split(',')
@@ -333,6 +341,13 @@ class Bookkeeping(PrimitivesBASE):
         #adoutputs = [ad for ad in adinputs
         #             if set(required_tags).issubset(ad.tags)]
         adoutputs = [ad for ad in adinputs if not (set(required_tags) & ad.tags)]
+        log.debug("Remaining files:")
+        if adoutputs:
+            for ad in adoutputs:
+                log.debug("    {}".format(ad.filename))
+        else:
+            log.debug("    No files remaining")
+
         return adoutputs
 
     def selectFromInputs(self, adinputs=None, tags=None):
@@ -345,6 +360,10 @@ class Bookkeeping(PrimitivesBASE):
         tags: str/None
             Tags which frames must match to be selected
         """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        log.debug("Selecting inputs with tags: {}".format(tags))
+
         if tags is None:
             return adinputs
         required_tags = tags.split(',')
@@ -357,6 +376,13 @@ class Bookkeeping(PrimitivesBASE):
         #adoutputs = [ad for ad in adinputs
         #             if set(required_tags).issubset(ad.tags)]
         adoutputs = [ad for ad in adinputs if set(required_tags) & ad.tags]
+        if adoutputs:
+            log.debug("Selected files:")
+            for ad in adoutputs:
+                log.debug("    {}".format(ad.filename))
+        else:
+            log.debug("    No files selected")
+
         return adoutputs
 
     def showInputs(self, adinputs=None, purpose=None):
@@ -591,7 +617,7 @@ class Bookkeeping(PrimitivesBASE):
                               "written to the same name {}".format(
                         params['outfilename'])
                     log.critical(message)
-                    raise OSError(message)
+                    raise RuntimeError(message)
                 else:
                     outfilename = params['outfilename']
             else:

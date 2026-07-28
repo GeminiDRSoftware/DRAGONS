@@ -24,7 +24,7 @@ except ImportError:
 else:
     use_cython = True
 
-VERSION = '3.2.3'
+VERSION = '5.0_dev'
 
 PACKAGENAME = 'dragons'
 PACKAGES = find_packages()
@@ -36,10 +36,11 @@ SCRIPTS = [
 ]
 SCRIPTS += [
     os.path.join('gempy', 'scripts', name)
-    for name in ('dataselect', 'dgsplot', 'fwhm_histogram', 'gmosn_fix_headers',
-                 'gmoss_fix_HAM_BPMs.py', 'gmoss_fix_headers.py',
-                 'pipeline2iraf', 'profile_all_obj', 'psf_plot', 'showrecipes',
-                 'showd', 'showpars', 'typewalk', 'zp_histogram')
+    for name in ('dataselect', 'dgsplot', 'fixheader', 'fwhm_histogram',
+                 'gmosn_fix_headers', 'gmoss_fix_HAM_BPMs.py',
+                 'gmoss_fix_headers.py', 'pipeline2iraf', 'profile_all_obj',
+                 'psf_plot', 'showrecipes', 'showd', 'showpars', 'typewalk',
+                 'zp_histogram')
 ]
 
 # EXTENSIONS
@@ -66,7 +67,7 @@ setup(name='dragons',
       scripts=SCRIPTS,
       ext_modules=EXTENSIONS,
       classifiers=[
-          'Development Status :: 4 - Beta',
+          'Development Status :: 5 - Beta',
           'Intended Audience :: Gemini Ops',
           'Intended Audience :: Science/Research',
           'License :: OSI Approved :: BSD License',
@@ -80,28 +81,31 @@ setup(name='dragons',
       ],
       install_requires=[
           'astrodata',
-          'asdf>=2.7,!=2.10.0',
-          'astropy>=4.3,!=5.3.0,!=6.1.5,!=6.1.6',
-          'astroquery>=0.4',
+          'asdf>=2.15',
+          'astropy>=7.1.2',
           'astroscrappy>=1.1',
           'bokeh>=3.0',
           'bottleneck>=1.2',
+        # 'fits_storage>=3.4.0',  # this would need uploading to PyPI first
           'future>=0.17',
-        # 'FitsStorage>=3.4.0',  # this would need uploading to PyPI first
-          'gwcs>=0.15',
-          'holoviews',
+          'gwcs>=0.25',
+          'holoviews>=1.20',
           'jinja2>=3.0',
           'jsonschema>=3.0',
-          'matplotlib>=3.1',
-          'numpy>=1.17,<2',
+          'matplotlib>=3.7',
+          'numpy>=1.24',
+          'pandas>=2.0',
           'psutil>=5.6',
           'pyerfa>=1.7',
-          'python-dateutil>=2.5.3',
+          'python-dateutil>=2.8',
+          'pyvo>=1.8.1',
           'requests>=2.22',
           'scikit-image>=0.21',
-          'scipy>=1.3',
-          'specutils>=1.1',
+          'scipy>=1.15',
+          'specutils>=2.0',
           'sqlalchemy>=2.0.0',
+          'tornado>=6.3',
+          'typing_extensions>=4.9',
       ],
       extras_require={
           'all': ['ginga', 'imexam'],
@@ -113,5 +117,5 @@ setup(name='dragons',
           'Documentation': 'https://dragons.readthedocs.io/',
       },
       # keywords=['astronomy', 'astrophysics', 'science', 'gemini'],
-      python_requires='>=3.7',
+      python_requires='>=3.12',
       )

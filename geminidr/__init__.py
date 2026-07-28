@@ -154,7 +154,7 @@ class PrimitivesBASE:
         QA metrics uploaded if 'metrics' in upload.  E.g.::
 
             upload = ['metrics', ['calibs', ... ]]
-
+    processed
     config_file : str/None
         name of DRAGONS configuration file (None => default)
     """
@@ -191,6 +191,7 @@ class PrimitivesBASE:
         self.log              = logutils.get_logger(__name__)
         self._upload          = upload
         self.user_params      = uparms if isinstance(uparms, dict) else dict(uparms) if uparms else {}
+        self.processed_filenames = []
 
         # remove quotes from string values.  This happens when quotes are used
         # in the @-file.  The shell removes the quotes automatically.
@@ -230,6 +231,10 @@ class PrimitivesBASE:
 
         # Instantiate a dormantViewer(). Only ds9 for now.
         self.viewer = dormantViewer(self, 'ds9')
+
+    @property
+    def adinputs(self):
+        return self.streams['main']
 
     def _validate_user_parms(self):
         """
@@ -373,3 +378,6 @@ class PrimitivesBASE:
         return {k: v for k, v in params.items()
                 if k in list(self.params[primname]) and
                 not (k == "suffix" and not pass_suffix)}
+
+class CalibrationNotFoundError(RuntimeError):
+    pass
