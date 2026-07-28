@@ -15,7 +15,7 @@ class IGRINSLineSpreadFunction(LineSpreadFunction):
 
     def __init__(self, ext):
         super().__init__(ext)
-        self.resolution = 35000
+        self.resolution = 45000
         self.mean_resolution = self.resolution
 
     def convolutions(self, lsf_scaling=1):
