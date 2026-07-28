@@ -993,15 +993,16 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
                 # Construct an image of the slit position, which is used
                 # to determine the extraction weight of each pixel
-                t = ext.wcs.get_transform("pixels", "slitpos")
-                ext.SLITPOS = t(x, y)[1]
+                # y coordinate is the same in 'slitpos' and 'distcorr_slitpos'
+                t = ext.wcs.get_transform("pixels", "distcorr_slitpos")
+                y_slitpos = t(x, y)[1]
+                ext.SLITPOS = y_slitpos
 
                 # Compute the model needed to horizontally shift each row
                 # so as to make the sky lines vertical. We don't care about
                 # the subsequent WCS since we're not going to use that, only
                 # the resampled pixel values.
-                t = ext.wcs.get_transform("distortion_corrected", "pixels")
-                xx = t(x, y)[0]
+                xx = t.inverse(x, y_slitpos)[0]
                 t = models.Identity(2)
                 t.inverse = (models.Mapping((0, 1, 1)) |
                              models.Tabular2D(lookup_table=xx.T, bounds_error=False,
