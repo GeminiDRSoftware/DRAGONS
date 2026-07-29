@@ -26,7 +26,7 @@ def test_make_ab(path_to_inputs, path_to_refs, adinputs, caldict):
     # Add the processed arc to the caldb
     p.caldb.user_cals = {k: os.path.join(path_to_inputs, v)
                          for k, v in caldict.items()}
-    adout = p.makeAB().pop()
+    adout = p.makeABOld().pop()
     adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
     # EXTEND is one of those keywords that is put there by the FITS writer
     # so may not be present
@@ -44,7 +44,7 @@ def test_make_ab2(path_to_inputs, path_to_refs, adinputs, caldict):
     p.caldb.user_cals = {k: os.path.join(path_to_inputs, v)
                          for k, v in caldict.items()}
     #p.correctFlexure()
-    p.makeABNew()
+    p.makeAB()
     adout = p.cleanReadout().pop()
     adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
     # EXTEND is one of those keywords that is put there by the FITS writer

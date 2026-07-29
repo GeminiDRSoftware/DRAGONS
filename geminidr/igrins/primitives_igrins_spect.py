@@ -514,7 +514,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
 
         return adinputs
 
-    def determineSlitEdges(self, adinputs=None, **params):
+    def determineSlitEdgesOld(self, adinputs=None, **params):
         """
         This primitive determines the slit edges from flat field images by analyzing
         the illumination pattern. It traces the edges of the slit profile for each
@@ -526,7 +526,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys['determineSlitEdges']
         suffix = params["suffix"]
 
         for ad in adinputs:
@@ -1387,7 +1387,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
 
         return adinputs
 
-    def makeAB(self, adinputs=None, **params):
+    def makeABOld(self, adinputs=None, **params):
         """
         Process and combine A-B nod pairs for background subtraction.
 
@@ -1623,7 +1623,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
 
         return adinputs
 
-    def normalizeFlat(self, adinputs=None, **params):
+    def normalizeFlatOld(self, adinputs=None, **params):
         """
         This primitive normalizes flat field images by creating a response model
         that accounts for the illumination pattern and pixel-to-pixel variations.
@@ -1651,7 +1651,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
 
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys['normalizeFlat']
         suffix = params["suffix"]
 
         for ad in adinputs:

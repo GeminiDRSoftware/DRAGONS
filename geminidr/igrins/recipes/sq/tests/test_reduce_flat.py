@@ -38,16 +38,16 @@ def test_make_processed_bpm(input_files, change_working_dir, path_to_refs):
 @pytest.mark.igrins2
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("input_files", FLAT_INPUTS, indirect=True)
-def test_make_processed_flat(input_files, change_working_dir, path_to_refs):
+def test_old_make_processed_flat(input_files, change_working_dir, path_to_refs):
     r = Reduce()
     r.files = input_files
     # This avoids issues when running locally since test_make_processed_bpm
     # will add the BPM to the caldb
     r.uparms = {'addDQ:static_bpm': None}
+    r.recipename = "oldMakeProcessedFlat"
     with change_working_dir():
         r.runr()
         output_filename = r._output_filenames.pop()
-        assert r.recipename == "makeProcessedFlat"
         adout = astrodata.open(os.path.join("calibrations", "processed_flat", output_filename))
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
         # A large tolerance is needed here because significant numerical
@@ -59,16 +59,16 @@ def test_make_processed_flat(input_files, change_working_dir, path_to_refs):
 @pytest.mark.igrins2
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("input_files", FLAT_INPUTS, indirect=True)
-def test_new_make_processed_flat(input_files, change_working_dir):
+def test_make_processed_flat(input_files, change_working_dir):
     """This test is for the format of the flat"""
     r = Reduce()
     r.files = input_files
-    r.recipename = "newMakeProcessedFlat"
     # This avoids issues when running locally since test_make_processed_bpm
     # will add the BPM to the caldb
     r.uparms = {'addDQ:static_bpm': None}
     with change_working_dir():
         r.runr()
+        assert r.recipename == "makeProcessedFlat"
         output_filename = r._output_filenames.pop()
         adout = astrodata.open(os.path.join("calibrations", "processed_flat", output_filename))
         assert len(adout) == 24

@@ -47,7 +47,7 @@ class determineDistortionConfig(parameters_spect.determineDistortionConfig):
         #self.debug_min_points_per_trace = 9
 
 
-class determineSlitEdgesNewConfig(parameters_spect.determineSlitEdgesConfig):
+class determineSlitEdgesConfig(parameters_spect.determineSlitEdgesConfig):
     def setDefaults(self):
         self.nsum = 10
         self.min_snr = 1.5
@@ -84,7 +84,7 @@ class flagDiscrepantPixelsConfig(config.Config):
                                                    min=1)
 
 
-class makeABNewConfig(config.Config):
+class makeABConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_AB",  optional=True)
 
 
@@ -101,23 +101,24 @@ class measureSlitProfileConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitProfileMeasured",
                           optional=True)
     order = config.RangeField("Order of polynomial fitted along each resampled row",
-                                 int, 3, min=1)
+                                 int, 3, min=0)
     lsigma = config.RangeField("Low rejection in sigma of fit", float, 3,
                                min=0, optional=True)
     hsigma = config.RangeField("High rejection in sigma of fit", float, 3,
                                min=0, optional=True)
     niter = config.RangeField("Maximum number of rejection iterations", int, 0,
                               min=0)
-    use_variance = config.Field("Use variance array for weighting?", bool, True)
     threshold = config.RangeField("Threshold (as a function of maximum flux) "
                                   "for ignoring pixels in polynomial fit?",
                                   float, 0.05, min=0, max=1)
-    goodfrac = config.RangeField("Fraction of good pixels in each resampled "
-                                 "row needed to include the row in the profile",
-                                 float, 0.9, min=0, max=1, inclusiveMax=True,)
+    debug_goodfrac = config.RangeField("Fraction of good pixels in each "
+                                       "resampled row needed to include the "
+                                       "row in the profile", float, 0.9,
+                                       min=0, max=1, inclusiveMax=True)
+    use_variance = config.Field("Use variance array for weighting?", bool, True)
 
 
-class normalizeFlatNewConfig(parameters_spect.normalizeFlatConfig):
+class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     def setDefaults(self):
         self.threshold = 0.001
 

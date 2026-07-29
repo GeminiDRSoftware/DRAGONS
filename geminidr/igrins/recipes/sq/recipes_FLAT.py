@@ -34,7 +34,7 @@ def estimateNoise(p):
     p.setSuffix(suffix="_pattern_noise")
     return
 
-def makeProcessedFlat(p):
+def oldMakeProcessedFlat(p):
     """
     This recipe takes flat images and reduce them to prepare a processed flat image.
     The raw input should have both flat on and off images. The flat off and images are
@@ -72,14 +72,14 @@ def makeProcessedFlat(p):
                      # them, subtracts one from the other, and returns that
                      # single frame. It requires LAMPON/LAMPOFF tags.
 
-    p.determineSlitEdges()
+    p.determineSlitEdgesOld()
     # ported IGRINS's version of slit edge detection.
     # Will create SLITEDGE table.
 
     p.maskBetweenSlits()
     # set unilluminated flags for the pixel not illuminated by the slit.
 
-    p.normalizeFlat()
+    p.normalizeFlatOld()
     # The primitive will store the original flat in as 'FLAT_ORIGINAL'
 
     p.thresholdFlatfield()
@@ -87,13 +87,11 @@ def makeProcessedFlat(p):
 
     return
 
-_default = makeProcessedFlat
-
 # We set 'estimateNoise' as a default recipe for temporary, just for testing
 # purpose.
 # _default = estimateNoise
 
-def newMakeProcessedFlat(p):
+def makeProcessedFlat(p):
     p.prepare()
     p.readoutPatternCorrectFlatOff()
     p.addDQ()
@@ -101,10 +99,10 @@ def newMakeProcessedFlat(p):
     p.addVAR(read_noise=True, poisson_noise=True) # readout noise from header
     p.ADUToElectrons()
     p.makeLampFlat()
-    p.determineSlitEdgesNew()
+    p.determineSlitEdges()
     p.cutSlits()
     p.maskBeyondSlit()
-    p.normalizeFlatNew()
+    p.normalizeFlat()
     p.thresholdFlatfield()
     p.storeProcessedFlat()
 
@@ -135,4 +133,4 @@ def makeProcessedBPM(p):
     return
 
 
-# _default = makeProcessedBPM
+_default = makeProcessedFlat

@@ -603,9 +603,6 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
         return adinputs
 
-    def determineSlitEdgesNew(self, adinputs=None, **params):
-        return Telluric([]).determineSlitEdges(adinputs, **params)
-
     def determineWavelengthSolution(self, adinputs=None, **params):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1013,9 +1010,11 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     ext, "xshifted",
                     attributes=["data", "mask", "variance", "SLITPOS"])[0]
 
+                # Development confidence check
                 pixels_for_extraction = ext_xshifted.SLITPOS[ext_xshifted.mask == 0]
                 assert pixels_for_extraction.min() >= -0.5
                 assert pixels_for_extraction.max() <= 0.5
+                del pixels_for_extraction
 
                 # We use inv_var to implement the mask as well, by setting
                 # it to zero for any pixels we don't wish to include
@@ -1070,13 +1069,15 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 if any(np.isnan(data)):
                     log.warning(f"NaNs in {ad.filename} order {ext.hdr['SPECORDR']}")
 
+            if len(adout) == 0:
+                raise ValueError(f"Unable to extract any orders in {ad.filename}")
+
             adout.hdr['APERTURE'] = 1
             # Timestamp and update the filename
             gt.mark_history(adout, primname=self.myself(),
                             keyword=timestamp_key)
             adout.update_filename(suffix=sfx, strip=True)
             adoutputs.append(adout)
-
 
         return adoutputs
 
@@ -1117,18 +1118,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
         return adinputs
 
-    def _flatCorrect(self, adinputs=None, suffix=None, flat=None, do_cal=None):
-        # We have to delete the mask and variance because IGRINSDR doesn't do
-        # anything with these and they're probably junk.
-        for ad in adinputs:
-            ad_flat = self._get_ad_flat(ad)
-            ad_flat[0].mask = None
-            ad_flat[0].variance = None
-            ad.divide(ad_flat)
-            ad.update_filename(suffix=suffix, strip=True)
-        return adinputs
-
-    def makeABNew(self, adinputs=None, **params):
+    def makeAB(self, adinputs=None, **params):
         """
         This performed the same work as the makeAB primitive, but doesn't do
         the flexure correction, which now lives in its own primitive. If all
@@ -1179,11 +1169,38 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
     def measureSlitProfile(self, adinputs=None, **params):
         """
         Follows the method of Cushing, Vacca, & Rayner (2004, PASP, 116, 362)
-        to measure the slit profile.
+        to measure the slit profile. The primitive requires an image that has
+        been distortion-corrected so that the spatial axis is vertical and the
+        wavelength axis is horizontal, and the spatial profile is constructed
+        at each wavelength pixel. For each echelle order, a median is taken in
+        the dispersion direction and this median profile scaled to fit each
+        row using a least-squares fit. The scaled rows are then median-combined
+        to create equally-normalized spatial profiles. Finally, to allow for
+        modest variations in the profile with wavelength, a polynomial is fit
+        to each row. This synthetic profile is then attached as an array called
+        'SLITPROF' to each extension.
 
         Parameters
         ----------
-
+        suffix : str
+            Suffix to be added to output files.
+        order : int
+            Order of the polynomial to fit along each resampled row
+        lsigma : float
+            Lower sigma threshold for rejection of outliers in the fit
+        hsigma : float
+            Upper sigma threshold for rejection of outliers in the fit
+        niter : int
+            Number of iterations for rejection of outliers in the fit
+        threshold : float
+            Threshold for rejecting columns with low signal when fitting
+            along each row
+        debug_goodfrac : float
+            Minimum fraction of good pixels in a row for it to be included
+            in the profile (this rejects rows on the edge of the profile
+        use_variance : bool
+            Weight each pixel by th einverse variance when fitting the
+            profile to each column?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -1193,9 +1210,9 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         lsigma = params["lsigma"]
         hsigma = params["hsigma"]
         niter = params["niter"]
-        use_var = params["use_variance"]
         threshold = params["threshold"]
-        goodfrac = params["goodfrac"]
+        goodfrac = params["debug_goodfrac"]
+        use_var = params["use_variance"]
 
         for ad in adinputs:
             if self.timestamp_keys['distortionCorrect'] not in ad.phu:
@@ -1216,7 +1233,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     else:
                         weights = np.where(ext.variance > 0, 1. / ext.variance, 0)
 
-                for _ in range(1):
+                for _ in range(1):  # allow iteration (4.2.2 of Cushing+ 2004)
                     profile = np.ma.median(masked_data, axis=1)
                     masked_profile = np.ma.masked_array(
                         profile[:, np.newaxis].repeat(npix, axis=1), ext.mask)
@@ -1242,9 +1259,6 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             ad.update_filename(suffix=suffix, strip=True)
 
         return adinputs
-
-    def normalizeFlatNew(self, adinputs=None, **params):
-        return Spect([]).normalizeFlat(adinputs, **params)
 
     def standardizeWCS(self, adinputs=None, suffix=None):
         """

@@ -23,7 +23,7 @@ class checkCALDBConfig(config.Config):
     caltypes = config.ListField("list of caltypes to check", str, [], single=False)
 
 
-class determineSlitEdgesConfig(config.Config):
+class determineSlitEdgesOldConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined",
                           optional=True)
 
@@ -99,7 +99,7 @@ class identifyLinesConfig(config.Config):
                           optional=True)
 
 
-class makeABConfig(config.Config):
+class makeABOldConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_AB",  optional=True)
     remove_level = config.Field("readoutpattern remove level", int, 2)
     remove_amp_wise_var = config.Field("remove amp-wise variation if True", bool, False)
@@ -128,6 +128,11 @@ class makeSpectralMapsConfig(config.Config):
 
 class maskBetweenSlitsConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_maskedBeyondSlit",
+                          optional=True)
+
+
+class normalizeFlatOldConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_normalized",
                           optional=True)
 
 

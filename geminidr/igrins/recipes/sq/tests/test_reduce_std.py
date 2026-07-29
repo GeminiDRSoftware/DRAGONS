@@ -27,8 +27,8 @@ def input_files(request, path_to_inputs):
 @pytest.mark.igrins2
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('input_files, caldict', STD_INPUTS, indirect=['input_files'])
-def test_make_processed_std(input_files, caldict, change_working_dir, path_to_inputs,
-                            path_to_refs):
+def test_old_make_processed_std(input_files, caldict, change_working_dir, path_to_inputs,
+                                path_to_refs):
     r = Reduce()
     r.files = input_files
     # This avoids issues when running locally since test_make_processed_bpm
@@ -59,9 +59,9 @@ def test_make_processed_std(input_files, caldict, change_working_dir, path_to_in
 @pytest.mark.igrins2
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize('input_files, caldict', STD_INPUTS, indirect=['input_files'])
-def test_new_make_processed_std(input_files, caldict, change_working_dir, path_to_inputs):
+def test_make_processed_std(input_files, caldict, change_working_dir, path_to_inputs):
     r = Reduce()
-    r.recipename = "makeStellarNew"
+    r.recipename = "makeStellar"
     r.files = input_files
     # This avoids issues when running locally since test_make_processed_bpm
     # will add the BPM to the caldb
