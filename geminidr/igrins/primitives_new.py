@@ -1017,10 +1017,14 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 assert pixels_for_extraction.min() >= -0.5
                 assert pixels_for_extraction.max() <= 0.5
 
+                # We use inv_var to implement the mask as well, by setting
+                # it to zero for any pixels we don't wish to include
                 with warnings.catch_warnings(category=RuntimeWarning,
                                              action="ignore"):
-                    inv_var = np.where(np.logical_and(ext_xshifted.variance > 0, ext_xshifted.mask == 0),
-                                   1. / ext_xshifted.variance, 0)
+                    inv_var = np.where(np.logical_and.reduce(
+                        [ext_xshifted.variance > 0, ext_xshifted.mask == 0,
+                         abs(ext_xshifted.SLITPOS) < 0.5]),
+                        1. / ext_xshifted.variance, 0)
 
                 # We want to normalize the profile along each column. Since
                 # there's probably both a +ve and -ve beam, we can't simply
@@ -1035,19 +1039,16 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                         ppoly = PPoly.from_spline((t, c[:, i], k))
                         prof = ppoly(slitpos)
                         if prof.max() > 0:
-                            roots = ppoly.roots(extrapolate=False)
-                            signal = sorted([abs(ppoly.integrate(a, b))
-                                             for a, b in zip(roots[:-1], roots[1:])],
-                                             reverse=True)
-                            signal_sum = np.sum(signal)
+                            # This code might be useful to investigate the profile
+                            # roots = ppoly.roots(extrapolate=False)
+                            # signal = sorted([abs(ppoly.integrate(a, b) / 0.02)
+                            #                  for a, b in zip(roots[:-1], roots[1:])],
+                            #                  reverse=True)
+                            signal_sum = np.sum(abs(prof[iv > 0]))
                             if signal_sum > 0:
-                                frac = np.sum(signal[:2]) / signal_sum
-                                if frac < 0.98:
-                                    print(ext.id, i, frac)
-                                mask[i] = DQ.good
-                                mask[i] = DQ.good
                                 prof /= signal_sum
                                 data[i] = (prof * coldata * iv).sum() / (prof * prof * iv).sum()
+                                mask[i] = DQ.good
                                 var[i] = prof.sum() / (prof * prof * iv).sum()
 
                 if np.all(mask & DQ.no_data):
