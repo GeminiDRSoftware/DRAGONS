@@ -10,11 +10,19 @@
 </tr>
 </table>
 
+### Project
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![GitHub version](https://badge.fury.io/gh/GeminiDRSoftware%2Fdragons.svg)](https://badge.fury.io/gh/GeminiDRSoftware%2Fdragons)
+![Supported python versions -- 3.12](https://img.shields.io/badge/3.12-%234b8bbe?logo=Python&logoColor=%234b8bbe&label=For%20Python%3A)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20752356-blue.svg)](https://doi.org/10.5281/zenodo.20752356)
+
+### Publishing
+![Conda Version](https://img.shields.io/badge/conda-v4.2.2-green)
+
 # Current Status
 **The stable version is v4.2.2.**  
 
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20752356.svg)](https://doi.org/10.5281/zenodo.20752356) DRAGONS is distributed as a conda package, *dragons*, and it is 
+DRAGONS is distributed as a conda package, *dragons*, and it is 
 included in the conda *gemini* stack.
 
 Version 4.2.2 is recommend for the reduction of **imaging** data from Gemini's
