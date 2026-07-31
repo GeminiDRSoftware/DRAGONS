@@ -6,7 +6,7 @@ recipe_tags = {'IGRINS-2', 'BUNDLE', 'RAW', 'UNPREPARED'}
 
 def processBundle(p):
     """
-    This recipe processes GHOST observation bundles.
+    This recipe processes IGRINS-2 observation bundles.
 
     Parameters
     ----------

@@ -27,6 +27,4 @@ from . import niri
 from . import oscir
 from . import phoenix
 from . import texes
-from . import texes
 from . import trecs
-from . import texes

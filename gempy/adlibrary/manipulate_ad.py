@@ -9,7 +9,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 
 def reassemble_ad(adinput, shape=None):
     """
-    This takes an AstroData obejct with multiple extensions and reassembles
+    This takes an AstroData object with multiple extensions and reassembles
     the data into a single extension, using the array_section descriptors to
     place the data in the correct location. Pixels masked as either NO_DATA
     or UNILLUMINATED are not added to the final image and so will be left as
@@ -126,7 +126,7 @@ def rebin_data(adinput, xbin=1, ybin=1, patch_binning_descriptors=True):
             log.warning(f"Cannot rebin {extid} with {len(ext_shape)} dimensions")
             continue
 
-        if ext.shape[1] % yrebin > 0 or ext.shape[0] % xrebin > 0:
+        if ext.shape[0] % yrebin > 0 or ext.shape[1] % xrebin > 0:
             raise ValueError(f"Cannot rebin {extid} of shape {ext_shape} to "
                              f"{xbin}x{ybin}")
 

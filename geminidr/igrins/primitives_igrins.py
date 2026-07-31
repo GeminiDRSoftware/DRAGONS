@@ -9,10 +9,10 @@ from recipe_system.utils.decorators import parameter_override
 @parameter_override
 class IGRINS(Gemini, NearIR):
     """
-    Top-level primitives for handling GHOST data
+    Top-level primitives for handling IGRINS data
 
-    The primitives in this class are applicable to all flavours of GHOST data.
-    All other GHOST primitive classes inherit from this class.
+    The primitives in this class are applicable to all flavours of IGRINS data.
+    All other IGRINS primitive classes inherit from this class.
     """
     tagset = set()  # Cannot be assigned as a class
 

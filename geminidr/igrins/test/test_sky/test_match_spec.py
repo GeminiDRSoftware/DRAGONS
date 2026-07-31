@@ -1,5 +1,6 @@
 # %%
-
+import pytest
+pytest.skip("Developer analysis script (not an automated test)", allow_module_level=True)
 # import astropy.io.fits as pyfits
 import numpy as np
 import astrodata, gemini_instruments
