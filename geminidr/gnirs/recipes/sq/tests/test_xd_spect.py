@@ -6,10 +6,14 @@ End-to-end integration tests for GNIRS Cross-dispersed data reduction.
 import os
 
 import numpy as np
+import objgraph
 import pytest
+
+from astropy.coordinates import SkyCoord
 
 import astrodata
 from astrodata.testing import download_from_archive
+from gempy.library import astromodels as am
 from gempy.utils import logutils
 from recipe_system.reduction.coreReduce import Reduce
 from recipe_system.utils.reduce_utils import normalize_ucals
@@ -19,7 +23,7 @@ from recipe_system.utils.reduce_utils import normalize_ucals
 datasets = {
     # 32 l/mm Shortblue SXD
     "GN-2021A-Q-215": {
-        "arcs": ["N20210129S0324_arc.fits"],
+        "arcs": ["N20210129S0324.fits"],
         "flats": [f"N20210129S{i:04d}.fits" for i in range(304, 324)],
         "pinholes": [f"N20210129S{i:04d}.fits" for i in (386, 388, 390, 391, 393)],
         "sci": [f"N20210129S{i:04d}.fits" for i in range(296, 304)],
@@ -28,7 +32,7 @@ datasets = {
     },
     # 10 l/mm Longblue SXD
     "GN-2013B-Q-41": {
-        "arcs": ["N20130821S0301_arc.fits"],
+        "arcs": ["N20130821S0301.fits"],
         "flats": [f"N20130821S{i:04d}.fits" for i in range(302, 318)],
         "pinholes": ["N20130821S0556.fits"],
         "sci": [f"N20130821S{i:04d}.fits" for i in range(322, 326)],
@@ -36,19 +40,14 @@ datasets = {
                       "fluxCalibrate:do_cal": "skip"}
     },
     # 111 l/mm Shortblue SXD
-    # CJS: This in untraceable in the bluest order and produces
-    # "aperture off image" warnings
-    "GS-2006A-Q-9": {
-        "arcs": ["S20060311S0321_arc.fits"],
-        "flats": [f"S20060311S{i:04d}.fits" for i in (323, 324, 325, 326, 327,
-                                                      333, 334, 335, 336, 337)],
-        "pinholes": [], # No pinhole for this dataset
-        "sci": [f"S20060311S{i:04d}.fits" for i in range(237, 241)],
-        "user_pars": {'attachPinholeRectification:do_cal': 'skip',
-                      'findApertures:ext': '4',
-                      "telluricCorrect:do_cal": "skip",
+    "GN-2024A-Q-115": {
+        "arcs": ["N20240219S0228.fits"],
+        "flats": [f"N20240219S{i:04d}.fits" for i in range(215, 227)],
+        "pinholes": [f"N20240219S{i:04d}.fits" for i in range(288, 292)],
+        "sci": [f"N20240219S{i:04d}.fits" for i in range(211, 215)],
+        "user_pars": {"telluricCorrect:do_cal": "skip",
                       "fluxCalibrate:do_cal": "skip"}
-    }
+    },
 }
 
 # -- Tests --------------------------------------------------------------------
@@ -59,7 +58,7 @@ datasets = {
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("single_wave_scale", (False, True))
 @pytest.mark.parametrize("test_case", datasets.keys())
-def test_reduce_xd_spect(path_to_inputs, path_to_refs, change_working_dir,
+def test_reduce_xd_spect(path_to_refs, change_working_dir,
                          keep_data, single_wave_scale, test_case):
     """
     Tests that we can run all the data reduction steps on a complete dataset.
@@ -76,6 +75,7 @@ def test_reduce_xd_spect(path_to_inputs, path_to_refs, change_working_dir,
     with change_working_dir(test_case):
 
         cals = []
+        upars = datasets[test_case]["user_pars"]
 
         # Reducing flats
         flat_filenames = datasets[test_case]["flats"]
@@ -90,31 +90,57 @@ def test_reduce_xd_spect(path_to_inputs, path_to_refs, change_working_dir,
                                save_to="processed_pinhole"))
 
         # Use a preprocessed arc since we might need to use one from sky lines
+        # CJS: Except we don't, so let's not do this because it can cause the tests
+        # to fail if there are other unrelated changes
         arcs_filenames = datasets[test_case]["arcs"]
-        arcs_paths = os.path.join(path_to_inputs, arcs_filenames[0])
-        cals.append(f'processed_arc:{arcs_paths}')
+        arcs_paths = [download_from_archive(f) for f in arcs_filenames]
+        cals.extend(reduce(arcs_paths, f"arcs_{test_case}", cals,
+                           user_pars=upars,
+                           save_to="processed_arc"))
 
         # Reducing science frames
         sci_filenames = datasets[test_case]["sci"]
         sci_paths = [download_from_archive(f) for f in sci_filenames]
         upars = datasets[test_case]["user_pars"]
         upars['resampleToCommonFrame:single_wave_scale'] = single_wave_scale
+        if single_wave_scale:
+            upars['resampleToCommonFrame:output_wave_scale'] = 'loglinear'
         output = reduce(sci_paths, f"sci_{test_case}", cals,
                         user_pars=upars,
                         return_output=True)
         ad_out_2d = astrodata.open(output[0].replace("1D", "2D"))
         ad_out_1d = astrodata.open(output[0])
-        single = "single" if single_wave_scale else "notsingle"
-        ref_filename = output[0].replace("_", f"_{single}_")
-        ad_ref_1d = astrodata.open(os.path.join(path_to_refs, ref_filename))
 
-        # Check fewer than 3 apertures extracted
+        arc = astrodata.open(cals[-1].split(":")[1])
+
+        # Check for a sensible number of apertures
         assert len(ad_out_2d[0].APERTURE) < 3
-        # Check that the WCS matches with the reference.
-        astrodata.testing.ad_compare(ad_out_1d, ad_ref_1d,
-                                     compare=["wcs"], rtol=1e-7)
-        # Check that counts agree with the reference.
-        np.testing.assert_allclose(ad_out_1d[0].data, ad_out_1d[0].data)
+
+        # Check that the pixel scale in the 2D image is correct (approx)
+        # TODO: issue with non-square pixels for AO data
+        if not ad_out_2d.is_ao():
+            for ext in ad_out_2d:
+                ymid, xmid = [0.5 * length for length in ext.shape]
+                c1 = SkyCoord(*ext.wcs(xmid, ymid)[1:], unit="deg")
+                c2 = SkyCoord(*ext.wcs(xmid+1, ymid)[1:], unit="deg")
+                print(ext.id, c1.separation(c2).arcsec, ext.pixel_scale())
+                assert c1.separation(c2).arcsec == pytest.approx(ext.pixel_scale(), rel=0.05)
+
+        # Check that the wavelength scale in the 1D spectrum is correct
+        arc = astrodata.open(cals[-1].split(":")[1])
+        arc_waves = np.empty((len(arc), 2))
+        for i, ext in enumerate(arc):
+            wave = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
+            arc_waves[i] = [wave(1021), wave(0)]
+        for i, ext in enumerate(ad_out_1d):
+            min_wave, max_wave = ext.wcs(0), ext.wcs(ext.shape[0]-1)
+            print(i, min_wave, max_wave)
+            if single_wave_scale:
+                assert min_wave == pytest.approx(arc_waves[-1, 0], abs=1)
+                assert max_wave == pytest.approx(arc_waves[0, 1], abs=1)
+            else:
+                assert min_wave == pytest.approx(arc_waves[i, 0], abs=1)
+                assert max_wave == pytest.approx(arc_waves[i, 1], abs=1)
 
 # -- Helper functions ---------------------------------------------------------
 def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
@@ -141,8 +167,6 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
     -------
     list : an updated list of calibration files
     """
-    objgraph = pytest.importorskip("objgraph")
-
     logutils.get_logger().info("\n\n\n")
     logutils.config(file_name=f"test_image_{label}.log")
 

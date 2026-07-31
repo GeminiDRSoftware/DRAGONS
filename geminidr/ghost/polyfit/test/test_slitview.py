@@ -64,10 +64,8 @@ class TestSlitView():
             pytest.fail('SlitView.cutout failed to throw '
                         'ValueError when given an invalid arm')
 
-    @pytest.mark.parametrize('use_flat,arm', itertools.product(*[
-        [True, False],
-        ['red', 'blue'],
-    ]))
+    @pytest.mark.parametrize('use_flat', [True, False])
+    @pytest.mark.parametrize('arm', ['red', 'blue'])
     def test_slitview_cutout_useflat(self, use_flat, arm, get_slitview_obj):
         """Test use_flat option of SlitView.cutout"""
         data_arr, flat_arr, sv = get_slitview_obj
@@ -77,10 +75,8 @@ class TestSlitView():
                                                        "has not triggered " \
                                                        "correctly"
 
-    @pytest.mark.parametrize('use_flat,arm', itertools.product(*[
-        [True, False],
-        ['red', 'blue'],
-    ]))
+    @pytest.mark.parametrize('use_flat', [True, False])
+    @pytest.mark.parametrize('arm', ['red', 'blue'])
     def test_slitview_cutout_dimensions(self, use_flat, arm, get_slitview_obj):
         """Test shape of output from Slitview.cutout"""
         data_arr, flat_arr, sv = get_slitview_obj
@@ -89,12 +85,9 @@ class TestSlitView():
             2*sv.extract_half_width + 1,
         )
 
-    @pytest.mark.parametrize('return_centroid,arm,use_flat',
-                             itertools.product(*[
-                                 [True, False],
-                                 ['red', 'blue'],
-                                 [True, False],
-                             ]))
+    @pytest.mark.parametrize('return_centroid', [True, False])
+    @pytest.mark.parametrize('use_flat', [True, False])
+    @pytest.mark.parametrize('arm', ['red', 'blue'])
     def test_slitview_slit_profile_return_centroid(self, return_centroid, arm,
                                                    use_flat,
                                                    get_slitview_obj):
@@ -108,11 +101,8 @@ class TestSlitView():
         else:
             assert not isinstance(func_returns, tuple)
 
-    @pytest.mark.parametrize('use_flat,arm',
-                             itertools.product(*[
-                                 [True, False],
-                                 ['red', 'blue'],
-                             ]))
+    @pytest.mark.parametrize('use_flat', [True, False])
+    @pytest.mark.parametrize('arm', ['red', 'blue'])
     def test_slitview_slit_profile_shape(self, arm, use_flat, get_slitview_obj):
         """Test the shape of the return of SlitView.slit_profile"""
         _, _, sv = get_slitview_obj

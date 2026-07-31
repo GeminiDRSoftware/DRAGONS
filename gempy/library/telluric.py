@@ -3,12 +3,15 @@ import os
 from copy import deepcopy
 import itertools
 
+import warnings
+
 import numpy as np
 
 from astropy.modeling import fitting
 from astropy.stats import sigma_clip
 from astropy.table import Table
 from astropy import units as u
+from astropy.utils.exceptions import AstropyUserWarning
 
 from specutils.utils.wcs_utils import vac_to_air
 
@@ -306,7 +309,12 @@ class TelluricSpectrum:
                                                    maxiters=2)
         planck = Planck(temperature=A0Spectrum.bbtemp,
                         scale=np.median(stellar_spectrum))
-        m_planck, _ = fit_it(planck, self.waves, stellar_spectrum)
+
+        # Suppress warnings here as they can arise from early iterations
+        # of the fit
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=AstropyUserWarning)
+            m_planck, _ = fit_it(planck, self.waves, stellar_spectrum, maxiter=1000)
         stellar_mask = stellar_spectrum / m_planck(self.waves) < threshold
         masked_slices = np.ma.clump_masked(np.ma.masked_array(
             self.waves, mask=stellar_mask))
@@ -321,6 +329,7 @@ class TelluricSpectrum:
 
         # debugging
         if plot:
+            print(fit_it.fit_info['ierr'], fit_it.fit_info['message'])
             fig, ax = plt.subplots()
             ax.plot(self.waves, stellar_spectrum, 'ko', label="A0 spectrum")
             ax.plot(self.waves[stellar_mask], stellar_spectrum[stellar_mask],

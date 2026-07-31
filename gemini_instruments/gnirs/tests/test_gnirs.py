@@ -99,6 +99,7 @@ def test_slice_range(ad):
 #     ad = astrodata.open(os.path.join(path_to_inputs, filename))
 #     assert ad.phu['DETECTOR'] == 'GNIRS'
 
+@pytest.mark.skip("There aren't really any keywords in the GNIRS header, and definitely not these")
 @pytest.mark.dragons_remote_data
 def test_read_a_keyword_from_hdr(ad):
     try:
@@ -124,7 +125,6 @@ def test_descriptor_matches_type(ad, descriptor, expected_type):
 
 
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("ad", ["N20190101S0102.fits"], indirect=True)
 def test_ra_and_dec_always_returns_float(ad, monkeypatch):
     """
     Tests that the get the RA/DEC coordinates using descriptors.
@@ -142,7 +142,6 @@ def test_ra_and_dec_always_returns_float(ad, monkeypatch):
 
 
 @pytest.mark.dragons_remote_data
-@pytest.mark.parametrize("ad", ["N20190101S0102.fits"], indirect=True)
 def test_ra_and_dec_wcs_fallback(ad, monkeypatch):
     """
     Tests that the get the RA/DEC coordinates using descriptors when the WCS coordinate mapping fails

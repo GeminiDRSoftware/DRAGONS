@@ -5,6 +5,7 @@ set -eux
 
 # Cleanup
 pwd
+ls -a
 git clean -fxd
 mkdir plots reports
 if [[ -n "${DRAGONS_TEST_OUT-}" ]]; then

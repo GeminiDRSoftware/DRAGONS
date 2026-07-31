@@ -59,7 +59,10 @@ def assert_most_close(actual, desired, max_miss, rtol=1e-7, atol=0,
 
     except AssertionError as e:
         n_miss = e.args[0].split('\n')[3].split(':')[-1].split('(')[0].split('/')[0]
-        n_miss = int(n_miss.strip())
+        try:
+            n_miss = int(n_miss.strip())
+        except ValueError:
+            raise AssertionError(str(e))
 
         if n_miss > max_miss:
             error_message = (

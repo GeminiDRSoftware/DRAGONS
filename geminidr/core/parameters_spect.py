@@ -143,9 +143,13 @@ class determineDistortionConfig(config.Config):
     fwidth = config.RangeField("Feature width in pixels if reidentifying",
                                float, None, min=1., optional=True)
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
+    combine_method = config.ChoiceField("Combine method to use when collapsing each slice", str,
+                                   allowed={"mean": "mean",
+                                            "median": "median"},
+                                   default="mean", optional=False)
     step = config.RangeField("Step in rows/columns for tracing", int, 10, min=1)
     max_shift = config.RangeField("Maximum shift per pixel in line position",
-                                  float, 0.05, min=0.001, max=0.1)
+                                  float, 0.05, min=0.001, max=0.1, inclusiveMax=True)
     max_missed = config.RangeField("Maximum number of steps to miss before a line is lost", int, 5, min=0)
     min_line_length = config.RangeField("Exclude line traces shorter than this fraction of slit length",
                                         float, 0.8, min=0., max=1.)
@@ -200,10 +204,12 @@ class determinePinholeRectificationConfig(config.Config):
 
 class determineSlitEdgesConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitEdgesDetermined", optional=True)
-    spectral_order = config.RangeField("Fitting order in spectral direction",
-                                       int, 3, min=1)
+    nsum = config.RangeField("Number of lines to sum in spatial profile for edge detection",
+                             int, 6, min=1, optional=False)
     min_snr = config.RangeField("Minimum SNR for edge detection", float, 10., min=0.1,
                                 optional=False)
+    spectral_order = config.RangeField("Fitting order in spectral direction",
+                                       int, 3, min=1)
     edge1 = config.RangeField("Left/lower edge of illuminated region",
                               float, None, min=1)
     edge2 = config.RangeField("Right/upper edge of illuminated region",
@@ -219,7 +225,7 @@ class determineSlitEdgesConfig(config.Config):
     debug_step = config.RangeField("Step size (in pixels) for fitting edges",
                                    int, 20, min=5)
     debug_nsum = config.RangeField("Columns/rows to sum each step when fitting edges",
-                                   int, 10, min=5)
+                                   int, 10, min=5, max=30, inclusiveMax=True)
 
     def validate(self):
         if hasattr(self, 'edge1'):

@@ -341,7 +341,7 @@ class GNIRSLongslit(GNIRSSpect, Longslit):
                         these_params["order"] = 3
 
                     if these_params["center"] is None:
-                        these_params["center"] = 650
+                        these_params["center"] = 651
 
                     if these_params["min_snr"] is None:
                         if filt.startswith('L'):

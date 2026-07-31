@@ -51,7 +51,8 @@ input_pars = [
     # grism: HK, filter: JH (1.100um)
     ("S20220101S0044_flatCorrected.fits", dict()), # 3-pix slit
     # grism: R3K, filter: J-low (1.100um)
-    ("S20131018S0230_flatCorrected.fits", dict()), # 6-pix slit
+    # Remove because the data quality is terrible
+    #("S20131018S0230_flatCorrected.fits", dict()), # 6-pix slit
     # grism: R3K, filter: J (1.250um)
     ("S20170715S0121_flatCorrected.fits", dict()), # 1-pix slit
     # grism: R3K, filter: H (1.650um)

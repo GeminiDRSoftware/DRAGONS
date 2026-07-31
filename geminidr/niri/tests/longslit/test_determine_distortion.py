@@ -45,9 +45,10 @@ fixed_parameters_for_determine_distortion = {
 input_pars = [
     # Process Arcs: NIRI ---
     # (Input File, params)
-    ("N20090504S0212_flatCorrected.fits", dict()), # H_order_sort	f6-6pixBl	Hgrism
-    ("N20080530S0292_flatCorrected.fits", dict()), # K_order_sort	f32-9pix	Kgrismf32
-    ("N20090706S0706_flatCorrected.fits", dict()), # science, from OH sky emission
+    # Bad pixels haven't been masked so "median" combining is more robust
+    ("N20090504S0212_flatCorrected.fits", dict(combine_method="median")), # H_order_sort	f6-6pixBl	Hgrism
+    ("N20080530S0292_flatCorrected.fits", dict(combine_method="median")), # K_order_sort	f32-9pix	Kgrismf32
+    ("N20090706S0706_flatCorrected.fits", dict(combine_method="median")), # science, from OH sky emission
 ]
 
 associated_calibrations = {
