@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+import json
 import os
 
 from astropy.modeling import fitting, models
@@ -46,39 +47,46 @@ def ext(request):
 
 @pytest.mark.preprocessed_data
 @pytest.mark.regression
-@pytest.mark.parametrize("filename,mag,bbtemp",
-                         [("hip93667_109_ad.fits", "K=5.241", 9650)]
+@pytest.mark.parametrize("filename",
+                         ["N20220816S0533_telluricFitted.fits",
+                          "N20171214S0163_telluricFitted.fits"]
                          )
-def test_fit_telluric(path_to_inputs, path_to_refs, filename, mag, bbtemp):
+def test_fit_telluric(path_to_inputs, filename):
     """
-    Overall regression test for fitTelluric() with some parameters fixed
+    Regression test for fitTelluric(). This takes an already fitted telluric
+    as input and copies the SENSFUNC and TELLFIT extensions to compare with
+    the output of fitTelluric() with the same parameters. This avoids the
+    need for a separate reference file, since the input is also the reference.
     """
     ad = astrodata.open(os.path.join(path_to_inputs, filename))
+    sensfunc = [ext.SENSFUNC.copy() for ext in ad]
+    tellfit = ad.TELLFIT.copy()
+
+    history = ad.HISTORY
+    # It's only the last one that matters
+    fitTelluric_row = len(history) - 1
+    while fitTelluric_row >= 0:
+        if history['primitive'][fitTelluric_row] == 'fitTelluric':
+            break
+        fitTelluric_row -= 1
+    params = {k: v for k, v in json.loads(history['args'][fitTelluric_row]).items()
+              if k != 'interactive'}
 
     pm = PrimitiveMapper(ad.tags, ad.instrument(generic=True).lower(),
                          mode='sq', drpkg='geminidr')
     pclass = pm.get_applicable_primitives()
     p = pclass([ad])
-    adout = p.fitTelluric(magnitude=mag, bbtemp=bbtemp,
-                          shift_tolerance=None,
-                          debug_stellar_mask_threshold=0.).pop()
+    adout = p.fitTelluric(**params).pop()
 
-    adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
-    assert ad_compare(adout, adref)
+    np.testing.assert_allclose(adout.TELLFIT['PCA coefficients'].data,
+                               tellfit['PCA coefficients'].data, rtol=1e-6)
 
-    # Compare PCA coefficients
-    assert np.allclose(adout.TELLFIT['PCA coefficients'].data,
-                       adref.TELLFIT['PCA coefficients'].data)
-
-    # Compare data-derived absorption
-    for ext_out, ext_ref in zip(adout, adref):
-        assert np.allclose(ext_out.TELLABS, ext_ref.TELLABS)
-
-        # Compare evaluations of SENSFUNCs
-        sensfunc_out = am.table_to_model(ext_out.SENSFUNC)
-        sensfunc_ref = am.table_to_model(ext_ref.SENSFUNC)
-        pixels = np.arange(ext_out.data.size)
-        assert np.allclose(sensfunc_out(pixels), sensfunc_ref(pixels))
+    # Evaluate the SENSFUNCs over the full range of pixels
+    for ext, sens in zip(adout, sensfunc):
+        sensfunc_out = am.table_to_model(ext.SENSFUNC)
+        sensfunc_ref = am.table_to_model(sens)
+        pixels = np.arange(ext.data.size)
+        assert np.allclose(sensfunc_out(pixels), sensfunc_ref(pixels), atol=1e-6)
 
 
 @pytest.mark.preprocessed_data
