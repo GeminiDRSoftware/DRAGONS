@@ -64,7 +64,7 @@ class extractSpectraMultiConfig(config.Config):
             raise config.ValidationError("nslices must be an odd number to have a central slice.")
 
 
-class extractSpectraConfig(config.Config):
+class extractSpectraSingleConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_spec1d",
                           optional=True)
     extraction_mode = config.Field("Extraction mode", str, "optimal")
