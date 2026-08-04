@@ -45,8 +45,11 @@ class Calibrator(ABC):
         """
         Set parameters for computing the model, from a single parameter set
         """
-        self.reinit_params = {p: getattr(ui_params, p)
-                              for p in ui_params.reinit_params}
+        if ui_params.reinit_params is None:
+            self.reinit_params = {}
+        else:
+            self.reinit_params = {p: getattr(ui_params, p)
+                                  for p in ui_params.reinit_params}
         fit_params = fit_1D.translate_params(ui_params.values)
         self.fit_params = {k: [v] * len(self) for k, v in fit_params.items()}
 
@@ -264,6 +267,7 @@ class TelluricCalibrator(Calibrator):
             masked points (including sigma-clipped points)
         """
         start_time = datetime.now()
+        print(datetime.now(), "Fitting...")
         data = self.concatenate('data')
         original_masks = [tspek.mask.copy() for tspek in self.spectra]
         for tspek, user_mask in zip(self.spectra, self.user_mask):
@@ -331,7 +335,7 @@ class TelluricCalibrator(Calibrator):
             m_final = fit_it(m_init, m_init.waves[~mask], data[~mask],
                              weights=weights[~mask], maxiter=10000)
             new_mask = np.zeros_like(m_init.waves, dtype=bool)
-        # print(datetime.now() - start_time, "FINISHED FIT")
+        print(datetime.now() - start_time, "FINISHED FIT")
 
         # Reset masks to their original values
         for tspek, orig_mask in zip(self.spectra, original_masks):

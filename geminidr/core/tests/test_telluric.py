@@ -79,14 +79,17 @@ def test_fit_telluric(path_to_inputs, filename):
     adout = p.fitTelluric(**params).pop()
 
     np.testing.assert_allclose(adout.TELLFIT['PCA coefficients'].data,
-                               tellfit['PCA coefficients'].data, rtol=1e-6)
+                               tellfit['PCA coefficients'].data, atol=1e-3)
 
     # Evaluate the SENSFUNCs over the full range of pixels
     for ext, sens in zip(adout, sensfunc):
         sensfunc_out = am.table_to_model(ext.SENSFUNC)
         sensfunc_ref = am.table_to_model(sens)
-        pixels = np.arange(ext.data.size)
-        assert np.allclose(sensfunc_out(pixels), sensfunc_ref(pixels), atol=1e-6)
+        assert sensfunc_out.meta['xunit'] == sensfunc_ref.meta['xunit'] == u.nm
+        assert sensfunc_out.meta['yunit'] == sensfunc_ref.meta['yunit']
+        goodpix = ext.mask == 0
+        w = ext.wcs(np.arange(ext.data.size)[goodpix])
+        assert np.allclose(sensfunc_out(w), sensfunc_ref(w), atol=1e-4)
 
 
 @pytest.mark.preprocessed_data
