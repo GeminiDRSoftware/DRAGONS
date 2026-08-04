@@ -1048,7 +1048,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                 prof /= signal_sum
                                 data[i] = (prof * coldata * iv).sum() / (prof * prof * iv).sum()
                                 mask[i] = DQ.good
-                                var[i] = prof.sum() / (prof * prof * iv).sum()
+                                var[i] = abs(prof[iv > 0]).sum() / (prof * prof * iv).sum()
 
                 if np.all(mask & DQ.no_data):
                     log.warning(f"No good pixels found for extraction in order {ext.hdr['SPECORDR']}")
