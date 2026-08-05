@@ -4,7 +4,6 @@ Fixtures to be used in tests in DRAGONS
 
 import os
 import shutil
-import urllib
 import hashlib
 import requests
 

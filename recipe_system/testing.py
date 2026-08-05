@@ -1,5 +1,6 @@
 import os
 import pytest
+import urllib
 import xml.etree.ElementTree as et
 
 from astropy.table import Table
