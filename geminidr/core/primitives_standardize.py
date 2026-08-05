@@ -509,8 +509,9 @@ class Standardize(PrimitivesBASE):
 
             # Check that the input is appropriate for this primitivesClass
             # Only the instrument is checked
-            inst_name = ad.instrument(generic=True)
-            if not inst_name in self.tagset:
+            inst_name = ad.instrument(generic=False)
+            generic_inst_name = ad.instrument(generic=True)
+            if not {inst_name, generic_inst_name}.intersection(self.tagset):
                 prim_class_name = self.__class__.__name__
                 raise ValueError(f"Input file {ad.filename} is {inst_name} data"
                                  f" and not suitable for {prim_class_name} "

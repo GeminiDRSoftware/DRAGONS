@@ -98,7 +98,7 @@ input_pars = [
     # 10 l/mm, LongCam, LXD
     #("N20190613S0147_pinholeRectificationAttached.fits", dict()), # 1.650um, 0.45" slit. Orders 3-5 correct with min_snr=5, but ord 7 - misident, low snr
     # 32 l/mm ShortCam, SXD
-    ("N20201229S0029_pinholeRectificationAttached.fits", dict(min_snr=10)), # 2.150um, 0.3" slit. All orders ok with min_snr=10
+    ("N20201229S0029_pinholeRectificationAttached.fits", dict(min_snr=11)), # 2.150um, 0.3" slit. All orders ok with min_snr=11
     ("N20210228S0111_pinholeRectificationAttached.fits", dict(min_snr=5)), # 1.65um, 0.68" slit. All orders correct
     # 32 l/mm LongCam, LXD
     ("N20201223S0043_pinholeRectificationAttached.fits", dict()), # 1.98um, 0.45" slit. Ord 3,4 - ok; 5,6-low signal, no solution

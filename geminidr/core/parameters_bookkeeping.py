@@ -62,6 +62,7 @@ class transferAttributeConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_attributeTransferred", optional=True)
     source = config.Field("Stream to transfer from", str, None)
     attribute = config.Field("Name of attribute to transfer", str, None)
+    new_name = config.Field("New name of attribute", str, None, optional=True)
 
 class writeOutputsConfig(config.Config):
     overwrite = config.Field("Overwrite exsting files?", bool, True)

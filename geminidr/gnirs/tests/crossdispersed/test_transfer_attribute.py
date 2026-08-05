@@ -10,8 +10,8 @@ from astrodata.testing import download_from_archive
 from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
 
 # -- Datasets -----------------------------------------------------------------
-datasets = [("N20210129S0304.fits", # 32 l/mm Short camera
-             "N20210129S0323.fits")]
+datasets = [("N20250501S0235.fits", # 32 l/mm Short camera
+             "N20250501S0241.fits")]
 
 # -- Tests --------------------------------------------------------------------
 @pytest.mark.gnirsxd
@@ -26,7 +26,7 @@ def test_flat_correct(dataset, change_working_dir):
         p.prepare()
         p.selectFromInputs(tags='GCAL_IR_OFF,LAMPOFF', outstream='QHLamp')
         p.removeFromInputs(tags='GCAL_IR_OFF,LAMPOFF')
-        ad_ref = p.determineSlitEdges(stream='QHLamp', search_radius=60)[0]
+        ad_ref = p.determineSlitEdges(stream='QHLamp', search_radius=30)[0]
         ad_out = p.transferAttribute(stream='main', source='QHLamp',
                                                attribute='SLITEDGE').pop()
 

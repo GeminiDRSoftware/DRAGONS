@@ -1,0 +1,136 @@
+"""
+Recipes available to data with tags ['IGRINS', 'CAL', 'FLAT'].
+"""
+recipe_tags = {'IGRINS-2', 'FLAT'}
+
+def estimateNoise(p):
+    """This recipe performs the analysis of irs readout pattern noise in flat off
+    images. It creates a stacked image of pattern removed images and add a
+    table that descibes its noise characteristics. The result is stored on disk
+    and has a name equal to the name of the first input image with
+    "_pattern_noise.fits" appended.
+
+    Parameters
+    ----------
+    p : PrimitivesCORE object
+        A primitive set matching the recipe_tags.
+
+    """
+
+    # Given the list of adinputs of both flat on and off images, we first
+    # select the only the off images.
+    p.selectFrame(frmtype="OFF")
+    p.prepare()
+    # it creates pattern corrected images with several methods (guard, level2,
+    # level3). The images are then added to the streams.
+    p.streamPatternCorrected(rpc_mode="full")
+    # Estimate some noise characteristics of images in each stream. A table is
+    # created and added to a 'ESTIMATED_NOISE' stream.
+    p.estimateNoise()
+    p.stackFlats(instream="level3_REMOVED")
+    # The table from 'ESTIMATED_NOISE' stream is appended to the stacked image.
+    p.addNoiseTable()
+    # Set the suffix.
+    p.setSuffix(suffix="_pattern_noise")
+    return
+
+def oldMakeProcessedFlat(p):
+    """
+    This recipe takes flat images and reduce them to prepare a processed flat image.
+    The raw input should have both flat on and off images. The flat off and images are
+    separatedly combined into a single stacked flat off and a stacked flat on image,
+    then subtracted. For each order, an average spectrum is estimated as
+    a function of columns (x-pixels) and the pixels belong in that order are nomarlized
+    by the average spectrum. This is saved as a processed flat. The recipe will
+    identify upp and lower boundary of each order and which is added to the processed flat
+    with an extention of a "SLITEDGE" as a table. The combined flat before the normalization
+    is also stored with an extension name of "FLAT_ORIGINAL".
+
+    Parameters
+    ----------
+    p : PrimitivesCORE object
+        A primitive set matching the recipe_tags.
+    """
+
+    p.prepare()
+
+    p.readoutPatternCorrectFlatOff() # This primitive needs to be applied
+                                     # before addVar as we will add
+                                     # poisson_noise.
+
+    p.addDQ() # FIXME : will use non_linear_level and saturation_level for
+              # additional masking.
+    p.addVAR(read_noise=True, poisson_noise=True) # readout noise from header
+
+    # p.nonlinearityCorrect()
+    p.ADUToElectrons() # It tries to use saturation_level and nonlinear_level
+                       # values in the header. However, if those keys are not
+                       # difined in the `__keyword_dict` of IGRINS adclass,
+                       # they are simply ignored, which is the case.
+
+    p.makeLampFlat() # This separates the lamp-on and lamp-off flats, stacks
+                     # them, subtracts one from the other, and returns that
+                     # single frame. It requires LAMPON/LAMPOFF tags.
+
+    p.determineSlitEdgesOld()
+    # ported IGRINS's version of slit edge detection.
+    # Will create SLITEDGE table.
+
+    p.maskBetweenSlits()
+    # set unilluminated flags for the pixel not illuminated by the slit.
+
+    p.normalizeFlatOld()
+    # The primitive will store the original flat in as 'FLAT_ORIGINAL'
+
+    p.thresholdFlatfield()
+    p.storeProcessedFlat()
+
+    return
+
+# We set 'estimateNoise' as a default recipe for temporary, just for testing
+# purpose.
+# _default = estimateNoise
+
+def makeProcessedFlat(p):
+    p.prepare()
+    p.readoutPatternCorrectFlatOff()
+    p.addDQ()
+    p.maskReferencePixels()
+    p.addVAR(read_noise=True, poisson_noise=True) # readout noise from header
+    p.ADUToElectrons()
+    p.makeLampFlat()
+    p.determineSlitEdges()
+    p.cutSlits()
+    p.maskBeyondSlit()
+    p.normalizeFlat()
+    p.thresholdFlatfield()
+    p.storeProcessedFlat()
+
+
+def makeProcessedBPM(p):
+    """
+    This recipe requires flats and uses the lamp-off as short darks.
+    """
+
+    p.prepare(attach_mdf=False)
+    p.addDQ() # FIXME : While I don't think this is required, we still need
+              # this. Otherwise, it will raise error in stackFrames.
+
+    p.readoutPatternCorrectFlatOff() # This recipe needs to be applied before
+                                     # addVar as we will add poisson_noise.
+    p.readoutPatternCorrectFlatOn() # This recipe needs to be applied before
+
+    p.selectFromInputs(tags="LAMPOFF", outstream="flat-off")
+    p.stackFrames(stream="flat-off")
+
+    p.selectFromInputs(tags="LAMPON", outstream="flat-on")
+    p.stackFrames(stream="flat-on")
+
+    p.makeIgrinsBPM() # hotpix mask is created from the flat-off stream and the
+                      # deadpix mask is from flat-on stream.
+
+    #p.storeBPM()
+    return
+
+
+_default = makeProcessedFlat

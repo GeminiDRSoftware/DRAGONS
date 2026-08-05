@@ -25,7 +25,6 @@ from gempy.gemini import gemini_tools as gt
 from gempy.library import astromodels as am
 from geminidr.core import Spect, Preprocess
 from geminidr import CalibrationNotFoundError
-from gemini_instruments.gnirs import lookup
 from . import parameters_crossdispersed
 
 
@@ -101,6 +100,8 @@ class CrossDispersed(Spect, Preprocess):
             # Try to get a slit rectification model from the flat, and, if one
             # exists, insert it before the pixels-to-world transform.
             ad_rect = gt.attach_rectification_model(ad_cut, flat, log=self.log)
+            if hasattr(flat, "MDF"):
+                ad_rect.MDF = flat.MDF
 
             origin_str = f" (obtained from {origin})" if origin else ""
 
@@ -236,34 +237,22 @@ class CrossDispersed(Spect, Preprocess):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
 
-        def get_dispersions_for_orders(grating, camera):
-            min_order = 3
-            dispersions = []
-            config = lookup.dispersion_by_config.get((grating, camera), {})
-            for order in range(min_order, max(lookup.xd_orders.keys()) + 1):
-                filter_name = lookup.xd_orders.get(order)
-                if filter_name and filter_name in config:
-                    dispersions.append(config[filter_name])
-            return dispersions
+        xdtools = import_module('.xdtools', self.inst_lookups)
 
         adoutputs = []
         for ad in adinputs:
-            grating = ad._grating(pretty=True, stripID=True)
-            camera = 'Short' if 'Short' in ad.camera() \
-                else 'Long' if 'Long' in ad.camera() else None
-            dispersions = get_dispersions_for_orders(grating, camera)
-
-            # Get the central wavelength setting and order it occurs in.
-            central_wavelength = ad.central_wavelength(asNanometers=True)
-            grating_order = ad._grating_order()
-
             # This is the presumed pointing location and the centres of
             # each cut slit should recover these sky coordinates
-            world_refpos = ad[0].wcs(*list(0.5 * (length - 1)
-                                           for length in ad[0].shape[::-1]))
-            ad = self._cut_slits(ad, padding=2)
+            try:
+                world_refpos = ad[0].wcs(*list(0.5 * (length - 1)
+                                               for length in ad[0].shape[::-1]))
+            except TypeError:  # probably wcs is None
+                world_refpos = None
+            adout = self._cut_slits(ad, padding=2)
+            if hasattr(ad, "MDF"):
+                adout.MDF = ad.MDF
 
-            for i, ext in enumerate(ad):
+            for ext, new_wave_model in zip(adout, xdtools.initial_wave_models(adout)):
                 dispaxis = 2 - ext.dispersion_axis()  # Python Sense
                 specaxis_middle = 0.5 * (ext.shape[dispaxis] - 1)
                 try:
@@ -276,31 +265,16 @@ class CrossDispersed(Spect, Preprocess):
                 try:
                     spec_order = set(ext.SLITEDGE["specorder"])
                 except KeyError:
-                    if 'XD' in ad.tags:
+                    if 'XD' in adout.tags:
                         raise RuntimeError("No order information found in "
-                                           f"SLITEDGE for {ad.filename}")
+                                           f"SLITEDGE for {adout.filename}")
                 else:
                     if len(spec_order) > 1:
                         raise RuntimeError("Multiple orders found in SLITEDGE")
                     spec_order = spec_order.pop()
                     ext.hdr['SPECORDR'] = spec_order
 
-                # Update the central wavelength for this order using the
-                # following formula:
-                #   order_X * cent_wavelength_X = order_Y * cent_wavelength_Y
-                # e.g., 3 * 2.3 = 4 * central_wavelength_4 -> 3/4 * 2.2 = 1.65
-                # We have the central wavelength and number of one order from
-                # the header, so we can find the central wavelength in any
-                # other order.
-                centwl = grating_order * central_wavelength / spec_order
-
-                # Update the WCS by adding a "first guess" wavelength scale
-                # for each slit.
-                new_wave_model = (models.Shift(-specaxis_middle) |
-                                  models.Scale(dispersions[i]) |
-                                  models.Shift(centwl))
                 new_wave_model.name = "WAVE"
-
                 for idx, step in enumerate(ext.wcs.pipeline):
                     try:
                         ext.wcs.pipeline[idx] = step.__class__(
@@ -311,7 +285,8 @@ class CrossDispersed(Spect, Preprocess):
                     else:
                         # Update the SKY model so all slit centers point to
                         # the same location
-                        coords = ext.wcs.invert(centwl, *world_refpos[1:])
+                        coords = ext.wcs.invert(new_wave_model(specaxis_middle),
+                                                *world_refpos[1:])
                         shift = coords[dispaxis] - slit_center
                         sky_model = am.get_named_submodel(step.transform, "SKY")
                         new_sky_model = models.Shift(shift) | sky_model
@@ -329,10 +304,10 @@ class CrossDispersed(Spect, Preprocess):
 
 
             # Timestamp and update the filename
-            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
+            gt.mark_history(adout, primname=self.myself(), keyword=timestamp_key)
+            adout.update_filename(suffix=sfx, strip=True)
 
-            adoutputs.append(ad)
+            adoutputs.append(adout)
 
         return adoutputs
 
@@ -365,6 +340,8 @@ class CrossDispersed(Spect, Preprocess):
         adout = astrodata.create(ad.phu)
         adout.filename = ad.filename
         adout.orig_filename = ad.orig_filename
+        arrsec_kw = ad._keyword_for('array_section')
+        datasec_kw = ad._keyword_for('data_section')
         detsec_kw = ad._keyword_for('detector_section')
         binnings = ad.detector_x_bin(), ad.detector_y_bin()
 
@@ -410,8 +387,9 @@ class CrossDispersed(Spect, Preprocess):
                 adout[-1].SLITEDGE = slitedge[i*2:i*2+2]
                 adout[-1].SLITEDGE["c0"] -= y1
                 adout[-1].SLITEDGE["slit"] = 1  # reset slit number in ext
+                cut_shape = adout[-1].shape
 
-               # Calculate a Chebyshev2D model that represents both slit
+                # Calculate a Chebyshev2D model that represents both slit
                 # edges. This requires coordinates be fed with the *detector*
                 # x-coordinate first. The rectified slit will be as wide in
                 # pixels as it is halfway up the unrectified image, and the
@@ -423,6 +401,13 @@ class CrossDispersed(Spect, Preprocess):
                     ypixels1 >= padding, ypixels1 <= ext.shape[1 - dispaxis] - padding - 1)
                 ypix2_on = np.logical_and(
                     ypixels2 >= padding, ypixels2 <= ext.shape[1 - dispaxis] - padding - 1)
+
+                # If we don't have enough points along one edge to constrain the model,
+                # then trust the "made-up" points.
+                if ypix1_on.sum() <= model1.degree:
+                    ypix1_on = np.ones_like(ypixels1, dtype=bool)
+                if ypix2_on.sum() <= model2.degree:
+                    ypix2_on = np.ones_like(ypixels2, dtype=bool)
 
                 xcenter = 0.5 * (ext.shape[dispaxis] - 1)
                 y1ref = np.full_like(ypixels1, padding)[ypix1_on]
@@ -444,14 +429,16 @@ class CrossDispersed(Spect, Preprocess):
 
                 m_init_2d = models.Chebyshev2D(
                     x_degree=xorder, y_degree=yorder,
-                    x_domain=[0, ext.shape[1]-1],
-                    y_domain=[0, ext.shape[0]-1])
+                    x_domain=[0, cut_shape[1]-1],
+                    y_domain=[0, cut_shape[0]-1])
                 log.stdinfo("  Creating distortion model for slit "
                             f"rectification for slit {i+1}")
                 # The `fixed_linear` parameter is False because we should
                 # have both edges for each slit.
                 model, m_final_2d, m_inverse_2d = am.create_distortion_model(
                     m_init_2d, dispaxis, incoords, refcoords, fixed_linear=False)
+                log.stdinfo("Distortion model/inverse rms = "
+                            f"{model.meta['fwd_rms']:.3f}/{model.meta['inv_rms']:.3f} pixels")
                 model.name = "RECT"
 
                 # Remove the shift that was prepended when the data were
@@ -459,18 +446,21 @@ class CrossDispersed(Spect, Preprocess):
                 # original WCS (this will mess up the astrometry)
                 adout[-1].wcs = deepcopy(orig_wcs)
                 if adout[-1].wcs is None:
-                    adout[-1].wcs = gWCS([(ext.wcs.input_frame, model),
+                    adout[-1].wcs = gWCS([(astrodata.wcs.pixel_frame(naxes=2), model),
                                           (cf.Frame2D(name="rectified"),
                                            None)])
                 else:
                     adout[-1].wcs.insert_frame(ext.wcs.input_frame, model,
                                                cf.Frame2D(name="rectified"))
 
-                # TODO: this updates the detector_section keyword, which
-                # is fine for instruments with only one array in the
-                # detector. NEEDS UPDATING for multi-array instruments
-                # (e.g., MOS data from MOS), and will need to update
-                # the array_section keyword then as well.
+                # TODO: need to decide how to update the array_section
+                # keyword for multi-detector instruments and/or MOS data.
+                adout[-1].hdr[arrsec_kw] = (
+                    cut_section.asIRAFsection(binning=binnings),
+                    self.keyword_comments.get(arrsec_kw))
+                adout[-1].hdr[datasec_kw] = (
+                    Section.from_shape(cut_shape).asIRAFsection(),
+                    self.keyword_comments.get(datasec_kw))
                 adout[-1].hdr[detsec_kw] = (
                     cut_section.as_iraf_section(binning=binnings),
                     self.keyword_comments.get(detsec_kw))

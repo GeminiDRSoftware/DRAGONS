@@ -122,13 +122,13 @@ def use_keyword_if_prepared(fn):
     if this exists in all the headers (if the keyword is missing, it will
     execute the code in the descriptor method).
     """
-    def gn(self):
+    def gn(self, **kwargs):
         if "PREPARED" in self.tags:
             try:
                 return self.hdr[self._keyword_for(fn.__name__)]
             except (KeyError, AttributeError):
                 pass
-        return fn(self)
+        return fn(self, **kwargs)
     return gn
 
 

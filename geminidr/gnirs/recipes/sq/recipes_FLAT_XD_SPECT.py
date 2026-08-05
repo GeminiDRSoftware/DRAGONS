@@ -34,7 +34,7 @@ def makeProcessedFlat(p):
     p.stackFlats(stream='main')
     p.stackFlats(stream='IRHigh')
     # Illumination of all orders from QH lamp is sufficient to find edges.
-    p.determineSlitEdges(stream='main', search_radius=30)
+    p.determineSlitEdges(stream='main')
     p.transferAttribute(stream='IRHigh', source='main', attribute='SLITEDGE')
     p.cutSlits(stream='main')
     p.cutSlits(stream='IRHigh')

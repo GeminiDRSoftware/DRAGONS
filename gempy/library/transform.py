@@ -1230,14 +1230,23 @@ class DataGroup:
         sequence of doubletons: limits of the output region this transforms into
         """
         # Find extent of this array in the output, after transformation
+        # Construct input coordinate lists along the edges of the array,
+        # and transform them to find the output region. This is needed in
+        # case the input data are highly concave/convex.
         # Invert from standard python order to (x, y[, z]) order
-        corners = np.array(at.get_corners(input_array.shape)).T[::-1]
-        trans_corners = transform(*corners)
+        array_shape = input_array.shape[::-1]
+        edge_pixels = [[] for _ in array_shape]
+        for i, length in enumerate(array_shape):
+            for j in range(len(array_shape)):
+                if j != i:
+                    edge_pixels[j] += [0] * length + [array_shape[j] - 1] * length
+            edge_pixels[i] += list(range(length)) + list(range(length))
+
+        trans_edges = transform(*edge_pixels)
         if len(input_array.shape) == 1:
-            trans_corners = (trans_corners,)
-        self.corners.append(trans_corners[::-1])  # standard python order
-        min_coords = [int(np.ceil(min(coords))) for coords in trans_corners]
-        max_coords = [int(np.floor(max(coords)))+1 for coords in trans_corners]
+            trans_edges = (trans_edges,)
+        min_coords = [int(np.ceil(min(coords))) for coords in trans_edges]
+        max_coords = [int(np.floor(max(coords)))+1 for coords in trans_edges]
         self.logit("Array maps to ["+",".join(
             [f"{min_+1}:{max_}" for min_, max_ in zip(min_coords, max_coords)])+"]")
         # If this maps to a region not starting in the bottom-left of the
@@ -1247,6 +1256,14 @@ class DataGroup:
         new_max_coords = [min(c, s) for c, s in zip(max_coords, self.output_shape[::-1])]
         shift = reduce(Model.__and__, [models.Shift(-c) for c in new_min_coords])
         transform.append(shift.rename("Region offset"))
+
+        # This is vestigial code to store the transformed corners, although
+        # that information is of dubious value for complex transforms.
+        corners = np.array(at.get_corners(input_array.shape)).T[::-1]
+        trans_corners = transform(*corners)
+        if len(input_array.shape) == 1:
+            trans_corners = (trans_corners,)
+        self.corners.append(trans_corners[::-1])  # standard python order
 
         output_corners = tuple((min_, max_) for min_, max_ in
                                zip(new_min_coords, new_max_coords))[::-1]
@@ -1714,7 +1731,10 @@ def resample_from_wcs(ad, frame_name, attributes=None, interpolant="linear",
     new_pipeline = deepcopy(ref_wcs.pipeline[frame_index:])
     new_pipeline[0].frame.name = ref_wcs.input_frame.name
     # Remember, dg.origin is (y, x)
-    new_origin = tuple(s for s in dg.origin[::-1])
+    if dg.origin is None:
+        new_origin = (0,) * len(ad_out[0].shape)
+    else:
+        new_origin = tuple(s for s in dg.origin[::-1])
 
     origin_model = None
     if len(new_pipeline) == 1:
