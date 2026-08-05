@@ -1,5 +1,6 @@
 import os
 from importlib import import_module
+from bisect import bisect_left
 import copy
 import warnings
 
@@ -887,9 +888,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
         Parameters
         ----------
-        adinputs : list of :class:`~astrodata.AstroData`
-            2D spectral images with appropriately-calibrated WCS.
-        suffix : str
+       suffix : str
             Suffix to be added to output files.
         interpolant : str
             Type of interpolant
@@ -972,16 +971,27 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
     def extractSpectra(self, adinputs=None, **params):
         """
+        Create a one-dimensional spectrum by extracting the signal along each
+        order.
+
+        Parameters
+        ----------
+       suffix : str
+            Suffix to be added to output files.
+        method : str [aperture|optimal|default]
+            Extraction method to use
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        extraction_mode = params["extraction_mode"]
+        method = params["method"]
 
         adoutputs = []
         for ad in adinputs:
             adout = astrodata.create(ad.phu)
+            this_method = method if method != "default" else (
+                "optimal" if 'STANDARD' in ad.tags else "aperture")
             for ext in ad:
                 data = np.zeros((ext.shape[1],), dtype=ext.data.dtype)
                 mask = np.full((ext.shape[1],), DQ.no_data, dtype=ext.mask.dtype)
@@ -1025,30 +1035,69 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                          abs(ext_xshifted.SLITPOS) < 0.5]),
                         1. / ext_xshifted.variance, 0)
 
-                # We want to normalize the profile along each column. Since
-                # there's probably both a +ve and -ve beam, we can't simply
-                # use the sum of the profile.
                 slitpos_samples = (np.arange(ext.SLITPROF.shape[0]) - 25) * 0.02
-                spl = make_interp_spline(slitpos_samples, ext.SLITPROF, k=3, axis=0)
-                t, c, k = spl.tck
+
+                # For aperture extraction, we want to know where to extract.
+                # The data are effectively noiseless, so we don't use
+                # peak_finding.get_extrema() here.
+                if this_method == "aperture":
+                    slitprof = np.median(ext.SLITPROF, axis=1)
+                    spl = make_interp_spline(slitpos_samples, slitprof, k=3)
+                    ppoly = PPoly.from_spline(spl.tck)
+                    roots = np.r_[-0.5, ppoly.roots(extrapolate=False), 0.5]
+                    extrema = ppoly.derivative().roots(extrapolate=False)
+                    extrema_values = ppoly(extrema)
+                    i = bisect_left(roots, extrema[extrema_values.argmax()])
+                    extraction_regions = [(roots[i-1], roots[i], 1.0)]
+                    log.debug("Extracting positive beam "
+                              f"(order {ext.hdr['SPECORDR']} between "
+                              f"{extraction_regions[0][0]:.3f} and "
+                              f"{extraction_regions[0][1]:.3f}")
+                    # Are there A and B beams?
+                    ab = extrema_values.min() < -0.5 * extrema_values.max()
+                    if ab:
+                        i = bisect_left(roots, extrema[extrema_values.argmin()])
+                        extraction_regions.append((roots[i-1], roots[i], -1.0))
+                        log.debug("Extracting negative beam between "
+                                  f"{extraction_regions[1][0]:.3f} and "
+                                  f"{extraction_regions[1][1]:.3f}")
+                    pixels = np.arange(ext.shape[0])
+                else:
+                    # We want to normalize the profile along each column. Since
+                    # there's probably both a +ve and -ve beam, we can't simply
+                    # use the sum of the profile.
+                    spl = make_interp_spline(slitpos_samples, ext.SLITPROF, k=3, axis=0)
+                    t, c, k = spl.tck
+
+                from gempy.library.nddops import combine1d
                 for i, (slitpos, coldata, iv) in enumerate(zip(ext_xshifted.SLITPOS.T,
                                                                ext_xshifted.data.T,
                                                                inv_var.T)):
-                    if iv.max() > 0:
-                        ppoly = PPoly.from_spline((t, c[:, i], k))
-                        prof = ppoly(slitpos)
-                        if prof.max() > 0:
-                            # This code might be useful to investigate the profile
-                            # roots = ppoly.roots(extrapolate=False)
-                            # signal = sorted([abs(ppoly.integrate(a, b) / 0.02)
-                            #                  for a, b in zip(roots[:-1], roots[1:])],
-                            #                  reverse=True)
-                            signal_sum = np.sum(abs(prof[iv > 0]))
-                            if signal_sum > 0:
-                                prof /= signal_sum
-                                data[i] = (prof * coldata * iv).sum() / (prof * prof * iv).sum()
-                                mask[i] = DQ.good
-                                var[i] = abs(prof[iv > 0]).sum() / (prof * prof * iv).sum()
+                    if iv.max() > 0 and ext.hdr['SPECORDR'] > 70:
+                        if this_method == "optimal":
+                            ppoly = PPoly.from_spline((t, c[:, i], k))
+                            prof = ppoly(slitpos)
+                            if prof.max() > 0:
+                                signal_sum = np.sum(abs(prof[iv > 0]))
+                                if signal_sum > 0:
+                                    # Renormalize the profile sum to unity
+                                    prof /= signal_sum
+                                    data[i] = (prof * coldata * iv).sum() / (prof * prof * iv).sum()
+                                    mask[i] = DQ.good
+                                    var[i] = abs(prof[iv > 0]).sum() / (prof * prof * iv).sum()
+                        else:
+                            mask[i] = DQ.good
+                            for s1, s2, sign in extraction_regions:
+                                x1, x2 = np.interp([s1, s2], slitpos, pixels,
+                                                   left=np.nan, right=np.nan)
+                                if np.isnan(x1) or np.isnan(x2):
+                                    mask[i] = DQ.no_data
+                                    continue
+
+                                _slice = slice(int(np.ceil(x1-0.5))+1, int(np.ceil(x2-0.5)))
+                                data[i] += sign * ext_xshifted.data[_slice, i].sum()
+                                mask[i] |= np.logical_or.reduce(ext_xshifted.mask[_slice, i])
+                                var[i] += ext_xshifted.variance[_slice, i].sum()
 
                 if np.all(mask & DQ.no_data):
                     log.warning(f"No good pixels found for extraction in order {ext.hdr['SPECORDR']}")
