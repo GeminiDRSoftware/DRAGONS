@@ -33,7 +33,7 @@ def test_make_processed_flat_partial(file1, file2, will_crash, path_to_refs, cha
 
         assert crash == will_crash
         if not crash:
-            adout = astrodata.from_file(r.output_filenames[0].replace("_flat", "_lampstack"))
-            adref = astrodata.from_file(os.path.join(path_to_refs,
+            adout = astrodata.open(r.output_filenames[0].replace("_flat", "_lampstack"))
+            adref = astrodata.open(os.path.join(path_to_refs,
                                    adout.filename.replace("_lampstack", f"_{file1}_{file2}")))
             assert ad_compare(adout, adref, ignore="filename")

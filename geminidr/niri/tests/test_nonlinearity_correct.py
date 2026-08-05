@@ -33,7 +33,7 @@ def ad(path_to_inputs, request):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
-        ad = astrodata.from_file(path)
+        ad = astrodata.open(path)
     else:
         raise FileNotFoundError(path)
     return ad
@@ -55,7 +55,7 @@ def create_inputs():
         raw_filename = filename.replace("_varAdded", "")
         print('Downloading files...')
         sci_path = download_from_archive(raw_filename)
-        ad = astrodata.from_file(sci_path)
+        ad = astrodata.open(sci_path)
 
         print(f'Reducing {raw_filename}')
         p = NIRIImage([ad])

@@ -28,7 +28,7 @@ test_files = [
 def ad(request):
     filename = request.param
     path = astrodata.testing.download_from_archive(filename)
-    return astrodata.from_file(path)
+    return astrodata.open(path)
 
 
 @pytest.mark.dragons_remote_data
@@ -69,7 +69,7 @@ def test_tag_as_standard_fake(astrofaker):
 @pytest.mark.dragons_remote_data
 def test_tag_as_standard_real():
     path = astrodata.testing.download_from_archive("S20190215S0188.fits")
-    ad = astrodata.from_file(path)
+    ad = astrodata.open(path)
     assert 'STANDARD' in ad.tags
 
 

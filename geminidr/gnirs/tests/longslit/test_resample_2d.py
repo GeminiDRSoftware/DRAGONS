@@ -48,7 +48,7 @@ def test_resample_to_common_frame_with_defaults(input_ad_list, path_to_refs,
             ad_name = ad.filename.removesuffix('.fits')
             ref_name = f'{ad_name}_defaults_{wavescale}'
             assert 'ALIGN' in ad.phu
-            ref = astrodata.from_file(os.path.join(path_to_refs, f'{ref_name}.fits'))
+            ref = astrodata.open(os.path.join(path_to_refs, f'{ref_name}.fits'))
 
             try:
                 np.testing.assert_allclose(ad[0].data, ref[0].data, atol=5e-7, rtol=5e-7)
@@ -73,7 +73,7 @@ def test_resample_to_common_frame_trim_spectral(input_ad_list, path_to_refs,
             ad_name = ad.filename.removesuffix('.fits')
             ref_name = f'{ad_name}_trim_spectral_True'
             assert 'ALIGN' in ad.phu
-            ref = astrodata.from_file(os.path.join(path_to_refs, f'{ref_name}.fits'))
+            ref = astrodata.open(os.path.join(path_to_refs, f'{ref_name}.fits'))
             try:
                 np.testing.assert_allclose(ad[0].data, ref[0].data, rtol=5e-7)
             except AssertionError as e:
@@ -97,7 +97,7 @@ def test_resample_to_common_frame_trim_spatial(input_ad_list, path_to_refs,
             ad_name = ad.filename.removesuffix('.fits')
             ref_name = f'{ad_name}_trim_spatial_False'
             assert 'ALIGN' in ad.phu
-            ref = astrodata.from_file(os.path.join(path_to_refs, f'{ref_name}.fits'))
+            ref = astrodata.open(os.path.join(path_to_refs, f'{ref_name}.fits'))
             np.testing.assert_allclose(ad[0].data, ref[0].data, rtol=5e-7)
 
 
@@ -132,7 +132,7 @@ def input_ad_list(path_to_inputs):
         input_path = os.path.join(path_to_inputs, input_fname)
 
         if os.path.exists(input_path):
-            ad = astrodata.from_file(input_path)
+            ad = astrodata.open(input_path)
         else:
             raise FileNotFoundError(input_path)
 

@@ -154,7 +154,7 @@ def profile_loop(data, xcenter, ycenter, bkg, total_flux, max_flux, size):
 
 def main():
     filename = sys.argv[1]
-    ad = astrodata.from_file(filename)
+    ad = astrodata.open(filename)
     objcat = ad[0].OBJCAT
     data = ad[0].data
     catx = objcat.field("X_IMAGE")

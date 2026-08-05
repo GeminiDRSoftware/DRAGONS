@@ -15,7 +15,7 @@ from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
 @pytest.mark.dragons_remote_data
 def test_addMDF():
 
-    p = GNIRSLongslit([astrodata.from_file(
+    p = GNIRSLongslit([astrodata.open(
             download_from_archive('N20100915S0138.fits'))])
     ad = p.prepare()[0]  # Includes addMDF() as a step.
 

@@ -15,8 +15,8 @@ from geminidr.gnirs.primitives_gnirs_crossdispersed import GNIRSCrossDispersed
 @pytest.mark.gnirsxd
 @pytest.mark.preprocessed_data
 def test_apply_slit_model(path_to_inputs):
-    preprocessed_ad = astrodata.from_file(os.path.join(path_to_inputs, 'N20190613S0173_varAdded.fits'))
-    preprocessed_flat = astrodata.from_file(os.path.join(path_to_inputs, 'N20190613S0165_flat.fits'))
+    preprocessed_ad = astrodata.open(os.path.join(path_to_inputs, 'N20190613S0173_varAdded.fits'))
+    preprocessed_flat = astrodata.open(os.path.join(path_to_inputs, 'N20190613S0165_flat.fits'))
 
     p = GNIRSCrossDispersed([deepcopy(preprocessed_ad)])
     ad_with_slit_model = p.applySlitModel(flat=preprocessed_flat).pop()

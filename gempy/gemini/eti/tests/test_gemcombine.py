@@ -85,7 +85,7 @@ class TestGemcombine:
         # where is the fits diff tool?
         inputs = []
         for filename in TestGemcombine.niri_files:
-            ad = astrodata.from_file(filename)
+            ad = astrodata.open(filename)
             inputs.append(ad)
         parameters = TESTDEFAULTPARAMS
         gemcombine_task = \

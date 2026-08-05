@@ -138,7 +138,7 @@ def tabl(ffiles):
     print(header)
     ffiles.sort()
     for ff in ffiles:
-        ad = astrodata.from_file(ff)
+        ad = astrodata.open(ff)
         fname = os.path.split(ff)[-1]
         if len(fname) < 25:
             print(rows.format(

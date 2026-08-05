@@ -34,11 +34,11 @@ def test_descriptor(instr, filename, descriptor, value):
     if '_' in filename:
         filepath = os.path.join(path_to_test_data, filename)
         try:
-            ad = astrodata.from_file(filepath)
+            ad = astrodata.open(filepath)
         except FileNotFoundError:
             pytest.skip(f"{filename} not found")
     else:
-        ad = astrodata.from_file(astrodata.testing.download_from_archive(filename))
+        ad = astrodata.open(astrodata.testing.download_from_archive(filename))
 
     method = getattr(ad, descriptor)
     if value is None:

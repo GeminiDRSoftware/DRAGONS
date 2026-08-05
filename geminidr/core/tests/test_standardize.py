@@ -64,14 +64,14 @@ class TestStandardize:
                    path_to_common_inputs):
 
         with change_working_dir():
-            ad = astrodata.from_file(os.path.join(path_to_refs,
+            ad = astrodata.open(os.path.join(path_to_refs,
                                              'N20070819S0104_prepared.fits'))
             bpmfile = os.path.join(path_to_common_inputs,
                                    'bpm_20010317_niri_niri_11_full_1amp.fits')
             p = NIRIImage([ad])
             adout = p.addDQ(static_bpm=bpmfile)[0]
         assert ad_compare(adout,
-                          astrodata.from_file(os.path.join(path_to_refs,
+                          astrodata.open(os.path.join(path_to_refs,
                                            'N20070819S0104_dqAdded.fits')))
 
     @pytest.mark.niri
@@ -81,14 +81,14 @@ class TestStandardize:
                               path_to_refs):
 
         with change_working_dir():
-            ad = astrodata.from_file(os.path.join(path_to_refs,
+            ad = astrodata.open(os.path.join(path_to_refs,
                                              'N20070819S0104_dqAdded.fits'))
 
             p = NIRIImage([ad])
             adout = p.addIllumMaskToDQ()[0]
 
         assert ad_compare(adout,
-                          astrodata.from_file(os.path.join(
+                          astrodata.open(os.path.join(
                               path_to_refs,
                               'N20070819S0104_illumMaskAdded.fits')))
 
@@ -98,11 +98,11 @@ class TestStandardize:
     def test_addVAR(self, change_working_dir, path_to_inputs, path_to_refs):
 
         with change_working_dir():
-            ad = astrodata.from_file(os.path.join(path_to_inputs,
+            ad = astrodata.open(os.path.join(path_to_inputs,
                                 'N20070819S0104_ADUToElectrons.fits'))
             p = NIRIImage([ad])
             adout = p.addVAR(read_noise=True, poisson_noise=True)[0]
-        assert ad_compare(adout, astrodata.from_file(os.path.join(path_to_refs,
+        assert ad_compare(adout, astrodata.open(os.path.join(path_to_refs,
                                              'N20070819S0104_varAdded.fits')))
 
     @pytest.mark.dragons_remote_data
@@ -115,7 +115,7 @@ class TestStandardize:
         GMOS_keywords = ('GPREPARE', 'GGAIN', 'GAINMULT',
                          'CCDSUM')
 
-        p = inst_class([astrodata.from_file(download_from_archive(filename))])
+        p = inst_class([astrodata.open(download_from_archive(filename))])
         p.prepare()
         p.ADUToElectrons()
         ad = p.makeIRAFCompatible()[0]
@@ -136,7 +136,7 @@ class TestStandardize:
     def test_prepare(self, change_working_dir, path_to_inputs,
                      path_to_refs):
 
-        ad = astrodata.from_file(os.path.join(path_to_inputs,
+        ad = astrodata.open(os.path.join(path_to_inputs,
                                          'N20070819S0104.fits'))
         with change_working_dir():
             logutils.config(file_name=f'log_regression_{ad.data_label()}.txt')
@@ -146,7 +146,7 @@ class TestStandardize:
                 outfilename='N20070819S0104_prepared.fits').pop()
             del prepared_ad.phu['SDZWCS']  # temporary fix
 
-        ref_ad = astrodata.from_file(
+        ref_ad = astrodata.open(
             os.path.join(path_to_refs, 'N20070819S0104_prepared.fits'))
 
         assert ad_compare(prepared_ad, ref_ad)
@@ -156,7 +156,7 @@ class TestStandardize:
     @pytest.mark.preprocessed_data
     def test_standardizeHeaders(self, change_working_dir, path_to_inputs):
 
-        ad = astrodata.from_file(os.path.join(path_to_inputs,
+        ad = astrodata.open(os.path.join(path_to_inputs,
                                          'N20070819S0104.fits'))
 
         with change_working_dir():
@@ -176,7 +176,7 @@ def p_fixheader():
     # the tests all use the same original data.
     filenames = [download_from_archive(f"N20200105S{i:04d}.fits")
                  for i in range(57, 64)]
-    p = Standardize([deepcopy(astrodata.from_file(f)) for f in filenames])
+    p = Standardize([deepcopy(astrodata.open(f)) for f in filenames])
     return p
 
 

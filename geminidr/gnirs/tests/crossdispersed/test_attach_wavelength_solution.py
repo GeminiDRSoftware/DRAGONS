@@ -63,8 +63,8 @@ def test_attach_wavelength_solution_missing_distortion_models(path_to_inputs):
     Simple test to check that the attachWavelengthSolution primitive works if
     extensions are missing distortion models.
     """
-    ad = astrodata.from_file(os.path.join(path_to_inputs, "N20200818S0038_flatCorrected.fits"))
-    arc = astrodata.from_file(os.path.join(path_to_inputs, "N20200818S0350_arc.fits"))
+    ad = astrodata.open(os.path.join(path_to_inputs, "N20200818S0038_flatCorrected.fits"))
+    arc = astrodata.open(os.path.join(path_to_inputs, "N20200818S0350_arc.fits"))
 
     p = GNIRSCrossDispersed([ad])
     p.attachWavelengthSolution(arc=arc)

@@ -101,7 +101,7 @@ def mkslitvmod(ad_slitflat):
     p = GHOSTSpect([])
     slitv_fn = p._get_slitv_polyfit_filename(ad_slitflat)
     print(slitv_fn)
-    slitvpars = astrodata.from_file(slitv_fn)
+    slitvpars = astrodata.open(slitv_fn)
     svpars = slitvpars.TABLE
     old_svpars = svpars.copy()
     data = ad_slitflat[0].data
@@ -214,7 +214,7 @@ if __name__ == "__main__":
         filename = argv[1]
     except IndexError:
         raise("Must provide a filename of a reduced slitflat")
-    slitflat = astrodata.from_file(filename)
+    slitflat = astrodata.open(filename)
     assert {'FLAT', 'PROCESSED', 'SLIT'}.issubset(slitflat.tags), \
         f"{slitflat.filename} is not a SLITFLAT"
     mkslitvmod(slitflat)

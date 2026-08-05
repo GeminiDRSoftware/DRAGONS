@@ -42,7 +42,7 @@ def ad(request):
     """
     filename = request.param
     path = astrodata.testing.download_from_archive(filename)
-    return astrodata.from_file(path)
+    return astrodata.open(path)
 
 
 @pytest.mark.xfail(reason="AstroFaker changes the AstroData factory")
@@ -96,7 +96,7 @@ def test_slice_range(ad):
 
 # def test_read_a_keyword_from_phu(path_to_inputs):
 #
-#     ad = astrodata.from_file(os.path.join(path_to_inputs, filename))
+#     ad = astrodata.open(os.path.join(path_to_inputs, filename))
 #     assert ad.phu['DETECTOR'] == 'GNIRS'
 
 @pytest.mark.skip("There aren't really any keywords in the GNIRS header, and definitely not these")
@@ -179,7 +179,7 @@ EXPECTED_FPMS = [
 @pytest.mark.parametrize("filename,expected_fpm", EXPECTED_FPMS)
 def test_ifu_fpm(filename, expected_fpm):
     path = astrodata.testing.download_from_archive(filename)
-    ad = astrodata.from_file(path)
+    ad = astrodata.open(path)
     assert("IFU" in ad.tags)
     assert(ad.focal_plane_mask(pretty=True) == expected_fpm)
 

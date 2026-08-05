@@ -22,7 +22,7 @@ def test_make_processed_bpm(path_to_refs, change_working_dir):
         r.recipename = "makeProcessedBPM"
         r.runr()
 
-        adout = astrodata.from_file(r.output_filenames[0])
-        adref = astrodata.from_file(os.path.join(path_to_refs, adout.filename))
+        adout = astrodata.open(r.output_filenames[0])
+        adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
 
         assert ad_compare(adref, adout)

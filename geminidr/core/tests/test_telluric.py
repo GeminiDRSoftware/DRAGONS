@@ -53,7 +53,7 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename, mag, bbtemp):
     """
     Overall regression test for fitTelluric() with some parameters fixed
     """
-    ad = astrodata.from_file(os.path.join(path_to_inputs, filename))
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
 
     pm = PrimitiveMapper(ad.tags, ad.instrument(generic=True).lower(),
                          mode='sq', drpkg='geminidr')
@@ -63,7 +63,7 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename, mag, bbtemp):
                           shift_tolerance=None,
                           debug_stellar_mask_threshold=0.).pop()
 
-    adref = astrodata.from_file(os.path.join(path_to_refs, adout.filename))
+    adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
     assert ad_compare(adout, adref)
 
     # Compare PCA coefficients
@@ -92,7 +92,7 @@ def test_fit_telluric_xcorr(path_to_inputs, caplog, filename,
 
     The correct shift has been determined empirically using the GUI.
     """
-    ad = astrodata.from_file(os.path.join(path_to_inputs, filename))
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
 
     pm = PrimitiveMapper(ad.tags, ad.instrument(generic=True).lower(),
                          mode='sq', drpkg='geminidr')
@@ -132,7 +132,7 @@ def test_telluric_correct_xcorr(path_to_inputs, caplog, filename, telluric,
     has a good wavelength solution, so the shift should be zero; the other one
     has a poor solution so a shift of -0.35 pixels should be found.
     """
-    ad = astrodata.from_file(os.path.join(path_to_inputs, filename))
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
 
     pm = PrimitiveMapper(ad.tags, ad.instrument(generic=True).lower(),
                          mode='sq', drpkg='geminidr')
@@ -191,7 +191,7 @@ def test_gaussian_line_spread_function_convolve_and_resample(ext, resolution):
                          ])
 def test_get_atran_linelist(filename, model_params, change_working_dir,
                              path_to_inputs, path_to_refs):
-    ad = astrodata.from_file(os.path.join(path_to_inputs, filename))
+    ad = astrodata.open(os.path.join(path_to_inputs, filename))
     p = GNIRSLongslit([])
     wave_model = am.get_named_submodel(ad[0].wcs.forward_transform, 'WAVE')
     linelist = p._get_atran_linelist(wave_model=wave_model, ext=ad[0],
@@ -233,7 +233,7 @@ def test_get_airglow_linelist(path_to_inputs, path_to_refs):
     # is a Chebyshev1D, as required. (In normal reduction, a Cheb1D will be
     # provided bto _get_sky_spectrum() y determineWavelengthSolution,
     # regardless of the state of the input file.)
-    ad_f2 = astrodata.from_file(os.path.join(
+    ad_f2 = astrodata.open(os.path.join(
         path_to_inputs, 'S20180114S0104_wavelengthSolutionDetermined.fits'))
     wave_model = am.get_named_submodel(ad_f2[0].wcs.forward_transform, 'WAVE')
 

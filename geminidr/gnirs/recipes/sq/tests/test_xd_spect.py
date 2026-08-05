@@ -198,7 +198,7 @@ def reduce(file_list, label, calib_files, recipe_name=None, save_to=None,
 # -- Fixtures -----------------------------------------------------------------
 @pytest.fixture(scope='function')
 def gnirs_files(files):
-    return [astrodata.from_file(download_from_archive(f) for f in files)]
+    return [astrodata.open(download_from_archive(f) for f in files)]
 
 @pytest.fixture(scope='module')
 def keep_data(request):

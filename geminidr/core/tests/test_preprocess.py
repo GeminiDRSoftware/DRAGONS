@@ -41,7 +41,7 @@ def niri_images(niri_image):
 @pytest.fixture
 def niriprim():
     file_path = download_from_archive("N20190120S0287.fits")
-    ad = astrodata.from_file(file_path)
+    ad = astrodata.open(file_path)
     p = NIRIImage([ad])
     p.addDQ(static_bpm=download_from_archive("bpm_20010317_niri_niri_11_full_1amp.fits"))
     return p
@@ -50,7 +50,7 @@ def niriprim():
 @pytest.fixture
 def niriprim2():
     file_path = download_from_archive("N20190120S0287.fits")
-    ad = astrodata.from_file(file_path)
+    ad = astrodata.open(file_path)
     ad.append(ad[0])
     p = NIRIImage([ad])
     p.addDQ()
@@ -427,10 +427,10 @@ def test_fixpixels_multiple_ext(niriprim2):
 #def test_nonlinearity_correct(path_to_inputs, path_to_refs, dataset):
 def test_nonlinearity_correct(path_to_inputs, path_to_refs, dataset):
     """Only GSAOI uses the core primitive with real coefficients"""
-    ad = astrodata.from_file(os.path.join(path_to_inputs, dataset[0]))
+    ad = astrodata.open(os.path.join(path_to_inputs, dataset[0]))
     p = GSAOIImage([ad])
     ad_out = p.nonlinearityCorrect().pop()
-    ad_ref = astrodata.from_file(os.path.join(path_to_refs, dataset[1]))
+    ad_ref = astrodata.open(os.path.join(path_to_refs, dataset[1]))
 
     assert ad_compare(ad_out, ad_ref, ignore=['filename'])
 
@@ -459,7 +459,7 @@ def test_scale_by_exposure_time(niri_images):
 @pytest.mark.preprocessed_data
 def test_add_object_mask_to_dq(path_to_inputs):
     """Confirm that all pixels in the OBJMASK get set to 1 in the output mask"""
-    ad_orig = astrodata.from_file(os.path.join(path_to_inputs, "N20220131S0094_refcatAdded.fits"))
+    ad_orig = astrodata.open(os.path.join(path_to_inputs, "N20220131S0094_refcatAdded.fits"))
     p = GMOSImage([deepcopy(ad_orig)])
     ad = p.addObjectMaskToDQ()[0]
 
@@ -470,7 +470,7 @@ def test_add_object_mask_to_dq(path_to_inputs):
 # @pytest.mark.xfail(reason="Test needs revision", run=False)
 # def test_adu_to_electrons(astrofaker):
 #     ad = astrofaker.create("NIRI", "IMAGE")
-#     # astrodata.from_file(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_dqAdded.fits'))
+#     # astrodata.open(os.path.join(TESTDATAPATH, 'NIRI', 'N20070819S0104_dqAdded.fits'))
 #     p = NIRIImage([ad])
 #     ad = p.ADUToElectrons()[0]
 #     assert ad_compare(ad, os.path.join(TESTDATAPATH, 'NIRI',
@@ -565,7 +565,7 @@ def test_associate_sky_exclude_some(niri_image, niri_sequence):
 #     pass
 
 # def test_darkCorrect(self):
-#     ad = astrodata.from_file(os.path.join(TESTDATAPATH, 'NIRI',
+#     ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
 #                             'N20070819S0104_nonlinearityCorrected.fits'))
 #     p = NIRIImage([ad])
 #     ad = p.darkCorrect()[0]
@@ -586,7 +586,7 @@ def test_darkCorrect_with_af(astrofaker):
 # af.init_default_extensions()
 # af[0].mask = np.zeros_like(af[0].data, dtype=np.uint16)
 # def test_flatCorrect(self):
-#     ad = astrodata.from_file(os.path.join(TESTDATAPATH, 'NIRI',
+#     ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
 #                             'N20070819S0104_darkCorrected.fits'))
 #     p = NIRIImage([ad])
 #     ad = p.flatCorrect()[0]
@@ -599,7 +599,7 @@ def test_darkCorrect_with_af(astrofaker):
 # def test_normalizeFlat(self):
 #     flat_file = os.path.join(TESTDATAPATH, 'NIRI',
 #                             'N20070913S0220_flat.fits')
-#     ad = astrodata.from_file(flat_file)
+#     ad = astrodata.open(flat_file)
 #     ad.multiply(10.0)
 #     del ad.phu['NORMLIZE']  # Delete timestamp of previous processing
 #     p = NIRIImage([ad])
@@ -803,7 +803,7 @@ def test_nonlinearity_correct_f2():
     """Runs nonlinearityCorrect() on the same F2 image (a flat)
     before and after ADUToElectrons() to confirm similar results"""
     file_path = download_from_archive("S20230408S0010.fits")
-    ad = astrodata.from_file(file_path)
+    ad = astrodata.open(file_path)
     p = F2Image([ad])
     p.prepare()
     p.addDQ()
@@ -834,7 +834,7 @@ def test_nonlinearity_correct_f2():
 #     pass
 #
 # def test_subtractSkyBackground(self):
-#     ad = astrodata.from_file(os.path.join(TESTDATAPATH, 'NIRI',
+#     ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
 #                             'N20070819S0104_flatCorrected.fits'))
 #     ad.hdr['SKYLEVEL'] = 1000.0
 #     orig_data = ad[0].data.copy()
@@ -844,7 +844,7 @@ def test_nonlinearity_correct_f2():
 #     assert (orig_data - ad[0].data).max() < 1000.01
 #
 # def test_thresholdFlatfield(self):
-#     ad = astrodata.from_file(os.path.join(TESTDATAPATH, 'NIRI',
+#     ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
 #                                      'N20070913S0220_flat.fits'))
 #     del ad.phu['TRHFLAT']  # Delete timestamp of previous processing
 #     ad[0].data[100, 100] = 20.0

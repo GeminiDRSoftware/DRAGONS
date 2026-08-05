@@ -152,7 +152,7 @@ def test_2d_nonaffine_transform():
 def test_adding_longslit_wcs(GMOS_LONGSLIT):
     """Test that adding the longslit WCS doesn't interfere with the sky
     coordinates of the WCS"""
-    ad = astrodata.from_file(GMOS_LONGSLIT)
+    ad = astrodata.open(GMOS_LONGSLIT)
     frame_name = ad[4].hdr.get("RADESYS", ad[4].hdr["RADECSYS"]).lower()
     crpix1 = ad[4].hdr["CRPIX1"] - 1
     crpix2 = ad[4].hdr["CRPIX2"] - 1

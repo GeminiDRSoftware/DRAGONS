@@ -250,7 +250,7 @@ class Reduce:
         allinputs = []
         for inp in inputs:
             try:
-                ad = astrodata.from_file(inp)
+                ad = astrodata.open(inp)
             except AstroDataError as err:
                 log.warning("Can't Load Dataset: %s" % inp)
                 log.warning(err)
@@ -369,7 +369,7 @@ def _convert_inputs(inputs):
     allinputs = []
     for inp in inputs:
         try:
-            ad = astrodata.from_file(inp)
+            ad = astrodata.open(inp)
         except AstroDataError as err:
             log.warning("Can't Load Dataset: %s" % inp)
             log.warning(err)

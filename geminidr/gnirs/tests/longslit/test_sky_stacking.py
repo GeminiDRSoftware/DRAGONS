@@ -20,7 +20,7 @@ associate_sky_params = {'time': 600., 'min_skies': 3, 'distance': 1,
 def gnirs_abba():
     # These frames have an incorrect WCS so we need to sort that out
     # by running prepare(bad_wcs="new") in the tests.
-    return [astrodata.from_file(download_from_archive(f)) for f in
+    return [astrodata.open(download_from_archive(f)) for f in
             ('N20141119S0331.fits', 'N20141119S0332.fits',
              'N20141119S0333.fits', 'N20141119S0334.fits')]
 
@@ -119,7 +119,7 @@ def test_associate_sky_quasi_abcde():
              'N20220220S0108.fits', 'N20220220S0109.fits',
              'N20220220S0110.fits']
 
-    data = [astrodata.from_file(download_from_archive(f)) for f in files]
+    data = [astrodata.open(download_from_archive(f)) for f in files]
 
     p = GNIRSLongslit(data)
     p.prepare(bad_wcs="new")

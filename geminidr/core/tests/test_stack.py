@@ -240,7 +240,7 @@ def test_memory_control_during_stacking(path_to_inputs, scale, zero):
     """
     memory = 1  # GB
     tracemalloc.start()
-    adinputs = [astrodata.from_file(os.path.join(path_to_inputs, f"stacktest{i:03d}.fits"))
+    adinputs = [astrodata.open(os.path.join(path_to_inputs, f"stacktest{i:03d}.fits"))
                 for i in range(1, 6)]
     p = NIRIImage(adinputs)
     _, start = tracemalloc.get_traced_memory()

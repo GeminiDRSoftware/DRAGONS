@@ -230,7 +230,7 @@ class DataSpider:
                     fname = os.path.join(root, tfile)
 
                     try:
-                        fl = astrodata.from_file(fname)
+                        fl = astrodata.open(fname)
                         dtypes = list(fl.tags)
                     except AttributeError:
                         print("     Bad headers in file: {}".format(tfile))

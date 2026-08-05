@@ -14,7 +14,7 @@ from astropy import stats
 from astropy.coordinates import Angle
 from astropy.modeling import models, fitting
 
-from astrodata.fits import windowedOp
+from astrodata.fits import windowed_operation
 from astrodata.nddata import NDAstroData
 
 from gempy.library.cython_utils import masked_median

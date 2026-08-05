@@ -32,7 +32,7 @@ def main(args=None):
 
     args = parser.parse_args(args)
 
-    ad = astrodata.from_file(args.filename)
+    ad = astrodata.open(args.filename)
 
     if args.list:
         for d in list_files(ad, fullinfo=True):

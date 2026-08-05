@@ -22,7 +22,7 @@ datasets = [("S20230514S0022.fits", {"bias": "S20230513S0013.fits",
 @pytest.fixture
 def input_filename(change_working_dir, request):
     with change_working_dir():
-        ad = astrodata.from_file(download_from_archive(request.param))
+        ad = astrodata.open(download_from_archive(request.param))
         p = GHOSTBundle([ad])
         adoutputs = p.splitBundle()
         return_dict = {}
@@ -80,8 +80,8 @@ def test_reduce_science(input_filename, caldict, arm, skysub, path_to_inputs,
         assert len(p.streams['main']) == 1
         p.writeOutputs()
         output_filename = p.streams['main'][0].filename
-        adout = astrodata.from_file(output_filename)
-        adref = astrodata.from_file(os.path.join(
+        adout = astrodata.open(output_filename)
+        adref = astrodata.open(os.path.join(
             path_to_refs, f"skysub_{skysub}", output_filename))
         assert ad_compare(adref, adout, ignore_kw=['ARCIM_A', 'ARCIM_B', 'PROCSCI', 'OVERRDNS',
                                                    'ESEEINGR', 'ESEEINGB', 'NCRSFND'],
@@ -89,8 +89,8 @@ def test_reduce_science(input_filename, caldict, arm, skysub, path_to_inputs,
 
         # Now compare the _calibrated.fits files (not order-combined)
         intermediate_filename = output_filename.replace("_dragons", "_calibrated")
-        adout = astrodata.from_file(os.path.join(path_to_outputs, "outputs", intermediate_filename))
-        adref = astrodata.from_file(os.path.join(
+        adout = astrodata.open(os.path.join(path_to_outputs, "outputs", intermediate_filename))
+        adref = astrodata.open(os.path.join(
             path_to_refs, f"skysub_{skysub}", intermediate_filename))
         assert ad_compare(adref, adout, ignore_kw=['ARCIM_A', 'ARCIM_B', 'PROCSCI', 'OVERRDNS',
                                                    'ESEEINGR', 'ESEEINGB', 'NCRSFND'],

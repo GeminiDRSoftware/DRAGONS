@@ -11,7 +11,7 @@ from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 
 @pytest.fixture
 def ad(path_to_inputs, request):
-    return astrodata.from_file(os.path.join(path_to_inputs, request.param))
+    return astrodata.open(os.path.join(path_to_inputs, request.param))
 
 
 @pytest.mark.gmosls

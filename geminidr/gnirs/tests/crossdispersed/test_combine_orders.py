@@ -13,7 +13,7 @@ def test_combine_orders(path_to_inputs):
     """
     Test to be developed
     """
-    ad = astrodata.from_file(os.path.join(path_to_inputs, "N20220816S0494_1D.fits"))
+    ad = astrodata.open(os.path.join(path_to_inputs, "N20220816S0494_1D.fits"))
     napertures = len(set(ad.hdr['APERTURE']))
 
     p = GNIRSCrossDispersed([ad])
@@ -28,7 +28,7 @@ def test_mark_beyond_regions(path_to_inputs):
     """
     Test the GNIRS XD markByondRegions primitive.
     """
-    ad = astrodata.from_file(os.path.join(path_to_inputs, "N20220816S0494_1D.fits"))
+    ad = astrodata.open(os.path.join(path_to_inputs, "N20220816S0494_1D.fits"))
 
     p = GNIRSCrossDispersed([ad])
 

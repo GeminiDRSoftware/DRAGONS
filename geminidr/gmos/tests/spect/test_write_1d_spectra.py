@@ -97,7 +97,7 @@ def ad(request, path_to_inputs):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
-        ad = astrodata.from_file(path)
+        ad = astrodata.open(path)
     else:
         raise FileNotFoundError(path)
 

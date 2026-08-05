@@ -383,7 +383,7 @@ class CrossDispersed(Spect, Preprocess):
                     cut_section = Section(x1=0, x2=ext.shape[1], y1=y1, y2=y2)
                 log.stdinfo(f"Cutting slit {i+1} in extension {ext.id} "
                             f"from {cut_section.as_iraf_section()}")
-                adout.append(deepcopy(ext.nddata[cut_section.asslice()]))
+                adout.append(deepcopy(ext.nddata[cut_section.as_slice()]))
                 adout[-1].SLITEDGE = slitedge[i*2:i*2+2]
                 adout[-1].SLITEDGE["c0"] -= y1
                 adout[-1].SLITEDGE["slit"] = 1  # reset slit number in ext
@@ -456,10 +456,10 @@ class CrossDispersed(Spect, Preprocess):
                 # TODO: need to decide how to update the array_section
                 # keyword for multi-detector instruments and/or MOS data.
                 adout[-1].hdr[arrsec_kw] = (
-                    cut_section.asIRAFsection(binning=binnings),
+                    cut_section.as_iraf_section(binning=binnings),
                     self.keyword_comments.get(arrsec_kw))
                 adout[-1].hdr[datasec_kw] = (
-                    Section.from_shape(cut_shape).asIRAFsection(),
+                    Section.from_shape(cut_shape).as_iraf_section(),
                     self.keyword_comments.get(datasec_kw))
                 adout[-1].hdr[detsec_kw] = (
                     cut_section.as_iraf_section(binning=binnings),

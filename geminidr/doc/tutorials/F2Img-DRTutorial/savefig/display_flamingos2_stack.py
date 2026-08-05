@@ -18,7 +18,7 @@ def main():
 
     filename = get_stack_filename()
 
-    ad = astrodata.from_file(filename)
+    ad = astrodata.open(filename)
 
     data = ad[0].data
     mask = ad[0].mask

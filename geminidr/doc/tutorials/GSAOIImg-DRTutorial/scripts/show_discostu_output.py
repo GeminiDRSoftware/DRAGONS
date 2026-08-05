@@ -19,7 +19,7 @@ from matplotlib import colors
 def main():
     filename = get_filename()
 
-    ad = astrodata.from_file(filename)
+    ad = astrodata.open(filename)
     print(ad.info())
 
     fig = plt.figure(num=filename, figsize=(8, 8))

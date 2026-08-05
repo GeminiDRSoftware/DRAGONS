@@ -21,7 +21,7 @@ test_files = [
 def input_ad(request):
     filename = request.param
     path = download_from_archive(filename)
-    ad = astrodata.from_file(path)
+    ad = astrodata.open(path)
     return ad
 
 

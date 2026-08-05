@@ -413,7 +413,7 @@ class Image(Preprocess, Register, Resample):
             raise ValueError("All input images must have only one extension.")
 
         if isinstance(reference, str):
-            reference = astrodata.from_file(reference)
+            reference = astrodata.open(reference)
         elif reference is None and pixel_scale is None:
             # Reference image will be the first AD, so we need 2+
             if len(adinputs) < 2:
@@ -553,7 +553,7 @@ class Image(Preprocess, Register, Resample):
                 if section is None:
                     _slice = None
                 else:
-                    _slice = section.asslice()
+                    _slice = section.as_slice()
                 data = ext.data[_slice]
                 if data.size:
                     mask = None if ext.mask is None else ext.mask[_slice]
@@ -623,7 +623,7 @@ class Image(Preprocess, Register, Resample):
             source_stream = self.streams[source]
         except KeyError:
             try:
-                ad_source = astrodata.from_file(source)
+                ad_source = astrodata.open(source)
             except:
                 log.warning(f"Cannot find stream or file named {source}. Continuing.")
                 return adinputs

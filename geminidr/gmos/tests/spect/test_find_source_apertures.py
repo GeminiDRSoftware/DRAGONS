@@ -178,7 +178,7 @@ def ad_and_center(path_to_inputs, request):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
-        ad = astrodata.from_file(path)
+        ad = astrodata.open(path)
     else:
         raise FileNotFoundError(path)
 
@@ -215,7 +215,7 @@ def ad_center_tolerance_snr(path_to_inputs, request):
     path = os.path.join(path_to_inputs, filename)
 
     if os.path.exists(path):
-        ad = astrodata.from_file(path)
+        ad = astrodata.open(path)
     else:
         raise FileNotFoundError(path)
 
@@ -260,7 +260,7 @@ def create_inputs_recipe():
         sci_path = download_from_archive(sci_fname)
         arc_path = download_from_archive(arc_fname)
 
-        sci_ad = astrodata.from_file(sci_path)
+        sci_ad = astrodata.open(sci_path)
         data_label = sci_ad.data_label()
 
         logutils.config(file_name='log_arc_{}.txt'.format(data_label))

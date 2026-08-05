@@ -47,7 +47,7 @@ def ad_files(path_to_inputs, request):
         path = os.path.join(path_to_inputs, f)
         if not os.path.exists(path):
             raise FileNotFoundError(path)
-    return [astrodata.from_file(os.path.join(path_to_inputs, f)) for f in filenames]
+    return [astrodata.open(os.path.join(path_to_inputs, f)) for f in filenames]
 
 @pytest.fixture(scope='function')
 def dark(path_to_inputs, request):

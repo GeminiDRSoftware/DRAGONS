@@ -46,7 +46,7 @@ def main(args=None):
 
 
 def update_header(filename, extid, keyword, value, add, dtype=None):
-    ad = astrodata.from_file(filename)
+    ad = astrodata.open(filename)
     modify_header(ad, extid=extid, keyword=keyword, value=value, add=add, dtype=dtype)
     ad.write(overwrite=True)
 

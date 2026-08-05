@@ -22,7 +22,7 @@ class RecipeMapper(Mapper):
     """
     Retrieve the appropriate recipe for a dataset, using all defined defaults:
 
-    >>> ad = astrodata.from_file(<fitsfile>)
+    >>> ad = astrodata.open(<fitsfile>)
     >>> dtags = set(list(ad.tags)[:])
     >>> instpkg = ad.instrument(generic=True).lower()
     >>> rm = RecipeMapper(dtags, instpkg)

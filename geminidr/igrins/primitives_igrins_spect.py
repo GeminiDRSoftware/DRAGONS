@@ -2027,7 +2027,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
 
                 ext.hdr[rn_kw] = (read_noise, "Read Noise in electrons")
 
-                shape_str = Section.from_shape(ext.shape).asIRAFsection()
+                shape_str = Section.from_shape(ext.shape).as_iraf_section()
                 ext.hdr[ad._keyword_for('array_section')] = shape_str
                 ext.hdr[ad._keyword_for('data_section')] = shape_str
                 ext.hdr[ad._keyword_for('detector_section')] = shape_str
