@@ -5,8 +5,8 @@
 #                                                                    typewalk.py
 # ------------------------------------------------------------------------------
 
-from geminidr import version
-__version__ = version()
+from geminidr import _version
+__version__ = _version.version()
 # ------------------------------------------------------------------------------
 desc = """
 Description:

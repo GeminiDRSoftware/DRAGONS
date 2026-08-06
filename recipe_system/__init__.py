@@ -1,5 +1,5 @@
-from geminidr import version
-__version__ = version()
+from geminidr import _version
+__version__ = _version.version()
 
 __all__ = ['reduce_data']
 
