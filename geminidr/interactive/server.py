@@ -1,6 +1,6 @@
 import uuid
 
-from astrodata import version
+from geminidr import version
 
 import pathlib
 

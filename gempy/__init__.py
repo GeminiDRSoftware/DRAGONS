@@ -1,2 +1,2 @@
-from astrodata import version
+from geminidr import version
 __version__ = version()

@@ -1,7 +1,7 @@
 # Import the modules under this package, to trigger any class
 # registering that may be needed
 
-from astrodata import version
+from geminidr import version
 __version__ = version()
 
 from . import gemini
