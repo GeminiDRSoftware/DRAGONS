@@ -173,7 +173,6 @@ class Telluric(Spect):
 
         for ad in adinputs:
             from datetime import datetime
-            print(datetime.now())
             log.stdinfo(f"Processing {ad.filename} (this can be slow)")
 
             # We do this "interactive" stuff here because we want to
