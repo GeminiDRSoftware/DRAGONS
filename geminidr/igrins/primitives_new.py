@@ -46,6 +46,10 @@ from .procedures.iraf_helper import get_wat_header
 from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
 
 
+# Function to scale from SLITPOS to y-pixel location
+slitpos_to_pix = models.Shift(0.5) | models.Scale(50)
+
+
 @parameter_override
 class IGRINSNew(IGRINS, Telluric, CrossDispersed):
     tagset = {}
@@ -914,9 +918,8 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             log.warning('Distortion correction has been turned off.')
             return adinputs
 
-        # Row of the output image corresponding to slitpos=0.0, i.e., the
-        # centre of the slit
-        slitcen = 25
+        origin = (int(slitpos_to_pix(0.) + 0.5), 0)
+        output_shape = (origin[0] * 2 + 1, 0)
 
         fail = False
         adoutputs = []
@@ -950,14 +953,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 temp_out = transform.resample_from_wcs(
                     ext, 'distortion_corrected', interpolant=interpolant,
                     subsample=subsample, parallel=False, threshold=dq_threshold,
-                    output_shape=(51, 2048), origin=(-slitcen, 0))
+                    output_shape=output_shape, origin=origin)
                 if i == 0:
                     ad_out = astrodata.create(temp_out.phu)
                 ad_out.append(temp_out[0].nddata)
-                # Store in the header for later retrieval.
-                # TODO: How can we avoid hardcoing SLITDELT here?
-                ad_out[-1].hdr['SLITCENT'] = slitcen
-                ad_out[-1].hdr['SLITDELT'] = 0.02
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(),
@@ -1037,7 +1036,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                          abs(ext_xshifted.SLITPOS) < 0.5]),
                         1. / ext_xshifted.variance, 0)
 
-                slitpos_samples = (np.arange(ext.SLITPROF.shape[0]) - 25) * 0.02
+                slitpos_samples = slitpos_to_pix.inverse(np.arange(ext.SLITPROF.shape[0]))
 
                 # For aperture extraction, we want to know where to extract.
                 # The data are effectively noiseless, so we don't use
