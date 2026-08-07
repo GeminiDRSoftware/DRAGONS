@@ -1,7 +1,7 @@
 """
 Recipes available to data with tags ['IGRINS', 'FLAT'].
 """
-recipe_tags = {'IGRINS-2', 'FLAT'}
+recipe_tags = {'IGRINS-2', 'FLAT', 'SPECT'}
 
 def estimateNoise(p):
     """This recipe performs the analysis of irs readout pattern noise in flat off
