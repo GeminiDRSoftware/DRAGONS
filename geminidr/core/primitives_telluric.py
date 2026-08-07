@@ -247,6 +247,7 @@ class Telluric(Spect):
                 # fit each spectrum separately, and then use these individual
                 # fits as starting points for the overall fit.
                 if len(ad) > 1:
+                    log.stdinfo("    Performing fits to individual spectral orders")
                     # Speed up the fit by not iterating or masking stellar
                     # absorption features
                     uip_copy = deepcopy(uiparams)
@@ -269,6 +270,7 @@ class Telluric(Spect):
                             setattr(m_init, p, median_value)
                     tcal.last_model = m_init
 
+                log.stdinfo("    Performing overall fit")
                 if inter:
                     visualizer = TelluricVisualizer(
                         tcal, tab_name_fmt=lambda i: spectral_order_names[i],
