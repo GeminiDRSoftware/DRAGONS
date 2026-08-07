@@ -931,37 +931,6 @@ def weighted_sigma_clip(data, weights=None, sigma=3, sigma_lower=None,
     return np.ma.masked_array(data, mask=~good)
 
 
-def clipped_mean(data):
-    num_total = len(data)
-    mean = data.mean()
-    sigma = data.std()
-
-    if num_total < 3:
-        return mean, sigma
-
-    num = num_total
-    clipped_data = data
-    clip = 0
-    while num > 0.5 * num_total:
-        # CJS: edited this as upper limit was mean+1*sigma => bias
-        clipped_data = data[(data < mean + 3*sigma) & (data > mean - 3*sigma)]
-        num = len(clipped_data)
-
-        if num > 0:
-            mean = clipped_data.mean()
-            sigma = clipped_data.std()
-        elif clip == 0:
-            return mean, sigma
-        else:
-            break
-
-        clip += 1
-        if clip > 10:
-            break
-
-    return mean, sigma
-
-
 # The following functions and classes were borrowed from STSCI's spectools
 # package, currently under development.  They might be able to be
 # replaced with a direct import of spectools.util if/when it is available
