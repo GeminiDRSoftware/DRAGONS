@@ -13,4 +13,4 @@ def addInstrumentFilterWavelengths(instrument, wl):
     }
     filter_wavelengths.update(update_dict)
 
-factory.addClass(AstroDataGemini)
+factory.add_class(AstroDataGemini)

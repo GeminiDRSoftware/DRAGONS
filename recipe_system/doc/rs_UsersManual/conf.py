@@ -284,18 +284,18 @@ rst_epilog = """
 
 .. |caldb| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/caldb.html" target="_blank">caldb</a>`
 .. |dataselect| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#dataselect" target="_blank">dataselect</a>`
-.. |descriptors| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/appendix_descriptors.html" target="_blank">descriptors</a>`
-.. |descriptor| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/appendix_descriptors.html" target="_blank">descriptors</a>`
+.. |descriptors| replace:: `descriptors <https://gemini-instruments.readthedocs.io/en/latest/descriptors_api.html>`__
+.. |descriptor| replace:: `descriptor <https://gemini-instruments.readthedocs.io/en/latest/descriptors_api.html>`__
 .. |reduce| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/reduce.html" target="_blank">reduce</a>`
 .. |showd| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#showd" target"_blank">showd</a>`
 .. |showrecipes| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#showrecipes" target="_blank">showrecipes</a>`
 .. |showpars| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#showpars" target="_blank">showpars</a>`
 .. |typewalk| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/supptools.html#typewalk" target="_blank">typewalk</a>`
 .. |atfile| replace:: :raw-html:`<a href="https://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/reduce.html#the-file-facility" target="_blank">"at-file" Facility</a>`
-.. |astrodatauser| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/usermanual/index.html" target="_blank">Astrodata User Manual</a>`
+.. |astrodatauser| replace:: `Astrodata User Manual <https://geminidrsoftware.github.io/astrodata/manuals/usermanual/index.html>`__
 
 .. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/">Recipe System Users Manual</a>`
-.. |astrodataprog| replace:: :raw-html:`<a href="https://astrodata.readthedocs.io/en/{v}/progmanual/index.html">Astrodata Programmer Manual</a>`
+.. |astrodataprog| replace:: `Astrodata Programmer Manual <https://geminidrsoftware.github.io/astrodata/manuals/progmanual/index.html>`__
 .. |RSProg|  replace:: :raw-html:`<a href="http://dragons-recipe-system-programmers-manual.readthedocs.io/en/{v}/">Recipe System Programmers Manual</a>`
 
 .. |DRAGONS| replace:: :raw-html:`<a href="http://dragons.readthedocs.io/en/{v}/">DRAGONS</a>`

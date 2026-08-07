@@ -9,7 +9,7 @@ from ..config import globalConf
 from gempy.utils.logutils import get_logger
 from .calrequestlib import generate_md5_digest
 
-from recipe_system import version
+from recipe_system import __version__
 
 # get_file_itterator is the only function in this module called externally
 # (from calrequestlib.py)
@@ -63,7 +63,7 @@ class CachedFileGetter(object):
         :return: None
         """
 
-        user_agent = {"User-Agent": 'GeminiDRAGONS '+version()}
+        user_agent = {"User-Agent": 'GeminiDRAGONS '+__version__}
         with open(filepath, 'wb') as fp:
             r = requests.get(url, stream=True, timeout=10.0, headers=user_agent)
             try:

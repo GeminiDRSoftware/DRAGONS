@@ -116,7 +116,7 @@ def test_measure_bg_from_image_real(gaussfit):
     # A random GMOS-N image
     ad = astrodata.open(astrodata.testing.download_from_archive("N20191210S0338.fits"))
     mean, stddev, nsamples = gt.measure_bg_from_image(
-        ad[8].nddata[ad[8].data_section().asslice()], gaussfit=gaussfit)
+        ad[8].nddata[ad[8].data_section().as_slice()], gaussfit=gaussfit)
     assert abs(mean - 807) < 1
 
 

@@ -40,6 +40,11 @@ from .gemini.lookups.source_detection import sextractor_dict
 from recipe_system.cal_service import init_calibration_databases
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from recipe_system.config import load_config
+
+from ._version import version
+
+__version__ = version()
+
 # ------------------------------ caches ---------------------------------------
 # Formerly in cal_service/caches.py
 #

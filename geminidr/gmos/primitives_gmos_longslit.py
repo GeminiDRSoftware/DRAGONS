@@ -166,9 +166,9 @@ class GMOSClassicLongslit(GMOSSpect, Longslit):
                 for ext in ad:
                     _slice = (slice(None), slice(ext.detector_section().x1 // xbin,
                                                  ext.detector_section().x2 // xbin))
-                    all_data[_slice] = ext.data[ext.data_section().asslice()]
+                    all_data[_slice] = ext.data[ext.data_section().as_slice()]
                     if ext.mask is not None:
-                        all_data[_slice][ext.mask[ext.data_section().asslice()]
+                        all_data[_slice][ext.mask[ext.data_section().as_slice()]
                                          > 0] = np.nan
                 # To supress a numpy RuntimeWarning if a row is all NaNs, we
                 # set such rows to zero. Hopefully these will get boxcar'd out

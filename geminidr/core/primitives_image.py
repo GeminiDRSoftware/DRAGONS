@@ -553,7 +553,7 @@ class Image(Preprocess, Register, Resample):
                 if section is None:
                     _slice = None
                 else:
-                    _slice = section.asslice()
+                    _slice = section.as_slice()
                 data = ext.data[_slice]
                 if data.size:
                     mask = None if ext.mask is None else ext.mask[_slice]

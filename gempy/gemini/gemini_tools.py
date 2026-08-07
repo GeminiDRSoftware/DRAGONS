@@ -519,7 +519,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                     #    new_aux.append(auxext.nddata[y1:y2, x1:x2])
                     cut_sec = Section.from_shape(ext_shape).shift(*shifts[0])
                     if Section.from_shape(auxext.shape).contains(cut_sec):
-                        new_aux.append(auxext.nddata[cut_sec.asslice()])
+                        new_aux.append(auxext.nddata[cut_sec.as_slice()])
                         clipped_this_ad = True
                         continue
 
@@ -875,10 +875,10 @@ def cut_to_match_auxiliary_data(adinput=None, aux=None, aux_type=None,
             # Make a new science file for appending to, starting with PHU
             new_ad = astrodata.create(ad.phu)
             for auxext, detsec in zip(this_aux, this_aux.detector_section()):
-                new_ad.append(ext.nddata[detsec.asslice()])
+                new_ad.append(ext.nddata[detsec.as_slice()])
                 new_ad[-1].SLITEDGE = auxext.SLITEDGE
                 new_ad[-1].hdr[ad._keyword_for('detector_section')] =\
-                    detsec.asIRAFsection(binning=(xbin, ybin))
+                    detsec.as_iraf_section(binning=(xbin, ybin))
                 new_ad[-1].hdr['SPECORDR'] = auxext.hdr['SPECORDR']
 
                 # By default, when a section is cut out of an array the WCS is
@@ -1303,7 +1303,7 @@ def array_from_descriptor_value(ext, descriptor):
     ret_arr = np.full(ext.shape[-2:], np.nan, dtype=np.float32)
 
     for datsec, value in zip(data_sections, desc_value):
-        ret_arr[datsec.asslice()] = value
+        ret_arr[datsec.as_slice()] = value
 
     # Pad regions not defined by the array_section() with nearest real value
     indices = distance_transform_edt(np.isnan(ret_arr), return_distances=False,
@@ -2059,11 +2059,11 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
 
                 for i, (oldsec, newsec) in enumerate(zip(sections, new_sections), start=1):
                     #oldsec, newsec = Section(*oldsec), Section(*newsec)
-                    datasecStr = oldsec.asIRAFsection()
+                    datasecStr = oldsec.as_iraf_section()
                     log.fullinfo(f'For {ad.filename} extension {ext.id}, '
                                  f'keeping the data from the section {datasecStr}')
-                    newslice = newsec.asslice()
-                    oldslice = oldsec.asslice()
+                    newslice = newsec.as_slice()
+                    oldslice = oldsec.as_slice()
                     ext.nddata.set_section(newslice, old_ext.nddata[oldslice])
                     if has_objmask:
                         ext.OBJMASK[newslice] = old_ext.OBJMASK[oldslice]
@@ -2082,16 +2082,16 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                     continue
 
                 # Update logger with the section being kept
-                datasecStr = datasec.asIRAFsection()
+                datasecStr = datasec.as_iraf_section()
                 log.fullinfo(f'For {ad.filename} extension {ext.id}, keeping '
                              f'the data from the section {datasecStr}')
 
                 # Trim SCI, VAR, DQ to new section
-                ext.reset(ext.nddata[datasec.asslice()])
+                ext.reset(ext.nddata[datasec.as_slice()])
                 # And OBJMASK (if it exists)
                 # TODO: should check more generally for any image extensions
                 if hasattr(ext, 'OBJMASK'):
-                    ext.OBJMASK = ext.OBJMASK[datasec.asslice()]
+                    ext.OBJMASK = ext.OBJMASK[datasec.as_slice()]
 
                 # We can't do this unless the data section was contiguous
                 ext.hdr.set('TRIMSEC', datasecStr, comment=keyword_comments['TRIMSEC'])

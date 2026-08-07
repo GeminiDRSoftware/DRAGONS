@@ -172,6 +172,7 @@ we will print the object name too.
     ...
     ../playdata/example1/N20160103S0472.fits                               dayCal       Dark
     ../playdata/example1/bpm_20010317_niri_niri_11_full_1amp.fits          dayCal        BPM
+
 The list is abridged for presentation.
 
 Our standard star is a "partnerCal" named "FS 17".  Since it is unique, we

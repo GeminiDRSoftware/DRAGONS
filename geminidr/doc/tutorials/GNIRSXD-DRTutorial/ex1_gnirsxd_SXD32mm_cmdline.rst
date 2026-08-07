@@ -499,7 +499,7 @@ you can use the ``combineOrders`` primitive.
     dgsplot N20170113S0146_ordersCombined.fits 1 --thin
 
 .. image:: _graphics/gnirsxd_SXD32mm_ordersCombined.png
-   :width: 600q
+   :width: 600
    :alt: Combined orders. Full range 1D spectrum.
 
 

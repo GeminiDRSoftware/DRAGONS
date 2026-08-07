@@ -5,5 +5,5 @@ from ..gemini import addInstrumentFilterWavelengths
 from .adclass import AstroDataGsaoi
 from .lookup import filter_wavelengths
 
-factory.addClass(AstroDataGsaoi)
+factory.add_class(AstroDataGsaoi)
 addInstrumentFilterWavelengths('GSAOI', filter_wavelengths)

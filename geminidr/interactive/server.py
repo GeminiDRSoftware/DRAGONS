@@ -1,6 +1,6 @@
 import uuid
 
-from astrodata import version
+from geminidr import _version
 
 import pathlib
 
@@ -27,7 +27,7 @@ from recipe_system.config import globalConf
 _bokeh_server = None
 _visualizer = None
 
-__version__ = version()
+__version__ = _version.version()
 
 TEMPLATE_PATH = "%s/templates" % pathlib.Path(__file__).parent.absolute()
 

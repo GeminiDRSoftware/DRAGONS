@@ -55,7 +55,7 @@ def reassemble_ad(adinput, shape=None):
     # we implement a two-pass approach which requires us to go back and
     # unmasked regions that will have been masked by subsequent extensions.
     for ext, arrsec in zip(adinput, array_sections):
-        _slice = arrsec.asslice()
+        _slice = arrsec.as_slice()
         if ext.mask is None:
             data[_slice] += ext.data
             if variance is not None:
@@ -70,7 +70,7 @@ def reassemble_ad(adinput, shape=None):
 
     for ext, arrsec in zip(adinput, array_sections):
         if ext.mask is not None:
-            _slice = arrsec.asslice()
+            _slice = arrsec.as_slice()
             illuminated = ext.mask & (DQ.no_data | DQ.unilluminated) == 0
             mask[_slice][illuminated] = ext.mask[illuminated]
 

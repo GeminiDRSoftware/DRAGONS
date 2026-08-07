@@ -17,7 +17,7 @@ from .file_getter import GetterError, get_request
 
 UPLOADCOOKIE = None
 
-from recipe_system import version
+from recipe_system import __version__
 
 class RemoteDB(CalDB):
     """
@@ -168,7 +168,7 @@ def retrieve_calibration(rqurl, rq, howmany=1):
                            'descriptors': make_dict_json_encodable(rq.descriptors)})
     try:
         calrq = urllib.request.Request(rqurl)
-        calrq.add_header('User-Agent', 'GeminiDRAGONS ' + version())
+        calrq.add_header('User-Agent', 'GeminiDRAGONS ' + __version__)
         u = urllib.request.urlopen(calrq, postdata.encode('utf-8'))
         response = u.read()
     except (urllib.error.HTTPError, urllib.error.URLError) as err:

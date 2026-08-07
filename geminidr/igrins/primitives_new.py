@@ -1282,7 +1282,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             wcs_dict['CD1_2'] = -pixscale * np.sin(pa) / 3600
             wcs_dict['CD2_1'] = pixscale * np.sin(pa) / 3600
             wcs_dict['CD2_2'] = pixscale * np.cos(pa) / 3600
-            ad[0].wcs = astrodata.wcs.fitswcs_to_gwcs(fits.Header(wcs_dict), silent=False)
+            ad[0].wcs = astrodata.wcs.fitswcs_to_gwcs(fits.Header(wcs_dict), raise_errors=True)
             self._add_longslit_wcs(ad, pointing="center")
 
             # Timestamp and update filename
