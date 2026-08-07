@@ -1227,7 +1227,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         The primitive using a Savitzky-Golay filter to identify the decrease
         in the first derivative caused by each "knee" or "shoulder", and then
         a linear fit to these locations as a function of echelle order is
-        performed to avoid issues from misidentifications.
+        performed to avoid issues from misidentifications. The points beyond
+        these locations are then masked as DQ.overlap (which isn't strictly
+        correct, but it's not entirely wrong either and it makes it easier to
+        unmask the pixels later if desired).
 
         Parameters
         ----------
@@ -1297,8 +1300,8 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             right_limits = np.minimum(m_final(orders).astype(int), 2048)
             for ext, left, right in zip(ad, left_limits, right_limits):
                 log.debug(f"Masking <{left} and >={right} in order {ext.hdr['SPECORDR']}")
-                ext.mask[:, :left] |= DQ.no_data
-                ext.mask[:, right:] |= DQ.no_data
+                ext.mask[:, :left] |= DQ.overlap
+                ext.mask[:, right:] |= DQ.overlap
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1405,9 +1408,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         regions beyond the knees/shoulders
         """
         adinputs = super().normalizeFlat(adinputs, **params)
-        for ad in adinputs:
-            for ext in ad:
-                ext.mask &= (DQ.max ^ DQ.no_data)
+        if params["debug_unmask_vignetted"]:
+            for ad in adinputs:
+                for ext in ad:
+                    ext.mask &= (DQ.max ^ DQ.overlap)
         return adinputs
 
     def standardizeWCS(self, adinputs=None, suffix=None):

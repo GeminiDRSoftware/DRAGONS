@@ -131,6 +131,9 @@ class measureSlitProfileConfig(config.Config):
 
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
+    debug_unmask_vignetted = config.Field("Unmask vignetted regions for debug?",
+                                          bool, False)
+
     def setDefaults(self):
         self.function = "chebyshev"
         self.order = 4
