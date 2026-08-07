@@ -1,5 +1,5 @@
 """
-Recipes available to data with tags ['IGRINS', 'CAL', 'FLAT'].
+Recipes available to data with tags ['IGRINS', 'FLAT'].
 """
 recipe_tags = {'IGRINS-2', 'FLAT'}
 
