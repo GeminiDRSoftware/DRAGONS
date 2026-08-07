@@ -1,6 +1,5 @@
 .. testing.rst
 
-.. _AstroData: https://astrodata-programmer-manual.readthedocs.io/en/v2.1.0/appendices/api_refguide.html#astrodata
 .. _command-line: https://docs.pytest.org/en/latest/usage.html
 .. _fixture: https://docs.pytest.org/en/latest/fixture.html
 .. _fixtures: https://docs.pytest.org/en/latest/fixture.html
@@ -25,8 +24,6 @@ module that they are testing. For example:
 
    * - Tests for:
      - Are found in:
-   * - astrodata/fits.py
-     - astrodata/tests/
    * - gempy/library/astromodel.py
      - gempy/library/tests/
    * - geminidr/gmos/primitives_gmos.py
@@ -368,7 +365,7 @@ example:
         hdu = fits.ImageHDU(data=np.ones(SHAPE), name='SCI')
         return astrodata.create(phu, [hdu])
 
-This fixture_ creates a new AstroData_ object to be used in tests. Fixtures_
+This fixture_ creates a new AstroData object to be used in tests. Fixtures_
 cannot not be called directly. There are several ways of plugging fixtures into
 tests. DRAGONS uses the most popular one, which is adding them to the test
 function argument, as the example below:

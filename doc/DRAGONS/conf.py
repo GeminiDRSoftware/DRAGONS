@@ -301,10 +301,13 @@ rst_epilog = """
 .. |GNIRSLSTut| replace:: :raw-html:`<a href="http://GNIRSLS-DRTutorial.readthedocs.io/en/{v}">GNIRS Longslit Data Reduction Tutorial</a>`
 .. |GNIRSXDTut| replace:: :raw-html:`<a href="http://GNIRSXD-DRTutorial.readthedocs.io/en/{v}">GNIRS Cross-Dispersed Data Reduction Tutorial</a>`
 
-.. |ADMaster| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}">Astrodata Manual</a>`
-.. |ADCheat| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/cheatsheet.html">AstroData Cheat Sheet</a>`
-.. |ADUser| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/usermanual/index.html">Astrodata User Manual</a>`
-.. |ADProg| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}/progmanual/index.html">Astrodata Programmer Manual</a>`
+.. |oldADMaster| replace:: :raw-html:`<a href="http://astrodata.readthedocs.io/en/{v}">Astrodata Manual</a>`
+
+.. |ADMaster| replace:: `Astrodata Manual <https://geminidrsoftware.github.io/astrodata/manuals/index.html>`__
+.. |ADCheat| replace:: `Astrodata Cheat Sheet <https://geminidrsoftware.github.io/astrodata/manuals/cheatsheet.html>`__
+.. |ADUser| replace:: `Astrodata User Manual <https://geminidrsoftware.github.io/astrodata/manuals/usermanual/index.html>`__
+.. |ADProg| replace:: `Astrodata Programmer Manual <https://geminidrsoftware.github.io/astrodata/manuals/progmanual/index.html>`__
+
 .. |RSProg| replace:: :raw-html:`<a href="http://dragons-recipe-system-programmers-manual.readthedocs.io/en/{v}/">Recipe System Programmers Manual</a>`
 .. |RSUser|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/">Recipe System Users Manual</a>`
 .. |RSUserInstall|  replace:: :raw-html:`<a href="http://dragons-recipe-system-users-manual.readthedocs.io/en/{v}/install.html">Installation Guide</a>`

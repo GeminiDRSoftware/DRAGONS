@@ -590,7 +590,7 @@ Documentation
 
 * The three previously separated ``astrodata`` manuals, "Cheat Sheet",
   "User Manual", and "Programmer Manual" have been consolidated into one
-  master document.  Please fix your link, |ADMaster|.
+  master document.  Please fix your link, |oldADMaster|.
 
 
 Compatibility
