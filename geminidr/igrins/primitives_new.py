@@ -284,64 +284,6 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
         return adinputs
 
-    def createDataCube(self, adinputs=None, **params):
-        """
-        Create the data cube.
-
-        This is currently just saveTwodspec but taking things from the main
-        stream.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        #timestamp_key = self.timestamp_keys[self.myself()]
-        suffix = params["suffix"]
-        height_2dspec = params["height_2dspec"]
-        conserve_flux = True
-        # height_2dspec = 100 # obsset.get_recipe_parameter("height_2dspec")
-        wavelength_increasing_order = params["wavelength_increasing_order"]
-
-        adoutputs = []
-        for ad in adinputs:
-            ad_sky = self._get_ad_sky(ad)
-            wat_table = ad_sky[0].WAT_HEADER
-
-            # make sure you apply convert_data to the output. If get_wat_header is
-            # called with wavelength_increasing_order=True, convert_data will rearrange
-            # the data to the correct order.
-            wvl_header, convert_data = get_wat_header(wat_table,
-                                                      wavelength_increasing_order)
-
-            ordermap = ad_sky[0].ORDERMAP
-            # FIXME we should use proper badpixel mask.
-            ordermap_bpixed = np.ma.array(ordermap, mask=ad_sky[0].mask).filled(0)
-            ap = Apertures(ad_sky[0].SLITEDGE)
-
-            _ = get_rectified_2dspec(ad[0].data, ordermap_bpixed, ap,  # bottom_up_solutions,
-                                     conserve_flux=conserve_flux, height=height_2dspec)
-            d0_shft_list, msk_shft_list, height = _
-            with np.errstate(invalid="ignore"):
-                d = np.array(d0_shft_list) / np.array(msk_shft_list)
-
-            d = convert_data(d.astype("float32"))
-            hdu_spec2d = fits.ImageHDU(header=wvl_header, data=d)
-
-            ad_out = astrodata.create(ad.phu)
-            ad_out.append(hdu_spec2d)
-
-            _ = get_rectified_2dspec(ad[0].variance, ordermap, ap,  # bottom_up_solutions,
-                                     conserve_flux=conserve_flux, height=height)
-            d0_shft_list, msk_shft_list, _ = _
-            with np.errstate(invalid="ignore"):
-                d = np.array(d0_shft_list) / np.array(msk_shft_list)
-
-            ad_out[0].variance = d.astype(np.float32)
-            ad_out[0].WAVELENGTHS = np.array(ad_sky[0].WVLSOL["wavelengths"], dtype=np.float32)
-
-            ad_out.update_filename(suffix=suffix, strip=True)
-            adoutputs.append(ad_out)
-
-        return adoutputs
-
     def determineDistortion(self, adinputs=None, **params):
         """
         Maps the distortion on a detector by tracing lines perpendicular to the
@@ -1130,43 +1072,6 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             adoutputs.append(adout)
 
         return adoutputs
-
-    def flagDiscrepantPixels(self, adinputs=None, **params):
-        """
-        Flag discrepant pixels in the extracted spectrum.
-
-        This method identifies and flags pixels in the extracted 1D spectrum
-        that are discrepant based on a specified threshold. The flagged pixels
-        can be used to exclude them from further analysis or to apply special
-        handling during subsequent processing steps.
-
-        Parameters
-        ----------
-        threshold : float
-            The threshold for identifying discrepant pixels. Pixels with values
-            that deviate from the median by more than this threshold will be flagged.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        #timestamp_key = self.timestamp_keys["flagDiscrepantPixels"]
-        sfx = params["suffix"]
-        discrepant_pixel_threshold = params["discrepant_pixel_threshold"]
-
-        for ad in adinputs:
-            for ext in ad:
-                discrepant_mask = np.where(np.abs(ext.data - ext.SYNTHMAP) /
-                                           np.sqrt(ext.variance) > discrepant_pixel_threshold,
-                                           DQ.cosmic_ray, DQ.good)
-                if ext.mask is None:
-                    ext.mask = discrepant_mask.astype(DQ.datatype)
-                else:
-                    ext.mask |= discrepant_mask
-
-            # Timestamp and update the filename
-            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            ad.update_filename(suffix=sfx, strip=True)
-
-        return adinputs
 
     def makeAB(self, adinputs=None, **params):
         """
