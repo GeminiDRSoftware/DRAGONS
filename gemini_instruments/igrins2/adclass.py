@@ -253,10 +253,12 @@ class AstroDataIgrins2(AstroDataGemini):
 
     @astro_data_tag
     def _tag_standard(self):
+        if self.phu.get('PROCSTND'):
+            return TagSet(['STANDARD', 'CAL'])
         if (self.phu.get("OBSTYPE") == "OBJECT" and
                 self.phu.get("OBSCLASS") == "partnerCal" and
                 not "sky" in self.phu.get('OBJECT', '').lower()):
-            return TagSet(['STANDARD', 'CAL'], blocked_by=['SKY', 'CAL'])
+            return TagSet(['STANDARD', 'CAL'])
 
     #@astro_data_tag -- commented out so not run
     def _tag_caltype(self):
