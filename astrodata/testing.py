@@ -4,10 +4,8 @@ Fixtures to be used in tests in DRAGONS
 
 import os
 import shutil
-import urllib
 import hashlib
 import requests
-import xml.etree.ElementTree as et
 
 import numpy as np
 import pytest
@@ -280,34 +278,6 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
         os.chmod(local_path, 0o664)
 
     return local_path
-
-
-def get_associated_calibrations(filename, nbias=5):
-    """
-    Queries Gemini Observatory Archive for associated calibrations to reduce
-    the data that will be used for testing.
-
-    Parameters
-    ----------
-    filename : str
-        Input file name
-    """
-    url = f"https://archive.gemini.edu/calmgr/{filename}"
-    tree = et.parse(urllib.request.urlopen(url))
-    root = tree.getroot()
-    prefix = root.tag[:root.tag.rfind('}') + 1]
-
-    rows = []
-    for node in tree.iter(prefix + 'calibration'):
-        cal_type = node.find(prefix + 'caltype').text
-        cal_filename = node.find(prefix + 'filename').text
-        if not ('processed_' in cal_filename or 'specphot' in cal_filename):
-            rows.append((cal_filename, cal_type))
-
-    tbl = Table(rows=rows, names=['filename', 'caltype'])
-    tbl.sort('filename')
-    tbl.remove_rows(np.where(tbl['caltype'] == 'bias')[0][nbias:])
-    return tbl
 
 
 class ADCompare:
