@@ -100,6 +100,15 @@ class maskReferencePixelsConfig(config.Config):
     pass
 
 
+class maskVignettedRegionsConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_vignettedRegionsMasked",
+                          optional=True)
+    debug_halfwidth = config.RangeField("Half-width of Savitzky-Golay filter",
+                                        int, 25, min=11, max=100)
+    debug_order = config.RangeField("Order of Savitzky-Golay polynoimial",
+                                    int, 2, min=1, max=5)
+
+
 class measureSlitProfileConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_slitProfileMeasured",
                           optional=True)
@@ -123,6 +132,8 @@ class measureSlitProfileConfig(config.Config):
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     def setDefaults(self):
+        self.function = "chebyshev"
+        self.order = 4
         self.threshold = 0.001
 
 
