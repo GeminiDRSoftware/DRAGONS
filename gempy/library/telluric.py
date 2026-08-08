@@ -298,6 +298,9 @@ class TelluricSpectrum:
         -------
         boolean array of masked points
         """
+        if threshold == 0:
+            return np.zeros_like(self.waves, dtype=bool)
+
         start = datetime.now()
         stellar_spectrum = self.lsf.convolve_and_resample(self.waves,
                                                           *A0Spectrum.spectrum(r=r))

@@ -68,11 +68,14 @@ class determineWavelengthSolutionConfig(config.Config):
     debug_plot = config.Field("Make debug plot?", bool, False)
 
 
-class extractSpectra(config.Config):
-    suffix = config.Field("Filename suffix", str, "_myspec",
+class extractSpectraConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_extracted",
                           optional=True)
-    extraction_mode = config.Field("Extraction mode", str, "optimal")
-    #pixel_per_res_element = config.Field("number of pixel per res. element", float, 0.)
+    method = config.ChoiceField("Extraction method", str,
+                                allowed={"aperture": "no weighting",
+                                         "optimal": "optimal extraction",
+                                         "default": "use 'optimal' for STANDARDs, and 'aperture' otherwise"},
+                                default="aperture")
     cr_rejection_thresh = config.RangeField("Sigma threshold for cosmic ray rejection", float, 30.,
                                             min=0)
 
@@ -95,6 +98,15 @@ class makeSyntheticImageConfig(config.Config):
 
 class maskReferencePixelsConfig(config.Config):
     pass
+
+
+class maskVignettedRegionsConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_vignettedRegionsMasked",
+                          optional=True)
+    debug_halfwidth = config.RangeField("Half-width of Savitzky-Golay filter",
+                                        int, 25, min=11, max=100)
+    debug_order = config.RangeField("Order of Savitzky-Golay polynoimial",
+                                    int, 2, min=1, max=5)
 
 
 class measureSlitProfileConfig(config.Config):
@@ -120,6 +132,8 @@ class measureSlitProfileConfig(config.Config):
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     def setDefaults(self):
+        self.function = "chebyshev"
+        self.order = 4
         self.threshold = 0.001
 
 

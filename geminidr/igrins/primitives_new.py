@@ -1,11 +1,14 @@
 import os
 from importlib import import_module
+from bisect import bisect_left
 import copy
 import warnings
 
 from matplotlib import pyplot as plt, colors as mcolors
 
 from scipy.interpolate import make_interp_spline, PPoly
+from scipy.ndimage import gaussian_filter
+from scipy.signal import savgol_filter
 
 import numpy as np
 from astropy.io import fits
@@ -29,7 +32,7 @@ from geminidr.gemini.lookups import DQ_definitions as DQ
 from gempy.adlibrary.manipulate_ad import reassemble_ad
 
 from .primitives_igrins import IGRINS
-from ..core.primitives_crossdispersed import CrossDispersed, Spect
+from ..core.primitives_crossdispersed import CrossDispersed
 from ..core.primitives_telluric import Telluric
 from .cheb3d import Chebyshev3D, LSQFitterWithOutlierRemoval3D
 
@@ -887,9 +890,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
         Parameters
         ----------
-        adinputs : list of :class:`~astrodata.AstroData`
-            2D spectral images with appropriately-calibrated WCS.
-        suffix : str
+       suffix : str
             Suffix to be added to output files.
         interpolant : str
             Type of interpolant
@@ -972,16 +973,27 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
     def extractSpectra(self, adinputs=None, **params):
         """
+        Create a one-dimensional spectrum by extracting the signal along each
+        order.
+
+        Parameters
+        ----------
+       suffix : str
+            Suffix to be added to output files.
+        method : str [aperture|optimal|default]
+            Extraction method to use
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
-        extraction_mode = params["extraction_mode"]
+        method = params["method"]
 
         adoutputs = []
         for ad in adinputs:
             adout = astrodata.create(ad.phu)
+            this_method = method if method != "default" else (
+                "optimal" if 'STANDARD' in ad.tags else "aperture")
             for ext in ad:
                 data = np.zeros((ext.shape[1],), dtype=ext.data.dtype)
                 mask = np.full((ext.shape[1],), DQ.no_data, dtype=ext.mask.dtype)
@@ -1025,30 +1037,69 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                          abs(ext_xshifted.SLITPOS) < 0.5]),
                         1. / ext_xshifted.variance, 0)
 
-                # We want to normalize the profile along each column. Since
-                # there's probably both a +ve and -ve beam, we can't simply
-                # use the sum of the profile.
                 slitpos_samples = (np.arange(ext.SLITPROF.shape[0]) - 25) * 0.02
-                spl = make_interp_spline(slitpos_samples, ext.SLITPROF, k=3, axis=0)
-                t, c, k = spl.tck
+
+                # For aperture extraction, we want to know where to extract.
+                # The data are effectively noiseless, so we don't use
+                # peak_finding.get_extrema() here.
+                if this_method == "aperture":
+                    slitprof = np.median(ext.SLITPROF, axis=1)
+                    spl = make_interp_spline(slitpos_samples, slitprof, k=3)
+                    ppoly = PPoly.from_spline(spl.tck)
+                    roots = np.r_[-0.5, ppoly.roots(extrapolate=False), 0.5]
+                    extrema = ppoly.derivative().roots(extrapolate=False)
+                    extrema_values = ppoly(extrema)
+                    i = bisect_left(roots, extrema[extrema_values.argmax()])
+                    extraction_regions = [(roots[i-1], roots[i], 1.0)]
+                    log.debug("Extracting positive beam "
+                              f"(order {ext.hdr['SPECORDR']} between "
+                              f"{extraction_regions[0][0]:.3f} and "
+                              f"{extraction_regions[0][1]:.3f}")
+                    # Are there A and B beams?
+                    ab = extrema_values.min() < -0.5 * extrema_values.max()
+                    if ab:
+                        i = bisect_left(roots, extrema[extrema_values.argmin()])
+                        extraction_regions.append((roots[i-1], roots[i], -1.0))
+                        log.debug("Extracting negative beam between "
+                                  f"{extraction_regions[1][0]:.3f} and "
+                                  f"{extraction_regions[1][1]:.3f}")
+                    pixels = np.arange(ext.shape[0])
+                else:
+                    # We want to normalize the profile along each column. Since
+                    # there's probably both a +ve and -ve beam, we can't simply
+                    # use the sum of the profile.
+                    spl = make_interp_spline(slitpos_samples, ext.SLITPROF, k=3, axis=0)
+                    t, c, k = spl.tck
+
+                from gempy.library.nddops import combine1d
                 for i, (slitpos, coldata, iv) in enumerate(zip(ext_xshifted.SLITPOS.T,
                                                                ext_xshifted.data.T,
                                                                inv_var.T)):
-                    if iv.max() > 0:
-                        ppoly = PPoly.from_spline((t, c[:, i], k))
-                        prof = ppoly(slitpos)
-                        if prof.max() > 0:
-                            # This code might be useful to investigate the profile
-                            # roots = ppoly.roots(extrapolate=False)
-                            # signal = sorted([abs(ppoly.integrate(a, b) / 0.02)
-                            #                  for a, b in zip(roots[:-1], roots[1:])],
-                            #                  reverse=True)
-                            signal_sum = np.sum(abs(prof[iv > 0]))
-                            if signal_sum > 0:
-                                prof /= signal_sum
-                                data[i] = (prof * coldata * iv).sum() / (prof * prof * iv).sum()
-                                mask[i] = DQ.good
-                                var[i] = prof.sum() / (prof * prof * iv).sum()
+                    if iv.max() > 0 and ext.hdr['SPECORDR'] > 70:
+                        if this_method == "optimal":
+                            ppoly = PPoly.from_spline((t, c[:, i], k))
+                            prof = ppoly(slitpos)
+                            if prof.max() > 0:
+                                signal_sum = np.sum(abs(prof[iv > 0]))
+                                if signal_sum > 0:
+                                    # Renormalize the profile sum to unity
+                                    prof /= signal_sum
+                                    data[i] = (prof * coldata * iv).sum() / (prof * prof * iv).sum()
+                                    mask[i] = DQ.good
+                                    var[i] = abs(prof[iv > 0]).sum() / (prof * prof * iv).sum()
+                        else:
+                            mask[i] = DQ.good
+                            for s1, s2, sign in extraction_regions:
+                                x1, x2 = np.interp([s1, s2], slitpos, pixels,
+                                                   left=np.nan, right=np.nan)
+                                if np.isnan(x1) or np.isnan(x2):
+                                    mask[i] = DQ.no_data
+                                    continue
+
+                                _slice = slice(int(np.ceil(x1-0.5))+1, int(np.ceil(x2-0.5)))
+                                data[i] += sign * ext_xshifted.data[_slice, i].sum()
+                                mask[i] |= np.logical_or.reduce(ext_xshifted.mask[_slice, i])
+                                var[i] += ext_xshifted.variance[_slice, i].sum()
 
                 if np.all(mask & DQ.no_data):
                     log.warning(f"No good pixels found for extraction in order {ext.hdr['SPECORDR']}")
@@ -1166,6 +1217,95 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
         return [ad]
 
+    def maskVignettedRegions(self, adinputs=None, **params):
+        """
+        This primitive attempts to find and mask the regions of each echelle
+        order that are vignetted and so create a rapid drop-off in the
+        response function. This dtop-off is hard to fit in the fitTelluric()
+        primitive and better results are obtained by masking these regions.
+
+        The primitive using a Savitzky-Golay filter to identify the decrease
+        in the first derivative caused by each "knee" or "shoulder", and then
+        a linear fit to these locations as a function of echelle order is
+        performed to avoid issues from misidentifications.
+
+        Parameters
+        ----------
+        suffix : str
+            Suffix to be added to output files
+        debug_halfwidth : int
+            halfwidth of Savitzky-Golay filter
+        debug_order : int
+            order of Savitzky-Golay polynomial
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = "MASKVIGN"
+        suffix = params["suffix"]
+        halfwidth = params["debug_halfwidth"]
+        polyorder = params["debug_order"]
+
+        for ad in adinputs:
+            limits = []
+            for ext in ad:
+                masked_data = np.ma.masked_array(ext.data, mask=ext.mask, copy=False)
+                spek = np.ma.median(masked_data, axis=0)
+                # Get second derivative; we want to find minima in this
+                ddspek = savgol_filter(spek, window_length=2 * halfwidth + 1,
+                                       polyorder=polyorder, deriv=2)
+                ddspek = np.ma.masked_where(spek.mask, ddspek)
+                smoothed_ddspek = gaussian_filter(ddspek, halfwidth)
+                # Mask regions that where the S-G filter went off the edge
+                masked_slices = np.ma.clump_masked(spek)
+                start = 0 if not masked_slices or masked_slices[0].start > 0 \
+                    else masked_slices[0].stop
+                ddspek.mask[start:start + halfwidth] = True
+                end = spek.size if (not masked_slices or
+                                    masked_slices[-1].stop < spek.size) else masked_slices[-1].start
+                ddspek.mask[end - halfwidth:end] = True
+                smoothed_ddspek = np.ma.masked_where(ddspek.mask, smoothed_ddspek)
+
+                # Take the locations of the knees/shoulders as the first
+                # minimum in the second derivative, provided it's not the
+                # first unmaksed pixel
+                masked_slices = np.ma.clump_masked(ddspek)
+                limit1 = np.ma.argmin(smoothed_ddspek[:1024])
+                if limit1 == masked_slices[0].stop:
+                    limit1 = np.nan
+                limit2 = 1024 + np.ma.argmin(smoothed_ddspek[1024:])
+                if limit2 == masked_slices[-1].start - 1:
+                    limit2 = np.nan
+                limits.append((limit1, limit2))
+                log.debug(f"{ad.filename} order {ext.hdr['SPECORDR']} limits = {limit1}, {limit2}")
+
+            # Now fit a linear function to each set of limits
+            limits = np.asarray(limits).T
+            orders = np.asarray(ad.hdr['SPECORDR'])
+            fit_it = fitting.FittingWithOutlierRemoval(
+                fitting.LinearLSQFitter(), sigma_clip, niter=2, sigma=2)
+            m_init = models.Polynomial1D(degree=1)
+            good = ~np.isnan(limits[0])
+            good[:2] = False
+            good[-2:] = False
+            m_final, _ = fit_it(m_init, orders[good], limits[0, good])
+            left_limits = np.maximum(m_final(orders).astype(int), 0)
+            good = ~np.isnan(limits[1])
+            good[:2] = False
+            good[-2:] = False
+            m_final, _ = fit_it(m_init, orders[good], limits[1, good])
+            right_limits = np.minimum(m_final(orders).astype(int), 2048)
+            for ext, left, right in zip(ad, left_limits, right_limits):
+                log.debug(f"Masking <{left} and >={right} in order {ext.hdr['SPECORDR']}")
+                ext.mask[:, :left] |= DQ.no_data
+                ext.mask[:, right:] |= DQ.no_data
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
     def measureSlitProfile(self, adinputs=None, **params):
         """
         Follows the method of Cushing, Vacca, & Rayner (2004, PASP, 116, 362)
@@ -1223,7 +1363,6 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             for ext in ad:
                 npix = ext.shape[1]
                 masked_data = np.ma.masked_array(ext.data, ext.mask, copy=True)
-                masked_data.mask |= (ext.mask & DQ.no_data).astype(bool)
                 weights = 1
                 if use_var:
                     if ext.variance is None:
@@ -1258,6 +1397,17 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=suffix, strip=True)
 
+        return adinputs
+
+    def normalizeFlat(self, adinputs=None, **params):
+        """
+        Performs the standard normalizeFlat primitive, and then unmasks the
+        regions beyond the knees/shoulders
+        """
+        adinputs = super().normalizeFlat(adinputs, **params)
+        for ad in adinputs:
+            for ext in ad:
+                ext.mask &= (DQ.max ^ DQ.no_data)
         return adinputs
 
     def standardizeWCS(self, adinputs=None, suffix=None):

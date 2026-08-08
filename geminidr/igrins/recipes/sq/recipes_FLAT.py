@@ -1,7 +1,7 @@
 """
-Recipes available to data with tags ['IGRINS', 'CAL', 'FLAT'].
+Recipes available to data with tags ['IGRINS', 'FLAT'].
 """
-recipe_tags = {'IGRINS-2', 'FLAT'}
+recipe_tags = {'IGRINS-2', 'FLAT', 'SPECT'}
 
 def estimateNoise(p):
     """This recipe performs the analysis of irs readout pattern noise in flat off
@@ -102,6 +102,7 @@ def makeProcessedFlat(p):
     p.determineSlitEdges()
     p.cutSlits()
     p.maskBeyondSlit()
+    p.maskVignettedRegions()
     p.normalizeFlat()
     p.thresholdFlatfield()
     p.storeProcessedFlat()

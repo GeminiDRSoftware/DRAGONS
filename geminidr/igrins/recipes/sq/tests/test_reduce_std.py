@@ -61,7 +61,6 @@ def test_old_make_processed_std(input_files, caldict, change_working_dir, path_t
 @pytest.mark.parametrize('input_files, caldict', STD_INPUTS, indirect=['input_files'])
 def test_make_processed_std(input_files, caldict, change_working_dir, path_to_inputs):
     r = Reduce()
-    r.recipename = "makeStellar"
     r.files = input_files
     # This avoids issues when running locally since test_make_processed_bpm
     # will add the BPM to the caldb
