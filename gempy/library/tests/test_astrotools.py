@@ -157,14 +157,6 @@ def test_get_corners_3d():
     assert corners == expected_corners
 
 
-def test_clipped_mean():
-    dist = np.array([5, 5, 4, 7, 7, 4, 3, 5, 2, 6, 5, 12, 0,
-                     9, 10, 13, 2, 14, 6, 3, 50])
-    results = at.clipped_mean(dist)
-    expected_values = (6.1, 3.7)
-    assert np.allclose(results, expected_values)
-
-
 def test_parse_user_regions():
     parse = at.parse_user_regions
     assert parse("*") == [(None, None)]

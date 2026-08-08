@@ -1,6 +1,6 @@
 """
 """
-recipe_tags = {'IGRINS-2', 'SKY'}
+recipe_tags = {'IGRINS-2', 'SKY', 'SPECT'}
 
 
 def oldMakeProcessedArc(p):
