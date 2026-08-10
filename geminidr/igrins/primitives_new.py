@@ -860,8 +860,8 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             log.warning('Distortion correction has been turned off.')
             return adinputs
 
-        origin = (int(slitpos_to_pix(0.) + 0.5), 0)
-        output_shape = (origin[0] * 2 + 1, 0)
+        origin = (-int(slitpos_to_pix(0.) + 0.5), 0)
+        output_shape = (abs(origin[0]) * 2 + 1, 2048)
 
         fail = False
         adoutputs = []
