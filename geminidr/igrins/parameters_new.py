@@ -75,7 +75,7 @@ class extractSpectraConfig(config.Config):
                                 allowed={"aperture": "no weighting",
                                          "optimal": "optimal extraction",
                                          "default": "use 'optimal' for STANDARDs, and 'aperture' otherwise"},
-                                default="aperture")
+                                default="optimal")
     sigma = config.RangeField("Sigma threshold for cosmic ray rejection",
                               float, 30., min=0)
     debug_order = config.RangeField("Order for CR debugging plot", int, None,

@@ -24,7 +24,7 @@ from gwcs import coordinate_frames as cf
 import astrodata
 from astrodata import wcs as adwcs
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels as am
+from gempy.library import astromodels as am, astrotools as at
 from gempy.library.fitting import fit_1D
 from gempy.library import peak_finding, tracing, transform, wavecal
 
@@ -1232,7 +1232,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 limit2 = 1024 + np.ma.argmin(smoothed_ddspek[1024:])
                 if limit2 == masked_slices[-1].start - 1:
                     limit2 = np.nan
-                limits.append((limit1, limit2))
+                limits.append((limit1 + halfwidth, limit2 - halfwidth))
                 log.debug(f"{ad.filename} order {ext.hdr['SPECORDR']} limits = {limit1}, {limit2}")
 
             # Now fit a linear function to each set of limits
@@ -1326,7 +1326,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                     " has no variance array, so cannot use it "
                                     "to weight the slit profile")
                     else:
-                        weights = np.where(ext.variance > 0, 1. / ext.variance, 0)
+                        weights = at.divide0(1., ext.variance)
 
                 for _ in range(1):  # allow iteration (4.2.2 of Cushing+ 2004)
                     profile = np.ma.median(masked_data, axis=1)
