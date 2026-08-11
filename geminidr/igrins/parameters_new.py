@@ -76,8 +76,19 @@ class extractSpectraConfig(config.Config):
                                          "optimal": "optimal extraction",
                                          "default": "use 'optimal' for STANDARDs, and 'aperture' otherwise"},
                                 default="aperture")
-    cr_rejection_thresh = config.RangeField("Sigma threshold for cosmic ray rejection", float, 30.,
-                                            min=0)
+    sigma = config.RangeField("Sigma threshold for cosmic ray rejection",
+                              float, 30., min=0)
+    debug_order = config.RangeField("Order for CR debugging plot", int, None,
+                                       min=33, max=95, optional=True)
+    debug_pixel = config.RangeField("Pixel for CR debugging plot", int, None,
+                                       min=0, max=2048, optional=True)
+    debug_min_frac = config.RangeField("Minimum fraction of good pixels needed to determine the flux",
+                                       float, 0.5, min=0, max=1, inclusiveMax=True)
+
+    def validate(self):
+        config.Config.validate(self)
+        if [self.debug_order, self.debug_pixel].count(None) == 1:
+            raise ValueError("Both or neither of 'debug_order' and 'debug_pixel' must be set")
 
 
 class flagDiscrepantPixelsConfig(config.Config):

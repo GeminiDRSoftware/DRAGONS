@@ -923,12 +923,25 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             Suffix to be added to output files.
         method : str [aperture|optimal|default]
             Extraction method to use
+        sigma : float
+            Standard deviation threshold for cosmic ray rejection
+        debug_order : int/None
+            Echelle order for producing a debugging plot
+        debug_pixel : int/None
+            Pixel in "debug_order" for producing a debugging plot
+        debug_min_frac : float
+            Minimum fraction of good pixels needed in each columns in order
+            to extract the flux
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         method = params["method"]
+        sigmasq = params["sigma"] ** 2
+        debug_order = params["debug_order"]
+        debug_pixel = params["debug_pixel"]
+        min_frac = params["debug_min_frac"]
 
         adoutputs = []
         for ad in adinputs:
@@ -940,6 +953,17 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 mask = np.full((ext.shape[1],), DQ.no_data, dtype=ext.mask.dtype)
                 var = np.zeros_like(data)
                 y, x = np.mgrid[:ext.shape[0], :ext.shape[1]]
+
+                m_init = models.Polynomial1D(degree=1,
+                                             bounds={"c0": (0, np.inf),
+                                                     "c1": (0, np.inf)})
+                m_init.linear = False  # quickest way to suppress warnings
+                fit_it = fitting.FittingWithOutlierRemoval(fitting.DogBoxLSQFitter(),
+                                                           sigma_clip)
+                good = np.logical_and(ext.mask == 0, ext.variance > 0)
+                m_var, _ = fit_it(m_init, abs(ext.data[good]), ext.variance[good])
+                log.debug(f"{ext.hdr['SPECORDR']} estimated var: "
+                          f"{m_var.c0.value:.2f} {m_var.c1.value:.2f}")
 
                 # Construct an image of the slit position, which is used
                 # to determine the extraction weight of each pixel
@@ -969,15 +993,9 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 assert pixels_for_extraction.max() <= 0.5
                 del pixels_for_extraction
 
-                # We use inv_var to implement the mask as well, by setting
-                # it to zero for any pixels we don't wish to include
-                with warnings.catch_warnings(category=RuntimeWarning,
-                                             action="ignore"):
-                    inv_var = np.where(np.logical_and.reduce(
-                        [ext_xshifted.variance > 0, ext_xshifted.mask == 0,
-                         abs(ext_xshifted.SLITPOS) < 0.5]),
-                        1. / ext_xshifted.variance, 0)
-
+                goodpix = np.logical_and.reduce([ext_xshifted.variance > 0,
+                                                 ext_xshifted.mask == 0,
+                                                 abs(ext_xshifted.SLITPOS) < 0.5])
                 slitpos_samples = slitpos_to_pix.inverse(np.arange(ext.SLITPROF.shape[0]))
 
                 # For aperture extraction, we want to know where to extract.
@@ -1012,22 +1030,50 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     spl = make_interp_spline(slitpos_samples, ext.SLITPROF, k=3, axis=0)
                     t, c, k = spl.tck
 
-                from gempy.library.nddops import combine1d
-                for i, (slitpos, coldata, iv) in enumerate(zip(ext_xshifted.SLITPOS.T,
-                                                               ext_xshifted.data.T,
-                                                               inv_var.T)):
-                    if iv.max() > 0 and ext.hdr['SPECORDR'] > 70:
+                for i, (slitpos, coldata, colvar, colgood) in enumerate(zip(ext_xshifted.SLITPOS.T,
+                                                                            ext_xshifted.data.T,
+                                                                            ext_xshifted.variance.T,
+                                                                            goodpix.T)):
+                    debug = ext.hdr['SPECORDR'] == debug_order and i == debug_pixel
+                    if debug:
+                        fig, ax = plt.subplots()
+                        ax.plot(slitpos, coldata, 'k-')
+                        ax.plot(slitpos, np.sqrt(colvar), 'r-')
+                        ax.plot(slitpos[~colgood], coldata[~colgood], 'ko')
+                    if colgood.sum() and ext.hdr['SPECORDR'] > 70:
                         if this_method == "optimal":
                             ppoly = PPoly.from_spline((t, c[:, i], k))
                             prof = ppoly(slitpos)
                             if prof.max() > 0:
-                                signal_sum = np.sum(abs(prof[iv > 0]))
-                                if signal_sum > 0:
-                                    # Renormalize the profile sum to unity
-                                    prof /= signal_sum
-                                    data[i] = (prof * coldata * iv).sum() / (prof * prof * iv).sum()
-                                    mask[i] = DQ.good
-                                    var[i] = abs(prof[iv > 0]).sum() / (prof * prof * iv).sum()
+                                # Renormalize the profile sum to unity.
+                                # Summing the pixels directly accounts for the
+                                # different pixel scale between the resampled
+                                # SLITPROF and the actual data.
+                                pixels_in_slit = abs(slitpos) <= 0.5
+                                prof /= abs(prof[pixels_in_slit]).sum()
+                                flux = np.sum(abs(coldata[colgood]))
+                                while True:
+                                    if colgood.sum() >= min_frac * pixels_in_slit.sum():
+                                        colvar = m_var(abs(flux * prof))
+                                        with warnings.catch_warnings(category=RuntimeWarning,
+                                                                     action="ignore"):
+                                            ivar = np.where(colgood, 1. / colvar, 0)
+                                        flux = (prof * coldata * ivar).sum() / (prof * prof * ivar).sum()
+                                        new_masked = np.logical_and(
+                                            (coldata - flux * prof) ** 2 > sigmasq * colvar,
+                                            colgood)
+                                        if new_masked.sum() == 0:
+                                            data[i] = flux
+                                            mask[i] = DQ.good
+                                            var[i] = abs(prof[colgood]).sum() / (prof * prof * ivar).sum()
+                                            if debug:
+                                                ax.plot(slitpos[colgood], prof[colgood] * flux, 'b-')
+                                                ax.plot(slitpos[new_masked], coldata[new_masked], 'bo')
+                                                print("FLUX and RAW", flux, np.sum(abs(coldata[colgood])))
+                                            break
+                                        colgood[new_masked] = False
+                                    else:  # rejected all pixels, can't assign data
+                                        break
                         else:
                             mask[i] = DQ.good
                             for s1, s2, sign in extraction_regions:
@@ -1041,6 +1087,9 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                 data[i] += sign * ext_xshifted.data[_slice, i].sum()
                                 mask[i] |= np.logical_or.reduce(ext_xshifted.mask[_slice, i])
                                 var[i] += ext_xshifted.variance[_slice, i].sum()
+                    if debug:
+                        ax.set_xlim(-0.5, 0.5)
+                        plt.show()
 
                 if np.all(mask & DQ.no_data):
                     log.warning(f"No good pixels found for extraction in order {ext.hdr['SPECORDR']}")
