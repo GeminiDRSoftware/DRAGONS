@@ -565,6 +565,9 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         debug_plot = params["debug_plot"]
         sfx = params["suffix"]
 
+        # The stddev for unresolved lines (empirically determined from fits)
+        sigma_unres = 1.25
+
         # We do some hacking here so that we can use the Linelist class to
         # handle air-to-vacuum conversions. The "weights" column is actually
         # the Gaussian width
@@ -586,8 +589,8 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                      for l in linelists])
         idx = ref_waves.argsort()
         ref_waves = ref_waves[idx]
-        ref_sigpx = np.hstack([[1.5] * len(l) if l.weights is None else l.weights
-                                       for l in linelists])[idx]
+        ref_sigpx = np.hstack([[sigma_unres] * len(l) if l.weights is None else l.weights
+                               for l in linelists])[idx]
 
         def _create_fitting_groups(pixloc, sigpx):
             sigma = sigpx[0]
@@ -652,28 +655,37 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 # Get the lines that appear in this order, and group them if
                 # they're close together so that we can fit them simultaneously
                 order_waves = ref_waves[in_order]
+                order_sigma = ref_sigpx[in_order]
                 pixloc = wave_model.inverse(order_waves)
-                groups = _create_fitting_groups(pixloc, ref_sigpx[in_order])
+                groups = _create_fitting_groups(pixloc, order_sigma)
                 log.stdinfo(f"Order {spec_order}: Fitting {len(order_waves)} "
                             f"lines in {len(groups)} groups")
 
                 for group in groups:
-                    x1 = int(pixloc[group[0]] - 5*ref_sigpx[group[0]] - 5)
-                    x2 = int(pixloc[group[-1]] + 5*ref_sigpx[group[-1]] + 6)
+                    linestr = "+".join(f"{order_waves[line]:.2f}" for line in group)
+                    x1 = int(pixloc[group[0]] - 5*order_sigma[group[0]] - 5)
+                    x2 = int(pixloc[group[-1]] + 5*order_sigma[group[-1]] + 6)
                     if x1 < 0 or x2 >= npix:  # too close to edge, skip
                         continue
                     x = np.arange(x1, x2)
                     y = np.ma.masked_array(spec.data[x1:x2], mask=spec.mask[x1:x2])
-                    m_init = models.Polynomial1D(degree=1)  # continuum
-                    linestr = "+".join(f"{order_waves[line]:.2f}" for line in group)
-                    for i, line in enumerate(group):
-                        g = models.Gaussian1D(amplitude=spec.data[int(pixloc[line])],
-                                              mean=pixloc[line], stddev=ref_sigpx[line])
+                    if y.size - y.count() > 2:  # max number of masked pixels
+                        log.stdinfo(f"Rejecting line(s) at {linestr} nm in "
+                                    f"order {spec_order} due to excessive masking")
+                        continue
+                    m_init = models.Const1D()  # continuum
+                    for i, line in enumerate(group, start=1):
+                        g = models.Gaussian1D(amplitude=max(spec.data[int(pixloc[line])], 0),
+                                              mean=pixloc[line], stddev=order_sigma[line])
                         if i > 1:  # fix the separations of the lines
                             g.mean.tied = lambda m: m.mean_1 + (pixloc[line] - pixloc[group[0]])
+                            g.stddev.tied = lambda m: m.stddev_1
                         else:
                             g.mean.bounds=(pixloc[line] - 5, pixloc[line] + 5)
-                        g.stddev.bounds=(0.5 * ref_sigpx[line], 2 * ref_sigpx[line])
+                        g.amplitude.bounds = (0, np.inf)
+                        factor = 1.25 if order_sigma[line] == sigma_unres else 2.0
+                        g.stddev.bounds=(order_sigma[line] / factor,
+                                         order_sigma[line] * factor)
                         m_init += g
 
                     fit_it = fitting.TRFLSQFitter()
@@ -700,9 +712,11 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     pixel = np.mean([getattr(m_final, f"mean_{i+1}").value
                                        for i in range(len(group))])
                     wavelength = np.mean([order_waves[line] for line in group])
+                    sigma = np.mean([getattr(m_final, f"stddev_{i+1}").value
+                                     for i in range(len(group))])
                     log.debug(f"Adding ({spec_order}, {pixel:.2f}, {linestr})"
                               " to fitted line list")
-                    fitted_lines.append((spec_order, pixel, wavelength))
+                    fitted_lines.append((spec_order, pixel, wavelength, sigma))
 
                     # debug information
                     for i, line in enumerate(group, start=1):
@@ -715,8 +729,21 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                   len(fitted_lines)-1)
                         debug_data.append(_tuple)
 
+                    if spec_order == 0 and 700 < m_final.mean_1 < 1500:
+                        for p in m_final.param_names:
+                            print(f"{p}: {getattr(m_final, p).value}")
+                        print("Ref wavelengths", [order_waves[line] for line in group])
+                        print("Evaluated", wave_model([getattr(m_final, f"mean_{i}").value for i, _ in enumerate(group, start=1)]))
+                        fig, ax = plt.subplots()
+                        ax.plot(x, y, 'k-')
+                        ax.plot(x, m_final(x), 'b-')
+                        ax.plot(x, m_final[0](x), 'r-')
+                        for i in range(1, m_final.n_submodels):
+                            ax.plot(x, m_final[0](x) + m_final[i](x), 'r-')
+                        plt.show()
+
             # Now perform the fit
-            orders, pix, waves = [np.asarray(x) for x in zip(*fitted_lines)]
+            orders, pix, waves, sigmas = [np.asarray(x) for x in zip(*fitted_lines)]
             fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                        outlier_func=sigma_clip)
             m_init = models.Chebyshev2D(x_degree=xdeg, y_degree=ydeg,
@@ -728,6 +755,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             tbl_orders = orders[~mask].astype(int)
             tbl_pix = pix[~mask].astype(np.float32)
             tbl_waves = waves[~mask].astype(np.float32)
+            tbl_sigmas = sigmas[~mask].astype(np.float32)
             tbl_fitted = m_final(tbl_pix, tbl_orders) / tbl_orders
             rms = np.std(m_final(tbl_pix, tbl_orders) / tbl_orders - tbl_waves)
             tbl_pix += 1  # use 1-based for output
@@ -746,9 +774,11 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
             fit_table = Table([temptable.colnames + [''] * pad_rows,
                                list(temptable[0].values()) + [0] * pad_rows,
-                               tbl_orders, tbl_pix, tbl_waves, tbl_fitted],
-                              names=("name", "coefficients", "xdorder", "peaks", "wavelengths", "fitted"),
-                              units=(None, None, None, u.pix, u.nm, u.nm),
+                               tbl_orders, tbl_pix, tbl_waves,
+                               tbl_fitted, tbl_sigmas],
+                              names=("name", "coefficients", "xdorder", "peaks",
+                                     "wavelengths", "fitted", "sigma"),
+                              units=(None, None, None, u.pix, u.nm, u.nm, u.pix),
                               meta=temptable.meta)
             medium = "vacuo" if in_vacuo else "air"
             fit_table.meta['comments'] = [
@@ -1362,6 +1392,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         """
         adinputs = super().normalizeFlat(adinputs, **params)
         if params["debug_unmask_vignetted"]:
+            self.log.debug("Unmasking vignetted regions in all files")
             for ad in adinputs:
                 for ext in ad:
                     ext.mask &= (DQ.max ^ DQ.overlap)
