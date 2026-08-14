@@ -48,16 +48,16 @@ class CCD(PrimitivesBASE):
         suffix: str
             Suffix to be added to output files
         bias: str/list of str
-            Filenname of the bias(es) to subtract. If no filename is provided,
+            Filename of the bias(es) to subtract. If no filename is provided,
             the calibration databases will be queried to find a matching
             processed bias for each of the input datasets.  If one bias
-            filename is provide, it will be used on all the input frames.  If
+            filename is provided, it will be used on all the input frames.  If
             more than one bias filename is provided, the number of biases must
             match the number of input frames.
         do_cal: str
             Require the bias subtraction?  If set to `procmode`. whether the
             bias subtraction is required or not depends on the processing mode:
-            it is required for 'sq' mode but not optional for 'ql' and 'qa'
+            it is required for 'sq' mode but optional for 'ql' and 'qa'
             modes.  If set to `force`, the bias subtraction is required for all
             processing modes.  If set to `skip`, the bias subtraction is
             skipped, the primitive will not attempt to find a bias frame, and

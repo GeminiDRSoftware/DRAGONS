@@ -7,8 +7,7 @@ darkCorrect
 ***********
 This primitive applies a dark correction to a set of one or more observed frames. The
 image values of the specified dark frame(s) are subtracted from the observed frame(s),
-in order to remove the unwanted dark current. If no dark is provided then the calibration
-database is queried.
+in order to remove the unwanted dark current.
 
 Implementations
 ***************

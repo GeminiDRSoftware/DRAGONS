@@ -7,11 +7,7 @@ flatCorrect
 ***********
 This primitive applies a flat-field correction to a set of one or more observed frames. The
 image values of the specified observed frame(s) are divided through by the flat-field frame
-values in order to generate flat-fielded data. If no flat field frames are provided then the
-calibration database is queried.
-
-If the flat field has had a QE correction applied, this information is copied into the
-header iof the resultant frames, to prevent the correction being applied twice.
+values in order to generate flat-fielded data.
 
 Implementations
 ***************
@@ -45,10 +41,17 @@ Generic Implementation - core.primitive_preprocess module
 
 Algorithm
 ---------
-This primitive divides the specified input observation frame by the flat-field frames. The
-variance and data quality information will be updated accordingly, if they exist. If no flat-field
-frames are provided then the calibration database is queried.
+This primitive divides the specified input observation frame by a normalized
+flat field. The variance and data quality mask will be updated accordingly, if they
+exist. If no flat-field frames are provided then the calibration database is
+queried.
+
+The algorithm verifies whether the flat-field includes a QE correction.  If
+it does, a QE correction marker in the headers will be added to the output to
+notify downstream primitives that the data has been QE corrected.
 
 Issues and Limitations
 ----------------------
-The inputs should have matching binning, shapes and units.
+The inputs must have matching binning, shapes and units, as well as the same
+number of extensions. The flat-field frame must not contain any zero values,
+as this will result in a division by zero error.
