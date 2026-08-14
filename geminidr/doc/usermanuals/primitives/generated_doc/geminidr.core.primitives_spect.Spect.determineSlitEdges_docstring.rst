@@ -23,6 +23,8 @@ suffix : str
     Suffix to be added to output files.
 spectral_order : int
     Fitting order in the spectral direction (minimum of 1).
+nsum : int
+    Number of rows/columns to sum when searching for peaks
 min_snr : float
     Minimum signal-to-noise ratio of peaks to be considered as slit
     edges
@@ -46,9 +48,6 @@ debug_max_shift : float
 debug_step : int
     The number of rows/columns per step. The default value is set per
     instrument/mode, but can be changed if needed.
-debug_nsum : int
-    The number of rows/columns to sum each step. The default value is
-    set per instrument/mode, but can be changed if needed.
 
 Returns
 -------
