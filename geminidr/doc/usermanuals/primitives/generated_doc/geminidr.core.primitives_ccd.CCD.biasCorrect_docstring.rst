@@ -1,8 +1,8 @@
 
 The biasCorrect primitive will subtract the signal of the
 processed bias from the signal of the input frames. The variance and
-mask will be updated as appropriate, if they exist. If no bias is
-provided, the calibration database(s) will be queried.
+data quality mask will be updated as appropriate, if they exist. If no
+bias is provided, the calibration database(s) will be queried.
 
 Each astrodata extension is processed independently, so the bias must
 have the same number of extensions as the input frames.
@@ -12,12 +12,12 @@ Parameters
 suffix: str
     Suffix to be added to output files
 bias: str/list of str
-    Bias(es) to subtract. If no filename is provided, the calibration
-    manager will be queried to find a matching processed bias for each
-    of the input datasets.  If one bias filename is provide, it will
-    be used on all the input frames.  If more than one bias filename
-    is provided, the number of biases must match the number of input
-    frames.
+    Filenname of the bias(es) to subtract. If no filename is provided,
+    the calibration databases will be queried to find a matching
+    processed bias for each of the input datasets.  If one bias
+    filename is provide, it will be used on all the input frames.  If
+    more than one bias filename is provided, the number of biases must
+    match the number of input frames.
 do_cal: str
     Require the bias subtraction?  If set to `procmode`. whether the
     bias subtraction is required or not depends on the processing mode:

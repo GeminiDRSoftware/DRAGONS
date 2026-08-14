@@ -1,15 +1,25 @@
 
-This primitive will subtract each SCI extension of the inputs by those
-of the corresponding dark. If the inputs contain VAR or DQ frames,
-those will also be updated accordingly due to the subtraction on the
-data. If no dark is provided, the calibration database(s) will be
-queried.
+This darkCorrect primitive will subtract the signal of the processed
+dark from the signal of the input frames.  The variance and data
+quality mask will be updated as appropriate, if they exist.  If no
+dark is provided, the calibration database(s) will be queried.
 
 Parameters
 ----------
 suffix: str
-    suffix to be added to output files
+    Suffix to be added to output files
 dark: str/list
-    name(s) of the dark file(s) to be subtracted
+    Filenname of the dark(s) to subtract. If no filename is provided,
+    the calibration databases will be queried to find a matching
+    processed dark for each of the input datasets.  If one dark
+    filename is provide, it will be used on all the input frames.  If
+    more than one dark filename is provided, the number of darks must
+    match the number of input frames.
 do_dark: bool
-    perform dark correction?
+    Require the dark subtraction?  If set to `procmode`. whether the
+    dark subtraction is required or not depends on the processing mode:
+    it is required for 'sq' mode but not optional for 'ql' and 'qa'
+    modes.  If set to `force`, the dark subtraction is required for all
+    processing modes.  If set to `skip`, the dark subtraction is
+    skipped, the primitive will not attempt to find a dark frame, and
+    no changes will be made to the input frames.

@@ -42,9 +42,9 @@ Generic Implementation - core.primitive_ccd module
 
 Algorithm
 ---------
-This primitive subtracts the processed bias signal from the input observations.
-The variance and mask planes will be updated accordingly, if they are present
-in the inputs.
+This primitive subtracts a processed bias signal from the input observations.
+The variance and data quality mask will be updated accordingly, if they are
+present in the inputs.
 
 Issues and Limitations
 ----------------------

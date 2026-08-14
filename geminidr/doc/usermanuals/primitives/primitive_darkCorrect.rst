@@ -42,11 +42,11 @@ Generic Implementation - core.primitive_preprocess module
 
 Algorithm
 ---------
-This primitive subtracts the input dark frames from the specified input observation
-frames. The variance and data quality information will be updated accordingly, if
-they exist. If no dark is provided then the calibration database is queried.
-
+This primitive subtracts a processed dark frames from the input observations.
+The variance and data quality mask will be updated accordingly, if they are
+present in the inputs.
 
 Issues and Limitations
 ----------------------
-The inputs should have matching binning, shapes and units.
+The dark and observation frames must have matching binning, shapes, and units,
+as well as the same number of extensions.
