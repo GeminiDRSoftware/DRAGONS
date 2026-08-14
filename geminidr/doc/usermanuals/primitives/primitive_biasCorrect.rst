@@ -5,9 +5,10 @@
 ***********
 biasCorrect
 ***********
-This primitive applies a bias correction to a set of one or more observed frames. The
-image values of the specified bias frame(s) are subtracted from the observed frame(s),
-in order to remove the unwanted bias signal arising due to the detector electronics.
+This primitive applies a bias correction to a set of one or more observed
+frames. The image values of the specified bias frame(s) are subtracted from
+the observed frame(s), in order to remove the unwanted bias signal arising
+from the detector electronics.
 
 Implementations
 ***************
@@ -41,11 +42,11 @@ Generic Implementation - core.primitive_ccd module
 
 Algorithm
 ---------
-This primitive subtracts the input bias frames from the specified input observation
-frames. The variance and data quality information will be updated accordingly, if
-they exist.
+This primitive subtracts the processed bias signal from the input observations.
+The variance and mask planes will be updated accordingly, if they are present
+in the inputs.
 
 Issues and Limitations
 ----------------------
-The bias and obervation frame should match in terms of detector and array size used.
-
+The bias and observation frames must have matching properties in terms of
+detector and array size, as well as the same number of extensions.
