@@ -230,6 +230,13 @@ def test_optimal_normalization_multiple_extensions(flat_images, separate_ext):
         np.testing.assert_allclose(retval, [1, 0.4], rtol=0.01)
 
 
+def test_spectral_type_to_temperature():
+    assert at.spectral_type_to_temperature("B5V") == pytest.approx(15700, abs=200)
+    assert at.spectral_type_to_temperature("A0V") == pytest.approx(9700, abs=100)
+    assert at.spectral_type_to_temperature("A5V") == pytest.approx(8080, abs=100)
+    assert at.spectral_type_to_temperature("G2V") == pytest.approx(5770, abs=100)
+
+
 def test_spherical_offsets_by_pa():
     c1 = SkyCoord(ra=120, dec=0, unit='deg')
     c2 = SkyCoord(ra=120.01, dec=0.05, unit='deg')

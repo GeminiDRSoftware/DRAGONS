@@ -22,11 +22,12 @@ class divideByTelluricConfig(config.Config):
 
 class fitTelluricConfig(config.core_1Dfitting_config):
     suffix = config.Field("Filename suffix", str, "_telluricFitted", optional=True)
-    bbtemp = config.RangeField("Stellar blackbody temperature", float, 9650,
-                               min=3000, max=50000)
-    magnitude = config.Field("Magnitude normalization", str, "K=10",
-                             check=validate_magstr)
-    abmag = config.Field("Magnitude is AB (rather than Vega)?", bool, False)
+    bbtemp = config.RangeField("Stellar blackbody temperature", float, None,
+                               min=3000, max=50000, inclusiveMax=True, optional=True)
+    magnitude = config.Field("Magnitude normalization", str, None,
+                             check=validate_magstr, optional=True)
+    abmag = config.Field("Magnitude is AB (rather than Vega)?", bool, False,
+                         optional=True)
     lsf_scaling = config.RangeField("LSF scaling factor", float, None,
                                     min=0.5, max=2.0, optional=True)
     regions = config.Field("Wavelength sample regions (nm)", str, None, optional=True,
