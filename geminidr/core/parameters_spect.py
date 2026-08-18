@@ -210,9 +210,13 @@ class determineSlitEdgesConfig(config.Config):
                                 optional=False)
     spectral_order = config.RangeField("Fitting order in spectral direction",
                                        int, 3, min=1)
-    edge1 = config.RangeField("Left/lower edge of illuminated region",
+    edge1 = config.RangeField("Expected pixel location for left/lower edge of "
+                              "illuminated region. If None, a MDF must be "
+                              "present in the input.",
                               float, None, min=1)
-    edge2 = config.RangeField("Right/upper edge of illuminated region",
+    edge2 = config.RangeField("Expected pixel location for right/top edge of "
+                              "illuminated region. If None, a MDF must be "
+                              "present in the input.",
                               float, None, min=1)
     search_radius = config.RangeField("Radius (in pixels) to search for edges",
                                       float, 30, min=5)
