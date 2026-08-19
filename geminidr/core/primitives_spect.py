@@ -861,19 +861,13 @@ class Spect(Resample):
         interactive = params["interactive"]
         fit1d_params = fit_1D.translate_params(params)
 
-        # We're going to look in the generic (gemini) module as well as the
-        # instrument module, so define that
-        module = self.inst_lookups.split('.')
-        module[-2] = 'gemini'
-        gemini_lookups = '.'.join(module)
-
         for ad in adinputs:
             if datafile is None:
                 specphot_name = get_specphot_name(ad)
                 if specphot_name is None:
                     specphot_name = ad.object().lower().replace(' ', '')
                 filename = f'{specphot_name}.dat'
-                for module in (self.inst_lookups, gemini_lookups, 'geminidr.core.lookups'):
+                for module in (self.inst_lookups, 'geminidr.gemini.lookups', 'geminidr.core.lookups'):
                     try:
                         path = import_module('.', module).__path__[0]
                     except (ImportError, ModuleNotFoundError):
