@@ -28,11 +28,6 @@ class AstroDataGmos(AstroDataGemini):
         return TagSet(['GMOS'])
 
     @astro_data_tag
-    def _tag_dark(self):
-        if self.phu.get('OBSTYPE') == 'DARK':
-            return TagSet(['DARK', 'CAL'], blocks=['IMAGE', 'SPECT'])
-
-    @astro_data_tag
     def _tag_arc(self):
         if self.phu.get('OBSTYPE') == 'ARC':
             return TagSet(['ARC', 'CAL'])
@@ -43,6 +38,9 @@ class AstroDataGmos(AstroDataGemini):
         else:
             return False
 
+    def _tag_is_dark(self):
+        return self.phu.get('OBSTYPE') == 'DARK'
+
     def _tag_is_bpm(self):
         if self.phu.get('OBSTYPE') == 'BPM':
             return True
@@ -51,10 +49,18 @@ class AstroDataGmos(AstroDataGemini):
         else:
             return False
 
+    def _tag_is_unillum(self):
+        return self._tag_is_bias() or self._tag_is_dark() or self._tag_is_bpm()
+
     @astro_data_tag
     def _tag_bias(self):
         if self._tag_is_bias():
             return TagSet(['BIAS', 'CAL'], blocks=['IMAGE', 'SPECT'])
+
+    @astro_data_tag
+    def _tag_dark(self):
+        if self._tag_is_dark():
+            return TagSet(['DARK', 'CAL'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _tag_flat(self):
@@ -106,7 +112,7 @@ class AstroDataGmos(AstroDataGemini):
         # if not self._tag_is_spect():
         #    return
 
-        if self._tag_is_bias():
+        if self._tag_is_unillum():
             return
 
         mapping = {
@@ -147,7 +153,7 @@ class AstroDataGmos(AstroDataGemini):
         # if not self._tag_is_spect():
         #    return
 
-        if self._tag_is_bias() or self._tag_is_bpm():
+        if self._tag_is_unillum():
             return
 
         if self.phu.get('MASKTYP') == 1 and self.phu.get('MASKNAME', '').endswith('arcsec'):
@@ -158,7 +164,7 @@ class AstroDataGmos(AstroDataGemini):
         # if not self._tag_is_spect():
         #    return
 
-        if self._tag_is_bias():
+        if self._tag_is_unillum():
             return
 
         mskt = self.phu.get('MASKTYP')
