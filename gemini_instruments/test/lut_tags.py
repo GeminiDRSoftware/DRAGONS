@@ -21,7 +21,7 @@ fixture_data = {
 
     #   GMOS Dark
     ('GMOS', 'N20160106S0653.fits'): ['AZEL_TARGET', 'GEMINI', 'NORTH', 'GMOS', 'DARK', 'RAW', 'NON_SIDEREAL',
-                                      'UNPREPARED', 'AT_ZENITH', 'CAL', 'MOS'],
+                                      'UNPREPARED', 'AT_ZENITH', 'CAL'],
     ('GMOS', 'S20160725S0008.fits'): ['GEMINI', 'SOUTH', 'GMOS', 'DARK', 'RAW', 'SIDEREAL', 'UNPREPARED',
                                       'NODANDSHUFFLE', 'CAL'],
 
