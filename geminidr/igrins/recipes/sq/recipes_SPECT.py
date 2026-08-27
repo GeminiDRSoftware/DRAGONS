@@ -11,7 +11,8 @@ def reduceScience(p):
     p.addVAR(read_noise=True, poisson_noise=True)
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
-    p.makeAB()  # this will make stacked A-B and do the reference pixel correction.
+    #p.flexureCorrect()
+    p.makeAB()
     p.cleanReadout()
     p.flatCorrect()  # cuts as well
     p.attachWavelengthSolution()
@@ -33,12 +34,13 @@ def reduceTelluric(p):
     p.addVAR(read_noise=True, poisson_noise=True)
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
-    p.makeAB()  # this will make stacked A-B and do the reference pixel correction.
+    #p.flexureCorrect()
+    p.makeAB()
     p.cleanReadout()
     p.flatCorrect()  # cuts as well
     p.attachWavelengthSolution()
     p.distortionCorrect(outstream="2D", interpolant="linear")
-    #p.writeOutputs(strwam="2D", suffix="_2D")
+    #p.writeOutputs(stream="2D", suffix="_2D")
     p.measureSlitProfile(stream="2D")
     p.transferAttribute(source="2D", attribute="SLITPROF")
     p.extractSpectra()
@@ -47,6 +49,19 @@ def reduceTelluric(p):
 
 
 _default = reduceScience
+
+
+def makeArcFromScience(p):
+    p.prepare(require_wcs=False)
+    p.addDQ()
+    p.addVAR(read_noise=True, poisson_noise=True)
+    p.ADUToElectrons()
+    p.removeObjectsLeaveSky()
+    p.writeOutputs()
+    p.applySlitModel()
+    p.determineWavelengthSolution()
+    p.writeOutputs()
+    #p.determineDistortion()
 
 
 def oldMakeStellar(p):
@@ -74,7 +89,7 @@ def oldMakeStellar(p):
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
 
-    p.oldMakeAB() # This will make stacked A-B and do the reference pixel correction.
+    p.makeABOld() # This will make stacked A-B and do the reference pixel correction.
     p.estimateSlitProfile()
     p.extractSpectraSingle()
 

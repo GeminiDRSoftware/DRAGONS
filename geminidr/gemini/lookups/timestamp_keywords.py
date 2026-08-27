@@ -51,6 +51,7 @@ timestamp_keys = {
     "fixCosmicRays": "FIXCR",
     "fixPixels": "FIXPIX",
     "flatCorrect": "FLATCORR",
+    "flexureCorrect": "FLEXCORR",
     "fluxCalibrate": "FLUXCAL",
     "fringeCorrect": "FRNGCORR",
     "linearizeSpectra": "LINEARZE",

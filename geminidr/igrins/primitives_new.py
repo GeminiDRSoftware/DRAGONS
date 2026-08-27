@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt, colors as mcolors
 
 from scipy.interpolate import make_interp_spline, PPoly
 from scipy.ndimage import gaussian_filter
-from scipy.signal import savgol_filter
+from scipy.signal import correlate, savgol_filter
 
 import numpy as np
 from astropy.io import fits
@@ -670,7 +670,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     x = np.arange(x1, x2)
                     y = np.ma.masked_array(spec.data[x1:x2], mask=spec.mask[x1:x2])
                     if y.size - y.count() > 2:  # max number of masked pixels
-                        log.stdinfo(f"Rejecting line(s) at {linestr} nm in "
+                        log.stdinfo(f"Rejecting line(s) at {linestr}nm in "
                                     f"order {spec_order} due to excessive masking")
                         continue
                     m_init = models.Const1D()  # continuum
@@ -693,7 +693,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                         warnings.simplefilter('ignore', category=AstropyWarning)
                         m_final = fit_it(m_init, x, y, maxiter=1000)
                     if not fit_it.fit_info.success:
-                        log.stdinfo(f"Rejecting line(s) at {linestr} nm in "
+                        log.stdinfo(f"Rejecting line(s) at {linestr}nm in "
                                     f"order {spec_order} due to fit failure: "
                                     f"{fit_it.fit_info.message}")
                         continue
@@ -702,8 +702,19 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     lines_only = m_final(x) - m_final[0](x)
                     snr = lines_only.max() / np.sqrt(spec.variance[x[lines_only.argmax()]])
                     if snr < min_snr:
-                        log.stdinfo(f"Rejecting line(s) at {linestr} nm in "
-                                  f"order {spec_order} with SNR={snr:.1f}")
+                        log.stdinfo(f"Rejecting line(s) at {linestr}nm in "
+                                    f"order {spec_order} with SNR={snr:.1f}")
+                        continue
+
+                    # Check that multiple lines actually *are* being fit, and
+                    # it's not fitting the whole thing with a single line and
+                    # adding low-amplitude features
+                    amplitudes = np.asarray([getattr(m_final, f"amplitude_{i}").value
+                                             for i, _ in enumerate(group, start=1)])
+                    if amplitudes.min() < 0.5 * amplitudes.max():
+                        log.stdinfo(f"Rejecting line(s) at {linestr}nm in "
+                                    f"order {spec_order} due to large "
+                                    "amplitude differences")
                         continue
 
                     # Store order, pixel location, and wavelength. For a group
@@ -729,7 +740,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                   len(fitted_lines)-1)
                         debug_data.append(_tuple)
 
-                    if spec_order == 0 and 700 < m_final.mean_1 < 1500:
+                    if spec_order == 0 and 0 < m_final.mean_1 < 2000:
                         for p in m_final.param_names:
                             print(f"{p}: {getattr(m_final, p).value}")
                         print("Ref wavelengths", [order_waves[line] for line in group])
@@ -1152,6 +1163,141 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
         return adoutputs
 
+    def flexureCorrect(self, adinputs=None, **params):
+        """
+        Corrects for flexure in the science frames.
+
+        This works by cross-correlated each echelle order (collapsed along
+        the slit) in the science frame with the corresponding order in an
+        arc/sky frame. Before performing the cross-correlation, the regions
+        of the slit containing objects are masked out.
+
+        Parameters
+        ----------
+        suffix : str
+            Suffix to be added to output files.
+        arc : str or AstroData or None
+            arc/sky frame to use for flexure correction. If None, the
+            calibration service will be used
+        do_cal : str [procmode|force|skip]
+            perform the flexure correction?
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+
+        sfx = params["suffix"]
+        arc = params["arc"]
+        do_cal = params["do_cal"]
+        subsample = 50
+
+        if do_cal == 'skip':
+            log.warning('Distortion correction has been turned off.')
+            return adinputs
+
+        if arc is None:
+            arc_list = self.caldb.get_processed_arc(adinputs)
+            if len(set(arc_list.files)) == 1:
+                log.stdinfo(f"Using the arc {arc_list.files[0]} (obtained from"
+                            f" {arc_list.origins[0]}) for flexure correction")
+                arc = arc_list.files[0]
+            else:
+                raise ValueError("Cannot find a single arc/sky frame for flexure correction")
+        else:
+            log.stdinfo(f"Using the arc {arc} for flexure correction")
+
+        hist_bins = np.arange(-0.5, 0.51, 0.02)
+        xpixels = np.arange(2048)
+        if isinstance(arc, str):
+            arc = astrodata.open(arc)
+        detsecs = arc.detector_section()
+
+        # Make a dict of arc line locations for each order
+        arc_lines = {}
+        for spec_order, peak in zip(arc.WAVECAL['xdorder'].data,
+                                    arc.WAVECAL['peaks'].data):
+            try:
+                arc_lines[spec_order].append(peak-1)  # 1-indexed in WAVECAL
+            except KeyError:
+                arc_lines[spec_order] = [peak-1]
+
+        from datetime import datetime
+        for ad in adinputs:
+            profile = np.zeros(hist_bins.size - 1)
+            # We first want to know which parts of the echellogram are free
+            # from objects, so construct a crude slit profile histogram
+            for ext_arc, ext_section in zip(arc, detsecs):
+                y, x = np.mgrid[:ext_arc.shape[0], :ext_arc.shape[1]]
+                t = ext_arc.wcs.get_transform("pixels", "distcorr_slitpos")
+                y_slitpos = t(x, y)[1]
+                # Find the mean pixel value in each bin. Ignore orders that
+                # fall off the top or bottom of the detector
+                histsum = np.histogram(y_slitpos, bins=hist_bins,
+                                       weights=ad[0].data[ext_section.asslice()])[0]
+                histnum = np.histogram(y_slitpos, bins=hist_bins)[0]
+                if all(histnum > 0):
+                    profile += histsum / histnum
+
+            peak, loc = profile.max(), profile.argmax()
+            top = bottom = loc
+            frac = 0.05
+            while top < profile.size - 1 and profile[top] > frac * profile[loc]:
+                top +=1
+            while bottom > 0 and profile[bottom] > frac * profile[loc]:
+                bottom -= 1
+            if bottom > profile.size - top:
+                limits = (0, bottom-2)
+            else:
+                limits = (top+2, profile.size-1)
+            slitpos_limits = slitpos_to_pix.inverse(limits)
+            if slitpos_limits[1] - slitpos_limits[0] < 0.1:
+                log.warning(f"{ad.filename}: Unable to find a region of the "
+                            "slit free from objects")
+                continue
+            log.debug(f"Extracting sky between slit positions {slitpos_limits}")
+
+            # Now do the cross-correlation to find the flexure shift
+            for ext_arc, ext_section in zip(arc, detsecs):
+                ndd = ad[0].nddata[ext_section.asslice()]
+                y, x = np.mgrid[:ext_arc.shape[0], :ext_arc.shape[1]]
+                t = ext_arc.wcs.get_transform("pixels", "distcorr_slitpos")
+                y_slitpos = t(x, y)[1]
+                mask = np.logical_or.reduce([ndd.mask, ext_arc.mask,
+                                             y_slitpos < slitpos_limits[0],
+                                             y_slitpos > slitpos_limits[1]])
+                not_blank = mask.sum(axis=1) < 1024
+                rows = np.flatnonzero(not_blank)
+                if not rows.size:
+                    continue
+                collapsed_image = np.ma.median(np.ma.masked_where(mask, ndd.data), axis=0)
+                collapsed_arc = np.ma.median(np.ma.masked_where(mask, ext_arc.data), axis=0)
+                collapsed_mask = collapsed_image.mask  # same for both
+                unmasked_indices = np.flatnonzero(~collapsed_mask)
+                spl_image = make_interp_spline(xpixels[~collapsed_mask],
+                                               collapsed_image[~collapsed_mask], k=3)
+                spl_arc = make_interp_spline(xpixels[~collapsed_mask],
+                                             collapsed_arc[~collapsed_mask], k=3)
+                narclines = list(arc.WAVECAL['xdorder'].data).count(ext_arc.hdr['SPECORDR'])
+                xeval = np.arange(unmasked_indices[0], unmasked_indices[-1] + 0.01, 1. / subsample)
+
+                corrfunc = lambda dx: -np.sum(spl_arc(xeval) * spl_image(xeval + dx))
+                from scipy.optimize import minimize
+                result = minimize(corrfunc, 0, bounds=[(-5, 5)])
+                if ext_arc.hdr['SPECORDR'] == 80:
+                    fig, ax = plt.subplots()
+                    x = np.arange(-5, 5, 0.05)
+                    #y = [corrfunc(dx) for dx in x]
+                    ax.plot(xpixels, spl_image(xpixels), 'k-')
+                    ax.plot(xpixels, spl_arc(xpixels), 'r-')
+                    #ax.plot(x, y, 'k-')
+                    plt.show()
+
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
     def makeAB(self, adinputs=None, **params):
         """
         This performed the same work as the makeAB primitive, but doesn't do
@@ -1199,6 +1345,54 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         ad.update_filename(suffix=suffix, strip=True)
 
         return [ad]
+
+    def removeObjectsLeaveSky(self, adinputs=None, **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        frac_FOV = 1.0
+
+        frametypes = [ad.phu.get("FRMTYPE") for ad in adinputs]
+        if frametypes.count(None) == 0:
+            log.stdinfo("Grouping by FRMTYPE keyword")
+            frametype_set = set(frametypes)
+            assert len(frametype_set) == 2
+            in_group_a = np.array([ft == frametypes[0] for ft in frametypes])
+            if frametype_set.intersection({"A", "ON"}) and frametypes[0] not in ("A", "ON"):
+                in_group_a = ~in_group_a
+        else:
+            log.stdinfo("Grouping by location on sky")
+            groups = gt.group_exposures(adinputs, fields_overlap=self._fields_overlap,
+                                        frac_FOV=frac_FOV)
+            assert len(groups) == 2
+            in_group_a = [ad in groups[0] for ad in adinputs]
+
+        adoutputs = []
+        adinputsA, adinputsB = [], []
+        print(in_group_a)
+        for ad, in_a in zip(adinputs, in_group_a):
+            if in_a:
+                adinputsA.append(ad)
+            else:
+                adinputsB.append(ad)
+            if len(adinputsA) == len(adinputsB):
+                grp_a_list = "\n    ".join([ad.filename for ad in adinputsB])
+                grp_b_list = "\n    ".join([ad.filename for ad in adinputsB])
+                log.stdinfo(f"Exposures in group A:\n    {grp_a_list}")
+                log.stdinfo(f"Exposures in group B:\n    {grp_b_list}")
+                stackedA = self.stackFrames(adinputsA).pop()
+                stackedB = self.stackFrames(adinputsB).pop()
+                stackedA_copy = copy.deepcopy(stackedA)
+                ad = stackedA.subtract(stackedB)
+                for ext in ad:
+                    ext.data = -abs(ext.data)
+                ad.add(stackedA_copy)
+                ad.add(stackedB)
+                ad.update_filename(suffix=suffix, strip=True)
+                adoutputs.append(ad)
+
+        return adoutputs
 
     def maskVignettedRegions(self, adinputs=None, **params):
         """

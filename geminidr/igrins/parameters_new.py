@@ -1,6 +1,6 @@
 from gempy.library import config
 from astrodata import AstroData
-from geminidr.core import parameters_preprocess, parameters_spect
+from geminidr.core import parameters_generic, parameters_preprocess, parameters_spect
 
 
 class cleanReadoutConfig(config.Config):
@@ -98,6 +98,13 @@ class flagDiscrepantPixelsConfig(config.Config):
                                                    min=1)
 
 
+class flexureCorrectConfig(parameters_generic.calRequirementConfig):
+    suffix = config.Field("Filename suffix", str, "_flexureCorrected",
+                          optional=True)
+    arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
+                           optional=True, single=True)
+
+
 class makeABConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_AB",  optional=True)
 
@@ -142,13 +149,17 @@ class measureSlitProfileConfig(config.Config):
 
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
-    debug_unmask_vignetted = config.Field("Unmask vignetted regions for debug?",
-                                          bool, False)
+    debug_unmask_vignetted = config.Field("Unmask vignetted regions?",
+                                          bool, True)
 
     def setDefaults(self):
         self.function = "chebyshev"
         self.order = 4
         self.threshold = 0.001
+
+
+class removeObjectsLeaveSkyConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_noObjects")
 
 
 class thresholdFlatfieldConfig(parameters_preprocess.thresholdFlatfieldConfig):

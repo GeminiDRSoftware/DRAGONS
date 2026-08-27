@@ -160,7 +160,7 @@ def estimate_flexure(adlist, ad_sky, exptime):
 
     band = get_band(adlist)
     mskname = f'{band}-band_sky_mask_igrins2.fits'
-    mask_path = resources.files('..lookups.ref_data').joinpath(mskname)
+    mask_path = resources.files('geminidr.igrins.lookups.ref_data').joinpath(mskname)
     with resources.as_file(mask_path) as p:
         mask = (fits.getdata(p) == 1.0)
     refframe[~mask] = np.nan
@@ -176,7 +176,7 @@ def estimate_flexure(adlist, ad_sky, exptime):
         cleaned_dataframe[~mask] = np.nan #Apply mask to isolate sky lines on detector
         #dx, dy = cross_correlate(refframe, cleaned_dataframe) #Estimate delta-x and delta-y difference in pixels between the reference and data frames
         dx = cross_correlate(refframe, cleaned_dataframe) #Estimate delta-x and delta-y difference in pixels between the reference and data frames
-
+        print(ad.filename, 'dx =', dx)
         #shifted_dataframe = roll_along_axis(dataframe, dy, axis=0)
         #shifted_dataframe = roll_along_axis(shifted_dataframe, dx, axis=1) #Apply flexure correction
         shifted_dataframe = roll_along_axis(dataframe, dx, axis=1)
