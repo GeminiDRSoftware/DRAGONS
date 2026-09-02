@@ -24,6 +24,8 @@ try:
 except ModuleNotFoundError:
     pass
 
+import pyvo
+
 from . import Spect
 from gempy.gemini import gemini_tools as gt
 from recipe_system.utils.decorators import parameter_override, capture_provenance
@@ -1245,7 +1247,10 @@ def query_simbad(ad):
     except NameError:
         return {}
 
-    simbad.add_votable_fields('J', 'H', 'K', 'sp_type')
+    try:  # this is where a connection error to SIMBAD shows up first
+        simbad.add_votable_fields('J', 'H', 'K', 'sp_type')
+    except pyvo.dal.exceptions.DALFormatError:
+        return {}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=NoResultsWarning)
         try:
