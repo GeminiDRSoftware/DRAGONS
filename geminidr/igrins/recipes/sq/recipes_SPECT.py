@@ -11,7 +11,7 @@ def reduceScience(p):
     p.addVAR(read_noise=True, poisson_noise=True)
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
-    #p.flexureCorrect()
+    p.flexureCorrect()
     p.makeAB()
     p.cleanReadout()
     p.flatCorrect()  # cuts as well
@@ -34,7 +34,7 @@ def reduceTelluric(p):
     p.addVAR(read_noise=True, poisson_noise=True)
     p.ADUToElectrons()
     #p.nonlinearityCorrect()
-    #p.flexureCorrect()
+    p.flexureCorrect()
     p.makeAB()
     p.cleanReadout()
     p.flatCorrect()  # cuts as well

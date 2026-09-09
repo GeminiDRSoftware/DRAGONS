@@ -13,7 +13,7 @@ from scipy.signal import correlate, savgol_filter
 import numpy as np
 from astropy.io import fits
 from astropy.modeling import fitting, models
-from astropy.stats import sigma_clip
+from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table
 from astropy import units as u
 from astropy.utils.exceptions import AstropyWarning
@@ -193,8 +193,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             more than one arc is returned from the CalDB, then the most
             commonly-chosen arc is used for all frames.
         """
+        log = self.log
         super().attachWavelengthSolution(adinputs, **params)
         for ad in adinputs:
+            flex_shift = ad.phu.get('FLEXSHFT', 0)
             for ext in ad:
                 wave_model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
                 sky_model = am.get_named_submodel(ext.wcs.forward_transform, "SKY")
@@ -203,7 +205,19 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                  (models.Const1D(0) & models.Identity(1)) |
                                  sky_model[-3:])
                 new_sky_model.name = "SKY"
-                ext.wcs.set_transform("distortion_corrected", "world", wave_model & new_sky_model)
+
+                # Apply the flexure shift if there is one
+                if flex_shift:
+                    log.stdinfo(f"Applying flexure shift of {flex_shift:.3f} "
+                                f"pixels to {ad.filename}")
+                    cheb = np.polynomial.chebyshev.Chebyshev(wave_model.parameters, np.asarray(wave_model.domain) + flex_shift)
+                    coef = {f'c{i}': v for i, v in enumerate(cheb.convert(domain=wave_model.domain).coef)}
+                    new_wave_model = wave_model.__class__(degree=wave_model.degree, **coef, domain=wave_model.domain,
+                                                          name="WAVE")
+                else:
+                    new_wave_model = wave_model
+
+                ext.wcs.set_transform("distortion_corrected", "world", new_wave_model & new_sky_model)
 
         # Timestamping/housekeeping was handled by the super() call
         return adinputs
@@ -1064,7 +1078,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                   f"{extraction_regions[1][0]:.3f} and "
                                   f"{extraction_regions[1][1]:.3f}")
                     pixels = np.arange(ext.shape[0])
-                else:
+                elif method == "optimal":
                     # We want to normalize the profile along each column. Since
                     # there's probably both a +ve and -ve beam, we can't simply
                     # use the sum of the profile.
@@ -1115,7 +1129,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                         colgood[new_masked] = False
                                     else:  # rejected all pixels, can't assign data
                                         break
-                        else:
+                        elif this_method == "aperture":
                             mask[i] = DQ.good
                             for s1, s2, sign in extraction_regions:
                                 x1, x2 = np.interp([s1, s2], slitpos, pixels,
@@ -1125,9 +1139,14 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                     continue
 
                                 _slice = slice(int(np.ceil(x1-0.5))+1, int(np.ceil(x2-0.5)))
-                                data[i] += sign * ext_xshifted.data[_slice, i].sum()
+                                data[i] += sign * coldata[_slice].sum()
                                 mask[i] |= np.logical_or.reduce(ext_xshifted.mask[_slice, i])
-                                var[i] += ext_xshifted.variance[_slice, i].sum()
+                                var[i] += colvar[_slice].sum()
+                        else:
+                            data[i] = np.abs(coldata[colgood]).sum()
+                            mask[i] = np.logical_or.reduce(ext_xshifted.mask[colgood, i])
+                            var[i] = colvar[colgood].sum()
+
                     if debug:
                         ax.set_xlim(-0.5, 0.5)
                         plt.show()
@@ -1212,7 +1231,9 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             arc = astrodata.open(arc)
         detsecs = arc.detector_section()
 
-        # Make a dict of arc line locations for each order
+        ad_shifts = {}
+
+        # Make a dict of arc line locations for each order?
         arc_lines = {}
         for spec_order, peak in zip(arc.WAVECAL['xdorder'].data,
                                     arc.WAVECAL['peaks'].data):
@@ -1241,9 +1262,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             peak, loc = profile.max(), profile.argmax()
             top = bottom = loc
             frac = 0.05
-            while top < profile.size - 1 and profile[top] > frac * profile[loc]:
+            bkgd = np.percentile(profile, 10)
+            while top < profile.size - 1 and profile[top] > frac * (profile[loc] - bkgd) + bkgd:
                 top +=1
-            while bottom > 0 and profile[bottom] > frac * profile[loc]:
+            while bottom > 0 and profile[bottom] > frac * (profile[loc] - bkgd) + bkgd:
                 bottom -= 1
             if bottom > profile.size - top:
                 limits = (0, bottom-2)
@@ -1254,9 +1276,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 log.warning(f"{ad.filename}: Unable to find a region of the "
                             "slit free from objects")
                 continue
-            log.debug(f"Extracting sky between slit positions {slitpos_limits}")
+            log.stdinfo(f"Extracting sky between slit positions {slitpos_limits}")
 
             # Now do the cross-correlation to find the flexure shift
+            shifts = []
             for ext_arc, ext_section in zip(arc, detsecs):
                 ndd = ad[0].nddata[ext_section.asslice()]
                 y, x = np.mgrid[:ext_arc.shape[0], :ext_arc.shape[1]]
@@ -1282,15 +1305,29 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
                 corrfunc = lambda dx: -np.sum(spl_arc(xeval) * spl_image(xeval + dx))
                 from scipy.optimize import minimize
-                result = minimize(corrfunc, 0, bounds=[(-5, 5)])
-                if ext_arc.hdr['SPECORDR'] == 80:
+                result = minimize(corrfunc, 0, bounds=[(-4, 4)])
+                log.stdinfo(f"{ad.filename} order {ext_arc.hdr['SPECORDR']}: shift={result.x[0]:.3f}")
+                if abs(result.x[0]) < 3:
+                    shifts.append(result.x[0])
+                if ext_arc.hdr['SPECORDR'] == 0:
                     fig, ax = plt.subplots()
-                    x = np.arange(-5, 5, 0.05)
+                    x = np.arange(-4, 4, 0.05)
                     #y = [corrfunc(dx) for dx in x]
                     ax.plot(xpixels, spl_image(xpixels), 'k-')
                     ax.plot(xpixels, spl_arc(xpixels), 'r-')
                     #ax.plot(x, y, 'k-')
                     plt.show()
+
+            if shifts:
+                # Use the median
+                shift = sigma_clipped_stats(shifts, sigma=2, maxiters=5)[1]
+                ad_shifts[ad.filename] = shift
+
+        avg_shift = np.median(list(ad_shifts.values()))
+
+        for ad in adinputs:
+            ad.phu['FLEXSHFT'] = (avg_shift, "Measured flexure shift (pixels)")
+            log.stdinfo(f"Recording shift of {avg_shift:.3f} pixels for {ad.filename}")
 
             # Timestamp and update the filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1427,6 +1464,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         polyorder = params["debug_order"]
 
         for ad in adinputs:
+            if ad.wavelength_band() == "H":
+                log.stdinfo(f"{ad.filename}: H-band data are not vignetted, skipping")
+                continue
+
             limits = []
             for ext in ad:
                 masked_data = np.ma.masked_array(ext.data, mask=ext.mask, copy=False)
@@ -1436,7 +1477,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                        polyorder=polyorder, deriv=2)
                 ddspek = np.ma.masked_where(spek.mask, ddspek)
                 smoothed_ddspek = gaussian_filter(ddspek, halfwidth)
-                # Mask regions that where the S-G filter went off the edge
+                # Mask regions where the S-G filter went off the edge
                 masked_slices = np.ma.clump_masked(spek)
                 start = 0 if not masked_slices or masked_slices[0].start > 0 \
                     else masked_slices[0].stop
@@ -1456,7 +1497,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 limit2 = 1024 + np.ma.argmin(smoothed_ddspek[1024:])
                 if limit2 == masked_slices[-1].start - 1:
                     limit2 = np.nan
-                limits.append((limit1 + halfwidth, limit2 - halfwidth))
+                limits.append((limit1, limit2))
                 log.debug(f"{ad.filename} order {ext.hdr['SPECORDR']} limits = {limit1}, {limit2}")
 
             # Now fit a linear function to each set of limits

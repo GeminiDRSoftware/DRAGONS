@@ -74,7 +74,8 @@ class extractSpectraConfig(config.Config):
     method = config.ChoiceField("Extraction method", str,
                                 allowed={"aperture": "no weighting",
                                          "optimal": "optimal extraction",
-                                         "default": "use 'optimal' for STANDARDs, and 'aperture' otherwise"},
+                                         "default": "use 'optimal' for STANDARDs, and 'aperture' otherwise",
+                                         "debug": "simple summation of absolute pixel values"},
                                 default="optimal")
     sigma = config.RangeField("Sigma threshold for cosmic ray rejection",
                               float, 30., min=0)
@@ -150,10 +151,10 @@ class measureSlitProfileConfig(config.Config):
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
     debug_unmask_vignetted = config.Field("Unmask vignetted regions?",
-                                          bool, True)
+                                          bool, False)
 
     def setDefaults(self):
-        self.function = "chebyshev"
+        self.function = "spline3"
         self.order = 4
         self.threshold = 0.001
 
