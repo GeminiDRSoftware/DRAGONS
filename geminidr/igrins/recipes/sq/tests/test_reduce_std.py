@@ -65,7 +65,8 @@ def test_make_processed_std(input_files, caldict, change_working_dir, path_to_in
     # This avoids issues when running locally since test_make_processed_bpm
     # will add the BPM to the caldb
     r.uparms = {'addDQ:static_bpm': None,
-                'attachWavelengthSolution:write_outputs': True}
+                'attachWavelengthSolution:write_outputs': True,
+                'flexureCorrect:skip_primitive': True}
     r.ucals = {k : os.path.join(path_to_inputs, v.replace(".fits", "_dragons.fits"))
                for k, v in caldict.items()}
     with change_working_dir():
