@@ -1003,6 +1003,11 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             adout = astrodata.create(ad.phu)
             this_method = method if method != "default" else (
                 "optimal" if 'STANDARD' in ad.tags else "aperture")
+
+            kw_to_delete = [ad._keyword_for(desc)
+                            for desc in ("detector_section", "array_section")]
+            kw_datasec = ad._keyword_for("data_section")
+
             for ext in ad:
                 data = np.zeros((ext.shape[1],), dtype=ext.data.dtype)
                 mask = np.full((ext.shape[1],), DQ.no_data, dtype=ext.mask.dtype)
@@ -1167,6 +1172,13 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                               (output_frame, None)])
                 adout.append(ext.nddata.__class__(data=data, mask=mask, variance=var, wcs=wcs1d,
                                                   meta={'header': ext.hdr.copy()}))
+
+                # Delete unnecessary keywords
+                for kw in kw_to_delete:
+                    if kw in adout[-1].hdr:
+                        del adout[-1].hdr[kw]
+                adout[-1].hdr[kw_datasec] = f"[1:{data.size}]"
+
                 if any(np.isnan(data)):
                     log.warning(f"NaNs in {ad.filename} order {ext.hdr['SPECORDR']}")
 
