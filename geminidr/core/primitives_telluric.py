@@ -761,15 +761,17 @@ class Telluric(Spect):
                 tcal.perform_all_fits()
 
             if apply_shift:
-                log.stdinfo(f"Applying shift of {pixel_shift} pixels "
-                            f"to {ad.filename}")
+                if pixel_shift != 0:
+                    log.stdinfo(f"Applying shift of {pixel_shift} pixels "
+                                f"to {ad.filename}")
+
             abs_spectra = tcal.absorption_spectra()
             for ext in ad:
                 if len(ext.shape) > 1:
                     continue
 
                 ext.divide(next(abs_spectra))
-                if apply_shift:
+                if apply_shift and pixel_shift != 0:
                     ext.wcs.insert_transform(
                         ext.wcs.input_frame, models.Shift(pixel_shift),
                         after=True)
