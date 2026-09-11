@@ -214,6 +214,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     coef = {f'c{i}': v for i, v in enumerate(cheb.convert(domain=wave_model.domain).coef)}
                     new_wave_model = wave_model.__class__(degree=wave_model.degree, **coef, domain=wave_model.domain,
                                                           name="WAVE")
+                    new_wave_model.inverse = am.make_inverse_chebyshev1d(new_wave_model, max_deviation=0.01)
                 else:
                     new_wave_model = wave_model
 
