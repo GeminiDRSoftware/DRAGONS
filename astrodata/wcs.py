@@ -269,7 +269,6 @@ def gwcs_to_fits(ndd, hdr=None):
                 if wave_tab.ndim == 1:  # Greisen et al. (2006)
                     wcs_dict[f'PS{i}_0'] = wcs.output_frame.axes_names[i-1]
                     wcs_dict[f'PS{i}_1'] = ("WAVELENGTH", "Name of column")
-                    wcs_dict[f'PS{i}_1'] = ("WAVELENGTH", "Name of column")
                     wcs_dict['extensions'] = {wcs.output_frame.axes_names[i-1]:
                                                   Table([wave_tab], names=('WAVELENGTH',))}
                 else:  # make something up here

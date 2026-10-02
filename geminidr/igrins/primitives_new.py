@@ -8,12 +8,12 @@ from matplotlib import pyplot as plt, colors as mcolors
 
 from scipy.interpolate import make_interp_spline, PPoly
 from scipy.ndimage import gaussian_filter
-from scipy.signal import savgol_filter
+from scipy.signal import correlate, savgol_filter
 
 import numpy as np
 from astropy.io import fits
 from astropy.modeling import fitting, models
-from astropy.stats import sigma_clip
+from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table
 from astropy import units as u
 from astropy.utils.exceptions import AstropyWarning
@@ -24,7 +24,7 @@ from gwcs import coordinate_frames as cf
 import astrodata
 from astrodata import wcs as adwcs
 from gempy.gemini import gemini_tools as gt
-from gempy.library import astromodels as am
+from gempy.library import astromodels as am, astrotools as at
 from gempy.library.fitting import fit_1D
 from gempy.library import peak_finding, tracing, transform, wavecal
 
@@ -44,6 +44,10 @@ from .procedures.correct_distortion import get_rectified_2dspec
 from .procedures.flexure_correction import estimate_flexure
 from .procedures.iraf_helper import get_wat_header
 from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
+
+
+# Function to scale from SLITPOS to y-pixel location
+slitpos_to_pix = models.Shift(0.5) | models.Scale(50)
 
 
 @parameter_override
@@ -189,8 +193,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             more than one arc is returned from the CalDB, then the most
             commonly-chosen arc is used for all frames.
         """
+        log = self.log
         super().attachWavelengthSolution(adinputs, **params)
         for ad in adinputs:
+            flex_shift = ad.phu.get('FLEXSHFT', 0)
             for ext in ad:
                 wave_model = am.get_named_submodel(ext.wcs.forward_transform, "WAVE")
                 sky_model = am.get_named_submodel(ext.wcs.forward_transform, "SKY")
@@ -199,7 +205,20 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                  (models.Const1D(0) & models.Identity(1)) |
                                  sky_model[-3:])
                 new_sky_model.name = "SKY"
-                ext.wcs.set_transform("distortion_corrected", "world", wave_model & new_sky_model)
+
+                # Apply the flexure shift if there is one
+                if flex_shift:
+                    log.stdinfo(f"Applying flexure shift of {flex_shift:.3f} "
+                                f"pixels to {ad.filename}")
+                    cheb = np.polynomial.chebyshev.Chebyshev(wave_model.parameters, np.asarray(wave_model.domain) + flex_shift)
+                    coef = {f'c{i}': v for i, v in enumerate(cheb.convert(domain=wave_model.domain).coef)}
+                    new_wave_model = wave_model.__class__(degree=wave_model.degree, **coef, domain=wave_model.domain,
+                                                          name="WAVE")
+                    new_wave_model.inverse = am.make_inverse_chebyshev1d(new_wave_model, max_deviation=0.01)
+                else:
+                    new_wave_model = wave_model
+
+                ext.wcs.set_transform("distortion_corrected", "world", new_wave_model & new_sky_model)
 
         # Timestamping/housekeeping was handled by the super() call
         return adinputs
@@ -279,64 +298,6 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
-
-    def createDataCube(self, adinputs=None, **params):
-        """
-        Create the data cube.
-
-        This is currently just saveTwodspec but taking things from the main
-        stream.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        #timestamp_key = self.timestamp_keys[self.myself()]
-        suffix = params["suffix"]
-        height_2dspec = params["height_2dspec"]
-        conserve_flux = True
-        # height_2dspec = 100 # obsset.get_recipe_parameter("height_2dspec")
-        wavelength_increasing_order = params["wavelength_increasing_order"]
-
-        adoutputs = []
-        for ad in adinputs:
-            ad_sky = self._get_ad_sky(ad)
-            wat_table = ad_sky[0].WAT_HEADER
-
-            # make sure you apply convert_data to the output. If get_wat_header is
-            # called with wavelength_increasing_order=True, convert_data will rearrange
-            # the data to the correct order.
-            wvl_header, convert_data = get_wat_header(wat_table,
-                                                      wavelength_increasing_order)
-
-            ordermap = ad_sky[0].ORDERMAP
-            # FIXME we should use proper badpixel mask.
-            ordermap_bpixed = np.ma.array(ordermap, mask=ad_sky[0].mask).filled(0)
-            ap = Apertures(ad_sky[0].SLITEDGE)
-
-            _ = get_rectified_2dspec(ad[0].data, ordermap_bpixed, ap,  # bottom_up_solutions,
-                                     conserve_flux=conserve_flux, height=height_2dspec)
-            d0_shft_list, msk_shft_list, height = _
-            with np.errstate(invalid="ignore"):
-                d = np.array(d0_shft_list) / np.array(msk_shft_list)
-
-            d = convert_data(d.astype("float32"))
-            hdu_spec2d = fits.ImageHDU(header=wvl_header, data=d)
-
-            ad_out = astrodata.create(ad.phu)
-            ad_out.append(hdu_spec2d)
-
-            _ = get_rectified_2dspec(ad[0].variance, ordermap, ap,  # bottom_up_solutions,
-                                     conserve_flux=conserve_flux, height=height)
-            d0_shft_list, msk_shft_list, _ = _
-            with np.errstate(invalid="ignore"):
-                d = np.array(d0_shft_list) / np.array(msk_shft_list)
-
-            ad_out[0].variance = d.astype(np.float32)
-            ad_out[0].WAVELENGTHS = np.array(ad_sky[0].WVLSOL["wavelengths"], dtype=np.float32)
-
-            ad_out.update_filename(suffix=suffix, strip=True)
-            adoutputs.append(ad_out)
-
-        return adoutputs
 
     def determineDistortion(self, adinputs=None, **params):
         """
@@ -619,6 +580,9 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         debug_plot = params["debug_plot"]
         sfx = params["suffix"]
 
+        # The stddev for unresolved lines (empirically determined from fits)
+        sigma_unres = 1.25
+
         # We do some hacking here so that we can use the Linelist class to
         # handle air-to-vacuum conversions. The "weights" column is actually
         # the Gaussian width
@@ -640,8 +604,8 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                      for l in linelists])
         idx = ref_waves.argsort()
         ref_waves = ref_waves[idx]
-        ref_sigpx = np.hstack([[1.5] * len(l) if l.weights is None else l.weights
-                                       for l in linelists])[idx]
+        ref_sigpx = np.hstack([[sigma_unres] * len(l) if l.weights is None else l.weights
+                               for l in linelists])[idx]
 
         def _create_fitting_groups(pixloc, sigpx):
             sigma = sigpx[0]
@@ -706,28 +670,37 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 # Get the lines that appear in this order, and group them if
                 # they're close together so that we can fit them simultaneously
                 order_waves = ref_waves[in_order]
+                order_sigma = ref_sigpx[in_order]
                 pixloc = wave_model.inverse(order_waves)
-                groups = _create_fitting_groups(pixloc, ref_sigpx[in_order])
+                groups = _create_fitting_groups(pixloc, order_sigma)
                 log.stdinfo(f"Order {spec_order}: Fitting {len(order_waves)} "
                             f"lines in {len(groups)} groups")
 
                 for group in groups:
-                    x1 = int(pixloc[group[0]] - 5*ref_sigpx[group[0]] - 5)
-                    x2 = int(pixloc[group[-1]] + 5*ref_sigpx[group[-1]] + 6)
+                    linestr = "+".join(f"{order_waves[line]:.2f}" for line in group)
+                    x1 = int(pixloc[group[0]] - 5*order_sigma[group[0]] - 5)
+                    x2 = int(pixloc[group[-1]] + 5*order_sigma[group[-1]] + 6)
                     if x1 < 0 or x2 >= npix:  # too close to edge, skip
                         continue
                     x = np.arange(x1, x2)
                     y = np.ma.masked_array(spec.data[x1:x2], mask=spec.mask[x1:x2])
-                    m_init = models.Polynomial1D(degree=1)  # continuum
-                    linestr = "+".join(f"{order_waves[line]:.2f}" for line in group)
-                    for i, line in enumerate(group):
-                        g = models.Gaussian1D(amplitude=spec.data[int(pixloc[line])],
-                                              mean=pixloc[line], stddev=ref_sigpx[line])
+                    if y.size - y.count() > 2:  # max number of masked pixels
+                        log.stdinfo(f"Rejecting line(s) at {linestr}nm in "
+                                    f"order {spec_order} due to excessive masking")
+                        continue
+                    m_init = models.Const1D()  # continuum
+                    for i, line in enumerate(group, start=1):
+                        g = models.Gaussian1D(amplitude=max(spec.data[int(pixloc[line])], 0),
+                                              mean=pixloc[line], stddev=order_sigma[line])
                         if i > 1:  # fix the separations of the lines
                             g.mean.tied = lambda m: m.mean_1 + (pixloc[line] - pixloc[group[0]])
+                            g.stddev.tied = lambda m: m.stddev_1
                         else:
                             g.mean.bounds=(pixloc[line] - 5, pixloc[line] + 5)
-                        g.stddev.bounds=(0.5 * ref_sigpx[line], 2 * ref_sigpx[line])
+                        g.amplitude.bounds = (0, np.inf)
+                        factor = 1.25 if order_sigma[line] == sigma_unres else 2.0
+                        g.stddev.bounds=(order_sigma[line] / factor,
+                                         order_sigma[line] * factor)
                         m_init += g
 
                     fit_it = fitting.TRFLSQFitter()
@@ -735,7 +708,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                         warnings.simplefilter('ignore', category=AstropyWarning)
                         m_final = fit_it(m_init, x, y, maxiter=1000)
                     if not fit_it.fit_info.success:
-                        log.stdinfo(f"Rejecting line(s) at {linestr} nm in "
+                        log.stdinfo(f"Rejecting line(s) at {linestr}nm in "
                                     f"order {spec_order} due to fit failure: "
                                     f"{fit_it.fit_info.message}")
                         continue
@@ -744,8 +717,19 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     lines_only = m_final(x) - m_final[0](x)
                     snr = lines_only.max() / np.sqrt(spec.variance[x[lines_only.argmax()]])
                     if snr < min_snr:
-                        log.stdinfo(f"Rejecting line(s) at {linestr} nm in "
-                                  f"order {spec_order} with SNR={snr:.1f}")
+                        log.stdinfo(f"Rejecting line(s) at {linestr}nm in "
+                                    f"order {spec_order} with SNR={snr:.1f}")
+                        continue
+
+                    # Check that multiple lines actually *are* being fit, and
+                    # it's not fitting the whole thing with a single line and
+                    # adding low-amplitude features
+                    amplitudes = np.asarray([getattr(m_final, f"amplitude_{i}").value
+                                             for i, _ in enumerate(group, start=1)])
+                    if amplitudes.min() < 0.5 * amplitudes.max():
+                        log.stdinfo(f"Rejecting line(s) at {linestr}nm in "
+                                    f"order {spec_order} due to large "
+                                    "amplitude differences")
                         continue
 
                     # Store order, pixel location, and wavelength. For a group
@@ -754,9 +738,11 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     pixel = np.mean([getattr(m_final, f"mean_{i+1}").value
                                        for i in range(len(group))])
                     wavelength = np.mean([order_waves[line] for line in group])
+                    sigma = np.mean([getattr(m_final, f"stddev_{i+1}").value
+                                     for i in range(len(group))])
                     log.debug(f"Adding ({spec_order}, {pixel:.2f}, {linestr})"
                               " to fitted line list")
-                    fitted_lines.append((spec_order, pixel, wavelength))
+                    fitted_lines.append((spec_order, pixel, wavelength, sigma))
 
                     # debug information
                     for i, line in enumerate(group, start=1):
@@ -769,8 +755,21 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                   len(fitted_lines)-1)
                         debug_data.append(_tuple)
 
+                    if spec_order == 0 and 0 < m_final.mean_1 < 2000:
+                        for p in m_final.param_names:
+                            print(f"{p}: {getattr(m_final, p).value}")
+                        print("Ref wavelengths", [order_waves[line] for line in group])
+                        print("Evaluated", wave_model([getattr(m_final, f"mean_{i}").value for i, _ in enumerate(group, start=1)]))
+                        fig, ax = plt.subplots()
+                        ax.plot(x, y, 'k-')
+                        ax.plot(x, m_final(x), 'b-')
+                        ax.plot(x, m_final[0](x), 'r-')
+                        for i in range(1, m_final.n_submodels):
+                            ax.plot(x, m_final[0](x) + m_final[i](x), 'r-')
+                        plt.show()
+
             # Now perform the fit
-            orders, pix, waves = [np.asarray(x) for x in zip(*fitted_lines)]
+            orders, pix, waves, sigmas = [np.asarray(x) for x in zip(*fitted_lines)]
             fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                        outlier_func=sigma_clip)
             m_init = models.Chebyshev2D(x_degree=xdeg, y_degree=ydeg,
@@ -782,6 +781,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             tbl_orders = orders[~mask].astype(int)
             tbl_pix = pix[~mask].astype(np.float32)
             tbl_waves = waves[~mask].astype(np.float32)
+            tbl_sigmas = sigmas[~mask].astype(np.float32)
             tbl_fitted = m_final(tbl_pix, tbl_orders) / tbl_orders
             rms = np.std(m_final(tbl_pix, tbl_orders) / tbl_orders - tbl_waves)
             tbl_pix += 1  # use 1-based for output
@@ -800,9 +800,11 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
             fit_table = Table([temptable.colnames + [''] * pad_rows,
                                list(temptable[0].values()) + [0] * pad_rows,
-                               tbl_orders, tbl_pix, tbl_waves, tbl_fitted],
-                              names=("name", "coefficients", "xdorder", "peaks", "wavelengths", "fitted"),
-                              units=(None, None, None, u.pix, u.nm, u.nm),
+                               tbl_orders, tbl_pix, tbl_waves,
+                               tbl_fitted, tbl_sigmas],
+                              names=("name", "coefficients", "xdorder", "peaks",
+                                     "wavelengths", "fitted", "sigma"),
+                              units=(None, None, None, u.pix, u.nm, u.nm, u.pix),
                               meta=temptable.meta)
             medium = "vacuo" if in_vacuo else "air"
             fit_table.meta['comments'] = [
@@ -914,9 +916,8 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             log.warning('Distortion correction has been turned off.')
             return adinputs
 
-        # Row of the output image corresponding to slitpos=0.0, i.e., the
-        # centre of the slit
-        slitcen = 25
+        origin = (-int(slitpos_to_pix(0.) + 0.5), 0)
+        output_shape = (abs(origin[0]) * 2 + 1, 2048)
 
         fail = False
         adoutputs = []
@@ -950,14 +951,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 temp_out = transform.resample_from_wcs(
                     ext, 'distortion_corrected', interpolant=interpolant,
                     subsample=subsample, parallel=False, threshold=dq_threshold,
-                    output_shape=(51, 2048), origin=(-slitcen, 0))
+                    output_shape=output_shape, origin=origin)
                 if i == 0:
                     ad_out = astrodata.create(temp_out.phu)
                 ad_out.append(temp_out[0].nddata)
-                # Store in the header for later retrieval.
-                # TODO: How can we avoid hardcoing SLITDELT here?
-                ad_out[-1].hdr['SLITCENT'] = slitcen
-                ad_out[-1].hdr['SLITDELT'] = 0.02
 
             # Timestamp and update the filename
             gt.mark_history(ad_out, primname=self.myself(),
@@ -982,23 +979,52 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             Suffix to be added to output files.
         method : str [aperture|optimal|default]
             Extraction method to use
+        sigma : float
+            Standard deviation threshold for cosmic ray rejection
+        debug_order : int/None
+            Echelle order for producing a debugging plot
+        debug_pixel : int/None
+            Pixel in "debug_order" for producing a debugging plot
+        debug_min_frac : float
+            Minimum fraction of good pixels needed in each columns in order
+            to extract the flux
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         method = params["method"]
+        sigmasq = params["sigma"] ** 2
+        debug_order = params["debug_order"]
+        debug_pixel = params["debug_pixel"]
+        min_frac = params["debug_min_frac"]
 
         adoutputs = []
         for ad in adinputs:
             adout = astrodata.create(ad.phu)
             this_method = method if method != "default" else (
                 "optimal" if 'STANDARD' in ad.tags else "aperture")
+
+            kw_to_delete = [ad._keyword_for(desc)
+                            for desc in ("detector_section", "array_section")]
+            kw_datasec = ad._keyword_for("data_section")
+
             for ext in ad:
                 data = np.zeros((ext.shape[1],), dtype=ext.data.dtype)
                 mask = np.full((ext.shape[1],), DQ.no_data, dtype=ext.mask.dtype)
                 var = np.zeros_like(data)
                 y, x = np.mgrid[:ext.shape[0], :ext.shape[1]]
+
+                m_init = models.Polynomial1D(degree=1,
+                                             bounds={"c0": (0, np.inf),
+                                                     "c1": (0, np.inf)})
+                m_init.linear = False  # quickest way to suppress warnings
+                fit_it = fitting.FittingWithOutlierRemoval(fitting.DogBoxLSQFitter(),
+                                                           sigma_clip)
+                good = np.logical_and(ext.mask == 0, ext.variance > 0)
+                m_var, _ = fit_it(m_init, abs(ext.data[good]), ext.variance[good])
+                log.debug(f"{ext.hdr['SPECORDR']} estimated var: "
+                          f"{m_var.c0.value:.2f} {m_var.c1.value:.2f}")
 
                 # Construct an image of the slit position, which is used
                 # to determine the extraction weight of each pixel
@@ -1028,16 +1054,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 assert pixels_for_extraction.max() <= 0.5
                 del pixels_for_extraction
 
-                # We use inv_var to implement the mask as well, by setting
-                # it to zero for any pixels we don't wish to include
-                with warnings.catch_warnings(category=RuntimeWarning,
-                                             action="ignore"):
-                    inv_var = np.where(np.logical_and.reduce(
-                        [ext_xshifted.variance > 0, ext_xshifted.mask == 0,
-                         abs(ext_xshifted.SLITPOS) < 0.5]),
-                        1. / ext_xshifted.variance, 0)
-
-                slitpos_samples = (np.arange(ext.SLITPROF.shape[0]) - 25) * 0.02
+                goodpix = np.logical_and.reduce([ext_xshifted.variance > 0,
+                                                 ext_xshifted.mask == 0,
+                                                 abs(ext_xshifted.SLITPOS) < 0.5])
+                slitpos_samples = slitpos_to_pix.inverse(np.arange(ext.SLITPROF.shape[0]))
 
                 # For aperture extraction, we want to know where to extract.
                 # The data are effectively noiseless, so we don't use
@@ -1064,30 +1084,58 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                   f"{extraction_regions[1][0]:.3f} and "
                                   f"{extraction_regions[1][1]:.3f}")
                     pixels = np.arange(ext.shape[0])
-                else:
+                elif method == "optimal":
                     # We want to normalize the profile along each column. Since
                     # there's probably both a +ve and -ve beam, we can't simply
                     # use the sum of the profile.
                     spl = make_interp_spline(slitpos_samples, ext.SLITPROF, k=3, axis=0)
                     t, c, k = spl.tck
 
-                from gempy.library.nddops import combine1d
-                for i, (slitpos, coldata, iv) in enumerate(zip(ext_xshifted.SLITPOS.T,
-                                                               ext_xshifted.data.T,
-                                                               inv_var.T)):
-                    if iv.max() > 0 and ext.hdr['SPECORDR'] > 70:
+                for i, (slitpos, coldata, colvar, colgood) in enumerate(zip(ext_xshifted.SLITPOS.T,
+                                                                            ext_xshifted.data.T,
+                                                                            ext_xshifted.variance.T,
+                                                                            goodpix.T)):
+                    debug = ext.hdr['SPECORDR'] == debug_order and i == debug_pixel
+                    if debug:
+                        fig, ax = plt.subplots()
+                        ax.plot(slitpos, coldata, 'k-')
+                        ax.plot(slitpos, np.sqrt(colvar), 'r-')
+                        ax.plot(slitpos[~colgood], coldata[~colgood], 'ko')
+                    if colgood.sum() and ext.hdr['SPECORDR'] > 70:
                         if this_method == "optimal":
                             ppoly = PPoly.from_spline((t, c[:, i], k))
                             prof = ppoly(slitpos)
                             if prof.max() > 0:
-                                signal_sum = np.sum(abs(prof[iv > 0]))
-                                if signal_sum > 0:
-                                    # Renormalize the profile sum to unity
-                                    prof /= signal_sum
-                                    data[i] = (prof * coldata * iv).sum() / (prof * prof * iv).sum()
-                                    mask[i] = DQ.good
-                                    var[i] = abs(prof[iv > 0]).sum() / (prof * prof * iv).sum()
-                        else:
+                                # Renormalize the profile sum to unity.
+                                # Summing the pixels directly accounts for the
+                                # different pixel scale between the resampled
+                                # SLITPROF and the actual data.
+                                pixels_in_slit = abs(slitpos) <= 0.5
+                                prof /= abs(prof[pixels_in_slit]).sum()
+                                flux = np.sum(abs(coldata[colgood]))
+                                while True:
+                                    if colgood.sum() >= min_frac * pixels_in_slit.sum():
+                                        colvar = m_var(abs(flux * prof))
+                                        with warnings.catch_warnings(category=RuntimeWarning,
+                                                                     action="ignore"):
+                                            ivar = np.where(colgood, 1. / colvar, 0)
+                                        flux = (prof * coldata * ivar).sum() / (prof * prof * ivar).sum()
+                                        new_masked = np.logical_and(
+                                            (coldata - flux * prof) ** 2 > sigmasq * colvar,
+                                            colgood)
+                                        if new_masked.sum() == 0:
+                                            data[i] = flux
+                                            mask[i] = DQ.good
+                                            var[i] = abs(prof[colgood]).sum() / (prof * prof * ivar).sum()
+                                            if debug:
+                                                ax.plot(slitpos[colgood], prof[colgood] * flux, 'b-')
+                                                ax.plot(slitpos[new_masked], coldata[new_masked], 'bo')
+                                                print("FLUX and RAW", flux, np.sum(abs(coldata[colgood])))
+                                            break
+                                        colgood[new_masked] = False
+                                    else:  # rejected all pixels, can't assign data
+                                        break
+                        elif this_method == "aperture":
                             mask[i] = DQ.good
                             for s1, s2, sign in extraction_regions:
                                 x1, x2 = np.interp([s1, s2], slitpos, pixels,
@@ -1097,9 +1145,17 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                     continue
 
                                 _slice = slice(int(np.ceil(x1-0.5))+1, int(np.ceil(x2-0.5)))
-                                data[i] += sign * ext_xshifted.data[_slice, i].sum()
+                                data[i] += sign * coldata[_slice].sum()
                                 mask[i] |= np.logical_or.reduce(ext_xshifted.mask[_slice, i])
-                                var[i] += ext_xshifted.variance[_slice, i].sum()
+                                var[i] += colvar[_slice].sum()
+                        else:
+                            data[i] = np.abs(coldata[colgood]).sum()
+                            mask[i] = np.logical_or.reduce(ext_xshifted.mask[colgood, i])
+                            var[i] = colvar[colgood].sum()
+
+                    if debug:
+                        ax.set_xlim(-0.5, 0.5)
+                        plt.show()
 
                 if np.all(mask & DQ.no_data):
                     log.warning(f"No good pixels found for extraction in order {ext.hdr['SPECORDR']}")
@@ -1117,6 +1173,13 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                               (output_frame, None)])
                 adout.append(ext.nddata.__class__(data=data, mask=mask, variance=var, wcs=wcs1d,
                                                   meta={'header': ext.hdr.copy()}))
+
+                # Delete unnecessary keywords
+                for kw in kw_to_delete:
+                    if kw in adout[-1].hdr:
+                        del adout[-1].hdr[kw]
+                adout[-1].hdr[kw_datasec] = f"[1:{data.size}]"
+
                 if any(np.isnan(data)):
                     log.warning(f"NaNs in {ad.filename} order {ext.hdr['SPECORDR']}")
 
@@ -1132,39 +1195,155 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
         return adoutputs
 
-    def flagDiscrepantPixels(self, adinputs=None, **params):
+    def flexureCorrect(self, adinputs=None, **params):
         """
-        Flag discrepant pixels in the extracted spectrum.
+        Corrects for flexure in the science frames.
 
-        This method identifies and flags pixels in the extracted 1D spectrum
-        that are discrepant based on a specified threshold. The flagged pixels
-        can be used to exclude them from further analysis or to apply special
-        handling during subsequent processing steps.
+        This works by cross-correlated each echelle order (collapsed along
+        the slit) in the science frame with the corresponding order in an
+        arc/sky frame. Before performing the cross-correlation, the regions
+        of the slit containing objects are masked out.
 
         Parameters
         ----------
-        threshold : float
-            The threshold for identifying discrepant pixels. Pixels with values
-            that deviate from the median by more than this threshold will be flagged.
+        suffix : str
+            Suffix to be added to output files.
+        arc : str or AstroData or None
+            arc/sky frame to use for flexure correction. If None, the
+            calibration service will be used
+        do_cal : str [procmode|force|skip]
+            perform the flexure correction?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        #timestamp_key = self.timestamp_keys["flagDiscrepantPixels"]
+        timestamp_key = self.timestamp_keys[self.myself()]
+
         sfx = params["suffix"]
-        discrepant_pixel_threshold = params["discrepant_pixel_threshold"]
+        arc = params["arc"]
+        do_cal = params["do_cal"]
+        subsample = 50
+
+        if do_cal == 'skip':
+            log.warning('Distortion correction has been turned off.')
+            return adinputs
+
+        if arc is None:
+            arc_list = self.caldb.get_processed_arc(adinputs)
+            if len(set(arc_list.files)) == 1:
+                log.stdinfo(f"Using the arc {arc_list.files[0]} (obtained from"
+                            f" {arc_list.origins[0]}) for flexure correction")
+                arc = arc_list.files[0]
+            else:
+                raise ValueError("Cannot find a single arc/sky frame for flexure correction")
+        else:
+            log.stdinfo(f"Using the arc {arc} for flexure correction")
+
+        hist_bins = np.arange(-0.5, 0.51, 0.02)
+        xpixels = np.arange(2048)
+        if isinstance(arc, str):
+            arc = astrodata.open(arc)
+        detsecs = arc.detector_section()
+
+        ad_shifts = {}
+
+        # Make a dict of arc line locations for each order?
+        arc_lines = {}
+        for spec_order, peak in zip(arc.WAVECAL['xdorder'].data,
+                                    arc.WAVECAL['peaks'].data):
+            try:
+                arc_lines[spec_order].append(peak-1)  # 1-indexed in WAVECAL
+            except KeyError:
+                arc_lines[spec_order] = [peak-1]
+
+        from datetime import datetime
+        for ad in adinputs:
+            profile = np.zeros(hist_bins.size - 1)
+            # We first want to know which parts of the echellogram are free
+            # from objects, so construct a crude slit profile histogram
+            for ext_arc, ext_section in zip(arc, detsecs):
+                y, x = np.mgrid[:ext_arc.shape[0], :ext_arc.shape[1]]
+                t = ext_arc.wcs.get_transform("pixels", "distcorr_slitpos")
+                y_slitpos = t(x, y)[1]
+                # Find the mean pixel value in each bin. Ignore orders that
+                # fall off the top or bottom of the detector
+                histsum = np.histogram(y_slitpos, bins=hist_bins,
+                                       weights=ad[0].data[ext_section.asslice()])[0]
+                histnum = np.histogram(y_slitpos, bins=hist_bins)[0]
+                if all(histnum > 0):
+                    profile += histsum / histnum
+
+            peak, loc = profile.max(), profile.argmax()
+            top = bottom = loc
+            frac = 0.05
+            bkgd = np.percentile(profile, 10)
+            while top < profile.size - 1 and profile[top] > frac * (profile[loc] - bkgd) + bkgd:
+                top +=1
+            while bottom > 0 and profile[bottom] > frac * (profile[loc] - bkgd) + bkgd:
+                bottom -= 1
+            if bottom > profile.size - top:
+                limits = (0, bottom-2)
+            else:
+                limits = (top+2, profile.size-1)
+            slitpos_limits = slitpos_to_pix.inverse(limits)
+            if slitpos_limits[1] - slitpos_limits[0] < 0.1:
+                log.warning(f"{ad.filename}: Unable to find a region of the "
+                            "slit free from objects")
+                continue
+            log.stdinfo(f"Extracting sky between slit positions {slitpos_limits}")
+
+            # Now do the cross-correlation to find the flexure shift
+            shifts = []
+            for ext_arc, ext_section in zip(arc, detsecs):
+                ndd = ad[0].nddata[ext_section.asslice()]
+                y, x = np.mgrid[:ext_arc.shape[0], :ext_arc.shape[1]]
+                t = ext_arc.wcs.get_transform("pixels", "distcorr_slitpos")
+                y_slitpos = t(x, y)[1]
+                mask = np.logical_or.reduce([ndd.mask, ext_arc.mask,
+                                             y_slitpos < slitpos_limits[0],
+                                             y_slitpos > slitpos_limits[1]])
+                not_blank = mask.sum(axis=1) < 1024
+                rows = np.flatnonzero(not_blank)
+                if not rows.size:
+                    continue
+                collapsed_image = np.ma.median(np.ma.masked_where(mask, ndd.data), axis=0)
+                collapsed_arc = np.ma.median(np.ma.masked_where(mask, ext_arc.data), axis=0)
+                collapsed_mask = collapsed_image.mask  # same for both
+                unmasked_indices = np.flatnonzero(~collapsed_mask)
+                spl_image = make_interp_spline(xpixels[~collapsed_mask],
+                                               collapsed_image[~collapsed_mask], k=3)
+                spl_arc = make_interp_spline(xpixels[~collapsed_mask],
+                                             collapsed_arc[~collapsed_mask], k=3)
+                narclines = list(arc.WAVECAL['xdorder'].data).count(ext_arc.hdr['SPECORDR'])
+                xeval = np.arange(unmasked_indices[0], unmasked_indices[-1] + 0.01, 1. / subsample)
+
+                corrfunc = lambda dx: -np.sum(spl_arc(xeval) * spl_image(xeval + dx))
+                from scipy.optimize import minimize
+                result = minimize(corrfunc, 0, bounds=[(-4, 4)])
+                log.stdinfo(f"{ad.filename} order {ext_arc.hdr['SPECORDR']}: shift={result.x[0]:.3f}")
+                if abs(result.x[0]) < 3:
+                    shifts.append(result.x[0])
+                if ext_arc.hdr['SPECORDR'] == 0:
+                    fig, ax = plt.subplots()
+                    x = np.arange(-4, 4, 0.05)
+                    #y = [corrfunc(dx) for dx in x]
+                    ax.plot(xpixels, spl_image(xpixels), 'k-')
+                    ax.plot(xpixels, spl_arc(xpixels), 'r-')
+                    #ax.plot(x, y, 'k-')
+                    plt.show()
+
+            if shifts:
+                # Use the median
+                shift = sigma_clipped_stats(shifts, sigma=2, maxiters=5)[1]
+                ad_shifts[ad.filename] = shift
+
+        avg_shift = np.median(list(ad_shifts.values()))
 
         for ad in adinputs:
-            for ext in ad:
-                discrepant_mask = np.where(np.abs(ext.data - ext.SYNTHMAP) /
-                                           np.sqrt(ext.variance) > discrepant_pixel_threshold,
-                                           DQ.cosmic_ray, DQ.good)
-                if ext.mask is None:
-                    ext.mask = discrepant_mask.astype(DQ.datatype)
-                else:
-                    ext.mask |= discrepant_mask
+            ad.phu['FLEXSHFT'] = (avg_shift, "Measured flexure shift (pixels)")
+            log.stdinfo(f"Recording shift of {avg_shift:.3f} pixels for {ad.filename}")
 
             # Timestamp and update the filename
-            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
@@ -1217,6 +1396,54 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
         return [ad]
 
+    def removeObjectsLeaveSky(self, adinputs=None, **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        frac_FOV = 1.0
+
+        frametypes = [ad.phu.get("FRMTYPE") for ad in adinputs]
+        if frametypes.count(None) == 0:
+            log.stdinfo("Grouping by FRMTYPE keyword")
+            frametype_set = set(frametypes)
+            assert len(frametype_set) == 2
+            in_group_a = np.array([ft == frametypes[0] for ft in frametypes])
+            if frametype_set.intersection({"A", "ON"}) and frametypes[0] not in ("A", "ON"):
+                in_group_a = ~in_group_a
+        else:
+            log.stdinfo("Grouping by location on sky")
+            groups = gt.group_exposures(adinputs, fields_overlap=self._fields_overlap,
+                                        frac_FOV=frac_FOV)
+            assert len(groups) == 2
+            in_group_a = [ad in groups[0] for ad in adinputs]
+
+        adoutputs = []
+        adinputsA, adinputsB = [], []
+        print(in_group_a)
+        for ad, in_a in zip(adinputs, in_group_a):
+            if in_a:
+                adinputsA.append(ad)
+            else:
+                adinputsB.append(ad)
+            if len(adinputsA) == len(adinputsB):
+                grp_a_list = "\n    ".join([ad.filename for ad in adinputsB])
+                grp_b_list = "\n    ".join([ad.filename for ad in adinputsB])
+                log.stdinfo(f"Exposures in group A:\n    {grp_a_list}")
+                log.stdinfo(f"Exposures in group B:\n    {grp_b_list}")
+                stackedA = self.stackFrames(adinputsA).pop()
+                stackedB = self.stackFrames(adinputsB).pop()
+                stackedA_copy = copy.deepcopy(stackedA)
+                ad = stackedA.subtract(stackedB)
+                for ext in ad:
+                    ext.data = -abs(ext.data)
+                ad.add(stackedA_copy)
+                ad.add(stackedB)
+                ad.update_filename(suffix=suffix, strip=True)
+                adoutputs.append(ad)
+
+        return adoutputs
+
     def maskVignettedRegions(self, adinputs=None, **params):
         """
         This primitive attempts to find and mask the regions of each echelle
@@ -1227,7 +1454,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         The primitive using a Savitzky-Golay filter to identify the decrease
         in the first derivative caused by each "knee" or "shoulder", and then
         a linear fit to these locations as a function of echelle order is
-        performed to avoid issues from misidentifications.
+        performed to avoid issues from misidentifications. The points beyond
+        these locations are then masked as DQ.overlap (which isn't strictly
+        correct, but it's not entirely wrong either and it makes it easier to
+        unmask the pixels later if desired).
 
         Parameters
         ----------
@@ -1247,6 +1477,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         polyorder = params["debug_order"]
 
         for ad in adinputs:
+            if ad.wavelength_band() == "H":
+                log.stdinfo(f"{ad.filename}: H-band data are not vignetted, skipping")
+                continue
+
             limits = []
             for ext in ad:
                 masked_data = np.ma.masked_array(ext.data, mask=ext.mask, copy=False)
@@ -1256,7 +1490,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                        polyorder=polyorder, deriv=2)
                 ddspek = np.ma.masked_where(spek.mask, ddspek)
                 smoothed_ddspek = gaussian_filter(ddspek, halfwidth)
-                # Mask regions that where the S-G filter went off the edge
+                # Mask regions where the S-G filter went off the edge
                 masked_slices = np.ma.clump_masked(spek)
                 start = 0 if not masked_slices or masked_slices[0].start > 0 \
                     else masked_slices[0].stop
@@ -1297,8 +1531,8 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             right_limits = np.minimum(m_final(orders).astype(int), 2048)
             for ext, left, right in zip(ad, left_limits, right_limits):
                 log.debug(f"Masking <{left} and >={right} in order {ext.hdr['SPECORDR']}")
-                ext.mask[:, :left] |= DQ.no_data
-                ext.mask[:, right:] |= DQ.no_data
+                ext.mask[:, :left] |= DQ.overlap
+                ext.mask[:, right:] |= DQ.overlap
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
@@ -1370,7 +1604,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                     " has no variance array, so cannot use it "
                                     "to weight the slit profile")
                     else:
-                        weights = np.where(ext.variance > 0, 1. / ext.variance, 0)
+                        weights = at.divide0(1., ext.variance)
 
                 for _ in range(1):  # allow iteration (4.2.2 of Cushing+ 2004)
                     profile = np.ma.median(masked_data, axis=1)
@@ -1405,9 +1639,11 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         regions beyond the knees/shoulders
         """
         adinputs = super().normalizeFlat(adinputs, **params)
-        for ad in adinputs:
-            for ext in ad:
-                ext.mask &= (DQ.max ^ DQ.no_data)
+        if params["debug_unmask_vignetted"]:
+            self.log.debug("Unmasking vignetted regions in all files")
+            for ad in adinputs:
+                for ext in ad:
+                    ext.mask &= (DQ.max ^ DQ.overlap)
         return adinputs
 
     def standardizeWCS(self, adinputs=None, suffix=None):

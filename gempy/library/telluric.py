@@ -86,7 +86,7 @@ class A0Spectrum:
     at requested spectral samplings, converted to air wavelengths if needed"""
     _dict = {}
     _raw_resolution = None
-    bbtemp = 9650
+    bbtemp = 9700
 
     @classmethod
     def spectrum(cls, r=None, in_vacuo=True):

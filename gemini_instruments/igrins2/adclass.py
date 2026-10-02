@@ -6,9 +6,11 @@ metadata handling and data descriptors for IGRINS and IGRINS-2 data.
 import datetime
 
 import numpy as np
-import astropy.units as u
+from astropy.table import Table
+
 from astrodata import (astro_data_tag, astro_data_descriptor,
                        returns_list, TagSet)
+from astrodata.fits import ad_to_hdulist
 from gemini_instruments.common import Section
 from ..gemini import AstroDataGemini, use_keyword_if_prepared
 from .. import gmu
@@ -468,3 +470,33 @@ class AstroDataIgrins2(AstroDataGemini):
     def wavelength_band(self):
         """Avoids the round-the-houses calculation of AstroDataGemini"""
         return self.filter_name(pretty=True)
+
+    def write(self, filename=None, overwrite=False):
+        """Hijack the standard method to allow a WAVE-TAB to be written"""
+        if filename is None:
+            if self.path is None:
+                raise ValueError("A filename needs to be specified")
+            filename = self.path
+
+        if all([len(ext.shape) == 1 for ext in self]):
+            # Create a "WAVE" table for each extension
+            for ext in self:
+                waves = ext.wcs(np.arange(ext.nddata.size))
+                axis_name = ext.wcs.output_frame.axes_names[0][:4]
+                wave_tab = Table([waves], names=["WAVELENGTH"])
+                setattr(ext, axis_name, wave_tab)
+
+            hdul = ad_to_hdulist(self)
+            for hdu in hdul:
+                if ((axis_name := hdu.header.get('CTYPE1', '')[:4]) == "WAVE"):
+                    hdu.header['PS1_0'] = axis_name
+                    hdu.header['PS1_1'] = ("WAVELENGTH", "Name of column")
+                    hdu.header['PV1_1'] = hdu.header['EXTVER']
+                    hdu.header['CRPIX1'] = 1
+                    hdu.header['CRVAL1'] = 1
+                    hdu.header['CD1_1'] = 1
+                    hdu.header['CTYPE1'] = f"{axis_name}-TAB"
+        else:
+            hdul = ad_to_hdulist(self)
+
+        hdul.writeto(filename, overwrite=overwrite)

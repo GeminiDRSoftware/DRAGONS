@@ -8,6 +8,30 @@
 Change Logs
 ***********
 
+5.0.0
+=====
+This release includes new support for reducing IGRINS-2 near-infrared
+spectroscopic data.
+
+Improvements
+------------
+**geminidr.core**
+
+* Improve speed of the fit to a telluric spectrum for cross-dispersed data
+  by performing individual fits to each order first to determine a good
+  starting point for the full multi-order fit.
+* By default, query the SIMBAD database to determine the spectral type and
+  magnitude of the telluric standard, avoiding the need for the user to
+  specify this information when fitting the telluric spectrum.
+
+Bug fixes
+---------
+**geminidr.core**
+
+* For cross-dispersed data, the distortion correction was not using the
+  correct reference coordinate, meaning that the wavelength solution was
+  incorrect. This was a small effect, at most 0.05 pixels.
+
 4.2.2
 =====
 

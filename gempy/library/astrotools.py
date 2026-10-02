@@ -6,6 +6,7 @@ The astroTools module contains astronomy specific utility functions
 
 from copy import deepcopy
 import os
+import re
 import numpy as np
 from scipy import interpolate, optimize
 
@@ -13,9 +14,6 @@ from astropy import units as u
 from astropy import stats
 from astropy.coordinates import Angle
 from astropy.modeling import models, fitting
-
-from astrodata.fits import windowedOp
-from astrodata.nddata import NDAstroData
 
 from gempy.library.cython_utils import masked_median
 from gempy.utils import logutils
@@ -506,6 +504,49 @@ def optimal_normalization(nddata_list, num_ext=1, separate_ext=True,
             results[:] = factors * result_scaling
 
     return np.exp(results) if return_scaling else results
+
+
+def spectral_type_to_temperature(sp_type):
+    """
+    Convert a spectral type to an effective temperature. This uses the
+    tabulated values of Erik Mamajek Version 2019.3.22
+    (https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt)
+
+    We do not use the luminosity class in the calculation, since fig. 5 of
+    de Jager & Nieuwenhuijzen (1987, A&A 177, 217) shows that the effective
+    temperature is not strongly dependent on luminosity class for spectral
+    types around A0, which we expect observers to use.
+
+    The Mamjek table is include here as a LUT because this function will only
+    be called once per reduction, so speed isn't critical and it keeps
+    everything in one place in case this is revisited later.
+
+    Parameters
+    ----------
+    spectral_type : str
+        a string describing the spectral type, e.g. 'G2V', 'K5III', etc.
+
+    Returns
+    -------
+    float: the effective temperature in Kelvin
+    """
+    m = re.match(r'^([OBAFGKM])(\d(?:.\d)?)(I*V?[ab]*\+?)', sp_type)
+    if not m:
+        raise ValueError(f"Invalid spectral type: {sp_type}")
+    cls, subcls, lcls = m.groups()
+    subcls = float(subcls)
+
+    # Convert spectral type to a number, where O3=3, B0=10, A0=20, etc.
+    sp_numtype = "OBAFGKM".index(cls) * 10 + subcls
+    mamajek_points = np.array(
+        [(3, 46000), (7.5, 35000), (8, 34500), (9, 32500), (10, 31500),
+         (13, 17000), (17, 14000), (18, 12500), (19, 10700), (19.5, 10400),
+         (20, 9700), (21, 9200), (22, 8840), (23, 8550), (24, 8270),
+         (25, 8080), (26, 8000), (27, 7800), (28, 7500), (29, 7440),
+         (30, 7220), (31, 7030), (32, 6810), (40, 5920), (51.5, 5140),
+         (57, 4070), (60, 3870), (69, 2400)]).T
+    teff = np.interp(sp_numtype, mamajek_points[0], mamajek_points[1])
+    return np.round(teff / 10) * 10  # round to nearest 10 K
 
 
 def std_from_pixel_variations(array, separation=5, subtract_linear_fits=True,

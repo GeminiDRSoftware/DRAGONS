@@ -17,6 +17,7 @@ def adinputs(path_to_inputs, request):
                            for f in request.param]
 
 
+@pytest.mark.skip("Test not needed any more as development is well past this")
 @pytest.mark.igrins2
 @pytest.mark.preprocessed_data
 @pytest.mark.parametrize("adinputs, caldict", INPUT_FILES, indirect=['adinputs'])

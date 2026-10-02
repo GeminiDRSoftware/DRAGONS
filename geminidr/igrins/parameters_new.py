@@ -1,6 +1,6 @@
 from gempy.library import config
 from astrodata import AstroData
-from geminidr.core import parameters_preprocess, parameters_spect
+from geminidr.core import parameters_generic, parameters_preprocess, parameters_spect
 
 
 class cleanReadoutConfig(config.Config):
@@ -74,10 +74,22 @@ class extractSpectraConfig(config.Config):
     method = config.ChoiceField("Extraction method", str,
                                 allowed={"aperture": "no weighting",
                                          "optimal": "optimal extraction",
-                                         "default": "use 'optimal' for STANDARDs, and 'aperture' otherwise"},
-                                default="aperture")
-    cr_rejection_thresh = config.RangeField("Sigma threshold for cosmic ray rejection", float, 30.,
-                                            min=0)
+                                         "default": "use 'optimal' for STANDARDs, and 'aperture' otherwise",
+                                         "debug": "simple summation of absolute pixel values"},
+                                default="optimal")
+    sigma = config.RangeField("Sigma threshold for cosmic ray rejection",
+                              float, 30., min=0)
+    debug_order = config.RangeField("Order for CR debugging plot", int, None,
+                                       min=33, max=95, optional=True)
+    debug_pixel = config.RangeField("Pixel for CR debugging plot", int, None,
+                                       min=0, max=2048, optional=True)
+    debug_min_frac = config.RangeField("Minimum fraction of good pixels needed to determine the flux",
+                                       float, 0.5, min=0, max=1, inclusiveMax=True)
+
+    def validate(self):
+        config.Config.validate(self)
+        if [self.debug_order, self.debug_pixel].count(None) == 1:
+            raise ValueError("Both or neither of 'debug_order' and 'debug_pixel' must be set")
 
 
 class flagDiscrepantPixelsConfig(config.Config):
@@ -85,6 +97,13 @@ class flagDiscrepantPixelsConfig(config.Config):
                           optional=True)
     discrepant_pixel_threshold = config.RangeField("Sigma threshold for flagging discrepant pixels", float, 30.,
                                                    min=1)
+
+
+class flexureCorrectConfig(parameters_generic.calRequirementConfig):
+    suffix = config.Field("Filename suffix", str, "_flexureCorrected",
+                          optional=True)
+    arc = config.ListField("Arc(s) with distortion map", (AstroData, str), None,
+                           optional=True, single=True)
 
 
 class makeABConfig(config.Config):
@@ -131,10 +150,17 @@ class measureSlitProfileConfig(config.Config):
 
 
 class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
+    debug_unmask_vignetted = config.Field("Unmask vignetted regions?",
+                                          bool, False)
+
     def setDefaults(self):
-        self.function = "chebyshev"
+        self.function = "spline3"
         self.order = 4
         self.threshold = 0.001
+
+
+class removeObjectsLeaveSkyConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_noObjects")
 
 
 class thresholdFlatfieldConfig(parameters_preprocess.thresholdFlatfieldConfig):

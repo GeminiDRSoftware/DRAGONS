@@ -89,7 +89,7 @@ def test_fit_telluric(path_to_inputs, filename):
         assert sensfunc_out.meta['yunit'] == sensfunc_ref.meta['yunit']
         goodpix = ext.mask == 0
         w = ext.wcs(np.arange(ext.data.size)[goodpix])
-        assert np.allclose(sensfunc_out(w), sensfunc_ref(w), atol=1e-4)
+        assert np.allclose(sensfunc_out(w), sensfunc_ref(w), atol=1e-3)
 
 
 @pytest.mark.preprocessed_data

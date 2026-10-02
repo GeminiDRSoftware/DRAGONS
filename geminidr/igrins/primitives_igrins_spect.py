@@ -2175,7 +2175,7 @@ class IGRINS2Spect(IGRINSNew, IGRINS):
 
     def _stackFrames(self, adinputs, correct_flexure=True):
         print("#### stackFrames!!")
-        if correct_flexure == False:
+        if correct_flexure:
             exptime = adinputs[0][0].exposure_time()
             # if exptime >= 20.0:
 
