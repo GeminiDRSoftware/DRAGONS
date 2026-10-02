@@ -6,6 +6,8 @@ import os
 import shutil
 import hashlib
 import requests
+import requests.adapters
+import urllib3.util  # For http retries in requests
 
 import numpy as np
 import pytest
@@ -252,6 +254,11 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
     if url is None:
         url = URL + filename
 
+    # Set up a requests session and configure re-tries
+    reqses = requests.Session()
+    retries = urllib3.util.Retry(total=5, backoff_factor=1)
+    reqses.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
+
     # Now check if there's a local file with the same md5; in which
     # case, we don't have to download
     download_it = True
@@ -264,7 +271,7 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
             file_md5 = digest.hexdigest()
             # Get the md5 from GOA
             fileinfourl = url.replace('/file/', '/jsonfilelist/present/filename=')
-            fileinfo = requests.get(fileinfourl, headers={"User-Agent": "astropy"}).json()
+            fileinfo = reqses.get(fileinfourl, headers={"User-Agent": "astropy"}).json()
             goa_md5 = fileinfo[0].get('data_md5')
             download_it = (file_md5 != goa_md5)
         else:
