@@ -407,6 +407,7 @@ class Telluric(Spect):
                                                 absorption[goodpix], k=3)
                     spline.extrapolate = False  # will return np.nan outside range
                     ext.TELLABS = spline(tspek.waves).astype(ext.data.dtype)
+                    ext.TELLABS[np.isinf(ext.TELLABS)] = np.nan
                     result_index += 1
 
             # We have to correct for exposure time and add the SENSFUNC units
