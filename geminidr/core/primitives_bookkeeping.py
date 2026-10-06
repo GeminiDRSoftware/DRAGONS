@@ -399,11 +399,19 @@ class Bookkeeping(PrimitivesBASE):
 
         log = self.log
         level = params['level']
-        log.fullinfo("Processing level = {}".format(level))
+
 
         for ad in adinputs:
-            if level:
-                ad.phu.set('PROCLEVL', level, self.keyword_comments['PROCLEVL'])
+            log.fullinfo(f"Setting Processing level = {level} "
+                         f"on filename {ad.filename}")
+            try:
+                keyword = ad._keyword_for("processing_level")
+            except AttributeError:
+                keyword = None
+                log.error("No keyword defined for processing_level")
+
+            if keyword is not None:
+                ad.phu.set(keyword, level, self.keyword_comments.get(keyword))
 
         return adinputs
 
