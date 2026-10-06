@@ -385,6 +385,28 @@ class Bookkeeping(PrimitivesBASE):
 
         return adoutputs
 
+    def setProcessingLevel(self, adinputs=None, **params):
+        """
+        A primitive that may be called by a recipe at any stage to update the
+        processing level (PROCLEVL) header. The integer values used should
+        follow the values for calib_level in the IVOA obscore model.
+
+        Parameters
+        ----------
+        level: int
+            The new processing level value to assign
+        """
+
+        log = self.log
+        level = params['level']
+        log.fullinfo("Processing level = {}".format(level))
+
+        for ad in adinputs:
+            if level:
+                ad.phu.set('PROCLEVL', level, self.keyword_comments['PROCLEVL'])
+
+        return adinputs
+
     def showInputs(self, adinputs=None, purpose=None):
         """
         A simple primitive to show the filenames for the current inputs to

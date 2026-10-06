@@ -213,6 +213,7 @@ def reduce_nostack(p):
     p.QECorrect()
     p.mosaicDetectors()
     p.detectSources()
+    p.setProcessingLevel(level=2)
 
 
 def alignAndStack(p):
@@ -230,5 +231,6 @@ def alignAndStack(p):
     p.resampleToCommonFrame()
     p.scaleCountsToReference()
     p.stackFrames(zero=True)
+    p.setProcessingLevel(level=3)
     return
 

@@ -133,6 +133,30 @@ def test_slice_into_streams(astrofaker):
     # The last stream should only have a slice from ad2
     assert 'EXTRA_KW' in p.streams['ext12'][0].phu
 
+def test_processing_level_from_fake(astrofaker):
+    # GEM-TLM suppresses the 'RAW' tag
+    adi = astrofaker.create('GMOS-S', extra_keywords={'GEM-TLM': 'yes'})
+    assert adi.processing_level() is None
+
+    adi = astrofaker.create('GMOS-S')
+    assert adi.processing_level() == 1
+
+    adi = astrofaker.create('GMOS-S', extra_keywords={'PROCLEVL': 2})
+    assert adi.processing_level() == 2
+
+processing_levels = [
+    ("N20190216S0092.fits", 1),
+    ("S20180211S0294.fits", 1),
+    # Once we have processed files in the archive that have PROCLEVL defined,
+    # Add some here
+]
+@pytest.mark.dragons_remote_data
+def test_processing_level_from_goa():
+    for filename, level in processing_levels:
+        path = astrodata.testing.download_from_archive(filename)
+        adi = astrodata.open(path)
+        assert adi.processing_level() == level, \
+            f"Assertion failed for file: {adi.filename}"
 
 class TestBookkeeping:
     """

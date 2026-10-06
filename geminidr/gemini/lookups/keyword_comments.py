@@ -52,6 +52,7 @@ keyword_comments = {
     "OVERSCAN": "Median of Overscan mean values",
     "OVERSEC": "Section used for overscan calculation",
     "PIXSCALE": "Pixel scale [arcsec/pixel]",
+    "PROCLEVL": "Processing level. Uses IVOA obscore calib_level values",
     "RA": "Right Ascension",
     "RAWGEMQA": "Gemini Quality Assessment",
     "RAWPIREQ": "PI Requirements Met",
