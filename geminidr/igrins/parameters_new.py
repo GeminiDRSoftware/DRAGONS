@@ -161,6 +161,8 @@ class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
 
 class removeObjectsLeaveSkyConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_noObjects")
+    min_set_size = config.RangeField("Minimum number of frames in each position before combining",
+                                     int, 1, min=1)
 
 
 class thresholdFlatfieldConfig(parameters_preprocess.thresholdFlatfieldConfig):

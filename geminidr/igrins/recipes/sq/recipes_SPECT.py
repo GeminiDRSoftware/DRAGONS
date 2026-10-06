@@ -60,8 +60,8 @@ def makeArcFromScience(p):
     p.writeOutputs()
     p.applySlitModel()
     p.determineWavelengthSolution()
-    p.writeOutputs()
-    #p.determineDistortion()
+    p.determineDistortion()
+    p.storeProcessedArc(force=True)
 
 
 def oldMakeStellar(p):

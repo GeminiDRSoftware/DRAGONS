@@ -1401,6 +1401,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         #timestamp_key = self.timestamp_keys[self.myself()]
         suffix = params["suffix"]
+        min_set_size = params["min_set_size"]
         frac_FOV = 1.0
 
         frametypes = [ad.phu.get("FRMTYPE") for ad in adinputs]
@@ -1420,13 +1421,12 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
         adoutputs = []
         adinputsA, adinputsB = [], []
-        print(in_group_a)
         for ad, in_a in zip(adinputs, in_group_a):
             if in_a:
                 adinputsA.append(ad)
             else:
                 adinputsB.append(ad)
-            if len(adinputsA) == len(adinputsB):
+            if len(adinputsA) == len(adinputsB) and len(adinputsA) == min_set_size:
                 grp_a_list = "\n    ".join([ad.filename for ad in adinputsB])
                 grp_b_list = "\n    ".join([ad.filename for ad in adinputsB])
                 log.stdinfo(f"Exposures in group A:\n    {grp_a_list}")
@@ -1441,6 +1441,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 ad.add(stackedB)
                 ad.update_filename(suffix=suffix, strip=True)
                 adoutputs.append(ad)
+                adinputsA, adinputsB = [], []
 
         return adoutputs
 
