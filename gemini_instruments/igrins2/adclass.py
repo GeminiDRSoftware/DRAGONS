@@ -333,7 +333,14 @@ class AstroDataIgrins2(AstroDataGemini):
 
     @astro_data_descriptor
     def band(self):
-        return self.phu.get('FILTER')
+        # return a list only for BUNDLEs to avoid breaking existing code
+        # which expects a single value for band().
+        if self.is_single:
+            return self.hdr.get('FILTER')
+        elif 'BUNDLE' in self.tags:
+            return [ext.hdr.get('FILTER') for ext in self]
+        else:
+            return self.phu.get('FILTER')
 
     @astro_data_descriptor
     @gmu.return_requested_units()
@@ -458,13 +465,22 @@ class AstroDataIgrins2(AstroDataGemini):
             readnoise
         """
         if self.is_single:
+            if self.band() is None:
+                return None
             fowler_samp =self.hdr.get('NSAMP') 
             read_noise_fit = lookup.array_properties.get("read_noise_fit")[self.band()]
-            read_noise = np.polyval(read_noise_fit, 1/fowler_samp)
+            read_noise = float(np.polyval(read_noise_fit, 1/fowler_samp))
         else:
             read_noise = [ext.read_noise() for ext in self]
 
         return read_noise
+
+    @astro_data_descriptor
+    def slit_width(self):
+        """
+        Return the slit width in arcseconds.
+        """
+        return 0.33
 
     @astro_data_descriptor
     def wavelength_band(self):
