@@ -106,7 +106,12 @@ class QA(PrimitivesBASE):
                 if bg is not None:
                     ext.hdr.set("SKYLEVEL", bg,
                             comment=f"{self.keyword_comments['SKYLEVEL']} [{bunit}]")
-
+                    ext.hdr.set("SKYLEVSD", results.get("bgerr"),
+                                comment=f"{self.keyword_comments['SKYLEVSD']} [{bunit}]")
+                    ext.hdr.set("MEASBG", results.get("mag"),
+                                comment=f"{self.keyword_comments['MEASBG']}")
+                    ext.hdr.set("MEASBGSD", results.get("mag_std"),
+                                comment=f"{self.keyword_comments['MEASBGSD']}")
                 if separate_ext:
                     report.report(results,
                                   header=f"{ad.filename} extension {ext.id}")
@@ -122,8 +127,17 @@ class QA(PrimitivesBASE):
             # Write mean background to PHU if averaging all together
             # (or if there's only one science extension)
             if (len(ad) == 1 or not separate_ext) and results.get('bg') is not None:
-                ad.phu.set("SKYLEVEL", results['bg'], comment="{} [{}]".
-                            format(self.keyword_comments['SKYLEVEL'], bunit))
+                ad.phu.set("SKYLEVEL", results['bg'],
+                            comment=f"{self.keyword_comments['SKYLEVEL']} [{bunit}]")
+                ad.phu.set("SKYLEVSD", results.get("bgerr"),
+                            comment=f"{self.keyword_comments['SKYLEVSD']} [{bunit}]")
+                ad.phu.set("MEASBG", results.get("mag"),
+                            comment=f"{self.keyword_comments['MEASBG']}")
+                ad.phu.set("MEASBGSD", results.get("mag_std"),
+                            comment=f"{self.keyword_comments['MEASBGSD']}")
+                redbg = f"{report.band}-percentile" if report.band else None
+                ad.phu.set("REDBG", redbg,
+                           comment=f"{self.keyword_comments['REDBG']}")
 
             # Report measurement to the adcc
             if results.get('mag'):
