@@ -416,15 +416,26 @@ class QA(PrimitivesBASE):
                         qap.fitsstore_report(ad, "iq", report.info_list(),
                                              self.mode, upload=True)
 
-                    # Store measurements in the PHU if desired
+                    # Store measurements in the PHU if desired. This is the
+                    # only place the GOA instrument monitoring cares about.
+                    # MEANFWHM and MEANELLP are pre GOA IM keywords
                     if (len(ad) == 1 or not separate_ext) and not is_ao:
-                        fwhm, ellip = results["fwhm"], results["elip"]
-                        if fwhm:
-                           ad.phu.set("MEANFWHM", fwhm,
-                                      comment=self.keyword_comments["MEANFWHM"])
-                        if ellip:
-                            ad.phu.set("MEANELLP", ellip,
-                                       comment=self.keyword_comments["MEANELLP"])
+                        for keyword, key in [
+                            ("MEANFWHM", "fwhm"), ("MEANELLP", "elip"),
+                            ("MIQ_FWHM", "fwhm"), ("MIQ_FWSD", "fwhm_std"),
+                            ("MIQ_ELLP", "elip"), ("MIQ_ELSD", "elip_std"),
+                            ("MIQ_ISOF", "isofwhm"), ("MIQ_ISSD", "isofwhm_std"),
+                            ("MIQ_EE50", "ee50d"), ("MIQ_EESD", "ee50d_std"),
+                            ("MIQ_PA", "pa"), ("MIQ_PASD", "pa_std"),
+                            ("MIQ_STRE", "strehl"), ("MIQ_STSD", "strehl_sdt"),
+                            ("MIQ_NSAM", "nsamples"), ("MIQ_AOSE", "as_seeing"),
+                            ("MIQ_ZEFW", "zfwhm"), ("MIQ_ZESD", "zfwhm_std"),
+                        ]:
+                            ad.phu.set(keyword, results.get(key),
+                                       comment=self.keyword_comments[keyword])
+                        iqband = f"{report.band}-percentile" if report.band else None
+                        ad.phu.set("REDUCEIQ", iqband,
+                                   comment=self.keyword_comments["REDUCEIQ"]),
                 else:
                     self.log.warning(f"No good sources found in {ad.filename}")
 
