@@ -106,12 +106,6 @@ class QA(PrimitivesBASE):
                 if bg is not None:
                     ext.hdr.set("SKYLEVEL", bg,
                             comment=f"{self.keyword_comments['SKYLEVEL']} [{bunit}]")
-                    ext.hdr.set("SKYLEVSD", results.get("bgerr"),
-                                comment=f"{self.keyword_comments['SKYLEVSD']} [{bunit}]")
-                    ext.hdr.set("MEASBG", results.get("mag"),
-                                comment=f"{self.keyword_comments['MEASBG']}")
-                    ext.hdr.set("MEASBGSD", results.get("mag_std"),
-                                comment=f"{self.keyword_comments['MEASBGSD']}")
                 if separate_ext:
                     report.report(results,
                                   header=f"{ad.filename} extension {ext.id}")
@@ -126,18 +120,22 @@ class QA(PrimitivesBASE):
 
             # Write mean background to PHU if averaging all together
             # (or if there's only one science extension)
+            # Also add all the MeasureBG headers for the GOA instruent / site
+            # monitoring system to the PHU
             if (len(ad) == 1 or not separate_ext) and results.get('bg') is not None:
                 ad.phu.set("SKYLEVEL", results['bg'],
                             comment=f"{self.keyword_comments['SKYLEVEL']} [{bunit}]")
-                ad.phu.set("SKYLEVSD", results.get("bgerr"),
-                            comment=f"{self.keyword_comments['SKYLEVSD']} [{bunit}]")
-                ad.phu.set("MEASBG", results.get("mag"),
-                            comment=f"{self.keyword_comments['MEASBG']}")
-                ad.phu.set("MEASBGSD", results.get("mag_std"),
-                            comment=f"{self.keyword_comments['MEASBGSD']}")
+                ad.phu.set("MBG_SKYL", results['bg'],
+                           comment=f"{self.keyword_comments['MBG_SKYL']} [{bunit}]")
+                ad.phu.set("MBG_SKSD", results.get("bgerr"),
+                            comment=f"{self.keyword_comments['MBG_SKSD']} [{bunit}]")
+                ad.phu.set("MBG_BG", results.get("mag"),
+                            comment=f"{self.keyword_comments['MBG_BG']}")
+                ad.phu.set("MBG_BGSD", results.get("mag_std"),
+                            comment=f"{self.keyword_comments['MBG_BGSD']}")
                 redbg = f"{report.band}-percentile" if report.band else None
-                ad.phu.set("REDBG", redbg,
-                           comment=f"{self.keyword_comments['REDBG']}")
+                ad.phu.set("REDUCEBG", redbg,
+                           comment=f"{self.keyword_comments['REDUCEBG']}")
 
             # Report measurement to the adcc
             if results.get('mag'):
