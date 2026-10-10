@@ -270,6 +270,17 @@ class QA(PrimitivesBASE):
                 if not separate_ext:
                     report.report(results, all_results=all_results)
 
+                # Add the MeasureCC headers for the GOA instruments / site
+                # monitoring system to the PHU
+                ad.phu.set("MCC_ZP", results.get("mag"), self.keyword_comments["MCC_ZP"])
+                ad.phu.set("MCC_ZPSD", results.get("mag_std"), self.keyword_comments["MCC_ZPSD"])
+                ad.phu.set("MCC_CL", results.get("cloud"), self.keyword_comments["MCC_CL"])
+                ad.phu.set("MCC_CLSD", results.get("cloud_std"), self.keyword_comments["MCC_CLSD"])
+                ad.phu.set("MCC_NSAM", results.get("nsamples"), self.keyword_comments["MCC_NSAM"])
+
+                bands = [f"{band}-percentile" for band in report.band]
+                ad.phu.set("REDUCECC", ','.join(bands), self.keyword_comments["REDUCECC"])
+
                 # For QA dictionary
                 qad.update({'band': report.band, 'comment': report.comments,
                             'extinction': results["cloud"],
