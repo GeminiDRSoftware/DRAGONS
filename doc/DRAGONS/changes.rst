@@ -8,6 +8,32 @@
 Change Logs
 ***********
 
+4.2.3 (Gemini Internal Release)
+===============================
+
+Improvements
+------------
+
+* Adds the ``PROCLEVL`` PHU FITS header, ``processing_level()`` astrodata
+  descriptor, and corresponding ``setProcessingLevel`` primitive. This is for
+  use in GOA to distinguish between reduced single frames, and stacks. It will
+  also be used by future VO interfaces. The values correspond to the IVOA
+  ``obscore`` ``calib_level`` values.
+
+* Updates the ``measureBG``, ``measureCC``, ``measureIQ`` and
+  ``determineAstrometricSolution`` primitives to record measured values in
+  headers in the PHU. These will be captured in GOA by the instrument / site
+monitoring system.
+
+* Updates the ``reduce_nostack`` and ``alignAndStack`` GMOS imaging SQ recipes
+  to:
+* * Add a reference catalog to their output data
+* * Run the ``determineAstrometricSolutution``, ``measureBG``, ``measureCC``
+    and ``measureIQ`` primitives
+* * Set the processing level header and use unified filename extensions in
+    their output files for clarity in GOA.
+
+
 4.2.2
 =====
 
