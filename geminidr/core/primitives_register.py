@@ -486,6 +486,29 @@ class Register(PrimitivesBASE):
                                 f"{ad.filename} extension {ext.id}")
                     info_list.append({})
 
+            # Generate Average Numbers to put in the PHU for the GOA instrument
+            # / site monitoring system. MPE = Measure Ponting Error
+            sumdra = sumddec = 0
+            sumvdra = sumvddec = 0
+            sumnsamples = 0
+            for i in info_list:
+                sumdra += i['dra'] * i['nsamples']
+                sumddec += i['ddec'] * i['nsamples']
+                sumvdra += i['dra_std'] * i['dra_std'] * i['nsamples']
+                sumvddec += i['ddec_std'] * i['ddec_std'] * i['nsamples']
+                sumnsamples += i['nsamples']
+            dra = sumdra / sumnsamples
+            ddec = sumddec / sumnsamples
+            dra_std = math.sqrt(sumvdra / sumnsamples)
+            ddec_std = math.sqrt(sumvddec / sumnsamples)
+            nsamples = sumnsamples
+            ad.phu.set("MPE_DRA", dra, comment=self.keyword_comments["MPE_DRA"])
+            ad.phu.set("MPE_DRSD", dra_std, comment=self.keyword_comments["MPE_DRSD"])
+            ad.phu.set("MPE_DDEC", ddec, comment=self.keyword_comments["MPE_DDEC"])
+            ad.phu.set("MPE_DDSD", ddec_std, comment=self.keyword_comments["MPE_DDSD"])
+            ad.phu.set("MPE_NSAM", nsamples, comment=self.keyword_comments["MPE_NSAM"])
+
+
             # Report the measurement to the fitsstore
             if self.upload and "metrics" in self.upload:
                 fitsdict = qap.fitsstore_report(ad, "pe", info_list,

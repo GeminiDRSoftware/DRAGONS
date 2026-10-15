@@ -193,7 +193,10 @@ def makeProcessedFringe(p):
 def reduce_nostack(p):
     """
     This recipe performs the standardization and corrections needed to
-    convert the raw input science images into a stacked image.
+    convert the raw input into a detector-mosaiced imagee ready for stacking.
+
+    It also measures site quality metrics from the final image.
+
 
     Parameters
     ----------
@@ -212,7 +215,14 @@ def reduce_nostack(p):
     p.fringeCorrect()
     p.QECorrect()
     p.mosaicDetectors()
+    p.setProcessingLevel(level=2)
     p.detectSources()
+    p.addReferenceCatalog()
+    p.determineAstrometricSolution()
+    p.measureBG()
+    p.measureIQ()
+    p.measureCC()
+    p.writeOutputs(strip=True, suffix="_reducedFrame")
 
 
 def alignAndStack(p):
@@ -230,5 +240,12 @@ def alignAndStack(p):
     p.resampleToCommonFrame()
     p.scaleCountsToReference()
     p.stackFrames(zero=True)
-    return
+    p.setProcessingLevel(level=3)
+    p.detectSources()
+    p.addReferenceCatalog()
+    p.determineAstrometricSolution()
+    p.measureBG()
+    p.measureIQ()
+    p.measureCC()
+    p.writeOutputs(strip=True, suffix="_reducedStack")
 
