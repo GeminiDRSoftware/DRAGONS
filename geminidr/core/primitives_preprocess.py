@@ -102,7 +102,8 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
 
         for ad in adinputs:
-            if ad.phu.get(timestamp_key):
+            timestamp = ad.phu.get(timestamp_key)
+            if timestamp and timestamp.lower() != 'no':
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by ADUToElectrons".
                             format(ad.filename))
@@ -892,7 +893,8 @@ class Preprocess(PrimitivesBASE):
             return ret_counts
 
         for ad in adinputs:
-            if ad.phu.get(timestamp_key):
+            timestamp = ad.phu.get(timestamp_key)
+            if timestamp and timestamp.lower() != 'no':
                 log.warning(f"No changes will be made to {ad.filename}, since "
                             "it has already been processed by nonlinearityCorrect")
                 continue
