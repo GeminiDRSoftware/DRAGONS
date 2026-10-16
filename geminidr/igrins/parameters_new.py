@@ -26,6 +26,25 @@ class createDataCubeConfig(config.Config):
                                                 bool, False)
 
 
+class derippleFlatConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_derippled",
+                          optional=True)
+    envelope_order = config.RangeField("Order of polynomial for envelope fitting",
+                                       int, 2, min=2)
+    snr_min = config.RangeField("Minimum SNR for derippling", float, 4, min=1,
+                                optional=False)
+    snr_weak = config.Field("Minimum SNR of a single order and combined SNR of"
+                            " it and its neighbors for derippling", str, "2.5,6")
+
+    def validate(self):
+        config.Config.validate(self)
+        try:
+            values = [float(i) for i in self.snr_weak.split(',')]
+        except ValueError:
+            return False
+        return len(values) == 2 and values[0] < values[1]
+
+
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
     dispersion_order = config.RangeField("Order of fit in dispersion direction", int,
                                          3, min=2, max=5, inclusiveMax=True)

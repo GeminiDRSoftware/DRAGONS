@@ -35,14 +35,13 @@ from .primitives_igrins import IGRINS
 from ..core.primitives_crossdispersed import CrossDispersed
 from ..core.primitives_telluric import Telluric
 from .cheb3d import Chebyshev3D, LSQFitterWithOutlierRemoval3D
+from .deripple import deripple
+from .lookups import xdtools
 
 from recipe_system.utils.decorators import parameter_override
 from . import parameters_new
 
-from .procedures.apertures import Apertures
-from .procedures.correct_distortion import get_rectified_2dspec
 from .procedures.flexure_correction import estimate_flexure
-from .procedures.iraf_helper import get_wat_header
 from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
 
 
@@ -293,6 +292,53 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         ad_sky = self._get_ad_sky(adinputs[0])
         adinputs = estimate_flexure(adinputs, ad_sky, adinputs[0].exposure_time())
         for ad in adinputs:
+            # Timestamp and update the filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+    def derippleFlat(self, adinputs=None, **params):
+        """
+
+        Parameters
+        ----------
+        suffix: str
+            Suffix to be added to output files
+        envelope_order: int
+            Degree of the per-order complex envelope polynomial.
+        snr_min: float
+            Correct an order whose own ripple S/N is at least this.
+        snr_weak: str (two comma-separated floats)
+            Also correct an order with S/N >= the first value the combined
+            S/N of it and its two neighbours (root sum of squares) is at
+            least the second value.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = params["suffix"]
+        env_order = params["envelope_order"]
+        snr_min = params["snr_min"]
+        snr_weak, snr_group = [float(i) for i in params["snr_weak"].split(',')]
+
+        for ad in adinputs:
+            all_data = np.empty((len(ad), 2048), dtype=np.float32)
+            for i, ext in enumerate(ad):
+                values = np.ma.median(
+                    np.ma.masked_array(ext.data, mask=ext.mask), axis=0)
+                all_data[i] = np.where(values.mask, np.nan, values)
+
+            waves = np.array([m(np.arange(2048))
+                              for m in xdtools.initial_wave_models(ad)])
+
+            retdict = deripple(all_data, waves, ad.hdr['SPECORDR'][0],
+                               envelope_degree=env_order, snr_min=snr_min,
+                               snr_weak=snr_weak, snr_group=snr_group)
+            for ext, ripple in zip(ad, retdict['ripple']):
+                ext.data /= (1 + ripple)
+                ext.variance /= (1 + ripple) ** 2
+
             # Timestamp and update the filename
             #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
