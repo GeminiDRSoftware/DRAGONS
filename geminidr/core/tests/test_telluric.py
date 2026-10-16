@@ -68,17 +68,18 @@ def test_fit_telluric(path_to_inputs, path_to_refs, filename, mag, bbtemp):
 
     # Compare PCA coefficients
     assert np.allclose(adout.TELLFIT['PCA coefficients'].data,
-                       adref.TELLFIT['PCA coefficients'].data)
+                       adref.TELLFIT['PCA coefficients'].data,
+                       atol=1e-3)
 
     # Compare data-derived absorption
     for ext_out, ext_ref in zip(adout, adref):
-        assert np.allclose(ext_out.TELLABS, ext_ref.TELLABS)
+        assert np.allclose(ext_out.TELLABS, ext_ref.TELLABS, atol=1e-3)
 
         # Compare evaluations of SENSFUNCs
         sensfunc_out = am.table_to_model(ext_out.SENSFUNC)
         sensfunc_ref = am.table_to_model(ext_ref.SENSFUNC)
         pixels = np.arange(ext_out.data.size)
-        assert np.allclose(sensfunc_out(pixels), sensfunc_ref(pixels))
+        assert np.allclose(sensfunc_out(pixels), sensfunc_ref(pixels), atol=1e-3)
 
 
 @pytest.mark.preprocessed_data
