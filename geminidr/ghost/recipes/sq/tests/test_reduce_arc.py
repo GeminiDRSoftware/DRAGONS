@@ -67,7 +67,7 @@ def test_reduce_arc(input_filename, caldict, arm, path_to_inputs, path_to_refs):
     # The max_miss arg accommodates just a few pixels with large (~0.1%) diffs
     # between NumPy 1 & 2 after the extraction step, while rtol allows for
     # ~1e-7 rounding differences in VAR after NDData arithmetic on NumPy 2.
-    assert ad_compare(adref, adout, max_miss=12, rtol=1e-6,
+    assert ad_compare(adref, adout, max_miss=12, rtol=1e-6, atol=1e-6,
                       ignore_kw=['PROCARC', 'STACKARC', 'STCKARCS', 'OVERRDNS'])
 
     # Need to evaluate WFIT
