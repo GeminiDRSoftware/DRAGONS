@@ -32,6 +32,33 @@ Bug fixes
   correct reference coordinate, meaning that the wavelength solution was
   incorrect. This was a small effect, at most 0.05 pixels.
 
+
+4.2.3 (Gemini Internal Release)
+===============================
+
+Improvements
+------------
+
+* Adds the ``PROCLEVL`` PHU FITS header, ``processing_level()`` astrodata
+  descriptor, and corresponding ``setProcessingLevel`` primitive. This is for
+  use in GOA to distinguish between reduced single frames, and stacks. It will
+  also be used by future VO interfaces. The values correspond to the IVOA
+  ``obscore`` ``calib_level`` values.
+
+* Updates the ``measureBG``, ``measureCC``, ``measureIQ`` and
+  ``determineAstrometricSolution`` primitives to record measured values in
+  headers in the PHU. These will be captured in GOA by the instrument / site
+monitoring system.
+
+* Updates the ``reduce_nostack`` and ``alignAndStack`` GMOS imaging SQ recipes
+  to:
+* * Add a reference catalog to their output data
+* * Run the ``determineAstrometricSolutution``, ``measureBG``, ``measureCC``
+    and ``measureIQ`` primitives
+* * Set the processing level header and use unified filename extensions in
+    their output files for clarity in GOA.
+
+
 4.2.2
 =====
 
@@ -48,6 +75,10 @@ Compatibility
 A change to the behavior of Tabs in bokeh v3.9.0 caused the residual/ratio
 plot in the interactive tools to be corrupted. This release ensures
 compatibility with v3.9.0 as well as earlier versions.
+
+GOA updates
+-----------
+Includes the 4.2.1-goawavecal changes.
 
 
 4.2.1-goawavecal

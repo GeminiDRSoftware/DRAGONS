@@ -106,7 +106,6 @@ class QA(PrimitivesBASE):
                 if bg is not None:
                     ext.hdr.set("SKYLEVEL", bg,
                             comment=f"{self.keyword_comments['SKYLEVEL']} [{bunit}]")
-
                 if separate_ext:
                     report.report(results,
                                   header=f"{ad.filename} extension {ext.id}")
@@ -121,9 +120,22 @@ class QA(PrimitivesBASE):
 
             # Write mean background to PHU if averaging all together
             # (or if there's only one science extension)
+            # Also add all the MeasureBG headers for the GOA instruent / site
+            # monitoring system to the PHU
             if (len(ad) == 1 or not separate_ext) and results.get('bg') is not None:
-                ad.phu.set("SKYLEVEL", results['bg'], comment="{} [{}]".
-                            format(self.keyword_comments['SKYLEVEL'], bunit))
+                ad.phu.set("SKYLEVEL", results['bg'],
+                            comment=f"{self.keyword_comments['SKYLEVEL']} [{bunit}]")
+                ad.phu.set("MBG_SKYL", results['bg'],
+                           comment=f"{self.keyword_comments['MBG_SKYL']} [{bunit}]")
+                ad.phu.set("MBG_SKSD", results.get("bgerr"),
+                            comment=f"{self.keyword_comments['MBG_SKSD']} [{bunit}]")
+                ad.phu.set("MBG_BG", results.get("mag"),
+                            comment=f"{self.keyword_comments['MBG_BG']}")
+                ad.phu.set("MBG_BGSD", results.get("mag_std"),
+                            comment=f"{self.keyword_comments['MBG_BGSD']}")
+                redbg = f"{report.band}-percentile" if report.band else None
+                ad.phu.set("REDUCEBG", redbg,
+                           comment=f"{self.keyword_comments['REDUCEBG']}")
 
             # Report measurement to the adcc
             if results.get('mag'):
@@ -257,6 +269,17 @@ class QA(PrimitivesBASE):
             if results:
                 if not separate_ext:
                     report.report(results, all_results=all_results)
+
+                # Add the MeasureCC headers for the GOA instruments / site
+                # monitoring system to the PHU
+                ad.phu.set("MCC_ZP", results.get("mag"), self.keyword_comments["MCC_ZP"])
+                ad.phu.set("MCC_ZPSD", results.get("mag_std"), self.keyword_comments["MCC_ZPSD"])
+                ad.phu.set("MCC_CL", results.get("cloud"), self.keyword_comments["MCC_CL"])
+                ad.phu.set("MCC_CLSD", results.get("cloud_std"), self.keyword_comments["MCC_CLSD"])
+                ad.phu.set("MCC_NSAM", results.get("nsamples"), self.keyword_comments["MCC_NSAM"])
+
+                bands = [f"{band}-percentile" for band in report.band]
+                ad.phu.set("REDUCECC", ','.join(bands), self.keyword_comments["REDUCECC"])
 
                 # For QA dictionary
                 qad.update({'band': report.band, 'comment': report.comments,
@@ -402,15 +425,26 @@ class QA(PrimitivesBASE):
                         qap.fitsstore_report(ad, "iq", report.info_list(),
                                              self.mode, upload=True)
 
-                    # Store measurements in the PHU if desired
+                    # Store measurements in the PHU if desired. This is the
+                    # only place the GOA instrument monitoring cares about.
+                    # MEANFWHM and MEANELLP are pre GOA IM keywords
                     if (len(ad) == 1 or not separate_ext) and not is_ao:
-                        fwhm, ellip = results["fwhm"], results["elip"]
-                        if fwhm:
-                           ad.phu.set("MEANFWHM", fwhm,
-                                      comment=self.keyword_comments["MEANFWHM"])
-                        if ellip:
-                            ad.phu.set("MEANELLP", ellip,
-                                       comment=self.keyword_comments["MEANELLP"])
+                        for keyword, key in [
+                            ("MEANFWHM", "fwhm"), ("MEANELLP", "elip"),
+                            ("MIQ_FWHM", "fwhm"), ("MIQ_FWSD", "fwhm_std"),
+                            ("MIQ_ELLP", "elip"), ("MIQ_ELSD", "elip_std"),
+                            ("MIQ_ISOF", "isofwhm"), ("MIQ_ISSD", "isofwhm_std"),
+                            ("MIQ_EE50", "ee50d"), ("MIQ_EESD", "ee50d_std"),
+                            ("MIQ_PA", "pa"), ("MIQ_PASD", "pa_std"),
+                            ("MIQ_STRE", "strehl"), ("MIQ_STSD", "strehl_sdt"),
+                            ("MIQ_NSAM", "nsamples"), ("MIQ_AOSE", "as_seeing"),
+                            ("MIQ_ZEFW", "zfwhm"), ("MIQ_ZESD", "zfwhm_std"),
+                        ]:
+                            ad.phu.set(keyword, results.get(key),
+                                       comment=self.keyword_comments[keyword])
+                        iqband = f"{report.band}-percentile" if report.band else None
+                        ad.phu.set("REDUCEIQ", iqband,
+                                   comment=self.keyword_comments["REDUCEIQ"]),
                 else:
                     self.log.warning(f"No good sources found in {ad.filename}")
 
