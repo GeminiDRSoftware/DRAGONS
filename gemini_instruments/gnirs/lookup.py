@@ -247,5 +247,5 @@ dispersion_by_config = {
 
 # XD order number mapping to filter names
 xd_orders = {
-    1: "L", 2: "M", 3: "K", 4: "H", 5: "J", 6: "X", 7: "Z", 8: "I"
+    1: "M", 2: "L", 3: "K", 4: "H", 5: "J", 6: "X", 7: "Z", 8: "I"
 }

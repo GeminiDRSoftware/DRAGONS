@@ -258,9 +258,8 @@ def find_line_peaks(data, mask=None, variance=None, fwidth=None, min_snr=3,
         weight for each line for each of the weighting schemes
     """
     # Find peaks; convert width FWHM to sigma
-    widths = 0.42466 * fwidth * np.arange(0.75, 1.26, 0.05)  # TODO!
     peaks, _, peak_snrs = peak_finding.find_wavelet_peaks(
-        data, widths=widths, mask=mask, variance=variance, min_snr=min_snr,
+        data, fwidth=fwidth, mask=mask, variance=variance, min_snr=min_snr,
         min_sep=min_sep, reject_bad=reject_bad, pinpoint_index=pinpoint_index)
     fit_this_peak = peak_snrs > min_snr
     fit_this_peak[np.argsort(peak_snrs)[len(peaks) - nbright:]] = False
@@ -600,16 +599,17 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
     if ext.data.ndim > 1:
         dispaxis = 2 - ext.dispersion_axis()  # python sense
         direction = "row" if dispaxis == 1 else "column"
-        const_slit = 'LS' in ext.tags or "TRANSFRM" in ext.phu
-        center = config["center"] or int(0.5 * (ext.shape[1 - dispaxis] - 1))
+        center = config["center"] or (ext.shape[1 - dispaxis] // 2)
+        # We don't need to be strict because the actual extraction
+        # location will be reported
         data, mask, variance, extract_info = peak_finding.average_along_slit(
             ext, center=center, nsum=config["nsum"],
-            combiner=config["combine_method"])
-        if const_slit:
+            combiner=config["combine_method"], strict=False)
+        if isinstance(extract_info, slice):
             logit("Extracting 1D spectrum from {}s {} to {}".
                   format(direction, extract_info.start + 1, extract_info.stop))
             middle = 0.5 * (extract_info.start + extract_info.stop - 1)
-            location = f"{direction} {int(middle)}"
+            location = f"{direction} {middle}"
         else:
             # For non-straight slits, `extract_info` is the 1D
             # Chebyshev polynomial that traces the center of the slit.
@@ -622,7 +622,7 @@ def get_all_input_data(ext, p, config, linelist=None, bad_bits=0,
             middle = extract_info(0.5 * (ext.shape[dispaxis] - 1))
             # TODO: this isn't strictly correct, since it implies extraction
             # at a fixed location.
-            location = f"{direction} {int(middle)}"
+            location = f"{direction} {middle}"
     else:
         data = ext.data.copy()
         mask = ext.mask.copy()
@@ -1216,8 +1216,9 @@ def update_wcs_with_solution(ext, fit1d, input_data, config):
         if ext.data.ndim > 1:
             # TODO: Need to update this from the interactive tool's values
             direction, location = input_data["location"].split()
-            temptable[direction] = int(location)
+            temptable[direction] = float(location)
             temptable["nsum"] = config.nsum
+            temptable["combiner"] = config.combine_method
         pad_rows = nmatched - len(temptable.colnames)
         if pad_rows < 0:  # Really shouldn't be the case
             incoords = list(incoords) + [0] * (-pad_rows)

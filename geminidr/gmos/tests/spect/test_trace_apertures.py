@@ -30,7 +30,8 @@ test_datasets = [
     "N20190427S0123_aperturesFound.fits",  # R400 525
     "N20190427S0126_aperturesFound.fits",  # R400 625
     "N20190427S0127_aperturesFound.fits",  # R400 725
-    "N20190427S0141_aperturesFound.fits",  # R150 660
+    # Remove because spectrum has no signal on reddest CCD
+    #"N20190427S0141_aperturesFound.fits",  # R150 660
 ]
 
 fixed_test_parameters_for_determine_distortion = {

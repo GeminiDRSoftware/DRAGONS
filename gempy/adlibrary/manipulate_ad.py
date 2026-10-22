@@ -1,7 +1,82 @@
 import numpy as np
 
+import astrodata
 from astrodata import wcs as adwcs
 from gempy.utils import logutils
+
+from geminidr.gemini.lookups import DQ_definitions as DQ
+
+
+def reassemble_ad(adinput, shape=None):
+    """
+    This takes an AstroData object with multiple extensions and reassembles
+    the data into a single extension, using the array_section descriptors to
+    place the data in the correct location. Pixels masked as either NO_DATA
+    or UNILLUMINATED are not added to the final image and so will be left as
+    zero.
+
+    The header is copied from the first extension, but the various section
+    keywords will be incorrect. This is not considered to be a major issue
+    since the calling code will know that a full image has been created.
+
+    Parameters
+    ----------
+    adinput: AstroData
+        input AD object with multiple extensions
+    shape: tuple/None
+        shape of the output array, if None, the shape is determined from the
+        array_section descriptors
+
+    Returns
+    -------
+        AstroData: object of same subclass as input, with one extension
+    """
+    array_sections = adinput.array_section()
+
+    # Regions not covered by any of the input extensions will be masked
+    # as unilluminated.
+    covered_shape = (max(arrsec.y2 for arrsec in array_sections),
+                     max(arrsec.x2 for arrsec in array_sections))
+    if shape is None:
+        shape = covered_shape
+
+    adout = astrodata.create(adinput.phu)
+    data = np.zeros(shape, dtype=adinput[0].data.dtype)
+
+    # Always create a mask because there may be regions between the input
+    # extensions that need to be flagged as unilluminated.
+    mask = np.full(shape, DQ.unilluminated)
+    try:
+        variance = np.zeros(shape, dtype=adinput[0].variance.dtype)
+    except AttributeError:
+        variance = None
+
+    # Rather than create len(adinput) fullsize images and collapse them,
+    # we implement a two-pass approach which requires us to go back and
+    # unmasked regions that will have been masked by subsequent extensions.
+    for ext, arrsec in zip(adinput, array_sections):
+        _slice = arrsec.asslice()
+        if ext.mask is None:
+            data[_slice] += ext.data
+            if variance is not None:
+                variance[_slice] += ext.variance
+            mask[_slice] = DQ.good
+        else:
+            illuminated = ext.mask & (DQ.no_data | DQ.unilluminated) == 0
+            data[_slice][illuminated] += ext.data[illuminated]
+            mask[_slice] |= ext.mask
+            if variance is not None:
+                variance[_slice][illuminated] += ext.variance[illuminated]
+
+    for ext, arrsec in zip(adinput, array_sections):
+        if ext.mask is not None:
+            _slice = arrsec.asslice()
+            illuminated = ext.mask & (DQ.no_data | DQ.unilluminated) == 0
+            mask[_slice][illuminated] = ext.mask[illuminated]
+
+    adout.append(adinput[0].nddata.__class__(data=data, mask=mask, variance=variance,
+                                             meta=adinput[0].nddata.meta))
+    return adout
 
 
 def rebin_data(adinput, xbin=1, ybin=1, patch_binning_descriptors=True):
@@ -39,6 +114,9 @@ def rebin_data(adinput, xbin=1, ybin=1, patch_binning_descriptors=True):
     elif xrebin * yrebin == 1:
         log.stdinfo(f"{adinput.filename} does not need rebinning")
         return adinput
+    elif (xbin % adinput.detector_x_bin() > 0 or
+          ybin % adinput.detector_y_bin() > 0):
+        raise ValueError('New binning must be a multiple of the current binning')
 
     log.stdinfo(f"Rebinning {adinput.filename}")
     for ext, datsec in zip(adinput, adinput.data_section()):
@@ -47,6 +125,10 @@ def rebin_data(adinput, xbin=1, ybin=1, patch_binning_descriptors=True):
         if len(ext_shape) != 2:
             log.warning(f"Cannot rebin {extid} with {len(ext_shape)} dimensions")
             continue
+
+        if ext.shape[0] % yrebin > 0 or ext.shape[1] % xrebin > 0:
+            raise ValueError(f"Cannot rebin {extid} of shape {ext_shape} to "
+                             f"{xbin}x{ybin}")
 
         for attr in (core_attributes + list(ext.nddata.meta['other'].keys())):
             data = getattr(ext, attr, None)

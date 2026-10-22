@@ -43,7 +43,7 @@ def test_find_peaks(noise):
     n_peaks = 20
 
     stddev = 4.
-    widths = np.arange(0.75, 1.26, 0.05) * stddev
+    fwidth = 4 / 0.42466
     peaks = np.linspace(
         x.min() + 0.05 * np.ptp(x), x.max() - 0.05 * np.ptp(x), n_peaks)
 
@@ -54,7 +54,7 @@ def test_find_peaks(noise):
     y += (np.random.random(x.size) - 0.5) * noise
 
     peaks_detected, _, _ = peak_finding.find_wavelet_peaks(
-        y, widths=widths, variance=np.ones_like(y) * stddev,
+        y, fwidth=fwidth, variance=np.ones_like(y) * stddev,
         pinpoint_index=None)
 
     np.testing.assert_allclose(peaks_detected, peaks, atol=1)

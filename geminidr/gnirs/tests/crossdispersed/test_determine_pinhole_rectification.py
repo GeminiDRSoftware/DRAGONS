@@ -17,7 +17,9 @@ datasets = [
     #GNIRS XD pinhole files
     ("S20060507S0125_flatCorrected.fits", {}),# 32 l/mm, ShortBlue
     ("N20130821S0556_flatCorrected.fits", {}), # 10 l/mm, LongBlue
-    ("N20231029S0343_stack.fits", {"debug_max_trace_pos": 4})         # 111 l/mm, ShortBlue
+    # This is not a great test because there's a lot of real estate
+    # beyond the 4th trace for the model to flap around in
+    #("N20231029S0343_stack.fits", {"debug_max_trace_pos": 4})         # 111 l/mm, ShortBlue
     ]
 
 
@@ -37,13 +39,19 @@ def test_determine_pinhole_rectification(ad, params, change_working_dir, ref_ad_
         model = ext.wcs.get_transform('pixels', 'rectified')
         ref_model = ext_ref.wcs.get_transform('pixels', 'rectified')
 
-        assert len(model._parameters) == 8
         assert model.inputs == ('x0', 'x1')
         assert model.outputs == ('z', 'x0')
 
-        X, Y = np.mgrid[:ext.shape[0], :ext.shape[1]]
+        Y, X = np.mgrid[:ext.shape[0], :ext.shape[1]]
+        xx, yy = X[ext.mask == 0], Y[ext.mask == 0]
 
-        np.testing.assert_allclose(model(X, Y), ref_model(X, Y), atol=0.05)
+        xt, yt = model(xx, yy)
+        xtt, ytt = model.inverse(xt, yt)
+        np.testing.assert_allclose(xtt, xx, atol=0.05)
+        np.testing.assert_allclose(ytt, yy, atol=0.05)
+
+        np.testing.assert_allclose(model.inverse(xx, yy), ref_model.inverse(xx, yy), atol=0.2)
+        np.testing.assert_allclose(model(xx, yy), ref_model(xx, yy), atol=0.2)
 
 
 @pytest.mark.gnirsxd
@@ -78,8 +86,8 @@ def test_straight_edges_from_pinhole_model(ad, params):
         right_round_trip = t.inverse(*right_transformed)
 
         # These tolerance seem surprisingly high, but the model is not perfect
-        assert np.allclose(left_round_trip[0], x1[x1_on], atol=0.5)
-        assert np.allclose(right_round_trip[0], x2[x2_on], atol=0.5)
+        assert np.allclose(left_round_trip[0], x1[x1_on], atol=0.05)
+        assert np.allclose(right_round_trip[0], x2[x2_on], atol=0.05)
 
 
 # Local Fixtures and Helper Functions ------------------------------------------

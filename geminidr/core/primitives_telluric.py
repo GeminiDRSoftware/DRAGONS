@@ -5,8 +5,10 @@ from abc import ABC, abstractmethod
 from functools import partial
 
 from importlib import import_module
+import warnings
 
 import numpy as np
+from astropy.coordinates import SkyCoord
 
 from scipy.interpolate import make_interp_spline
 from scipy.signal import find_peaks
@@ -16,6 +18,13 @@ from astropy.convolution import Gaussian1DKernel, convolve
 from astropy.modeling import models
 from astropy.table import Table
 from astropy import units as u
+try:
+    from astroquery.exceptions import NoResultsWarning
+    from astroquery.simbad import Simbad
+except ModuleNotFoundError:
+    pass
+
+import pyvo
 
 from . import Spect
 from gempy.gemini import gemini_tools as gt
@@ -29,7 +38,7 @@ from gempy.library import convolution, peak_finding, wavecal
 from gempy.library.config import RangeField
 from gempy.library.calibrator import TelluricCalibrator, TelluricCorrector
 from gempy.library.telluric import TelluricModels, TelluricSpectrum
-from gempy.library.telluric_models import PCA
+from gempy.library.telluric_models import MultipleTelluricModels, PCA
 from gempy.library.wavecal import LineList
 from geminidr.interactive.fit.telluric import TelluricCorrectVisualizer, TelluricVisualizer
 
@@ -171,7 +180,9 @@ class Telluric(Spect):
             iter_list = [(True, False)] + iter_list
         sampling = 10
 
+        fail = False
         for ad in adinputs:
+            from datetime import datetime
             log.stdinfo(f"Processing {ad.filename} (this can be slow)")
 
             # We do this "interactive" stuff here because we want to
@@ -179,6 +190,48 @@ class Telluric(Spect):
             data_units = "adu" if ad.is_in_adu() else "electron"
             config = copy(self.params[self.myself()])
             config.update(**params)
+            if config.bbtemp is None or config.magnitude is None:
+                target_info = query_simbad(ad)
+                if not target_info:
+                    log.warning("No result from SIMBAD, so cannot process this file")
+                    fail = True
+                    continue
+                if config.bbtemp is None:
+                    if target_info["sp_type"]:
+                        config.update(bbtemp=target_info["Teff"])
+                        log.stdinfo("    Using spectral type "
+                                    f"{target_info['sp_type']} to estimate "
+                                    f"Teff={int(config.bbtemp)}K")
+                    else:
+                        log.warning("SIMBAD did not return a spectral type, so cannot estimate Teff")
+                        fail = True
+                        continue
+                if config.magnitude is None:
+                    msg = ""
+                    waveband = ad.wavelength_band()
+                    for band in [waveband, "K", "J", "H"]:  # arbitrary order
+                        for filt, mag in target_info['magnitudes'].items():
+                            if band == filt[0] and bool(mag):
+                                mag = np.round(mag, 3)
+                                magnitude = f"{filt}={mag}"
+                                msg = f"    Using SIMBAD magnitude {magnitude}"
+                                break
+                        if msg:
+                            if waveband is None:
+                                msg += (" as could not determine the "
+                                        "wavelength band of the spectrum")
+                            elif waveband != band[0]:
+                                msg += f" as there is no magnitude for {waveband}"
+                            log.stdinfo(msg)
+                            break
+                    else:
+                        log.warning("SIMBAD did not return a magnitude, so cannot process this file")
+                        fail = True
+                        continue
+                    if config.abmag:
+                        log.warning("Overriding abmag=True since SIMBAD magnitudes are Vega-based")
+                    config.update(magnitude=magnitude, abmag=False)
+
             title_overrides = {"abmag": "Magnitude is on the AB scale?"}
             # 'placeholders' needs to be set due to a bug in interactive
             uiparams = UIParameters(
@@ -241,6 +294,34 @@ class Telluric(Spect):
                         raise ValueError(f"No 1D spectra found in {ad.filename}")
                     tcal = TelluricCalibrator(tspek_list, ui_params=uiparams)
 
+                # If there are multiple spectra to fit, it will be quicker to
+                # fit each spectrum separately, and then use these individual
+                # fits as starting points for the overall fit.
+                if len(ad) > 1:
+                    log.stdinfo("    Performing fits to individual spectral orders")
+                    # Speed up the fit by not iterating or masking stellar
+                    # absorption features
+                    uip_copy = deepcopy(uiparams)
+                    uip_copy.values["niter"] = uip_copy.values["threshold"] = 0
+                    m_init = MultipleTelluricModels(
+                        tcal.spectra, function=tcal.fit_params["function"],
+                        order=tcal.fit_params["order"])
+                    submodels = []
+                    for i, tspek in enumerate(tcal.spectra):
+                        temp_tcal = TelluricCalibrator([tspek], ui_params=uip_copy)
+                        m_final, mask = temp_tcal.perform_all_fits()
+                        for p in m_final.param_names:
+                            # m_final parameter names all being "m0"
+                            if f"m{i}{p[2:]}" in m_init.param_names:
+                                setattr(m_init, f"m{i}{p[2:]}", getattr(m_final, p))
+                        submodels.append(m_final)
+                    for p in m_init.param_names:
+                        if not p.startswith("m"):
+                            median_value = np.median([getattr(m, p).value for m in submodels])
+                            setattr(m_init, p, median_value)
+                    tcal.last_model = m_init
+
+                log.stdinfo("    Performing overall fit")
                 if inter:
                     visualizer = TelluricVisualizer(
                         tcal, tab_name_fmt=lambda i: spectral_order_names[i],
@@ -326,6 +407,7 @@ class Telluric(Spect):
                                                 absorption[goodpix], k=3)
                     spline.extrapolate = False  # will return np.nan outside range
                     ext.TELLABS = spline(tspek.waves).astype(ext.data.dtype)
+                    ext.TELLABS[np.isinf(ext.TELLABS)] = np.nan
                     result_index += 1
 
             # We have to correct for exposure time and add the SENSFUNC units
@@ -346,6 +428,11 @@ class Telluric(Spect):
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
+
+        # It's OK to pass on unprocessed files, since they won't have the
+        # necessary metadata to be stored as processed_tellurics.
+        if fail:
+            log.warning("Some files could not be processed")
 
         return adinputs
 
@@ -675,15 +762,17 @@ class Telluric(Spect):
                 tcal.perform_all_fits()
 
             if apply_shift:
-                log.stdinfo(f"Applying shift of {pixel_shift} pixels "
-                            f"to {ad.filename}")
+                if pixel_shift != 0:
+                    log.stdinfo(f"Applying shift of {pixel_shift} pixels "
+                                f"to {ad.filename}")
+
             abs_spectra = tcal.absorption_spectra()
             for ext in ad:
                 if len(ext.shape) > 1:
                     continue
 
                 ext.divide(next(abs_spectra))
-                if apply_shift:
+                if apply_shift and pixel_shift != 0:
                     ext.wcs.insert_transform(
                         ext.wcs.input_frame, models.Shift(pixel_shift),
                         after=True)
@@ -1140,6 +1229,65 @@ def find_outliers(data, sigma=3, cenfunc=np.median):
         if abs(data[i] - average) > sigma * stddev:
             mask[i] = True
     return mask
+
+
+def query_simbad(ad):
+    """
+    Query SIMBAD for the spectral type and magnitude of the star,
+    and convert the spectral type to temperature.
+
+    Parameters
+    ----------
+    ad: ``AstroData``
+        input AstroData object
+
+    Returns
+    -------
+    dict: information about the star
+    """
+    try:
+        simbad = Simbad()
+    except NameError:
+        return {}
+
+    try:  # this is where a connection error to SIMBAD shows up first
+        simbad.add_votable_fields('J', 'H', 'K', 'sp_type')
+    except pyvo.dal.exceptions.DALFormatError:
+        return {}
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=NoResultsWarning)
+        try:
+            result = simbad.query_object(ad.object())
+        except:  # probably a connection error
+            pass
+        if not result:
+            target_coords = SkyCoord(ad.target_ra(), ad.target_dec(), unit=u.deg)
+            try:
+                result = simbad.query_region(target_coords, radius=5*u.arcsec)
+            except:  # probably a connection error
+                pass
+            else:
+                if len(result) > 1:  # eliminate objects with no spectral type
+                    result = result[result['sp_type'] != '']
+                if len(result) > 1:  # use the closest
+                    coords = SkyCoord(result['ra'], result['dec'], unit=u.deg)
+                    separations = target_coords.separation(coords).arcsec
+                    result = result[separations.argmin()]
+
+    if result:
+        result_dict = dict(zip(result.keys(), result[0].values()))
+        result_dict['Teff'] = at.spectral_type_to_temperature(result_dict['sp_type'])
+        result_dict['magnitudes'] = {f: result_dict.pop(f) for f in "JHK"}
+        # SIMBAD returns 2MASS K-band magnitude, but it's really Ks
+        if "K" in result_dict['magnitudes']:
+            bibcode_result = simbad.query_tap(f"""
+                SELECT bibcode FROM flux JOIN basic ON oidref=oid WHERE
+                filter='K' AND main_id='{result_dict["main_id"]}'
+                """)
+            if bibcode_result and bibcode_result[0]['bibcode'] == "2003yCat.2246....0C":
+                result_dict['magnitudes']['Ks'] = result_dict['magnitudes'].pop('K')
+        return result_dict
+    return {}
 
 
 # Generic LSF classes that will be inherited by the instrument-specific ones

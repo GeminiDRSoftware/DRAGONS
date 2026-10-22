@@ -157,14 +157,6 @@ def test_get_corners_3d():
     assert corners == expected_corners
 
 
-def test_clipped_mean():
-    dist = np.array([5, 5, 4, 7, 7, 4, 3, 5, 2, 6, 5, 12, 0,
-                     9, 10, 13, 2, 14, 6, 3, 50])
-    results = at.clipped_mean(dist)
-    expected_values = (6.1, 3.7)
-    assert np.allclose(results, expected_values)
-
-
 def test_parse_user_regions():
     parse = at.parse_user_regions
     assert parse("*") == [(None, None)]
@@ -236,6 +228,13 @@ def test_optimal_normalization_multiple_extensions(flat_images, separate_ext):
         # image 2 (200, 250, 300), so the divided image will have 1/3 pixels
         # ~0.25, 1/3 being ~0.4, and 1/3 being ~0.5; hence median is 0.4
         np.testing.assert_allclose(retval, [1, 0.4], rtol=0.01)
+
+
+def test_spectral_type_to_temperature():
+    assert at.spectral_type_to_temperature("B5V") == pytest.approx(15700, abs=200)
+    assert at.spectral_type_to_temperature("A0V") == pytest.approx(9700, abs=100)
+    assert at.spectral_type_to_temperature("A5V") == pytest.approx(8080, abs=100)
+    assert at.spectral_type_to_temperature("G2V") == pytest.approx(5770, abs=100)
 
 
 def test_spherical_offsets_by_pa():

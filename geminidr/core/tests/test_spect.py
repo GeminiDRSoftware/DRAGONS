@@ -54,9 +54,64 @@ from geminidr.niri.primitives_niri_image import NIRIImage
 from geminidr.niri.primitives_niri_longslit import NIRILongslit
 from geminidr.gnirs import primitives_gnirs_longslit
 from geminidr.gnirs.primitives_gnirs_longslit import GNIRSLongslit
+from geminidr.gemini.lookups import DQ_definitions as DQ
 from recipe_system.mappers.primitiveMapper import PrimitiveMapper
 
 # -- Tests --------------------------------------------------------------------
+
+def test_determine_slit_edges_and_masking():
+    """
+    Test the determineSlitEdges() primitive. This is a simple test that
+    creates a fake slit with a known edge and checks that the primitive
+    correctly identifies the edge and returns the correct values.
+
+    Since we're putting the edge between pixels, the returned values
+    should be the pixel value +/- 0.5.
+
+    Since we've created a nice synthetic example, we also test that
+    maskBeyondSlit() correctly masks the pixels outside the slit.
+    """
+    # We download a raw file rather than use a pre-processed one
+    ad = astrodata.open(download_from_archive("N20240116S0104.fits"))
+    p = GNIRSLongslit([ad])
+    p.prepare()
+    # Create a perfect artificial image
+    slitlen = int(ad.MDF['slitlength_pixels'][0])
+    data = np.zeros_like(ad[0].data)
+    x1 = (data.shape[1] - slitlen) // 2
+    x2 = x1 + slitlen
+    data[:, x1:x2] = 5000
+    ad[0].data = data
+    y = np.arange(data.shape[0])
+
+    # Add noise or else it doesn't find anything
+    ad[0].data += 10 * np.random.normal(size=data.shape)
+
+    p.determineSlitEdges()
+
+    slitedge = ad[0].SLITEDGE
+    assert len(slitedge) == 2
+    for row, expected in zip(slitedge, (x1-0.5, x2-0.5)):
+        m = am.table_to_model(row)
+        edgeval = m(y)
+        # Tolerance can be relaxed since we're mainly trying to check
+        # for the half-pixel issue
+        np.testing.assert_allclose(edgeval, expected, atol=0.1)
+
+    p.maskBeyondSlit(debug_min_illuminated_fraction=0.9)
+
+    assert ad[0].mask is not None
+    expected = np.r_[[DQ.unilluminated]*x1, [DQ.good]*slitlen,
+                     [DQ.unilluminated]*(data.shape[1]-x2)].astype(DQ.datatype)
+    for i, maskrow in enumerate(ad[0].mask):
+        assert list(maskrow).count(DQ.good) == slitlen
+        try:
+            np.testing.assert_equal(maskrow, expected)
+        except AssertionError:
+            xx1 = maskrow.argmin()
+            xx2 = data.shape[1] - maskrow[::-1].argmin()
+            msg = f"Row {i} illuminated slice {xx1}:{xx2} (expected {x1}:{x2})"
+            raise AssertionError(msg)
 
 
 def test_extract_1d_spectra():

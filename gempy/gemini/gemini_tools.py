@@ -238,7 +238,7 @@ def attach_rectification_model(target, source, log=None):
     for ext_t, ext_s in zip(target, source):
         try:
             rect_frame_index = ext_s.wcs.available_frames.index('rectified')
-        except ValueError:
+        except (AttributeError, ValueError):
             # Silently no-op. If it's important to know if a model has been
             # attached, run this same check on the output where this function
             # is called, since the severity of it happening varies by context.

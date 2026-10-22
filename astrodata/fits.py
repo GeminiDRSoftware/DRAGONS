@@ -310,7 +310,8 @@ class FitsLazyLoadable:
     @property
     def data(self):
         res = self._create_result(self.shape)
-        res[:] = self._scale(self._obj.data)
+        if self._obj.data is not None:
+            res[:] = self._scale(self._obj.data)
         return res
 
     @property

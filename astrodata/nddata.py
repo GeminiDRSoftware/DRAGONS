@@ -407,7 +407,8 @@ class NDAstroData(AstroDataMixin, NDArithmeticMixin, NDSlicingMixin, NDData):
             if is_lazy(source):
                 if section is None:
                     ret = np.empty(source.shape, dtype=source.dtype)
-                    ret[:] = source.data
+                    if source.shape != ():
+                        ret[:] = source.data
                     setattr(self, target, ret)
                 else:
                     ret = source[section]

@@ -31,7 +31,6 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@v3
         with:
-          auto-update-conda: true
           channels: conda-forge
           python-version: ${{ matrix.python-version }}
 
@@ -43,7 +42,9 @@ jobs:
 
       - name: Install packages
         shell: bash -l {0}
-        run: python -m pip install tox tox-conda
+        run: |
+          python -m ensurepip
+          python -m pip install tox tox-conda
 
       - name: Setup DRAGONS_TEST
         shell: bash -l {0}

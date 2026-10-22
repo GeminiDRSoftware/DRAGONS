@@ -4,10 +4,10 @@ Fixtures to be used in tests in DRAGONS
 
 import os
 import shutil
-import urllib
 import hashlib
 import requests
-import xml.etree.ElementTree as et
+import requests.adapters
+import urllib3.util  # For http retries in requests
 
 import numpy as np
 import pytest
@@ -59,7 +59,10 @@ def assert_most_close(actual, desired, max_miss, rtol=1e-7, atol=0,
 
     except AssertionError as e:
         n_miss = e.args[0].split('\n')[3].split(':')[-1].split('(')[0].split('/')[0]
-        n_miss = int(n_miss.strip())
+        try:
+            n_miss = int(n_miss.strip())
+        except ValueError:
+            raise AssertionError(str(e))
 
         if n_miss > max_miss:
             error_message = (
@@ -251,20 +254,28 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
     if url is None:
         url = URL + filename
 
+    # Set up a requests session and configure re-tries
+    reqses = requests.Session()
+    retries = urllib3.util.Retry(total=5, backoff_factor=1)
+    reqses.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
+
     # Now check if there's a local file with the same md5; in which
     # case, we don't have to download
     download_it = True
     local_path = os.path.join(cache_path, filename)
     if os.path.exists(local_path):
-        # Get the md5 of the file on disk
-        with open(local_path, 'rb') as filep:
-            digest = hashlib.file_digest(filep, "md5")
-        file_md5 = digest.hexdigest()
-        # Get the md5 from GOA
-        fileinfourl = url.replace('/file/', '/jsonfilelist/present/')
-        fileinfo = requests.get(fileinfourl, headers={"User-Agent": "astropy"}).json()
-        goa_md5 = fileinfo[0].get('data_md5')
-        download_it = (file_md5 != goa_md5)
+        if url.startswith(URL):  # Gemini archive
+            # Get the md5 of the file on disk
+            with open(local_path, 'rb') as filep:
+                digest = hashlib.file_digest(filep, "md5")
+            file_md5 = digest.hexdigest()
+            # Get the md5 from GOA
+            fileinfourl = url.replace('/file/', '/jsonfilelist/present/filename=')
+            fileinfo = reqses.get(fileinfourl, headers={"User-Agent": "astropy"}).json()
+            goa_md5 = fileinfo[0].get('data_md5')
+            download_it = (file_md5 != goa_md5)
+        else:
+            download_it = False
 
     if download_it:
         tmp_path = download_file(url, cache=False)
@@ -274,34 +285,6 @@ def download_from_archive(filename, sub_path='raw_files', env_var='DRAGONS_TEST'
         os.chmod(local_path, 0o664)
 
     return local_path
-
-
-def get_associated_calibrations(filename, nbias=5):
-    """
-    Queries Gemini Observatory Archive for associated calibrations to reduce
-    the data that will be used for testing.
-
-    Parameters
-    ----------
-    filename : str
-        Input file name
-    """
-    url = f"https://archive.gemini.edu/calmgr/{filename}"
-    tree = et.parse(urllib.request.urlopen(url))
-    root = tree.getroot()
-    prefix = root.tag[:root.tag.rfind('}') + 1]
-
-    rows = []
-    for node in tree.iter(prefix + 'calibration'):
-        cal_type = node.find(prefix + 'caltype').text
-        cal_filename = node.find(prefix + 'filename').text
-        if not ('processed_' in cal_filename or 'specphot' in cal_filename):
-            rows.append((cal_filename, cal_type))
-
-    tbl = Table(rows=rows, names=['filename', 'caltype'])
-    tbl.sort('filename')
-    tbl.remove_rows(np.where(tbl['caltype'] == 'bias')[0][nbias:])
-    return tbl
 
 
 class ADCompare:

@@ -1,0 +1,27 @@
+.red {
+  color: red;
+}
+
+.blue {
+  color: blue;
+}
+
+.green {
+  color: green;
+}
+
+.yellow {
+  color: yellow;
+}
+
+.gray {
+  color: gray;
+}
+
+.small {
+  font-size: 80%;
+}
+
+.big {
+  font-size: 120%;
+}

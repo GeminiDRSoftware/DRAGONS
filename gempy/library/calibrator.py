@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+import re
+
 import numpy as np
 from astropy.modeling import models, fitting
 from astropy.stats import sigma_clip
@@ -43,8 +45,11 @@ class Calibrator(ABC):
         """
         Set parameters for computing the model, from a single parameter set
         """
-        self.reinit_params = {p: getattr(ui_params, p)
-                              for p in ui_params.reinit_params}
+        if ui_params.reinit_params is None:
+            self.reinit_params = {}
+        else:
+            self.reinit_params = {p: getattr(ui_params, p)
+                                  for p in ui_params.reinit_params}
         fit_params = fit_1D.translate_params(ui_params.values)
         self.fit_params = {k: [v] * len(self) for k, v in fit_params.items()}
 
@@ -106,6 +111,7 @@ class TelluricCalibrator(Calibrator):
         # Lots of checking that all the TelluricSpectra have similar PCA models
         assert all(isinstance(t, TelluricSpectrum) for t in telluric_spectra)
         self.spectra = telluric_spectra
+        self.last_model = None
         npca = [t.pca.npca_params for t in telluric_spectra]
         self.npca = npca[0]
         assert npca == [self.npca] * len(npca)  # all must have the same PCA class
@@ -260,6 +266,8 @@ class TelluricCalibrator(Calibrator):
         new_mask: bool array
             masked points (including sigma-clipped points)
         """
+        start_time = datetime.now()
+        #print(datetime.now(), "Fitting...")
         data = self.concatenate('data')
         original_masks = [tspek.mask.copy() for tspek in self.spectra]
         for tspek, user_mask in zip(self.spectra, self.user_mask):
@@ -268,6 +276,20 @@ class TelluricCalibrator(Calibrator):
         m_init = MultipleTelluricModels(
             self.spectra, function=self.fit_params["function"],
             order=self.fit_params["order"])
+
+        # Assign parameters from the last fit as the initial guess for this
+        # one, which should save time. The number of spectra won't change,
+        # of course.
+        if self.last_model is not None:
+            unchanged_models = [str(i) for i in range(len(self.spectra)) if
+                                m_init.functions[i] == self.last_model.functions[i] and
+                                m_init.orders[i] == self.last_model.orders[i]]
+            for p in self.last_model.param_names:
+                if m := re.match(r"m(\d+)[a-z].+", p):
+                    if m.group(1) in unchanged_models:
+                        setattr(m_init, p, getattr(self.last_model, p))
+                else:  # PCA or LSF parameter
+                    setattr(m_init, p, getattr(self.last_model, p))
 
         # Set the bounds and make sure the initial values are within bounds
         # (because we didn't set the default parameter values). The behaviour
@@ -300,7 +322,6 @@ class TelluricCalibrator(Calibrator):
         # code to determine where to do the evaluation looks at the "x" (i.e.,
         # wavelength) values and doesn't know about the mask on "y".
         #weights = np.full_like(weights, 100)  # hack for now
-        start_time = datetime.now()
         if sigma_clipping:
             sigma_clip_params = {k: v for k, v in params.items()
                                  if k in ('grow', 'sigma_lower', 'sigma_upper', 'niter')}
@@ -314,7 +335,7 @@ class TelluricCalibrator(Calibrator):
             m_final = fit_it(m_init, m_init.waves[~mask], data[~mask],
                              weights=weights[~mask], maxiter=10000)
             new_mask = np.zeros_like(m_init.waves, dtype=bool)
-        # print(datetime.now() - start_time, "FINISHED FIT")
+        #print(datetime.now() - start_time, "FINISHED FIT")
 
         # Reset masks to their original values
         for tspek, orig_mask in zip(self.spectra, original_masks):
@@ -323,6 +344,7 @@ class TelluricCalibrator(Calibrator):
         # Update the individual SingleTelluricModel instances held by the
         # MultipleTelluricModels instance
         m_final.update_individual_models()
+        self.last_model = m_final
         return m_final, new_mask
 
     # Methods above should be common to all classes

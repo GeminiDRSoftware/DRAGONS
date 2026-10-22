@@ -700,13 +700,15 @@ class AstroData:
                         data_type=dt
                     ))
 
+            data_type = nd.data.dtype.name if nd.data.shape != () else ""
+
             yield dict(
                 idx='[{:2}]'.format(idx),
                 main=dict(
                     content='science',
                     type=type(nd).__name__,
                     dim=str(nd.data.shape),
-                    data_type=nd.data.dtype.name
+                    data_type=data_type
                 ),
                 other=other_objects
             )
