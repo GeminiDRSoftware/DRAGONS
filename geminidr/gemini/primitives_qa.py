@@ -429,8 +429,14 @@ class QA(PrimitivesBASE):
                     # only place the GOA instrument monitoring cares about.
                     # MEANFWHM and MEANELLP are pre GOA IM keywords
                     if (len(ad) == 1 or not separate_ext) and not is_ao:
+                        fwhm, ellip = results["fwhm"], results["elip"]
+                        if fwhm:
+                            ad.phu.set("MEANFWHM", fwhm,
+                                       comment=self.keyword_comments["MEANFWHM"])
+                        if ellip:
+                            ad.phu.set("MEANELLP", ellip,
+                                       comment=self.keyword_comments["MEANELLP"])
                         for keyword, key in [
-                            ("MEANFWHM", "fwhm"), ("MEANELLP", "elip"),
                             ("MIQ_FWHM", "fwhm"), ("MIQ_FWSD", "fwhm_std"),
                             ("MIQ_ELLP", "elip"), ("MIQ_ELSD", "elip_std"),
                             ("MIQ_ISOF", "isofwhm"), ("MIQ_ISSD", "isofwhm_std"),
