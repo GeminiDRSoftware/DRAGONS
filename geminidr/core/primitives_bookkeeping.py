@@ -400,7 +400,6 @@ class Bookkeeping(PrimitivesBASE):
         log = self.log
         level = params['level']
 
-
         for ad in adinputs:
             log.fullinfo(f"Setting Processing level = {level} "
                          f"on filename {ad.filename}")

@@ -508,7 +508,6 @@ class Register(PrimitivesBASE):
             ad.phu.set("MPE_DDSD", ddec_std, comment=self.keyword_comments["MPE_DDSD"])
             ad.phu.set("MPE_NSAM", nsamples, comment=self.keyword_comments["MPE_NSAM"])
 
-
             # Report the measurement to the fitsstore
             if self.upload and "metrics" in self.upload:
                 fitsdict = qap.fitsstore_report(ad, "pe", info_list,
