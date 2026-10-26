@@ -278,7 +278,7 @@ class QA(PrimitivesBASE):
                 ad.phu.set("MCC_CLSD", results.get("cloud_std"), self.keyword_comments["MCC_CLSD"])
                 ad.phu.set("MCC_NSAM", results.get("nsamples"), self.keyword_comments["MCC_NSAM"])
 
-                bands = [f"{band}-percentile" for band in report.band]
+                bands = [f"{band}-percentile" for band in report.band] if report.band else None
                 ad.phu.set("REDUCECC", ','.join(bands), self.keyword_comments["REDUCECC"])
 
                 # For QA dictionary
