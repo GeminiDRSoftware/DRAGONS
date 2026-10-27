@@ -392,10 +392,10 @@ class QA(PrimitivesBASE):
                         report.report(results, header=extid)
                         if not is_ao:
                             fwhm, ellip = results["fwhm"], results["elip"]
-                            if fwhm:
+                            if fwhm is not None:
                                 ext.hdr.set("MEANFWHM", fwhm,
                                             comment=self.keyword_comments["MEANFWHM"])
-                            if ellip:
+                            if ellip is not None:
                                 ext.hdr.set("MEANELLP", ellip,
                                             comment=self.keyword_comments["MEANELLP"])
 
