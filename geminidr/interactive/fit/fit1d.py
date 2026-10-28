@@ -504,7 +504,12 @@ class InteractiveModel1D(InteractiveModel):
 
                 elif self.fit is None:
                     self.quality = FitQuality.BAD
-                    #self.fit = new_fit
+                    # If the fitting order was underconstrained and had to be
+                    # reduced, we'll default to the fallback model if there is
+                    # one (eg. for wave cal), otherwise we have to present this
+                    # fit if we don't want the code to fail with an error.
+                    if self.default_model is None:
+                        self.fit = new_fit
 
                 else:
                     # Modify the fit_1D object with a shift by ugly hacking

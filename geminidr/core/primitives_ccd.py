@@ -210,8 +210,9 @@ class CCD(PrimitivesBASE):
                 elif len(ext_gain) != len(ext_osec):
                     raise ValueError('Gain descriptor does not match overscan.')
 
+                devsum = sigsum = biassum = 0.
 
-                for osec, asec, rdnoise, gain in zip(ext_osec, mapped_asec, ext_rdnoise, ext_gain):
+                for nsec, (osec, asec, rdnoise, gain) in enumerate(zip(ext_osec, mapped_asec, ext_rdnoise, ext_gain), start=1):
                     x1, x2, y1, y2 = osec.x1, osec.x2, osec.y1, osec.y2
                     axis = np.argmin([y2 - y1, x2 - x1])
                     if axis == 1:
@@ -260,9 +261,12 @@ class CCD(PrimitivesBASE):
                     # is truly an optimal estimator.
                     # It turns out that the first and last row of the readout
                     # often have pixels with massively outlying values, so we
-                    # disregard those samples
+                    # disregard those samples.
+                    # This calculation is used to estimate read noise, which,
+                    # by convention, is always given in electrons.
                     trimmedstds = stds[1:-1]
-                    overstd = np.sqrt(np.mean(trimmedstds * trimmedstds))
+                    devsum += (np.mean(trimmedstds * trimmedstds) *
+                               (gain**2 if ext.is_in_adu() else 1.0))
 
                     # Readnoise descriptor always returns value in electrons
                     if ext.is_in_adu():
@@ -310,25 +314,25 @@ class CCD(PrimitivesBASE):
                         #     ext.data[y1:y2, asec.x1:asec.x2] - \
                         #     bias.astype(np.float32)
 
+                    biassum += np.median(data)
+                    sigsum += sigma**2
 
-                    ext.hdr.set('OVERSEC', f'[{x1+1}:{x2},{y1+1}:{y2}]',
-                                self.keyword_comments['OVERSEC'])
-                    # Some shenanigans to deal with the case where the user
-                    # subtracts a non-corrected bias from a non-corrected
-                    # science and then overscanCorrects the result
-                    previous_overscan = ext.hdr.get('OVERSCAN', 0)
-                    bias_level = np.median(data)
-                    ext.hdr.set('OVERSCAN', previous_overscan + bias_level,
-                                self.keyword_comments['OVERSCAN'])
-                    ext.hdr.set('OVERRMS', sigma, self.keyword_comments['OVERRMS'])
-                    # By convention, "readnoise" is always in electrons
-                    overrdns = overstd * ext.gain() if ext.is_in_adu() else overstd
-                    ext.hdr.set('OVERRDNS', overrdns, self.keyword_comments['OVERRDNS'])
+                biassum /= nsec
+                sigsum = np.sqrt(sigsum/nsec)
+                devsum = np.sqrt(devsum/nsec)
 
-                    for desc in ('saturation_level', 'non_linear_level'):
-                        with suppress(AttributeError, KeyError):
-                            ext.hdr[ad._keyword_for(desc)] -= bias_level
+                # Some shenanigans to deal with the case where the user
+                # subtracts a non-corrected bias from a non-corrected
+                # science and then overscanCorrects the result
+                previous_overscan = ext.hdr.get('OVERSCAN', 0)
+                ext.hdr.set('OVERSCAN', previous_overscan + biassum,
+                            self.keyword_comments['OVERSCAN'])
 
+                ext.hdr.set('OVERRMS', sigsum, self.keyword_comments['OVERRMS'])
+                ext.hdr.set('OVERRDNS', devsum, self.keyword_comments['OVERRDNS'])
+                for desc in ('saturation_level', 'non_linear_level'):
+                    with suppress(AttributeError, KeyError):
+                        ext.hdr[ad._keyword_for(desc)] -= biassum
 
             # Timestamp, and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
