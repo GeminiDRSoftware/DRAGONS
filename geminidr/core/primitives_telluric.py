@@ -20,7 +20,7 @@ from astropy.table import Table
 from astropy import units as u
 try:
     from astroquery.exceptions import NoResultsWarning
-    from astroquery.simbad import Simbad
+    from astroquery.simbad import Simbad, conf as simbad_conf
 except ModuleNotFoundError:
     pass
 
@@ -28,6 +28,7 @@ import pyvo
 
 from . import Spect
 from gempy.gemini import gemini_tools as gt
+from gempy.utils import logutils
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from geminidr.interactive.interactive import UIParameters
 import geminidr.interactive.server
@@ -44,6 +45,8 @@ from geminidr.interactive.fit.telluric import TelluricCorrectVisualizer, Telluri
 
 from . import parameters_telluric
 from geminidr import CalibrationNotFoundError
+
+log = logutils.get_logger(__name__)
 
 
 # geminidr.gemini.lookups
@@ -1252,8 +1255,25 @@ def query_simbad(ad):
 
     try:  # this is where a connection error to SIMBAD shows up first
         simbad.add_votable_fields('J', 'H', 'K', 'sp_type')
-    except pyvo.dal.exceptions.DALFormatError:
-        return {}
+    except pyvo.dal.exceptions.DALServiceError:
+        log.warning(f"Failed to connect to {simbad.server}. "
+                    "Trying other servers...")
+        failed_server = simbad.server
+        for server in simbad_conf.servers_list:
+            if server != failed_server:
+                simbad.server = server
+                try:
+                    simbad.add_votable_fields('J', 'H', 'K', 'sp_type')
+                except pyvo.dal.exceptions.DALServiceError:
+                    pass
+                else:
+                    log.warning(f"Changing SIMBAD server to {server}")
+                    simbad_conf.server = server
+                    break
+        else:
+            log.warning("Failed to connect to any SIMBAD server. "
+                        "Not retrieving spectral type or magnitudes.")
+            return {}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=NoResultsWarning)
         try:
