@@ -98,6 +98,11 @@ class extractSpectraConfig(config.Config):
                                 default="optimal")
     sigma = config.RangeField("Sigma threshold for cosmic ray rejection",
                               float, 30., min=0)
+    beams = config.ChoiceField("Beams to extract", str,
+                               allowed={"A": "extract only beam A",
+                                        "B": "extract only beam B",
+                                        "AB": "extract both beams A and B"},
+                               default="AB")
     debug_order = config.RangeField("Order for CR debugging plot", int, None,
                                        min=33, max=95, optional=True)
     debug_pixel = config.RangeField("Pixel for CR debugging plot", int, None,
@@ -188,3 +193,13 @@ class thresholdFlatfieldConfig(parameters_preprocess.thresholdFlatfieldConfig):
     def setDefaults(self):
         self.lower = 0.001
 
+
+class wavecalFromTelluricConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_telluricWavecal", optional=True)
+    min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
+    dispersion_order = config.RangeField("Order of fit in dispersion direction",
+                                          int, 4, min=2, max=10, inclusiveMax=True)
+    xdorder_order = config.RangeField("Order of fit as a function of echelle order",
+                                      int, 3, min=2, max=10, inclusiveMax=True)
+    in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, True)
+    debug_plot = config.Field("Make debug plot?", bool, False)

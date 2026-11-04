@@ -43,7 +43,7 @@ from . import parameters_new
 
 from .procedures.flexure_correction import estimate_flexure
 from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
-
+from ..gmos.parameters_gmos_nodandshuffle import combineNodAndShuffleBeamsConfig
 
 # Function to scale from SLITPOS to y-pixel location
 slitpos_to_pix = models.Shift(0.5) | models.Scale(50)
@@ -1041,6 +1041,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         sfx = params["suffix"]
         method = params["method"]
         sigmasq = params["sigma"] ** 2
+        beams = params["beams"]
         debug_order = params["debug_order"]
         debug_pixel = params["debug_pixel"]
         min_frac = params["debug_min_frac"]
@@ -1108,6 +1109,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 # For aperture extraction, we want to know where to extract.
                 # The data are effectively noiseless, so we don't use
                 # peak_finding.get_extrema() here.
+                extraction_regions = []
                 if this_method == "aperture":
                     slitprof = np.median(ext.SLITPROF, axis=1)
                     spl = make_interp_spline(slitpos_samples, slitprof, k=3)
@@ -1116,19 +1118,21 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     extrema = ppoly.derivative().roots(extrapolate=False)
                     extrema_values = ppoly(extrema)
                     i = bisect_left(roots, extrema[extrema_values.argmax()])
-                    extraction_regions = [(roots[i-1], roots[i], 1.0)]
-                    log.debug("Extracting positive beam "
-                              f"(order {ext.hdr['SPECORDR']} between "
-                              f"{extraction_regions[0][0]:.3f} and "
-                              f"{extraction_regions[0][1]:.3f}")
+                    # This is slitpos_min, slitpos_max, flux scaling factor
+                    if "A" in beams:
+                        extraction_regions.append((roots[i-1], roots[i], 1.0))
+                        log.debug("Extracting positive beam "
+                                  f"(order {ext.hdr['SPECORDR']} between "
+                                  f"{extraction_regions[0][0]:.3f} and "
+                                  f"{extraction_regions[0][1]:.3f}")
                     # Are there A and B beams?
                     ab = extrema_values.min() < -0.5 * extrema_values.max()
-                    if ab:
+                    if ab and "B" in beams:
                         i = bisect_left(roots, extrema[extrema_values.argmin()])
                         extraction_regions.append((roots[i-1], roots[i], -1.0))
                         log.debug("Extracting negative beam between "
-                                  f"{extraction_regions[1][0]:.3f} and "
-                                  f"{extraction_regions[1][1]:.3f}")
+                                  f"{extraction_regions[-1][0]:.3f} and "
+                                  f"{extraction_regions[-1][1]:.3f}")
                     pixels = np.arange(ext.shape[0])
                 elif method == "optimal":
                     # We want to normalize the profile along each column. Since
@@ -1157,6 +1161,9 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                 # different pixel scale between the resampled
                                 # SLITPROF and the actual data.
                                 pixels_in_slit = abs(slitpos) <= 0.5
+                                if beams != "AB":
+                                    pixels_in_slit &= (prof > 0) if "A" in beams else (prof < 0)
+                                    colgood &= (prof > 0) if "A" in beams else (prof < 0)
                                 prof /= abs(prof[pixels_in_slit]).sum()
                                 flux = np.sum(abs(coldata[colgood]))
                                 while True:
@@ -1749,3 +1756,109 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         filename = os.path.join(lookup_dir, 'linelist.dat')
         return [wavecal.LineList(os.path.join(lookup_dir, filename))
                 for filename in ('OH.dat', 'HITRAN.dat')]
+
+    def wavecalFromTelluric(self, adinputs=None, **params):
+        """
+        Parameters
+        ----------
+        suffix : str
+            Suffix to be added to output files.
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        suffix = params["suffix"]
+        xdeg = params["dispersion_order"]
+        ydeg = params["xdorder_order"]
+
+        which = "H/H" if adinputs[0].wavelength_band() == "H" else ""
+        t = Table.read("/Users/chris.simpson/gemini_python/igrins2/"
+                       f"claude/wavecal_analysis/{which}telluric_feature_widths.csv")
+        linelist = t['wavelength_nm'].data[np.logical_and(t['central_tau'] < 5,
+                                                          t['prominence'] > 0.05)]
+
+        for ad in adinputs:
+            spec_orders = ad.hdr['SPECORDR']
+            fitted_lines = []
+            for ext, spec_order in zip(ad, spec_orders):
+                # Need to do some faffing with "in vacuo" here
+                xlines = ext.wcs.backward_transform(linelist)
+                for x, wavelength in zip(xlines, linelist):
+                    if 5 <= x < ext.shape[0] - 5:
+                        pixel = centroid_frac(-ext.data, peaks=[x], mask=ext.mask, keep_bad=True)[0]
+                        if not np.isnan(pixel):
+                            log.stdinfo(f"Adding ({spec_order}, {pixel:.2f}, {wavelength:.2f})"
+                                        " to fitted line list")
+                            fitted_lines.append((spec_order, pixel, wavelength))
+
+            # Now perform the fit
+            orders, pix, waves = [np.asarray(x) for x in zip(*fitted_lines)]
+            fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
+                                                       outlier_func=sigma_clip)
+            m_init = models.Chebyshev2D(x_degree=xdeg, y_degree=ydeg,
+                                        x_domain=(0, 2047),
+                                        y_domain=(min(orders), max(orders)))
+            m_final, mask = fit_it(m_init, pix, orders, waves*orders)
+
+            for ext, spec_order in zip(ad, spec_orders):
+                pixels = np.arange(ext.data.size)
+                cheb1d = am.reduce_dimensionality(m_final, y=spec_order)
+                for p, v in zip(cheb1d.param_names, cheb1d.parameters):
+                    if p.startswith("c"):
+                        setattr(cheb1d, p, v / spec_order)
+                cheb1d.inverse = am.make_inverse_chebyshev1d(cheb1d, max_deviation=0.01)
+                max_deviation = abs(ext.wcs(pixels) - cheb1d(pixels)).max()
+                log.stdinfo(f"order {spec_order}: max deviation = {max_deviation:.3f}nm")
+                ext.wcs.set_transform(ext.wcs.input_frame,
+                                      ext.wcs.output_frame, cheb1d)
+
+            # Timestamp and update filename
+            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=suffix, strip=True)
+
+        return adinputs
+
+
+def centroid_frac(data, peaks=None, mask=None, halfwidth=1.5, maxiter=50,
+                  keep_bad=False):
+    """
+
+    Parameters
+    ----------
+    data: array
+    peaks
+    mask
+    halfwidth
+    maxiter
+    keep_bad
+
+    Returns
+    -------
+
+    """
+    final_peaks = []
+    for p in peaks:
+        c_last = p
+        for _ in range(maxiter):
+            lo, hi = c_last - halfwidth, c_last + halfwidth
+            i = np.arange(int(np.floor(lo)) - 1, int(np.ceil(hi)) + 2)
+            i = i[(i >= 0) & (i < data.size)]
+            w = np.clip(np.minimum(i + 0.5, hi) - np.maximum(i - 0.5, lo), 0, 1)
+            xm = 0.5 * (np.minimum(i + 0.5, hi) + np.maximum(i - 0.5, lo))
+            if mask is not None and any(mask[i]):
+                if keep_bad:
+                    final_peaks.append(np.nan)
+                break
+            d = (data[i] - data[i].min()) * w
+            c = np.sum(xm * d) / d.sum()
+            if abs(c - p) > 0.5 * halfwidth:  # it's moved too far
+                if keep_bad:
+                    final_peaks.append(np.nan)
+                break
+            if abs(c - c_last) < 1e-5:
+                final_peaks.append(c_last)
+                break
+            c_last = c
+        else:
+            final_peaks.append(c)
+    return np.array(final_peaks)
