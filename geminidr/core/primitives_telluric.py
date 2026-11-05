@@ -178,6 +178,7 @@ class Telluric(Spect):
         shift_tolerance = params["shift_tolerance"]
         apply_shift = params["apply_shift"]
         lsf_sampling = params["debug_lsf_sampling"]
+        deripple = params.get("deripple", False)
         iter_list = [(False, interactive)]
         if shift_tolerance is not None:
             iter_list = [(True, False)] + iter_list
@@ -246,6 +247,10 @@ class Telluric(Spect):
             aperture_to_use = min(apertures) if apertures else None
             if len(apertures) > 1:
                 log.warning(f"Multiple apertures found: using {aperture_to_use}")
+
+            # Defining this here simplifies the code later if we don't
+            # have to deripple
+            ripples = [None] * len(ad)
 
             pixel_shift = None
             for (modify, inter) in iter_list:
@@ -324,6 +329,18 @@ class Telluric(Spect):
                             setattr(m_init, p, median_value)
                     tcal.last_model = m_init
 
+                    # If we need to deripple, we do that now, and then update
+                    # the TelluricCalibrator object with the new spectra. This
+                    # means we don't have to remake all the PCA and stellar
+                    # spectra, which won't have changed since the wavelength
+                    # solutions haven't changed.
+                    if deripple:
+                        log.stdinfo("Derippling spectra before overall fit")
+                        ripples = self._calculate_ripples(
+                            tcal.spectra, first_order=ad.hdr['SPECORDR'][0])
+                        for tspek, ripple in zip(tcal.spectra, ripples):
+                            tspek.nddata = tspek.nddata.divide(1 + ripple)
+
                 log.stdinfo("    Performing overall fit")
                 if inter:
                     visualizer = TelluricVisualizer(
@@ -400,7 +417,7 @@ class Telluric(Spect):
 
             # Attach results to correct extensions in telluric AD object
             result_index = 0
-            for ext in ad:
+            for (ext, ripple) in zip(ad, ripples):
                 if (len(ext.shape) == 1 and
                         ext.hdr.get('APERTURE') == aperture_to_use):
                     tspek = tspek_list[result_index]
@@ -411,6 +428,8 @@ class Telluric(Spect):
                     spline.extrapolate = False  # will return np.nan outside range
                     ext.TELLABS = spline(tspek.waves).astype(ext.data.dtype)
                     ext.TELLABS[np.isinf(ext.TELLABS)] = np.nan
+                    if ripple is not None:
+                        ext.RIPPLE = ripple
                     result_index += 1
 
             # We have to correct for exposure time and add the SENSFUNC units
@@ -562,25 +581,30 @@ class Telluric(Spect):
 
             has_data = True
             tellabs_dict = {}
-            for ext_telluric in telluric:
+            ripples_dict = {}
+            for ext_telluric, spec_order in zip(telluric, telluric.hdr.get('SPECORDR')):
                 if (ext_telluric.hdr.get('APERTURE') == aperture_to_use and
                         len(ext_telluric.shape) == 1):
+                    if has_data:
+                        try:
+                            tellabs = ext_telluric.TELLABS
+                        except AttributeError:
+                            tellabs_dict = {}  # makes it easier to find errors
+                            has_data = False
+                        else:
+                            # Save the telluric spectrum as a spline so that it
+                            # can be interpolated onto any wavelength solution
+                            # order=3 seems to cause some ringing, and order=1 is
+                            # what the TelluricCorrector uses anyway
+                            tell_waves = ext_telluric.wcs(np.arange(
+                                ext_telluric.data.size))
+                            tellabs_dict[spec_order] = \
+                                make_interp_spline(tell_waves[~np.isnan(tellabs)],
+                                                   tellabs[~np.isnan(tellabs)], k=1)
                     try:
-                        tellabs = ext_telluric.TELLABS
+                        ripples_dict[spec_order] = ext_telluric.RIPPLE
                     except AttributeError:
-                        tellabs_dict = {}  # makes it easier to find errors
-                        has_data = False
-                        break
-                    else:
-                        # Save the telluric spectrum as a spline so that it
-                        # can be interpolated onto any wavelength solution
-                        # order=3 seems to cause some ringing, and order=1 is
-                        # what the TelluricCorrector uses anyway
-                        tell_waves = ext_telluric.wcs(np.arange(
-                            ext_telluric.data.size))
-                        tellabs_dict[ext_telluric.hdr.get('SPECORDR')] = \
-                            make_interp_spline(tell_waves[~np.isnan(tellabs)],
-                                               tellabs[~np.isnan(tellabs)], k=1)
+                        pass
 
             # TODO: If we're interactive we can override apply_model if necessary
             if not interactive:
@@ -615,7 +639,7 @@ class Telluric(Spect):
             tell_int_splines = []
             tellabs_data = []
 
-            for ext in ad:
+            for ext, spec_order in zip(ad, ad.hdr.get('SPECORDR')):
                 if len(ext.shape) > 1:
                     continue
 
@@ -628,9 +652,17 @@ class Telluric(Spect):
                                 f"{ext.id}. Assuming vacuum.")
 
                 lsf = self._line_spread_function(ext)
-                tspek = TelluricSpectrum(
-                    ext.nddata, line_spread_function=lsf,
-                    name=f"Extension {ext.id}", in_vacuo=in_vacuo)
+                try:
+                    ripple = ripples_dict[spec_order]
+                except KeyError:
+                    tspek = TelluricSpectrum(
+                        ext.nddata, line_spread_function=lsf,
+                        name=f"Extension {ext.id}", in_vacuo=in_vacuo)
+                else:
+                    tspek = TelluricSpectrum(
+                        ext.nddata.divide(1 + ripple), line_spread_function=lsf,
+                        name=f"Extension {ext.id}", in_vacuo=in_vacuo)
+
                 tspek_list.append(tspek)
 
                 # Has to be here because of in_vacuo
@@ -651,7 +683,7 @@ class Telluric(Spect):
                     if apply_model:
                         trans = convolution.resample(tspek.waves, wconv, tconv)
                     else:
-                        trans = tellabs_dict[ext.hdr.get('SPECORDR')](tspek.waves)
+                        trans = tellabs_dict[spec_order](tspek.waves)
 
                     # Old cross-correlation method
                     #pixel_shift = peak_finding.cross_correlate_subpixels(
@@ -770,11 +802,17 @@ class Telluric(Spect):
                                 f"to {ad.filename}")
 
             abs_spectra = tcal.absorption_spectra()
-            for ext in ad:
+            for ext, spec_order in zip(ad, ad.hdr['SPECORDR']):
                 if len(ext.shape) > 1:
                     continue
 
                 ext.divide(next(abs_spectra))
+                try:
+                    ripple = ripples_dict[spec_order]
+                except KeyError:
+                    pass
+                else:
+                    ext.divide(1 + ripple.astype(np.float32))
                 if apply_shift and pixel_shift != 0:
                     ext.wcs.insert_transform(
                         ext.wcs.input_frame, models.Shift(pixel_shift),

@@ -661,9 +661,9 @@ def _predict_model(fits, applied, sig, Phi, mode, band, max_degree, start):
 
 
 # ----------------------------------------------------------------- main routine
-def deripple(flat, wave, first_order=None, carrier='sapphire',
-             t_range_mm=(0.8, 1.2), thickness_mm=1.0, opd_range_mm=(3.40, 3.75), envelope_degree=2,
-             snr_min=4.0, snr_weak=2.5, snr_group=6.0, n_iter=3, predict=None, predict_degree=3,
+def deripple(data, wave, first_order=None, t_range_mm=(0.8, 1.2),
+             thickness_mm=1.0, envelope_degree=2, snr_min=4.0, snr_weak=2.5,
+             snr_group=6.0, n_iter=3, predict=None, predict_degree=3,
              band=None, extend=True, verbose=True):
     """
     Measure and remove the etalon ripple from an extracted echelle flat (or a
@@ -671,11 +671,11 @@ def deripple(flat, wave, first_order=None, carrier='sapphire',
 
     Parameters
     ----------
-    flat : array_like, shape (nord, NPIX)
-        Extracted flat, one order per row, NaN where unilluminated or masked.
+    data : array_like, shape (nord, NPIX)
+        Extracted spectrum, one order per row, NaN where unilluminated or masked.
     wave : array_like, shape (nord, NPIX)
-        Approximate wavelengths in nm, same shape as ``flat``: row ``i``
-        holds the wavelengths of row ``i`` of ``flat``.  NaN is allowed.
+        Approximate wavelengths in nm, same shape as ``data``: row ``i``
+        holds the wavelengths of row ``i`` of ``data``.  NaN is allowed.
     first_order : int, optional
         Echelle order number of row 0, used only to label the report.
         Default: label orders by row index (0, 1, 2, ...).
@@ -725,7 +725,7 @@ def deripple(flat, wave, first_order=None, carrier='sapphire',
         envelope is held constant beyond the fitted pixel range).  Requires
         wavelengths for all pixels (the ripple is left at zero where ``wave``
         is NaN).  Default True.
-        False reproduces version 1 (ripple only where ``flat`` is finite).
+        False reproduces version 1 (ripple only where ``data`` is finite).
     verbose : bool, optional
         Print the carrier, the prediction model and a per-order report.
         Default True.
@@ -735,8 +735,8 @@ def deripple(flat, wave, first_order=None, carrier='sapphire',
     dict
         ``ripple`` : ndarray, shape (nord, NPIX)
             Fractional ripple ``r``; zero where not corrected.
-        ``flat_corrected`` : ndarray, shape (nord, NPIX)
-            ``flat / (1 + ripple)``.
+        ``data_corrected`` : ndarray, shape (nord, NPIX)
+            ``data / (1 + ripple)``.
         ``normalized`` : ndarray, shape (nord, NPIX)
             Flat divided by its continuum, minus 1.
         ``keep`` : ndarray of bool, shape (nord, NPIX)
@@ -773,7 +773,7 @@ def deripple(flat, wave, first_order=None, carrier='sapphire',
     Raises
     ------
     ValueError
-        If ``flat`` and ``wave`` do not have the same shape, or ``predict`` is
+        If ``data`` and ``wave`` do not have the same shape, or ``predict`` is
         not one of the allowed values.
 
     Examples
@@ -781,26 +781,26 @@ def deripple(flat, wave, first_order=None, carrier='sapphire',
     >>> res = deripple(flat, wave, first_order=70, predict='model')
     >>> clean = res['flat_corrected']   # flat == clean * (1 + res['ripple'])
     """
-    flat = np.asarray(flat, float); wave = np.asarray(wave, float)
-    if flat.shape != wave.shape:
-        raise ValueError(f'flat {flat.shape} and wave {wave.shape} must have the same shape '
+    data = np.asarray(data, float); wave = np.asarray(wave, float)
+    if data.shape != wave.shape:
+        raise ValueError(f'data {data.shape} and wave {wave.shape} must have the same shape '
                          '(same orders, row for row)')
     if predict not in (None, 'model', 'template'):
         raise ValueError("predict must be None, 'model' or 'template'")
-    nord = flat.shape[0]
+    nord = data.shape[0]
     with np.errstate(divide='ignore', invalid='ignore'):
         sig = 1e7 / wave                                   # wavenumber, cm^-1
     orders = (first_order or 0) + np.arange(nord)
     s0 = np.nanmedian(sig)
-    good = np.array([usable_mask(r) for r in flat])
-    ripple = np.zeros_like(flat)
+    good = np.array([usable_mask(r) for r in data])
+    ripple = np.zeros_like(data)
     pred = None; pstart = None
     for it in range(n_iter):
-        norm = np.full_like(flat, np.nan); keep = np.zeros_like(good)
+        norm = np.full_like(data, np.nan); keep = np.zeros_like(good)
         for i in range(nord):
             if good[i].sum() < 300: continue
-            cont, k = fit_continuum(flat[i], good[i], ripple=ripple[i] if it else None)
-            norm[i] = flat[i] / cont - 1
+            cont, k = fit_continuum(data[i], good[i], ripple=ripple[i] if it else None)
+            norm[i] = data[i] / cont - 1
             keep[i] = k & np.isfinite(norm[i]) & np.isfinite(sig[i])
         segs = _segments(norm, keep, sig)
         if thickness_mm is None:      # fixed plate, nothing fitted
@@ -809,7 +809,7 @@ def deripple(flat, wave, first_order=None, carrier='sapphire',
             t = thickness_mm / 10.
             Phi = lambda s, t=t: 2 * t * n_sapphire(s) * s
             info = dict(t_mm=thickness_mm, opd_mm_at=lambda s, t=t: 2 * t * 10 * ng_sapphire(s), fixed=True)
-        ripple = np.zeros_like(flat); fits = {}
+        ripple = np.zeros_like(data); fits = {}
         snrs = np.full(nord, np.nan)
         for i in range(nord):
             k = keep[i]
@@ -830,7 +830,7 @@ def deripple(flat, wave, first_order=None, carrier='sapphire',
                             for i in range(nord)])
         for i in np.where(applied)[0]:
             ph, xn, c = fits[i][:3]
-            fin = np.isfinite(ph) if extend else (np.isfinite(flat[i]) & np.isfinite(ph))
+            fin = np.isfinite(ph) if extend else (np.isfinite(data[i]) & np.isfinite(ph))
             ripple[i][fin] = np.real(L.legval(xn[fin], c) * np.exp(2j * np.pi * ph[fin]))
         # prediction for the orders without a detected ripple
         predicted = np.zeros(nord, bool)
@@ -844,7 +844,7 @@ def deripple(flat, wave, first_order=None, carrier='sapphire',
                 pstart = pred['params']
                 for i in range(nord):
                     if applied[i]: continue
-                    fin = np.isfinite(sig[i]) if extend else (np.isfinite(flat[i]) & np.isfinite(sig[i]))
+                    fin = np.isfinite(sig[i]) if extend else (np.isfinite(data[i]) & np.isfinite(sig[i]))
                     if not fin.any(): continue
                     ripple[i][fin] = pred['evaluate'](sig[i][fin])
                     predicted[i] = True
@@ -884,7 +884,7 @@ def deripple(flat, wave, first_order=None, carrier='sapphire',
         for r in report:
             how = 'predicted' if r[6] else ('measured ' if r[3] else 'none     ')
             log.stdinfo(f'{int(r[0]):6d}  {r[1]:6.3f} {r[2]:6.1f}  {how}  {r[4]:.3f} -> {r[5]:.3f}')
-    return dict(ripple=ripple, flat_corrected=flat / (1 + ripple), normalized=norm, keep=keep,
+    return dict(ripple=ripple, data_corrected=data / (1 + ripple), normalized=norm, keep=keep,
                 sigma=sig, orders=orders, phase=Phi, info=info, report=report,
                 predicted=predicted, prediction=pred)
 

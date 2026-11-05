@@ -1,6 +1,7 @@
 from gempy.library import config
 from astrodata import AstroData
-from geminidr.core import parameters_generic, parameters_preprocess, parameters_spect
+from geminidr.core import (parameters_generic, parameters_preprocess,
+                           parameters_spect, parameters_telluric)
 
 
 class cleanReadoutConfig(config.Config):
@@ -114,6 +115,10 @@ class extractSpectraConfig(config.Config):
         config.Config.validate(self)
         if [self.debug_order, self.debug_pixel].count(None) == 1:
             raise ValueError("Both or neither of 'debug_order' and 'debug_pixel' must be set")
+
+
+class fitTelluricConfig(parameters_telluric.fitTelluricConfig):
+    deripple = config.Field("Deripple the telluric spectrum?", bool, True)
 
 
 class flagDiscrepantPixelsConfig(config.Config):

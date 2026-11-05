@@ -1730,6 +1730,32 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
+    def _calculate_ripples(self, tspek_list, **deripple_params):
+        """
+        This method calculates and returns a 2D array containing the ripple
+        calculated for each spectral order.
+
+        Parameters
+        ----------
+        tspek_list: list of TelluricSpectrum instances
+            The list of spectra to be derippled
+        deripple_params: dict
+            parameters to be passed directly to the deripple() function
+
+        Returns
+        -------
+        array (norders, 2048):
+            ripple amplitudes
+        """
+        data = np.full((len(tspek_list), 2048), np.nan, dtype=np.float32)
+        waves = np.empty_like(data)
+        for i, tspek in enumerate(tspek_list):
+            data[i][tspek.mask==0] = tspek.data[tspek.mask==0]
+            waves[i] = tspek.waves
+
+        deripple_dict = deripple(data, waves, predict="model", **deripple_params)
+        return deripple_dict['ripple']
+
     def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):
         offset = ad1.phu["QOFFSET"] - ad2.phu["QOFFSET"]
         print(ad1.filename, ad2.filename, offset)
