@@ -1398,14 +1398,10 @@ class LineSpreadFunction(ABC):
         dw_output = np.abs(np.diff(waves)).min()
 
         extra_sampling_needed = int(np.ceil(dw_input / dw_output * min_oversampling))
-        print(dw_input, dw_output, extra_sampling_needed)
         if extra_sampling_needed > 1:
-            from datetime import datetime
-            start = datetime.now()
             wnew = np.interp(np.arange(w.size * extra_sampling_needed) / extra_sampling_needed, np.arange(w.size), w)
             data = make_interp_spline(w, data, axis=data.ndim-1)(wnew)
             w = wnew
-            print("Resampling took", datetime.now() - start)
 
         windices = np.logical_and(w > w1, w < w2)
         spectra = data[..., windices]
