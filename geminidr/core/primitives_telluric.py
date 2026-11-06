@@ -1362,18 +1362,26 @@ class LineSpreadFunction(ABC):
     def convolutions(self):
         """Returns list of (convolution function, kernel size in nm)"""
 
-    def convolve(self, waves, w, data, **kwargs):
+    def convolve(self, waves, w, data, min_oversampling=3, **kwargs):
         """
-        Convolve a spectrum/spectra with a kernel
+        Convolve a spectrum/spectra with a kernel. Since the convolution is
+        performed discretely, it may be desirable to resample the spectrum to
+        a finer wavelength scale before convolving. This can be achieved if
+        "waves" is an array of all the output wavelengths, rather than just
+        the start and end wavelengths, as the code will check that the input
+        spectrum is oversampled enough to perform the convolution reliably.
 
         Parameters
         ----------
-        waves: sequence
+        waves: array
             provides min and max wavelengths for output convolved spectra
         w: array
             wavelengths of thing to be convolved
         data: array
             data to be convolved; last dimension must match w
+        min_oversampling: int
+            minimum required oversampling factor of the input spectrum
+            compared to the output wavelength scale
         kwargs: dict
             list of parameters to be passed to the convolutions() method
 
@@ -1385,6 +1393,20 @@ class LineSpreadFunction(ABC):
         convolution_list = self.convolutions(**kwargs)
         dw = sum(x[1] for x in convolution_list)
         w1, w2 = np.min(waves) - 1.05 * dw, np.max(waves) + 1.05 * dw
+
+        dw_input = np.abs(np.diff(w[np.logical_and(w > w1, w < w2)])).min()
+        dw_output = np.abs(np.diff(waves)).min()
+
+        extra_sampling_needed = int(np.ceil(dw_input / dw_output * min_oversampling))
+        print(dw_input, dw_output, extra_sampling_needed)
+        if extra_sampling_needed > 1:
+            from datetime import datetime
+            start = datetime.now()
+            wnew = np.interp(np.arange(w.size * extra_sampling_needed) / extra_sampling_needed, np.arange(w.size), w)
+            data = make_interp_spline(w, data, axis=data.ndim-1)(wnew)
+            w = wnew
+            print("Resampling took", datetime.now() - start)
+
         windices = np.logical_and(w > w1, w < w2)
         spectra = data[..., windices]
         for conv_func, dw in convolution_list:
