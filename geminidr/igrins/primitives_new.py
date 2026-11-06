@@ -1730,30 +1730,42 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def _calculate_ripples(self, tspek_list, **deripple_params):
+    def _calculate_ripples(self, tspek_list, first_order=None, **params):
         """
         This method calculates and returns a 2D array containing the ripple
         calculated for each spectral order.
+
+        This method can exist for any instrument and is called by the
+        telluricCorrect() primitive if requested. It accepts the full set of
+        parameters passed to that primitive so that the instrument-specific
+        versions can use any of those parameters to control the ripple
+        calculation.
 
         Parameters
         ----------
         tspek_list: list of TelluricSpectrum instances
             The list of spectra to be derippled
-        deripple_params: dict
-            parameters to be passed directly to the deripple() function
+        first_order: int or None
+            The first echelle order in the data
+        params: dict
+            all parameters passed to the telluricCorrect() primitive
 
         Returns
         -------
         array (norders, 2048):
             ripple amplitudes
         """
+        predict = params['deripple_predictor']
+        self.log.stdinfo("Derippling spectra with prediction method="
+                         f"'{predict}'")
         data = np.full((len(tspek_list), 2048), np.nan, dtype=np.float32)
         waves = np.empty_like(data)
         for i, tspek in enumerate(tspek_list):
             data[i][tspek.mask==0] = tspek.data[tspek.mask==0]
             waves[i] = tspek.waves
 
-        deripple_dict = deripple(data, waves, predict="model", **deripple_params)
+        deripple_dict = deripple(data, waves, first_order=first_order,
+                                 predict=predict)
         return deripple_dict['ripple']
 
     def _fields_overlap(self, ad1, ad2, frac_FOV=1.0):

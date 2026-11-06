@@ -335,11 +335,16 @@ class Telluric(Spect):
                     # spectra, which won't have changed since the wavelength
                     # solutions haven't changed.
                     if deripple:
-                        log.stdinfo("Derippling spectra before overall fit")
-                        ripples = self._calculate_ripples(
-                            tcal.spectra, first_order=ad.hdr['SPECORDR'][0])
-                        for tspek, ripple in zip(tcal.spectra, ripples):
-                            tspek.nddata = tspek.nddata.divide(1 + ripple)
+                        try:
+                            ripples = self._calculate_ripples(
+                                tcal.spectra, first_order=ad.hdr['SPECORDR'][0],
+                                **params)
+                        except AttributeError:
+                            log.warning("No derippling function is defined for "
+                                        f"this class {self.__class__.__name__}")
+                        else:
+                            for tspek, ripple in zip(tcal.spectra, ripples):
+                                tspek.nddata = tspek.nddata.divide(1 + ripple)
 
                 log.stdinfo("    Performing overall fit")
                 if inter:
@@ -429,7 +434,7 @@ class Telluric(Spect):
                     ext.TELLABS = spline(tspek.waves).astype(ext.data.dtype)
                     ext.TELLABS[np.isinf(ext.TELLABS)] = np.nan
                     if ripple is not None:
-                        ext.RIPPLE = ripple
+                        ext.RIPPLE = ripple.astype(ext.data.dtype)
                     result_index += 1
 
             # We have to correct for exposure time and add the SENSFUNC units
@@ -652,16 +657,11 @@ class Telluric(Spect):
                                 f"{ext.id}. Assuming vacuum.")
 
                 lsf = self._line_spread_function(ext)
-                try:
-                    ripple = ripples_dict[spec_order]
-                except KeyError:
-                    tspek = TelluricSpectrum(
-                        ext.nddata, line_spread_function=lsf,
-                        name=f"Extension {ext.id}", in_vacuo=in_vacuo)
-                else:
-                    tspek = TelluricSpectrum(
-                        ext.nddata.divide(1 + ripple), line_spread_function=lsf,
-                        name=f"Extension {ext.id}", in_vacuo=in_vacuo)
+                if (ripple := ripples_dict.get(spec_order)) is not None:
+                    ext.divide(1 + ripple)
+                tspek = TelluricSpectrum(
+                    ext.nddata, line_spread_function=lsf,
+                    name=f"Extension {ext.id}", in_vacuo=in_vacuo)
 
                 tspek_list.append(tspek)
 
@@ -807,12 +807,6 @@ class Telluric(Spect):
                     continue
 
                 ext.divide(next(abs_spectra))
-                try:
-                    ripple = ripples_dict[spec_order]
-                except KeyError:
-                    pass
-                else:
-                    ext.divide(1 + ripple.astype(np.float32))
                 if apply_shift and pixel_shift != 0:
                     ext.wcs.insert_transform(
                         ext.wcs.input_frame, models.Shift(pixel_shift),

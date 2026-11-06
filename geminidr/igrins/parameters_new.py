@@ -119,6 +119,12 @@ class extractSpectraConfig(config.Config):
 
 class fitTelluricConfig(parameters_telluric.fitTelluricConfig):
     deripple = config.Field("Deripple the telluric spectrum?", bool, True)
+    deripple_predictor = config.ChoiceField("Deripple predictor", str,
+                                            allowed={"template": "use the defined pattern",
+                                                     "model": "extrapolate phases for weak orders",
+                                                     "none": "only correct orders where the ripple is detected"},
+                                            default="template",
+                                            optional=False)
 
 
 class flagDiscrepantPixelsConfig(config.Config):

@@ -704,7 +704,7 @@ def deripple(data, wave, first_order=None, t_range_mm=(0.8, 1.2),
         See ``snr_weak``.  Default 6.
     n_iter : int, optional
         Number of continuum / ripple iterations.  Default 3.
-    predict : {None, 'model', 'template'}, optional
+    predict : {"none", 'model', 'template'}, optional
         Predict the ripple in orders where it is not detected (or that have
         fewer than 300 usable pixels) from the detected orders, using the
         cross-order two-fringe model (see the module docstring).  None
@@ -785,8 +785,8 @@ def deripple(data, wave, first_order=None, t_range_mm=(0.8, 1.2),
     if data.shape != wave.shape:
         raise ValueError(f'data {data.shape} and wave {wave.shape} must have the same shape '
                          '(same orders, row for row)')
-    if predict not in (None, 'model', 'template'):
-        raise ValueError("predict must be None, 'model' or 'template'")
+    if predict not in ('none', 'model', 'template'):
+        raise ValueError("predict must be 'none', 'model' or 'template'")
     nord = data.shape[0]
     with np.errstate(divide='ignore', invalid='ignore'):
         sig = 1e7 / wave                                   # wavenumber, cm^-1
@@ -834,7 +834,7 @@ def deripple(data, wave, first_order=None, t_range_mm=(0.8, 1.2),
             ripple[i][fin] = np.real(L.legval(xn[fin], c) * np.exp(2j * np.pi * ph[fin]))
         # prediction for the orders without a detected ripple
         predicted = np.zeros(nord, bool)
-        if predict is not None:
+        if predict != 'none':
             pred = predict_model(fits, applied, sig, Phi, predict, band=band,
                                  max_degree=predict_degree, start=pstart)
             if pred is None:
