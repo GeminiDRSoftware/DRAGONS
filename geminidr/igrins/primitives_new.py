@@ -1730,7 +1730,8 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             ad.update_filename(suffix=suffix, strip=True)
         return adinputs
 
-    def _calculate_ripples(self, tspek_list, first_order=None, **params):
+    def _calculate_ripples(self, tspek_list, model_fits, first_order=None,
+                           **params):
         """
         This method calculates and returns a 2D array containing the ripple
         calculated for each spectral order.
@@ -1741,10 +1742,16 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         versions can use any of those parameters to control the ripple
         calculation.
 
+        The deripple calculation is performed on the telluric spectra after
+        they have been divided by the model fits since this removes the strong
+        absorption features.
+
         Parameters
         ----------
         tspek_list: list of TelluricSpectrum instances
             The list of spectra to be derippled
+        model_fit: list of astropy.modeling.Model instances
+            The fits to the telluric spectra
         first_order: int or None
             The first echelle order in the data
         params: dict
@@ -1760,9 +1767,10 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                          f"'{predict}'")
         data = np.full((len(tspek_list), 2048), np.nan, dtype=np.float32)
         waves = np.empty_like(data)
-        for i, tspek in enumerate(tspek_list):
+        for i, (m, tspek) in enumerate(zip(model_fits, tspek_list)):
             data[i][tspek.mask==0] = tspek.data[tspek.mask==0]
             waves[i] = tspek.waves
+            data[i] /= m(waves[i])
 
         deripple_dict = deripple(data, waves, first_order=first_order,
                                  predict=predict)

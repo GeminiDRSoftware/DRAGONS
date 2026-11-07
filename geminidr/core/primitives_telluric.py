@@ -337,8 +337,8 @@ class Telluric(Spect):
                     if deripple:
                         try:
                             ripples = self._calculate_ripples(
-                                tcal.spectra, first_order=ad.hdr['SPECORDR'][0],
-                                **params)
+                                tcal.spectra, submodels,
+                                first_order=ad.hdr['SPECORDR'][0], **params)
                         except AttributeError:
                             log.warning("No derippling function is defined for "
                                         f"this class {self.__class__.__name__}")
