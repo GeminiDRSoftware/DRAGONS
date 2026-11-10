@@ -340,9 +340,10 @@ class AstroDataIgrins2(AstroDataGemini):
     def central_wavelength(self):
         # These are approximate values for the central order in each band
         if self.band() == "K":
-            return 2120.674
+            return 2120
         elif self.band() == "H":
-            return 1616.297
+            return 1620
+        return 1870  # for a bundle
 
     @returns_list
     @astro_data_descriptor
