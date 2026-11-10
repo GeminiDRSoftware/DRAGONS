@@ -1253,7 +1253,13 @@ def query_simbad(ad):
     try:  # this is where a connection error to SIMBAD shows up first
         simbad.add_votable_fields('J', 'H', 'K', 'sp_type')
     except pyvo.dal.exceptions.DALFormatError:
-        return {}
+        # If it failed the first time, switch to the harvard server and retry
+        simbad.server = 'simbad.harvard.edu'
+        try:
+            simbad.add_votable_fields('J', 'H', 'K', 'sp_type')
+        except pyvo.dal.exceptions.DALFormatError:
+            return {}
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=NoResultsWarning)
         try:
