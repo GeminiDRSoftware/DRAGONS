@@ -663,7 +663,7 @@ def _predict_model(fits, applied, sig, Phi, mode, band, max_degree, start):
 # ----------------------------------------------------------------- main routine
 def deripple(data, wave, first_order=None, t_range_mm=(0.8, 1.2),
              thickness_mm=1.0, envelope_degree=2, snr_min=4.0, snr_weak=2.5,
-             snr_group=6.0, n_iter=3, predict=None, predict_degree=3,
+             snr_group=6.0, n_iter=3, predict='none', predict_degree=3,
              band=None, extend=True, verbose=True):
     """
     Measure and remove the etalon ripple from an extracted echelle flat (or a
