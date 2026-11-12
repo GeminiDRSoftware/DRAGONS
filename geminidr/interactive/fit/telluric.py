@@ -628,7 +628,10 @@ class TelluricVisualizer(Fit1DVisualizer):
 ############################ stuff for telluricCorrect ############################
 
 class InteractiveTelluricCorrection(InteractiveModel1D):
-    Good = Glyph("data", "circle", interactive_conf().bokeh_data_color)
+    @property
+    def Good(self):
+        # Evaluated lazily, see InteractiveModel.Good
+        return Glyph("data", "circle", interactive_conf().bokeh_data_color)
 
     def __init__(self, visualizer):
         self.visualizer = visualizer
