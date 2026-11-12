@@ -78,4 +78,4 @@ rst_epilog = """
 .. |DRAGONS| replace:: :raw-html:`<a href="http://dragons.readthedocs.io/en/{v}/">DRAGONS</a>`
 
 
-""".format(v = rtdurl)
+""".format(v = rtfurl)

@@ -32,7 +32,7 @@ follow:
 .. code-block:: none
 
     [calibs]
-    databases = ${path_tqo_my_data}/igrins2_tutorial/playground/cal_manager.db get store
+    databases = ${path_to_my_data}/igrins2_tutorial/playground/cal_manager.db get store
 
 The ``[calibs]`` section tells the system where to put the calibration database
 and how to name it.  Here we use ``cal_manager.db`` to match what was used in

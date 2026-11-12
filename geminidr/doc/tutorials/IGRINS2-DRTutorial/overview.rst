@@ -25,6 +25,6 @@ The reduction can be done in two different ways:
 * From the terminal using the command line.
 * From Python using the DRAGONS classes and functions.
 
-* :ref:`pointsrc_example`
+* :ref:`igrins2_pointsrc_example`
 
 See the |RSUserInstall| to install the software if you have not already.
