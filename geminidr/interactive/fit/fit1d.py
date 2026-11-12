@@ -62,8 +62,14 @@ class InteractiveModel(ABC):
     """
     BandMasked = Glyph("excluded", "triangle", "lightsteelblue")
     UserMasked = Glyph("rejected (user)", "inverted_triangle", "lightskyblue")
-    Good = Glyph("good", "circle", interactive_conf().bokeh_data_color)
     SigmaClipped = Glyph("rejected (sigma)", "square", "darksalmon")
+
+    @property
+    def Good(self):
+        # The color comes from the user's configuration file, which is not
+        # loaded yet when this module is imported, so it has to be evaluated
+        # when needed and not at class-definition time.
+        return Glyph("good", "circle", interactive_conf().bokeh_data_color)
 
     def __init__(self, mask_glyphs):
         """Initializes the model with default values."""

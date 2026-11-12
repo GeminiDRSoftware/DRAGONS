@@ -17,12 +17,18 @@ show_add_aperture_button = False
 class InteractiveConfig:
     """
     Singleton configuration data for interactive code.
+
+    The values are refreshed from the global configuration (``dragonsrc``)
+    every time the singleton is requested.  The configuration file is only
+    loaded once a primitive class is instantiated, which can be after
+    some interactive modules have been imported and have asked for the
+    configuration.  Caching the values on first use would then freeze the
+    defaults and the user's settings (e.g. "browser") would be ignored.
     """
     def __new__(cls, *args, **kwds):
         it = cls.__dict__.get("__it__")
-        if it is not None:
-            return it
-        cls.__it__ = it = object.__new__(cls)
+        if it is None:
+            cls.__it__ = it = object.__new__(cls)
         it.init(*args, **kwds)
         return it
 
