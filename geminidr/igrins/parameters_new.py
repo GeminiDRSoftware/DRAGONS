@@ -88,6 +88,10 @@ class determineWavelengthSolutionConfig(config.Config):
     debug_plot = config.Field("Make debug plot?", bool, False)
 
 
+class newDetermineWavelengthSolutionConfig(determineWavelengthSolutionConfig):
+    pass
+
+
 class extractSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted",
                           optional=True)

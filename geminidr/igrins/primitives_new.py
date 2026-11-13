@@ -37,13 +37,13 @@ from ..core.primitives_telluric import Telluric
 from .cheb3d import Chebyshev3D, LSQFitterWithOutlierRemoval3D
 from .deripple import deripple
 from .lookups import xdtools
+from .wavecal import IGRINSWavecal
 
 from recipe_system.utils.decorators import parameter_override
 from . import parameters_new
 
 from .procedures.flexure_correction import estimate_flexure
 from .procedures.readout_pattern.readout_pattern_helper import remove_pattern
-from ..gmos.parameters_gmos_nodandshuffle import combineNodAndShuffleBeamsConfig
 
 # Function to scale from SLITPOS to y-pixel location
 slitpos_to_pix = models.Shift(0.5) | models.Scale(50)
@@ -917,6 +917,141 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 fig.colorbar(sm, ax=ax, label="Fitted residual (nm)")
                 plt.tight_layout(pad=1)
                 plt.savefig(ad.filename.replace(".fits", "_wavecal.pdf"))
+
+            # Timestamp and update filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.update_filename(suffix=sfx, strip=True)
+
+        return adinputs
+
+    def newDetermineWavelengthSolution(self, adinputs=None, **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        #timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys['determineWavelengthSolution']
+        nsum = params["nsum"]
+        min_snr = params["min_snr"]
+        in_vacuo = params["in_vacuo"]
+        arc_file = params["linelist"]
+        xdeg = params["dispersion_order"]
+        ydeg = params["xdorder_order"]
+        debug_plot = params["debug_plot"]
+        sfx = params["suffix"]
+
+        # The stddev for unresolved lines (empirically determined from fits)
+        sigma_unres = 1.25
+
+        # We do some hacking here so that we can use the Linelist class to
+        # handle air-to-vacuum conversions. The "weights" column is actually
+        # the Gaussian width
+        if arc_file is not None:
+            try:
+                linelists = [wavecal.LineList(f) for f in arc_file.split(",")]
+            except OSError:
+                log.warning(f"Cannot read file {arc_file} - "
+                            "using default linelist")
+                arc_file = None
+            else:
+                log.stdinfo(f"Read arc line list(s) {arc_file}")
+        if arc_file is None:
+            linelists = self._get_linelist()
+
+        # Construct arrays of line wavelengths in the units we want, and their
+        # widths in pixels, and we don't need to access the LineList again
+        ref_waves = np.hstack([l.wavelengths(in_vacuo=in_vacuo, units=u.nm)
+                                     for l in linelists])
+        idx = ref_waves.argsort()
+        ref_waves = ref_waves[idx]
+        ref_sigpx = np.hstack([[sigma_unres] * len(l) if l.weights is None else l.weights
+                               for l in linelists])[idx]
+
+        def _create_fitting_groups(pixloc, sigpx):
+            sigma = sigpx[0]
+            groups = [[0]]
+            for i, (x, s) in enumerate(zip(pixloc[1:], sigpx[1:]), start=1):
+                sigma = max(sigma, s)
+                if x - pixloc[groups[-1][-1]] < 3 * sigma:
+                    groups[-1].append(i)
+                else:
+                    groups.append([i])
+            return groups
+
+        npix = 2048
+        pixels = np.arange(npix)
+        for ad in adinputs:
+            spec_orders = ad.hdr['SPECORDR']
+            sky = 'SKY' in ad.tags
+
+            slitlengths_asec = dict(zip(ad.MDF['specorder'],
+                                        ad.MDF['slitlength_asec']))
+
+            # First pass to extract spectra and get global shift
+            from functools import partial
+            if sky:
+                spectra = []
+                for ext in ad:
+                    data, mask, variance, extract_info = peak_finding.average_along_slit(
+                        ext, center=npix//2, nsum=nsum)
+                    output_frame = ext.wcs.output_frame.frames[0]
+                    wcs = gWCS([(adwcs.pixel_frame(1), am.get_named_submodel(ext.wcs.forward_transform, "WAVE")),
+                                (output_frame, None)])
+                    spectra.append(ext.nddata.__class__(
+                        data=data, mask=mask, variance=variance, wcs=wcs))
+                    wavecal_obj = IGRINSWavecal(spectra, first_order=spec_orders[0], log=self.log)
+                    wavecal_obj.ref_waves = ref_waves
+                    identify_lines = partial(wavecal_obj.identify_sky_lines, ref_sigpx=ref_sigpx)
+                global_shift = wavecal_obj.apply_global_shift()
+                log.stdinfo(f"{ad.filename}: global shift of {global_shift} "
+                            "pixels from cross-correlation")
+            else:
+                wavecal_obj = IGRINSWavecal(ad, first_order=spec_orders[0], log=self.log)
+                identify_lines = wavecal_obj.identify_telluric_lines
+
+            wavecal_obj.filename = ad.filename
+            for idx in range(len(ad)):
+                for k, v in identify_lines(idx, min_snr=min_snr).items():
+                    try:
+                        wavecal_obj.fitted_lines[k].extend(v)
+                    except KeyError:
+                        wavecal_obj.fitted_lines[k] = v
+
+            # Now perform the fit
+            fit_table = wavecal_obj.create_2d_wavelength_solution(xdeg, ydeg, sigma_clip)
+            ad.WAVECAL = fit_table
+            log.stdinfo(f"Rejected {wavecal_obj.fitted_mask.sum()}/{wavecal_obj.fitted_mask.size} lines/groups "
+                        f"for final rms = {wavecal_obj.fitted_rms:.4f} nm")
+
+            # Create the wavelength models
+            for ext, spec_order in zip(ad, ad.hdr['SPECORDR']):
+                spectral_frame = ext.wcs.output_frame.frames[0]
+                axis_name = "WAVE" if in_vacuo else "AWAV"
+                new_spectral_frame = cf.SpectralFrame(
+                    axes_order=spectral_frame.axes_order,
+                    unit=spectral_frame.unit, axes_names=(axis_name,),
+                    name=adwcs.frame_mapping[axis_name].description)
+                spatial_frame = cf.CoordinateFrame(naxes=1, axes_type="SPATIAL",
+                                                   axes_order=(1,), unit=[u.arcsec],
+                                                   name="SPATIAL")
+                output_frame = cf.CompositeFrame([new_spectral_frame, spatial_frame], name="world")
+
+                cheb1d = am.reduce_dimensionality(wavecal_obj.fitted_model, y=spec_order)
+                for p, v in zip(cheb1d.param_names, cheb1d.parameters):
+                    if p.startswith("c"):
+                        setattr(cheb1d, p, v / spec_order)
+                cheb1d.inverse = am.make_inverse_chebyshev1d(cheb1d, max_deviation=0.01)
+                cheb1d.name = "WAVE"
+                slit_model = models.Scale(slitlengths_asec[spec_order], name="SKY")
+                transform = cheb1d & slit_model
+                ext.wcs = gWCS(ext.wcs.pipeline[:-2] +
+                               [(ext.wcs.pipeline[-2].frame, transform),
+                                (output_frame, None)])
+
+            if debug_plot:
+                slit_edges = [am.table_to_model(row) for ext in ad for row in ext.SLITEDGE]
+                y1 = [detsec.y1 for detsec in ad.detector_section()]
+                edges = lambda idx, x: (slit_edges[idx*2](x) + y1[idx],
+                                        slit_edges[idx*2+1](x) + y1[idx])
+                wavecal_obj.make_debug_plot(edges)
 
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
