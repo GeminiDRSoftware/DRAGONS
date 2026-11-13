@@ -88,10 +88,6 @@ class determineWavelengthSolutionConfig(config.Config):
     debug_plot = config.Field("Make debug plot?", bool, False)
 
 
-class newDetermineWavelengthSolutionConfig(determineWavelengthSolutionConfig):
-    pass
-
-
 class extractSpectraConfig(config.Config):
     suffix = config.Field("Filename suffix", str, "_extracted",
                           optional=True)
@@ -207,14 +203,3 @@ class removeObjectsLeaveSkyConfig(config.Config):
 class thresholdFlatfieldConfig(parameters_preprocess.thresholdFlatfieldConfig):
     def setDefaults(self):
         self.lower = 0.001
-
-
-class wavecalFromTelluricConfig(config.Config):
-    suffix = config.Field("Filename suffix", str, "_telluricWavecal", optional=True)
-    min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
-    dispersion_order = config.RangeField("Order of fit in dispersion direction",
-                                          int, 4, min=2, max=10, inclusiveMax=True)
-    xdorder_order = config.RangeField("Order of fit as a function of echelle order",
-                                      int, 3, min=2, max=10, inclusiveMax=True)
-    in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, True)
-    debug_plot = config.Field("Make debug plot?", bool, False)

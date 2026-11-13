@@ -31,15 +31,13 @@ class IGRINSWavecal:
         self.log = log
         self.fitted_lines ={}
 
-        self.debug_data = []  # for debugging purposes
-
     def create_2d_wavelength_solution(self, xdeg, ydeg, sigma_clip):
         orders, pix, waves = [np.asarray(self.fitted_lines[k])
                               for k in ('order', 'pixel', 'wavelength')]
         fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                    outlier_func=sigma_clip)
         m_init = models.Chebyshev2D(x_degree=xdeg, y_degree=ydeg,
-                                    x_domain=(0, 2047),
+                                    x_domain=(0, self.npix-1),
                                     y_domain=(min(orders), max(orders)))
         m_final, mask = fit_it(m_init, pix, orders, waves * orders)
         self.fitted_model = m_final
@@ -56,7 +54,7 @@ class IGRINSWavecal:
         tbl_pix += 1  # use 1-based for output
 
         temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=None)
-        temptable.add_columns([[2], [xdeg], [ydeg], [0], [2047], [min(orders)], [max(orders)], [rms]],
+        temptable.add_columns([[2], [xdeg], [ydeg], [0], [self.npix-1], [min(orders)], [max(orders)], [rms]],
                               names=("ndim", "xdegree", "ydegree", "xdomain_start",
                                      "xdomain_end", "ydomain_start", "ydomain_end", "rms"))
 
@@ -222,6 +220,29 @@ class IGRINSWavecal:
         fitted_lines['order'] = [spec_order] * len(fitted_lines['pixel'])
         return fitted_lines
 
+    def identify_telluric_lines(self, idx, min_snr=3):
+        log = self.log
+        fitted_lines = {'pixel': [], 'wavelength': []}
+        spec = self.spectra[idx]
+        spec_order = self.first_order + idx
+
+        if (in_order := self.get_lines_in_order(spec.wcs, buffer=5)).sum() == 0:
+            # Nothing to see here
+            return fitted_lines
+
+        order_waves = self.ref_waves[in_order]
+        pixloc = spec.wcs.invert(order_waves)
+        for x, wavelength in zip(pixloc, order_waves):
+            pixel = centroid_frac(-spec.data, peaks=[x], mask=spec.mask, keep_bad=True)[0]
+            if not np.isnan(pixel):
+                log.stdinfo(f"Adding ({spec_order}, {pixel:.2f}, {wavelength:.2f})"
+                            " to fitted line list")
+                fitted_lines['pixel'].append(pixel)
+                fitted_lines['wavelength'].append(wavelength)
+
+        fitted_lines['order'] = [spec_order] * len(fitted_lines['pixel'])
+        return fitted_lines
+
     def make_debug_plot(self, edge_func):
         fig, ax = plt.subplots()
         cmap = plt.get_cmap('jet')
@@ -238,15 +259,16 @@ class IGRINSWavecal:
                 self.fitted_lines['pixel'], self.fitted_mask):
             yends = edge_func(order - self.first_order, x)
             linestyle = ':' if mask else '-'
-            residual = self.fitted_model(x, order) / order- wave
+            residual = self.fitted_model(x, order) / order - wave
             color = cmap(norm(residual))
-            off = 0
-            ax.plot([x - off, x + off], yends,
-                    color=color, ls=linestyle)
+            ax.plot([x, x], yends, color=color, ls=linestyle)
 
-        ax.set_xlim(0, 2047)
-        ax.set_ylim(0, 2047)
-        ax.set_aspect('equal')
+        ax.set_xlim(0, self.npix-1)
+        if edge2[1024] > 200:  # edge2 is defined from the last order, this means it's sky
+            ax.set_ylim(0, self.npix-1)
+            ax.set_aspect('equal')
+        else:
+            ax.set_ylim(self.first_order-0.5, self.first_order+len(self.spectra)+0.5)
         ax.set_title(f"{self.filename}\n{self.fitted_mask.size} lines "
                      f"({self.fitted_mask.sum()} rejected) RMS = {self.fitted_rms:.4f}nm")
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
@@ -283,3 +305,48 @@ class IGRINSWavecal:
             ext.wcs.insert_transform(ext.wcs.input_frame, models.Shift(global_shift), after=True)
 
         return global_shift
+
+
+def centroid_frac(data, peaks=None, mask=None, halfwidth=1.5, maxiter=50,
+                  keep_bad=False):
+    """
+
+    Parameters
+    ----------
+    data: array
+    peaks
+    mask
+    halfwidth
+    maxiter
+    keep_bad
+
+    Returns
+    -------
+
+    """
+    final_peaks = []
+    for p in peaks:
+        c_last = p
+        for _ in range(maxiter):
+            lo, hi = c_last - halfwidth, c_last + halfwidth
+            i = np.arange(int(np.floor(lo)) - 1, int(np.ceil(hi)) + 2)
+            i = i[(i >= 0) & (i < data.size)]
+            w = np.clip(np.minimum(i + 0.5, hi) - np.maximum(i - 0.5, lo), 0, 1)
+            xm = 0.5 * (np.minimum(i + 0.5, hi) + np.maximum(i - 0.5, lo))
+            if mask is not None and any(mask[i]):
+                if keep_bad:
+                    final_peaks.append(np.nan)
+                break
+            d = (data[i] - data[i].min()) * w
+            c = np.sum(xm * d) / d.sum()
+            if abs(c - p) > 0.5 * halfwidth:  # it's moved too far
+                if keep_bad:
+                    final_peaks.append(np.nan)
+                break
+            if abs(c - c_last) < 1e-5:
+                final_peaks.append(c_last)
+                break
+            c_last = c
+        else:
+            final_peaks.append(c)
+    return np.array(final_peaks)
