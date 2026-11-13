@@ -21,7 +21,6 @@ def reduceScience(p):
     p.measureSlitProfile(stream="2D")
     p.transferAttribute(source="2D", attribute="SLITPROF")
     p.extractSpectra()
-    p.writeOutputs()
     p.telluricCorrect()
     p.fluxCalibrate()
     p.storeProcessedScience(suffix="_1D")
@@ -44,6 +43,7 @@ def reduceTelluric(p):
     p.measureSlitProfile(stream="2D")
     p.transferAttribute(source="2D", attribute="SLITPROF")
     p.extractSpectra()
+    p.determineWavelengthSolution()  # from telluric absorption
     p.fitTelluric()
     p.storeProcessedTelluric()
 

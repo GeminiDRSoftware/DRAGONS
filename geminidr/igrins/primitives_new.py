@@ -2,13 +2,14 @@ import os
 from importlib import import_module
 from bisect import bisect_left
 import copy
+from functools import partial
 import warnings
 
-from matplotlib import pyplot as plt, colors as mcolors
+from matplotlib import pyplot as plt
 
 from scipy.interpolate import make_interp_spline, PPoly
 from scipy.ndimage import gaussian_filter
-from scipy.signal import correlate, savgol_filter
+from scipy.signal import savgol_filter
 
 import numpy as np
 from astropy.io import fits
@@ -16,7 +17,6 @@ from astropy.modeling import fitting, models
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy.table import Table
 from astropy import units as u
-from astropy.utils.exceptions import AstropyWarning
 
 from gwcs.wcs import WCS as gWCS
 from gwcs import coordinate_frames as cf
@@ -605,8 +605,6 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 ext.wcs = am.replace_submodel_in_gwcs(ext.wcs, "SKY",
                                                       models.Scale(pixscale))
 
-                t = ext.wcs.get_transform("distcorr_slitpos", "distortion_corrected")
-
             del ad.MDF
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
@@ -617,13 +615,13 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        timestamp_key = self.timestamp_keys['determineWavelengthSolution']
         nsum = params["nsum"]
         min_snr = params["min_snr"]
         in_vacuo = params["in_vacuo"]
         arc_file = params["linelist"]
         xdeg = params["dispersion_order"]
         ydeg = params["xdorder_order"]
+        maxdeg = params["max_order"]
         debug_plot = params["debug_plot"]
         sfx = params["suffix"]
 
@@ -661,7 +659,6 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     ref_waves = _list
 
             # First pass to extract spectra and get global shift
-            from functools import partial
             if sky:
                 spectra = []
                 for ext in ad:
@@ -672,13 +669,13 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                 (output_frame, None)])
                     spectra.append(ext.nddata.__class__(
                         data=data, mask=mask, variance=variance, wcs=wcs))
-                    wavecal_obj = IGRINSWavecal(spectra, first_order=spec_orders[0], log=self.log)
+                    wavecal_obj = IGRINSWavecal(spectra, spec_orders[0], log=self.log)
                     identify_lines = partial(wavecal_obj.identify_sky_lines, ref_sigpx=ref_sigpx)
                 global_shift = wavecal_obj.apply_global_shift()
                 log.stdinfo(f"{ad.filename}: global shift of {global_shift} "
                             "pixels from cross-correlation")
             else:
-                wavecal_obj = IGRINSWavecal(ad, first_order=spec_orders[0], log=self.log)
+                wavecal_obj = IGRINSWavecal(ad, spec_orders[0], log=self.log)
                 identify_lines = wavecal_obj.identify_telluric_lines
 
             wavecal_obj.ref_waves = ref_waves
@@ -690,11 +687,12 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     except KeyError:
                         wavecal_obj.fitted_lines[k] = v
 
-            # Now perform the fit
-            fit_table = wavecal_obj.create_2d_wavelength_solution(xdeg, ydeg, sigma_clip)
-            ad.WAVECAL = fit_table
-            log.stdinfo(f"Rejected {wavecal_obj.fitted_mask.sum()}/{wavecal_obj.fitted_mask.size} lines/groups "
+            # Now perform the fit and attach WAVECAL table
+            wavecal_obj.create_2d_wavelength_solution(xdeg, ydeg, maxdeg, sigma_clip)
+            log.stdinfo(f"Rejected {wavecal_obj.fitted_mask.sum()}/"
+                        f"{wavecal_obj.fitted_mask.size} lines/groups "
                         f"for final rms = {wavecal_obj.fitted_rms:.4f} nm")
+            ad.WAVECAL = wavecal_obj.create_fit_table(in_vacuo=in_vacuo)
 
             # Create the wavelength models
             if hasattr(ad, 'MDF'):

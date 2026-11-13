@@ -1,4 +1,5 @@
 # Module for IGRINS-2 wavecal stuff
+from itertools import product
 import warnings
 
 import numpy as np
@@ -14,7 +15,7 @@ from gempy.library import astromodels as am
 
 
 class IGRINSWavecal:
-    def __init__(self, spectra, first_order=None, filename='', in_vacuo=True, log=None):
+    def __init__(self, spectra, first_order, filename='', log=None):
         """
 
         Parameters
@@ -26,35 +27,58 @@ class IGRINSWavecal:
         self.spectra = spectra
         self.ref_waves = None
         self.first_order = first_order
+        self.band = "H" if first_order > 90 else "K"
         self.filename = filename
-        self.in_vacuo = in_vacuo
         self.log = log
         self.fitted_lines ={}
 
-    def create_2d_wavelength_solution(self, xdeg, ydeg, sigma_clip):
+    def create_2d_wavelength_solution(self, xdeg, ydeg, maxdeg, sigma_clip):
         orders, pix, waves = [np.asarray(self.fitted_lines[k])
                               for k in ('order', 'pixel', 'wavelength')]
         fit_it = fitting.FittingWithOutlierRemoval(fitting.LinearLSQFitter(),
                                                    outlier_func=sigma_clip)
+
+        # Create initial model and fix coefficients above the maximum degree
+        # These default values of the orders were determined by Claude
+        user_info = []
+        if xdeg is None:
+            xdeg = 3 if self.band == "K" else 5
+            user_info.append(f"dispersion_order={xdeg}")
+        if maxdeg is None:
+            maxdeg = 4 if self.band == "K" else 5
+            user_info.append(f"max_order={maxdeg}")
+        if user_info:
+            self.log.stdinfo("Setting "+" and ".join(user_info)+f" for {self.band}-band")
+
         m_init = models.Chebyshev2D(x_degree=xdeg, y_degree=ydeg,
                                     x_domain=(0, self.npix-1),
                                     y_domain=(min(orders), max(orders)))
+        for xd, yd in product(range(xdeg+1), range(ydeg+1)):
+            if xd + yd > maxdeg:
+                getattr(m_init, f'c{xd}_{yd}').fixed = True
+
         m_final, mask = fit_it(m_init, pix, orders, waves * orders)
+        rms = np.std(m_final(pix, orders)[~mask] / orders[~mask] - waves[~mask])
         self.fitted_model = m_final
         self.fitted_mask = mask
+        self.fitted_rms = rms
 
+    def create_fit_table(self, in_vacuo=True):
         # This code is comparable to update_wcs_with_solution()
+        m_final, mask = self.fitted_model, self.fitted_mask
+        xdeg, ydeg = m_final.x_degree, m_final.y_degree
+        orders, pix, waves = [np.asarray(self.fitted_lines[k])
+                              for k in ('order', 'pixel', 'wavelength')]
         tbl_orders = orders[~mask].astype(int)
         tbl_pix = pix[~mask].astype(np.float32)
         tbl_waves = waves[~mask].astype(np.float32)
         # tbl_sigmas = sigmas[~mask].astype(np.float32)
         tbl_fitted = m_final(tbl_pix, tbl_orders) / tbl_orders
-        rms = np.std(m_final(tbl_pix, tbl_orders) / tbl_orders - tbl_waves)
-        self.fitted_rms = rms
         tbl_pix += 1  # use 1-based for output
 
         temptable = am.model_to_table(m_final, xunit=u.pixel, yunit=None)
-        temptable.add_columns([[2], [xdeg], [ydeg], [0], [self.npix-1], [min(orders)], [max(orders)], [rms]],
+        temptable.add_columns([[2], [xdeg], [ydeg], [0], [self.npix-1],
+                               [min(orders)], [max(orders)], [self.fitted_rms]],
                               names=("ndim", "xdegree", "ydegree", "xdomain_start",
                                      "xdomain_end", "ydomain_start", "ydomain_end", "rms"))
 
@@ -73,7 +97,7 @@ class IGRINSWavecal:
                                  "wavelengths", "fitted"),
                           units=(None, None, None, u.pix, u.nm, u.nm),
                           meta=temptable.meta)
-        medium = "vacuo" if self.in_vacuo else "air"
+        medium = "vacuo" if in_vacuo else "air"
         fit_table.meta['comments'] = [
             'coefficients are based on 0-indexing',
             'peaks column is 1-indexed',
@@ -231,12 +255,13 @@ class IGRINSWavecal:
             return fitted_lines
 
         order_waves = self.ref_waves[in_order]
+        log.stdinfo(f"Order {spec_order}: Fitting {len(order_waves)} lines")
         pixloc = spec.wcs.invert(order_waves)
         for x, wavelength in zip(pixloc, order_waves):
             pixel = centroid_frac(-spec.data, peaks=[x], mask=spec.mask, keep_bad=True)[0]
             if not np.isnan(pixel):
-                log.stdinfo(f"Adding ({spec_order}, {pixel:.2f}, {wavelength:.2f})"
-                            " to fitted line list")
+                log.debug(f"Adding ({spec_order}, {pixel:.2f}, {wavelength:.2f})"
+                          " to fitted line list")
                 fitted_lines['pixel'].append(pixel)
                 fitted_lines['wavelength'].append(wavelength)
 

@@ -80,12 +80,25 @@ class determineWavelengthSolutionConfig(config.Config):
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
     dispersion_order = config.RangeField("Order of fit in dispersion direction",
-                                          int, 4, min=2, max=10, inclusiveMax=True)
+                                         int, None, min=2, max=10,
+                                         inclusiveMax=True, optional=True)
     xdorder_order = config.RangeField("Order of fit as a function of echelle order",
                                       int, 3, min=2, max=10, inclusiveMax=True)
+    max_order = config.RangeField("Maximum combined order of polynomial", int, None,
+                                  min=3, max=10, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, True)
     debug_plot = config.Field("Make debug plot?", bool, False)
+
+    def validate(self):
+        config.Config.validate(self)
+        match [self.dispersion_order, self.max_order].count(None):
+            case 0:
+                if self.max_order <= min(self.dispersion_order, self.xdorder_order):
+                    raise ValueError("'max_order' must exceed both "
+                                     "'dispersion_order' and 'xdorder_order'")
+            case 1:
+                raise ValueError("Both or neither of 'dispersion_order' and 'max_order' must be set")
 
 
 class extractSpectraConfig(config.Config):
