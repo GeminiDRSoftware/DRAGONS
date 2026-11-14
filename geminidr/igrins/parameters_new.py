@@ -213,6 +213,10 @@ class removeObjectsLeaveSkyConfig(config.Config):
                                      int, 1, min=1)
 
 
+class telluricCorrectConfig(parameters_telluric.telluricCorrectConfig):
+    copy_wavelength_solution = config.Field("Copy wavelength solution from telluric standard?", bool, True)
+
+
 class thresholdFlatfieldConfig(parameters_preprocess.thresholdFlatfieldConfig):
     def setDefaults(self):
         self.lower = 0.001

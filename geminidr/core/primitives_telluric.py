@@ -519,6 +519,8 @@ class Telluric(Spect):
         do_cal: str ["procmode" | "force" | "skip"]
             Perform this calibration? ("skip" skips, the others will attempt
             but be OK if no suitable calibration is found)
+        copy_wavelength_solution: bool
+            Copy the wavelength solution from the telluric to the science spectrum?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -531,6 +533,7 @@ class Telluric(Spect):
         apply_shift = params["apply_shift"]
         manual_shift = params["pixel_shift"]
         user_airmass = params["delta_airmass"]
+        copy_wavesol = params.get("copy_wavelength_solution", False)
         do_cal = params["do_cal"]
 
         if do_cal == 'skip':
@@ -587,6 +590,7 @@ class Telluric(Spect):
             has_data = True
             tellabs_dict = {}
             ripples_dict = {}
+            wcs_dict = {}
             for ext_telluric, spec_order in zip(telluric, telluric.hdr.get('SPECORDR')):
                 if (ext_telluric.hdr.get('APERTURE') == aperture_to_use and
                         len(ext_telluric.shape) == 1):
@@ -610,6 +614,7 @@ class Telluric(Spect):
                         ripples_dict[spec_order] = ext_telluric.RIPPLE
                     except AttributeError:
                         pass
+                    wcs_dict[spec_order] = ext_telluric.wcs
 
             # TODO: If we're interactive we can override apply_model if necessary
             if not interactive:
@@ -626,6 +631,11 @@ class Telluric(Spect):
                 log.warning(f"{ad.filename} does not have the necessary "
                             "telluric information to be used. Continuing.")
                 continue
+
+            if copy_wavesol:
+                log.stdinfo("Copying wavelength solution from telluric")
+            if ripples_dict:
+                log.stdinfo("Applying ripple correction from telluric")
 
             # We're hot to go! (as Chappell Roan would say)
             # First is to get a cross-correlation estimate, unless one has
@@ -656,9 +666,12 @@ class Telluric(Spect):
                                 "from name '{axis_name}'on extension "
                                 f"{ext.id}. Assuming vacuum.")
 
-                lsf = self._line_spread_function(ext)
+                if copy_wavesol:
+                    ext.wcs = wcs_dict[spec_order]
                 if (ripple := ripples_dict.get(spec_order)) is not None:
                     ext.divide(1 + ripple)
+
+                lsf = self._line_spread_function(ext)
                 tspek = TelluricSpectrum(
                     ext.nddata, line_spread_function=lsf,
                     name=f"Extension {ext.id}", in_vacuo=in_vacuo)

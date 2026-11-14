@@ -316,7 +316,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        #timestamp_key = self.timestamp_keys[self.myself()]
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = params["suffix"]
         env_order = params["envelope_order"]
         snr_min = params["snr_min"]
@@ -340,7 +340,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                 ext.variance /= (1 + ripple) ** 2
 
             # Timestamp and update the filename
-            #gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.update_filename(suffix=sfx, strip=True)
 
         return adinputs
@@ -650,11 +650,11 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     # Construct arrays of line wavelengths in the units we want, and their
                     # widths in pixels, and we don't need to access the LineList again
                     ref_waves = np.hstack([l.wavelengths(in_vacuo=in_vacuo, units=u.nm)
-                                           for l in linelists])
+                                           for l in _list])
                     idx = ref_waves.argsort()
                     ref_waves = ref_waves[idx]
                     ref_sigpx = np.hstack([[sigma_unres] * len(l) if l.weights is None else l.weights
-                                           for l in linelists])[idx]
+                                           for l in _list])[idx]
                 else:
                     ref_waves = _list
 
@@ -670,15 +670,16 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                     spectra.append(ext.nddata.__class__(
                         data=data, mask=mask, variance=variance, wcs=wcs))
                     wavecal_obj = IGRINSWavecal(spectra, spec_orders[0], log=self.log)
+                    wavecal_obj.ref_waves = ref_waves
                     identify_lines = partial(wavecal_obj.identify_sky_lines, ref_sigpx=ref_sigpx)
                 global_shift = wavecal_obj.apply_global_shift()
                 log.stdinfo(f"{ad.filename}: global shift of {global_shift} "
                             "pixels from cross-correlation")
             else:
                 wavecal_obj = IGRINSWavecal(ad, spec_orders[0], log=self.log)
+                wavecal_obj.ref_waves = ref_waves
                 identify_lines = wavecal_obj.identify_telluric_lines
 
-            wavecal_obj.ref_waves = ref_waves
             wavecal_obj.filename = ad.filename
             for idx in range(len(ad)):
                 for k, v in identify_lines(idx, min_snr=min_snr).items():
