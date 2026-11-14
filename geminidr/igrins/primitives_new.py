@@ -646,18 +646,16 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
             spec_orders = ad.hdr['SPECORDR']
             sky = 'SKY' in ad.tags
             if arc_file is None:
-                _list = self._get_linelist(ad=ad)
+                linelists = self._get_linelist(ad=ad)
+                ref_waves = np.hstack([l.wavelengths(in_vacuo=in_vacuo, units=u.nm)
+                                       for l in linelists])
                 if sky:
                     # Construct arrays of line wavelengths in the units we want, and their
                     # widths in pixels, and we don't need to access the LineList again
-                    ref_waves = np.hstack([l.wavelengths(in_vacuo=in_vacuo, units=u.nm)
-                                           for l in _list])
                     idx = ref_waves.argsort()
                     ref_waves = ref_waves[idx]
                     ref_sigpx = np.hstack([[sigma_unres] * len(l) if l.weights is None else l.weights
-                                           for l in _list])[idx]
-                else:
-                    ref_waves = _list
+                                           for l in linelists])[idx]
 
             # First pass to extract spectra and get global shift
             if sky:
@@ -1623,9 +1621,5 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
         if 'SKY' in ad.tags:
             return [wavecal.LineList(os.path.join(lookup_dir, filename))
                     for filename in ('OH.dat', 'HITRAN.dat')]
-        which = "H/H" if ad.wavelength_band() == "H" else ""
-        t = Table.read("/Users/chris.simpson/gemini_python/igrins2/"
-                       f"claude/wavecal_analysis/{which}telluric_feature_widths.csv")
-        linelist = t['wavelength_nm'].data[np.logical_and(t['central_tau'] < 5,
-                                                          t['prominence'] > 0.05)]
-        return linelist
+        #t = Table.read(os.path.join(lookup_dir, 'telluric_lines_claude.dat'))
+        return [wavecal.LineList(os.path.join(lookup_dir, 'telluric_lines_claude.dat'))]
