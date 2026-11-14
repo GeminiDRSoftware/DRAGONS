@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 
 from scipy.interpolate import make_interp_spline, PPoly
 from scipy.ndimage import gaussian_filter
+from scipy.optimize import minimize
 from scipy.signal import savgol_filter
 
 import numpy as np
@@ -1168,6 +1169,7 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
 
             # Now do the cross-correlation to find the flexure shift
             shifts = []
+            corr_funcs = []
             for ext_arc, ext_section in zip(arc, detsecs):
                 ndd = ad[0].nddata[ext_section.asslice()]
                 y, x = np.mgrid[:ext_arc.shape[0], :ext_arc.shape[1]]
@@ -1188,28 +1190,24 @@ class IGRINSNew(IGRINS, Telluric, CrossDispersed):
                                                collapsed_image[~collapsed_mask], k=3)
                 spl_arc = make_interp_spline(xpixels[~collapsed_mask],
                                              collapsed_arc[~collapsed_mask], k=3)
-                narclines = list(arc.WAVECAL['xdorder'].data).count(ext_arc.hdr['SPECORDR'])
                 xeval = np.arange(unmasked_indices[0], unmasked_indices[-1] + 0.01, 1. / subsample)
+                corr_funcs.append([spl_arc, spl_image, xeval])
 
-                corrfunc = lambda dx: -np.sum(spl_arc(xeval) * spl_image(xeval + dx))
-                from scipy.optimize import minimize
-                result = minimize(corrfunc, 0, bounds=[(-4, 4)])
-                log.stdinfo(f"{ad.filename} order {ext_arc.hdr['SPECORDR']}: shift={result.x[0]:.3f}")
-                if abs(result.x[0]) < 3:
-                    shifts.append(result.x[0])
-                if ext_arc.hdr['SPECORDR'] == 0:
-                    fig, ax = plt.subplots()
-                    x = np.arange(-4, 4, 0.05)
-                    #y = [corrfunc(dx) for dx in x]
-                    ax.plot(xpixels, spl_image(xpixels), 'k-')
-                    ax.plot(xpixels, spl_arc(xpixels), 'r-')
-                    #ax.plot(x, y, 'k-')
-                    plt.show()
+                # result = minimize(corrfunc, 0, bounds=[(-4, 4)])
+                # log.stdinfo(f"{ad.filename} order {ext_arc.hdr['SPECORDR']}: shift={result.x[0]:.3f}")
+                # if abs(result.x[0]) < 3:
+                #     shifts.append(result.x[0])
 
-            if shifts:
-                # Use the median
-                shift = sigma_clipped_stats(shifts, sigma=2, maxiters=5)[1]
-                ad_shifts[ad.filename] = shift
+            corrfunc = lambda dx: -sum([np.sum(spl_arc(xeval) * spl_image(xeval+dx))
+                                        for spl_arc, spl_image, xeval in corr_funcs])
+            result = minimize(corrfunc, 0, bounds=[(-4, 4)])
+            log.stdinfo(f"{ad.filename}: shift={result.x[0]:.3f}")
+            ad_shifts[ad.filename] = result.x[0]
+
+            # if shifts:
+            #     # Use the median
+            #     shift = sigma_clipped_stats(shifts, sigma=2, maxiters=5)[1]
+            #     ad_shifts[ad.filename] = shift
 
         avg_shift = np.median(list(ad_shifts.values()))
 
