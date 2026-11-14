@@ -44,6 +44,9 @@ class removeFromInputsConfig(config.Config):
 class selectFromInputsConfig(config.Config):
     tags = config.Field("List of tags for selection", str, None, optional=True)
 
+class setProcessingLevelConfig(config.Config):
+    level = config.RangeField("Processing Level to assign", int, None, min=1, optional=False)
+
 class showInputsConfig(config.Config):
     purpose = config.Field("Purpose of displaying list", str, None, optional=True)
 

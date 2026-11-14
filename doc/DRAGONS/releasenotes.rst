@@ -8,6 +8,27 @@
 Release Notes
 *************
 
+V4.2.3
+======
+
+This release introduces the processing_level descriptor and header, and updates
+the reduce_nostack and alignAndStack recipes to used by GOA for processing GMOS
+imaging data to allow separating reduction of single frames, and stacking of
+those reduced frames. It also adds reference catalogs and measurements of site
+quality metrics to those recipes.
+
+This is intended to be an internal release for use in GOA.
+
+V4.2.2
+======
+
+This release includes improvement in handling and flagging problems with
+the automatic wavelength solution calculations.  This brings greater robustness
+to the Gemini Observatory Archive (GOA) products.
+
+The patch includes better handling of issues in finding and masking the GMOS
+longslit "bridges" and a compatibility update for bokeh.
+
 V4.2.1
 ======
 

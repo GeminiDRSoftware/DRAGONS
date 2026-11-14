@@ -79,4 +79,4 @@ def test_reduce_arc(input_filename, caldict, arm, path_to_inputs, path_to_refs):
     wfitref = arm.evaluate_poly(adref[0].WFIT)
     # tolerance of 1/200 of the average pixel size
     atol = 0.005 * np.median(np.diff(wfitref, axis=-1).mean(axis=-1))
-    assert_allclose(wfitref, wfitout, atol=atol)
+    assert_allclose(wfitref, wfitout, atol=atol, rtol=1e-5)

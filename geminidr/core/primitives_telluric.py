@@ -675,7 +675,6 @@ class Telluric(Spect):
                 tspek = TelluricSpectrum(
                     ext.nddata, line_spread_function=lsf,
                     name=f"Extension {ext.id}", in_vacuo=in_vacuo)
-
                 tspek_list.append(tspek)
 
                 # Has to be here because of in_vacuo
