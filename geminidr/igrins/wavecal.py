@@ -335,19 +335,28 @@ class IGRINSWavecal:
 def centroid_frac(data, peaks=None, mask=None, halfwidth=1.5, maxiter=50,
                   keep_bad=False):
     """
+    This is a Claude-written function to calculate the centroids of peaks
+    in a 1D array, modified to share the call signature of pinpoint_peaks().
 
     Parameters
     ----------
     data: array
-    peaks
-    mask
-    halfwidth
-    maxiter
-    keep_bad
+        the 1D array of data
+    peaks: sequence
+        approximate locations of peaks
+    mask: array, optional
+        mask for the data
+    halfwidth: float
+        halfwidth of the centroiding window
+    maxiter: int
+        maximum number of iterations to refine the centroid
+    keep_bad: bool
+        if True, keep NaN for peaks that fail to converge or are masked,
+        to ensure the output list is the same length as the input list
 
     Returns
     -------
-
+    array of refined peak locations
     """
     final_peaks = []
     for p in peaks:
