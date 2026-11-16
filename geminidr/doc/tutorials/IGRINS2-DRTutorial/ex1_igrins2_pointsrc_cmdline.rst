@@ -146,8 +146,8 @@ lamp-on and lamp-off exposures and create the master flat.
 
 ::
 
-    reduce @flatH.lis
-    reduce @flatK.lis
+    reduce @flatH.lis -p normalizeFlat:niter=3
+    reduce @flatK.lis -p normalizeFlat:niter=3
 
 While the non-interactive solution should be correct, if you wish to inspect
 the fit run the flat normalization in interactive mode by add
@@ -155,7 +155,7 @@ the fit run the flat normalization in interactive mode by add
 
 ::
 
-    reduce @flatH.lis -p interactive=True
+    reduce @flatH.lis -p interactive=True normalizeFlat:niter=3
 
 .. .. image:: _graphics/igrins2_interflat.png
 ..   :width: 600
@@ -166,6 +166,9 @@ the fit run the flat normalization in interactive mode by add
    working properly.  There's one unreadable tab and a scrollbar.  As for the
    fit, it is too low, it is being dragged down bye the absorption lines.
    What are those absorption lines anyway?
+
+   remove the ``normalizeFlat:niter=3`` from the command once the defaults
+   have been adjusted.  Bill also finds that niter=3 works better than niter=1.
 
 Wavelength Solution
 ===================
@@ -187,3 +190,101 @@ adding `-p interactive=True` to the command.
 ::
 
     reduce @skywlenH.lis -p interactive=True
+
+.. todo::  There are no interactive mode anywhere in the arc recipe?  Remove that
+   bit if that's true.
+
+
+Telluric Standard
+=================
+The telluric standard observed after the science observations is "HD 97585".
+The spectral type of the star is A0V.
+
+To properly calculate and fit a telluric model to the star, we need to know
+its effective temperature.  To properly scale the sensitivity function (to
+use the star as a spectrophotometric standard), we need to know the star's
+magnitude.  Those are inputs to the ``fitTelluric`` primitive.
+
+The software will automatically query the SIMBAD database to get the star's
+spectral type and magnitude.  Then it will use the spectral type to derive the
+effective temperature from a Eric Mamajek's list "A Modern Mean Dwarf Stellar
+Color and Effective Temperature Sequence"
+(https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt).
+
+To reduce the telluric standard:
+
+::
+
+    reduce @telluricH.lis
+    reduce @telluricK.lis
+
+You can inspect the telluric fit in interactive mode by adding
+`-p interactive=True` to the command.
+
+::
+
+    reduce @telluricH.lis -p interactive=True
+
+The output processed telluric standard will contain the telluric model and the
+sensitivity function, as well as a refined wavelength solution derived using
+the telluric features.
+
+.. note:: If you wish to override the automatically derived values, or if you
+   do not have an internet connection, you can set
+   the ``fitTelluric`` primitive parameters yourself.  For example, in a normal
+   text file (say "hd97585_H.param"), we write::
+
+        -p
+        fitTelluric:bbtemp=9700
+        fitTelluric:magnitude='H=5.391'
+
+   For K-band, in this case the magnitude is K=5.333.  This parameter file can
+   then be added to the command line with ``@hd97585_H.param``::
+
+        reduce @telluricH.lis @hd97585_H.param
+
+
+Science Observations
+====================
+The science target is a CEMP-no star.  The observations were taken in the
+standard ABBA dither pattern.  The software will automatically combine the
+dithered exposures.
+
+The reduction steps include flat fielding, wavelength calibration, telluric
+correction, and flux calibration.  The final output will be a fully reduced
+spectrum of the science target.
+
+This is what one raw image looks like.
+
+.. .. image:: _graphics/gnirsxd_SXD32mm_raw.png
+..   :width: 400
+..   :alt: raw science image
+
+.. what you see in that image are the x orders from x at the bottom to x at the
+   top.
+
+With all the calibrations in the local calibration manager, one only needs
+to call |reduce| on the science frames to get an extracted spectrum.
+
+::
+
+    reduce @scienceH.lis
+    reduce @scienceK.lis
+
+To run the reduction with all the interactive tools activated, set the
+``interactive`` parameter to ``True``.
+
+::
+
+    reduce @scienceH.lis -p interactive=True
+
+.. screenshots of intermediate steps and various dgsplot.
+
+In the final spectrum, the orders remain separate.  The orders can be combined
+into a single spectrum using the ``combineOrders`` primitive.
+
+::
+
+    reduce -r combineOrders N20260130S0179_H_1D.fits
+    reduce -r combineOrders N20260130S0179_K_1D.fits
+
