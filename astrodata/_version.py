@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 """
-Holds the DRAGONS version to be propagated throught all the DRAGONS package
+Holds the DRAGONS version to be propagated throughout all the DRAGONS package
 and to be used in the documentation.
 """
 
 # --- Setup Version Here ---
 API = 4
 FEATURE = 2
-BUG = 1
-TAG = 'goawavecal'
+BUG = 3
+TAG = ''
 
 
 def version(short=False, tag=TAG):
