@@ -203,7 +203,8 @@ class normalizeFlatConfig(parameters_spect.normalizeFlatConfig):
 
     def setDefaults(self):
         self.function = "spline3"
-        self.order = 4
+        self.niter = 3
+        self.order = 5
         self.threshold = 0.001
 
 
