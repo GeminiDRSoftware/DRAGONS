@@ -20,7 +20,7 @@ from astropy.table import Table
 from astropy import units as u
 try:
     from astroquery.exceptions import NoResultsWarning
-    from astroquery.simbad import Simbad
+    from astroquery.simbad import Simbad, conf as simbad_conf
 except ModuleNotFoundError:
     pass
 
@@ -28,6 +28,7 @@ import pyvo
 
 from . import Spect
 from gempy.gemini import gemini_tools as gt
+from gempy.utils import logutils
 from recipe_system.utils.decorators import parameter_override, capture_provenance
 from geminidr.interactive.interactive import UIParameters
 import geminidr.interactive.server
@@ -44,6 +45,8 @@ from geminidr.interactive.fit.telluric import TelluricCorrectVisualizer, Telluri
 
 from . import parameters_telluric
 from geminidr import CalibrationNotFoundError
+
+log = logutils.get_logger(__name__)
 
 
 # geminidr.gemini.lookups
@@ -175,6 +178,7 @@ class Telluric(Spect):
         shift_tolerance = params["shift_tolerance"]
         apply_shift = params["apply_shift"]
         lsf_sampling = params["debug_lsf_sampling"]
+        deripple = params.get("deripple", False)
         iter_list = [(False, interactive)]
         if shift_tolerance is not None:
             iter_list = [(True, False)] + iter_list
@@ -243,6 +247,10 @@ class Telluric(Spect):
             aperture_to_use = min(apertures) if apertures else None
             if len(apertures) > 1:
                 log.warning(f"Multiple apertures found: using {aperture_to_use}")
+
+            # Defining this here simplifies the code later if we don't
+            # have to deripple
+            ripples = [None] * len(ad)
 
             pixel_shift = None
             for (modify, inter) in iter_list:
@@ -321,6 +329,23 @@ class Telluric(Spect):
                             setattr(m_init, p, median_value)
                     tcal.last_model = m_init
 
+                    # If we need to deripple, we do that now, and then update
+                    # the TelluricCalibrator object with the new spectra. This
+                    # means we don't have to remake all the PCA and stellar
+                    # spectra, which won't have changed since the wavelength
+                    # solutions haven't changed.
+                    if deripple:
+                        try:
+                            ripples = self._calculate_ripples(
+                                tcal.spectra, submodels,
+                                first_order=ad.hdr['SPECORDR'][0], **params)
+                        except AttributeError:
+                            log.warning("No derippling function is defined for "
+                                        f"this class {self.__class__.__name__}")
+                        else:
+                            for tspek, ripple in zip(tcal.spectra, ripples):
+                                tspek.nddata = tspek.nddata.divide(1 + ripple)
+
                 log.stdinfo("    Performing overall fit")
                 if inter:
                     visualizer = TelluricVisualizer(
@@ -397,7 +422,7 @@ class Telluric(Spect):
 
             # Attach results to correct extensions in telluric AD object
             result_index = 0
-            for ext in ad:
+            for (ext, ripple) in zip(ad, ripples):
                 if (len(ext.shape) == 1 and
                         ext.hdr.get('APERTURE') == aperture_to_use):
                     tspek = tspek_list[result_index]
@@ -408,6 +433,8 @@ class Telluric(Spect):
                     spline.extrapolate = False  # will return np.nan outside range
                     ext.TELLABS = spline(tspek.waves).astype(ext.data.dtype)
                     ext.TELLABS[np.isinf(ext.TELLABS)] = np.nan
+                    if ripple is not None:
+                        ext.RIPPLE = ripple.astype(ext.data.dtype)
                     result_index += 1
 
             # We have to correct for exposure time and add the SENSFUNC units
@@ -492,6 +519,8 @@ class Telluric(Spect):
         do_cal: str ["procmode" | "force" | "skip"]
             Perform this calibration? ("skip" skips, the others will attempt
             but be OK if no suitable calibration is found)
+        copy_wavelength_solution: bool
+            Copy the wavelength solution from the telluric to the science spectrum?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -504,6 +533,7 @@ class Telluric(Spect):
         apply_shift = params["apply_shift"]
         manual_shift = params["pixel_shift"]
         user_airmass = params["delta_airmass"]
+        copy_wavesol = params.get("copy_wavelength_solution", False)
         do_cal = params["do_cal"]
 
         if do_cal == 'skip':
@@ -559,25 +589,32 @@ class Telluric(Spect):
 
             has_data = True
             tellabs_dict = {}
-            for ext_telluric in telluric:
+            ripples_dict = {}
+            wcs_dict = {}
+            for ext_telluric, spec_order in zip(telluric, telluric.hdr.get('SPECORDR')):
                 if (ext_telluric.hdr.get('APERTURE') == aperture_to_use and
                         len(ext_telluric.shape) == 1):
+                    if has_data:
+                        try:
+                            tellabs = ext_telluric.TELLABS
+                        except AttributeError:
+                            tellabs_dict = {}  # makes it easier to find errors
+                            has_data = False
+                        else:
+                            # Save the telluric spectrum as a spline so that it
+                            # can be interpolated onto any wavelength solution
+                            # order=3 seems to cause some ringing, and order=1 is
+                            # what the TelluricCorrector uses anyway
+                            tell_waves = ext_telluric.wcs(np.arange(
+                                ext_telluric.data.size))
+                            tellabs_dict[spec_order] = \
+                                make_interp_spline(tell_waves[~np.isnan(tellabs)],
+                                                   tellabs[~np.isnan(tellabs)], k=1)
                     try:
-                        tellabs = ext_telluric.TELLABS
+                        ripples_dict[spec_order] = ext_telluric.RIPPLE
                     except AttributeError:
-                        tellabs_dict = {}  # makes it easier to find errors
-                        has_data = False
-                        break
-                    else:
-                        # Save the telluric spectrum as a spline so that it
-                        # can be interpolated onto any wavelength solution
-                        # order=3 seems to cause some ringing, and order=1 is
-                        # what the TelluricCorrector uses anyway
-                        tell_waves = ext_telluric.wcs(np.arange(
-                            ext_telluric.data.size))
-                        tellabs_dict[ext_telluric.hdr.get('SPECORDR')] = \
-                            make_interp_spline(tell_waves[~np.isnan(tellabs)],
-                                               tellabs[~np.isnan(tellabs)], k=1)
+                        pass
+                    wcs_dict[spec_order] = ext_telluric.wcs
 
             # TODO: If we're interactive we can override apply_model if necessary
             if not interactive:
@@ -594,6 +631,11 @@ class Telluric(Spect):
                 log.warning(f"{ad.filename} does not have the necessary "
                             "telluric information to be used. Continuing.")
                 continue
+
+            if copy_wavesol:
+                log.stdinfo("Copying wavelength solution from telluric")
+            if ripples_dict:
+                log.stdinfo("Applying ripple correction from telluric")
 
             # We're hot to go! (as Chappell Roan would say)
             # First is to get a cross-correlation estimate, unless one has
@@ -612,7 +654,7 @@ class Telluric(Spect):
             tell_int_splines = []
             tellabs_data = []
 
-            for ext in ad:
+            for ext, spec_order in zip(ad, ad.hdr.get('SPECORDR')):
                 if len(ext.shape) > 1:
                     continue
 
@@ -623,6 +665,11 @@ class Telluric(Spect):
                                 "scale is calibrated to vacuum or air "
                                 "from name '{axis_name}'on extension "
                                 f"{ext.id}. Assuming vacuum.")
+
+                if copy_wavesol:
+                    ext.wcs = wcs_dict[spec_order]
+                if (ripple := ripples_dict.get(spec_order)) is not None:
+                    ext.divide(1 + ripple)
 
                 lsf = self._line_spread_function(ext)
                 tspek = TelluricSpectrum(
@@ -648,7 +695,7 @@ class Telluric(Spect):
                     if apply_model:
                         trans = convolution.resample(tspek.waves, wconv, tconv)
                     else:
-                        trans = tellabs_dict[ext.hdr.get('SPECORDR')](tspek.waves)
+                        trans = tellabs_dict[spec_order](tspek.waves)
 
                     # Old cross-correlation method
                     #pixel_shift = peak_finding.cross_correlate_subpixels(
@@ -767,7 +814,7 @@ class Telluric(Spect):
                                 f"to {ad.filename}")
 
             abs_spectra = tcal.absorption_spectra()
-            for ext in ad:
+            for ext, spec_order in zip(ad, ad.hdr['SPECORDR']):
                 if len(ext.shape) > 1:
                     continue
 
@@ -1252,8 +1299,25 @@ def query_simbad(ad):
 
     try:  # this is where a connection error to SIMBAD shows up first
         simbad.add_votable_fields('J', 'H', 'K', 'sp_type')
-    except pyvo.dal.exceptions.DALFormatError:
-        return {}
+    except pyvo.dal.exceptions.DALServiceError:
+        log.warning(f"Failed to connect to {simbad.server}. "
+                    "Trying other servers...")
+        failed_server = simbad.server
+        for server in simbad_conf.servers_list:
+            if server != failed_server:
+                simbad.server = server
+                try:
+                    simbad.add_votable_fields('J', 'H', 'K', 'sp_type')
+                except pyvo.dal.exceptions.DALServiceError:
+                    pass
+                else:
+                    log.warning(f"Changing SIMBAD server to {server}")
+                    simbad_conf.server = server
+                    break
+        else:
+            log.warning("Failed to connect to any SIMBAD server. "
+                        "Not retrieving spectral type or magnitudes.")
+            return {}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=NoResultsWarning)
         try:
@@ -1310,18 +1374,26 @@ class LineSpreadFunction(ABC):
     def convolutions(self):
         """Returns list of (convolution function, kernel size in nm)"""
 
-    def convolve(self, waves, w, data, **kwargs):
+    def convolve(self, waves, w, data, min_oversampling=3, **kwargs):
         """
-        Convolve a spectrum/spectra with a kernel
+        Convolve a spectrum/spectra with a kernel. Since the convolution is
+        performed discretely, it may be desirable to resample the spectrum to
+        a finer wavelength scale before convolving. This can be achieved if
+        "waves" is an array of all the output wavelengths, rather than just
+        the start and end wavelengths, as the code will check that the input
+        spectrum is oversampled enough to perform the convolution reliably.
 
         Parameters
         ----------
-        waves: sequence
+        waves: array
             provides min and max wavelengths for output convolved spectra
         w: array
             wavelengths of thing to be convolved
         data: array
             data to be convolved; last dimension must match w
+        min_oversampling: int
+            minimum required oversampling factor of the input spectrum
+            compared to the output wavelength scale
         kwargs: dict
             list of parameters to be passed to the convolutions() method
 
@@ -1333,6 +1405,16 @@ class LineSpreadFunction(ABC):
         convolution_list = self.convolutions(**kwargs)
         dw = sum(x[1] for x in convolution_list)
         w1, w2 = np.min(waves) - 1.05 * dw, np.max(waves) + 1.05 * dw
+
+        dw_input = np.abs(np.diff(w[np.logical_and(w > w1, w < w2)])).min()
+        dw_output = np.abs(np.diff(waves)).min()
+
+        extra_sampling_needed = int(np.ceil(dw_input / dw_output * min_oversampling))
+        if extra_sampling_needed > 1:
+            wnew = np.interp(np.arange(w.size * extra_sampling_needed) / extra_sampling_needed, np.arange(w.size), w)
+            data = make_interp_spline(w, data, axis=data.ndim-1)(wnew)
+            w = wnew
+
         windices = np.logical_and(w > w1, w < w2)
         spectra = data[..., windices]
         for conv_func, dw in convolution_list:
