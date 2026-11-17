@@ -103,6 +103,7 @@ def makeProcessedFlat(p):
     p.cutSlits()
     p.maskBeyondSlit()
     p.maskVignettedRegions()
+    p.derippleFlat()
     p.normalizeFlat()
     p.thresholdFlatfield()
     p.storeProcessedFlat()

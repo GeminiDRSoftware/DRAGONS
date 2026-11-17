@@ -61,6 +61,7 @@ DESCRIPTORS_TYPES = [
     ('observation_id', str),
     ('observation_type', str),
     ('overscan_section', list),
+    ('processing_level', int),
     ('program_id', str),
     ('pupil_mask', str),
     ('qa_state', str),

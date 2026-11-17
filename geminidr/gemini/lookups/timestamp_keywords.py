@@ -35,6 +35,7 @@ timestamp_keys = {
     "cutFootprints": "CUTSFP",
     "cutSlits": "CUTSLITS",
     "darkCorrect": "DARKCORR",
+    "derippleFlat": "DERIPFLA",
     "detectSources": "DETECSRC",
     "determineAstrometricSolution": "ASTRMTRY",
     "determineDistortion": "FITCOORD",

@@ -89,6 +89,7 @@ gemini_keyword_names = dict(
     pixel_scale = 'PIXSCALE',
     position_angle = 'PA',
     prism = 'PRISM',
+    processing_level = 'PROCLEVL',
     pupil_mask = 'PUPILMSK',
     pwfs1 = 'PWFS1_ST',
     pwfs2 = 'PWFS2_ST',
@@ -1388,6 +1389,34 @@ class AstroDataGemini(AstroData):
             the position angle (East of North) of the +ve y-direction
         """
         return self.phu[self._keyword_for('position_angle')]
+
+    @astro_data_descriptor
+    def processing_level(self):
+        """
+        Returns the processing level of this data
+
+        Returns
+        -------
+        int or None
+            the processing level, from the PROCLEVL header, or defined to be 1
+            for raw data. Values are should be in the range 1 to 4 and follow
+            the scheme defined for the IVOA obscore model calib_level parameter,
+            noting that Gemini does not currently generate level 0 in that our
+            raw data products are level 1. Returns None if the PROCLEVL header
+            is undefined and the data is not tagged as 'RAW'
+        """
+
+        proclevl = self.phu.get(self._keyword_for('processing_level'))
+
+        if proclevl is None:
+            if 'RAW' in self.tags:
+                return 1
+            else:
+                return None
+
+        # We could validate the value here, but for simplicity we leave that to
+        # the caller for now.
+        return proclevl
 
     @astro_data_descriptor
     def program_id(self):

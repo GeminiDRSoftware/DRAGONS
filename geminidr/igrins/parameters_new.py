@@ -1,6 +1,7 @@
 from gempy.library import config
 from astrodata import AstroData
-from geminidr.core import parameters_generic, parameters_preprocess, parameters_spect
+from geminidr.core import (parameters_generic, parameters_preprocess,
+                           parameters_spect, parameters_telluric)
 
 
 class cleanReadoutConfig(config.Config):
@@ -24,6 +25,25 @@ class createDataCubeConfig(config.Config):
     wavelength_increasing_order =  config.Field("rearrange the data so that wavelengths are"
                                                 "in increasing order. default is False",
                                                 bool, False)
+
+
+class derippleFlatConfig(config.Config):
+    suffix = config.Field("Filename suffix", str, "_derippled",
+                          optional=True)
+    envelope_order = config.RangeField("Order of polynomial for envelope fitting",
+                                       int, 2, min=2)
+    snr_min = config.RangeField("Minimum SNR for derippling", float, 4, min=1,
+                                optional=False)
+    snr_weak = config.Field("Minimum SNR of a single order and combined SNR of"
+                            " it and its neighbors for derippling", str, "2.5,6")
+
+    def validate(self):
+        config.Config.validate(self)
+        try:
+            values = [float(i) for i in self.snr_weak.split(',')]
+        except ValueError:
+            return False
+        return len(values) == 2 and values[0] < values[1]
 
 
 class determineDistortionConfig(parameters_spect.determineDistortionConfig):
@@ -60,12 +80,25 @@ class determineWavelengthSolutionConfig(config.Config):
     nsum = config.RangeField("Number of lines to sum", int, 10, min=1)
     min_snr = config.RangeField("Minimum SNR for peak detection", float, 10., min=1.)
     dispersion_order = config.RangeField("Order of fit in dispersion direction",
-                                          int, 4, min=2, max=10, inclusiveMax=True)
+                                         int, None, min=2, max=10,
+                                         inclusiveMax=True, optional=True)
     xdorder_order = config.RangeField("Order of fit as a function of echelle order",
                                       int, 3, min=2, max=10, inclusiveMax=True)
+    max_order = config.RangeField("Maximum combined order of polynomial", int, None,
+                                  min=3, max=10, inclusiveMax=True, optional=True)
     linelist = config.Field("Filename of arc line list", str, None, optional=True)
     in_vacuo = config.Field("Use vacuum wavelength scale (rather than air)?", bool, True)
     debug_plot = config.Field("Make debug plot?", bool, False)
+
+    def validate(self):
+        config.Config.validate(self)
+        match [self.dispersion_order, self.max_order].count(None):
+            case 0:
+                if self.max_order <= min(self.dispersion_order, self.xdorder_order):
+                    raise ValueError("'max_order' must exceed both "
+                                     "'dispersion_order' and 'xdorder_order'")
+            case 1:
+                raise ValueError("Both or neither of 'dispersion_order' and 'max_order' must be set")
 
 
 class extractSpectraConfig(config.Config):
@@ -79,6 +112,11 @@ class extractSpectraConfig(config.Config):
                                 default="optimal")
     sigma = config.RangeField("Sigma threshold for cosmic ray rejection",
                               float, 30., min=0)
+    beams = config.ChoiceField("Beams to extract", str,
+                               allowed={"A": "extract only beam A",
+                                        "B": "extract only beam B",
+                                        "AB": "extract both beams A and B"},
+                               default="AB")
     debug_order = config.RangeField("Order for CR debugging plot", int, None,
                                        min=33, max=95, optional=True)
     debug_pixel = config.RangeField("Pixel for CR debugging plot", int, None,
@@ -90,6 +128,16 @@ class extractSpectraConfig(config.Config):
         config.Config.validate(self)
         if [self.debug_order, self.debug_pixel].count(None) == 1:
             raise ValueError("Both or neither of 'debug_order' and 'debug_pixel' must be set")
+
+
+class fitTelluricConfig(parameters_telluric.fitTelluricConfig):
+    deripple = config.Field("Deripple the telluric spectrum?", bool, True)
+    deripple_predictor = config.ChoiceField("Deripple predictor", str,
+                                            allowed={"template": "use the defined pattern",
+                                                     "model": "extrapolate phases for weak orders",
+                                                     "none": "only correct orders where the ripple is detected"},
+                                            default="template",
+                                            optional=False)
 
 
 class flagDiscrepantPixelsConfig(config.Config):
@@ -165,7 +213,10 @@ class removeObjectsLeaveSkyConfig(config.Config):
                                      int, 1, min=1)
 
 
+class telluricCorrectConfig(parameters_telluric.telluricCorrectConfig):
+    copy_wavelength_solution = config.Field("Copy wavelength solution from telluric standard?", bool, True)
+
+
 class thresholdFlatfieldConfig(parameters_preprocess.thresholdFlatfieldConfig):
     def setDefaults(self):
         self.lower = 0.001
-

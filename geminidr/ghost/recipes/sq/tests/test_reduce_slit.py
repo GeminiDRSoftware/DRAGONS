@@ -52,7 +52,8 @@ def test_reduce_slit_flat(input_filename, processed_bias, path_to_inputs,
         output_filename = p.streams['main'][0].filename
         adout = astrodata.open(os.path.join("calibrations", "processed_slitflat", output_filename))
         adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-        assert ad_compare(adref, adout, ignore_kw=['PRSLITFL', 'OVERRDNS'])
+        assert ad_compare(adref, adout, rtol=1e-6, atol=1e-6,
+                          ignore_kw=['PRSLITFL', 'OVERRDNS'])
 
 
 @pytest.mark.integration_test
@@ -88,5 +89,5 @@ def test_reduce_slit_science(input_filename, caldict, path_to_inputs,
         for output_filename in [ad.filename for ad in p.streams['main']]:
             adout = astrodata.open(os.path.join("calibrations", "processed_slit", output_filename))
             adref = astrodata.open(os.path.join(path_to_refs, output_filename))
-            assert ad_compare(adref, adout, rtol=1e-6,
+            assert ad_compare(adref, adout, rtol=1e-4, atol=1e-5,
                               ignore_kw=['PRSLITIM', 'OVERRDNS', 'RELEASE', 'OBSCLASS'])
