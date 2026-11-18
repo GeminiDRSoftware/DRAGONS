@@ -170,6 +170,7 @@ the fit run the flat normalization in interactive mode by add
    remove the ``normalizeFlat:niter=3`` from the command once the defaults
    have been adjusted.  Bill also finds that niter=3 works better than niter=1.
 
+
 Wavelength Solution
 ===================
 The wavelength solution is derived from the zenith sky frame.  The sky
@@ -228,8 +229,10 @@ the telluric features.
         fitTelluric:bbtemp=9700
         fitTelluric:magnitude='H=5.391'
 
-   For K-band, in this case the magnitude is K=5.333.  This parameter file can
-   then be added to the command line with ``@hd97585_H.param``::
+   For K-band, in this case the magnitude would be set to K=5.333.
+
+   This parameter file can then be added to the command line with
+   ``@hd97585_H.param``::
 
         reduce @telluricH.lis @hd97585_H.param
 

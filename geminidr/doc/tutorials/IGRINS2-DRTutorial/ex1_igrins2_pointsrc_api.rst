@@ -143,7 +143,7 @@ wavelength calibration, telluric star, and science observations.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 15
+    :lineno-start: 16
 
     all_files = glob.glob('./*.fits')
     all_files.sort()
@@ -184,7 +184,7 @@ generally a single exposure.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 30
+    :lineno-start: 31
 
     skywlenH = dataselect.select_data(
         all_files,
@@ -207,7 +207,7 @@ from the science observations.
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 41
+    :lineno-start: 43
 
     telluricH = dataselect.select_data(
         all_files,
@@ -230,7 +230,7 @@ The science observations are everything not a calibration, ie. not tagged
 
 .. code-block:: python
     :linenos:
-    :lineno-start: 52
+    :lineno-start: 55
 
     scienceH = dataselect.select_data(
         all_files,
@@ -252,3 +252,231 @@ The IGRINS-2 flats are obtained at the end of the night.  They are a series
 of lamp-on and lamp-off exposures.  The software will combine the
 lamp-on and lamp-off exposures and create the master flat.
 
+.. code-block:: python
+    :linenos:
+    :lineno-start: 67
+
+    reduce_flatH = Reduce()
+    reduce_flatH.files.extend(flatsH)
+    reduce_flatH.runr()
+
+    reduce_flatK = Reduce()
+    reduce_flatK.files.extend(flatsK)
+    reduce_flatK.runr()
+
+In interactive mode, you can inspect the fit for each
+order by selecting the tabs above the plot.
+
+Note that you are not required to run in interactive mode, but you might want
+to if flat fielding is critical to your program.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 74
+
+    reduce_flatH = Reduce()
+    reduce_flatH.files.extend(flatsH)
+    reduce_flatH.uparms = dict([('interactive', True)])
+    reduce_flatH.runr()
+
+
+.. .. image:: _graphics/gnirsxd_interflat.png
+..   :width: 600
+..   :alt: Interactive flat field inspection.
+
+
+Wavelength Solution
+===================
+The wavelength solution is derived from the zenith sky frame.  The sky
+emission lines are used to derive the wavelength solution.  The solution is
+a 2D fit of all the sky lines in all the orders.
+
+.. note:: The telluric standard will later be used to refine the wavelength
+   solution using the telluric absorption.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 78
+
+    reduce_skywlenH = Reduce()
+    reduce_skywlenH.files.extend(skywlenH)
+    reduce_skywlenH.runr()
+
+    reduce_skywlenK = Reduce()
+    reduce_skywlenK.files.extend(skywlenK)
+    reduce_skywlenK.runr()
+
+
+Telluric Standard
+=================
+The telluric standard observed after the science observations is "HD 97585".
+The spectral type of the star is A0V.
+
+To properly calculate and fit a telluric model to the star, we need to know
+its effective temperature.  To properly scale the sensitivity function (to
+use the star as a spectrophotometric standard), we need to know the star's
+magnitude.  Those are inputs to the ``fitTelluric`` primitive.
+
+The software will automatically query the SIMBAD database to get the star's
+spectral type and magnitude.  Then it will use the spectral type to derive the
+effective temperature from a Eric Mamajek's list "A Modern Mean Dwarf Stellar
+Color and Effective Temperature Sequence"
+(https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt).
+
+To reduce the telluric standard:
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 85
+
+    reduce_telluricH = Reduce()
+    reduce_telluricH.files.extend(telluricH)
+    reduce_telluricH.runr()
+
+    reduce_telluricK = Reduce()
+    reduce_telluricK.files.extend(telluricK)
+    reduce_telluricK.runr()
+
+You can inspect the telluric fit by activating the interactive mode.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 92
+
+        reduce_telluricH = Reduce()
+        reduce_telluricH.files.extend(telluricH)
+        reduce_telluricH.uparms = dict([('interactive', True)])
+        reduce_telluricH.runr()
+
+The output processed telluric standard will contain the telluric model and the
+sensitivity function, as well as a refined wavelength solution derived using
+the telluric features.
+
+.. note:: If you wish to override the automatically derived values, or if you
+   do not have an internet connection, you can set
+   the ``fitTelluric`` primitive parameters yourself.  For example,
+
+   .. code-block:: python
+
+        reduce_telluricH = Reduce()
+        reduce_telluricH.files.extend(telluricH)
+        reduce_telluricH.uparms = dict([('fitTelluric:bbtemp', 9700),
+                                        ('fitTelluric:magnitude', 'H=5.391')])
+        reduce_telluricH.runr()
+
+   For K-band, in this case, the magnitude would be set to K=5.333.
+
+
+Science Observations
+====================
+The science target is a CEMP-no star.  The observations were taken in the
+standard ABBA dither pattern.  The software will automatically combine the
+dithered exposures.
+
+The reduction steps include flat fielding, wavelength calibration, telluric
+correction, and flux calibration.  The final output will be a fully reduced
+spectrum of the science target.
+
+This is what one raw image looks like.
+
+.. .. image:: _graphics/gnirsxd_SXD32mm_raw.png
+..   :width: 400
+..   :alt: raw science image
+
+.. what you see in that image are the x orders from x at the bottom to x at the
+   top.
+
+With all the calibrations in the local calibration manager, one only needs
+to build and run the ``Reduce`` object on the science frames to get an
+extracted spectrum.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 96
+
+    reduce_scienceH = Reduce()
+    reduce_scienceH.files.extend(scienceH)
+    reduce_scienceH.runr()
+
+    reduce_scienceK = Reduce()
+    reduce_scienceK.files.extend(scienceK)
+    reduce_scienceK.runr()
+
+You can also activate the interactive tools to inspect the telluric correction.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 103
+
+    reduce_scienceH = Reduce()
+    reduce_scienceH.files.extend(scienceH)
+    reduce_scienceH.uparms = dict([('interactive', True)])
+    reduce_scienceH.runr()
+
+
+Each order is extracted separately and stored in separate extensions in the
+MEF file.  The 1D extracted spectrum before telluric correction or flux
+calibration, obtained by adding the option
+``('extractSpectra:write_outputs', True)`` to the ``uparms`` list.
+
+You can plot all the extracted, uncorrected orders on a common plot
+with ``dgsplot``.
+
+::
+
+   from gempy.adlibrary import plotting
+   ad = astrodata.open('N20260130S0179_H_extracted.fits')
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
+
+.. .. image:: _graphics/gnirsxd_SXD32mm_extracted.png
+..   :width: 450.
+..   :alt: 1D extracted spectrum before telluric correction or flux calibration
+
+The 1D extracted spectrum after telluric correction but before flux
+calibration, obtained with ``('telluricCorrect:write_outputs', True)``, looks
+like this.
+
+::
+
+   from gempy.adlibrary import plotting
+   ad = astrodata.open('N20260130S0179_H_telluricCorrected.fits')
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
+
+
+.. .. image:: _graphics/gnirsxd_SXD32mm_tellcor.png
+..   :width: 600
+..   :alt: 1D extracted spectrum after telluric correction or before flux calibration
+
+And the final spectrum, corrected for telluric features and flux calibrated.
+
+::
+
+   from gempy.adlibrary import plotting
+   ad = astrodata.open(reduce_scienceH.output_filenames[0])
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
+
+.. .. image:: _graphics/gnirsxd_SXD32mm_1d.png
+..   :width: 600
+..   :alt: 1D extracted spectrum after telluric correction and flux calibration
+
+In the final spectrum, the orders remain separate.  The orders can be combined
+into a single spectrum using the ``combineOrders`` primitive.
+
+.. code-block:: python
+    :linenos:
+    :lineno-start: 107
+
+    reduce_combine = Reduce()
+    reduce_combine.recipename = 'combineOrders'
+    reduce_combine.files.extend([reduce_scienceH.output_filenames[0]])
+    reduce_combine.runr()
+
+::
+
+   from gempy.adlibrary import plotting
+   ad = astrodata.open('N20260130S0179_H_ordersCombined.fits')
+   plotting.dgsplot_matplotlib(ad, 1, kwargs={'linewidth':0.5})
+
+.. .. image:: _graphics/gnirsxd_SXD32mm_ordersCombined.png
+..   :width: 600q
+..   :alt: Combined orders. Full range 1D spectrum.
