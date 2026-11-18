@@ -814,7 +814,7 @@ class Telluric(Spect):
                                 f"to {ad.filename}")
 
             abs_spectra = tcal.absorption_spectra()
-            for ext, spec_order in zip(ad, ad.hdr['SPECORDR']):
+            for ext, spec_order in zip(ad, ad.hdr.get('SPECORDR')):
                 if len(ext.shape) > 1:
                     continue
 
