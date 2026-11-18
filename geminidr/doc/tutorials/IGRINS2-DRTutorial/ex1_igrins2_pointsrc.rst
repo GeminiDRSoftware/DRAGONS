@@ -17,4 +17,4 @@ The dither pattern is one standard ABBA sequence.
 
    ex1_igrins2_pointsrc_dataset
    ex1_igrins2_pointsrc_cmdline
-..   ex1_igrins2_pointsrc_api
+   ex1_igrins2_pointsrc_api

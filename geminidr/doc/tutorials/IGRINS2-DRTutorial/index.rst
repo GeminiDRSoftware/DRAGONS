@@ -22,7 +22,7 @@ Tutorial Series - IGRINS-2 Data Reduction with DRAGONS
    datasets
    cal_service
    ex1_igrins2_pointsrc
-..   issues_and_limitations
+   issues_and_limitations
 ..   tips_and_tricks
 
 .. todolist::

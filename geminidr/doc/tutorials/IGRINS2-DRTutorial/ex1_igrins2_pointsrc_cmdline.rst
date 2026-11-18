@@ -80,8 +80,8 @@ First, navigate to the ``playground`` directory in the unpacked data package::
     cd <path>/igrins2_tutorial/playground
 
 
-Bundles
--------
+Unbundle the Bundles
+--------------------
 The IGRINS-2 data raw data files are organized in bundles that contain the
 data from the H-band arm and the K-band arm.  The first step is to debundle
 the data so that the H-band and K-band files are separated.
@@ -184,16 +184,6 @@ a 2D fit of all the sky lines in all the orders.
     reduce @skywlenH.lis
     reduce @skywlenK.lis
 
-To inspect the wavelength solution, run the command in interactive mode by
-adding `-p interactive=True` to the command.
-
-::
-
-    reduce @skywlenH.lis -p interactive=True
-
-.. todo::  There are no interactive mode anywhere in the arc recipe?  Remove that
-   bit if that's true.
-
 
 Telluric Standard
 =================
@@ -278,7 +268,46 @@ To run the reduction with all the interactive tools activated, set the
 
     reduce @scienceH.lis -p interactive=True
 
-.. screenshots of intermediate steps and various dgsplot.
+Each order is extracted separately and stored in separate extensions in the
+MEF file.  The 1D extracted spectrum before telluric correction or flux
+calibration, obtained by adding the option
+``-p extractSpectra:write_outputs=True`` to the ``reduce`` call.  You can
+plot all the orders on a common plot with ``dgsplot``. (The ``--thin`` option
+simply plots a thinner line than the default width.)
+
+::
+
+    dgsplot N20260130S0179_H_extracted.fits 1 --thin
+
+.. .. image:: _graphics/gnirsxd_SXD32mm_extracted.png
+..   :width: 450
+..   :alt: 1D extracted spectrum before telluric correction or flux calibration
+
+
+The 1D extracted spectrum after telluric correction but before flux
+calibration, obtained with ``-p telluricCorrect:write_outputs=True``, looks
+like this.
+
+::
+
+    dgsplot N20260130S0179_H_telluricCorrected.fits 1 --thin
+
+
+.. .. image:: _graphics/gnirsxd_SXD32mm_tellcor.png
+..   :width: 600
+..   :alt: 1D extracted spectrum after telluric correction or before flux calibration
+
+
+And the final spectrum, corrected for telluric features and flux calibrated.
+
+::
+
+    dgsplot N20260130S0179_H_1D.fits 1 --thin
+
+.. .. image:: _graphics/gnirsxd_SXD32mm_1d.png
+..   :width: 600
+..   :alt: 1D extracted spectrum after telluric correction and flux calibration
+
 
 In the final spectrum, the orders remain separate.  The orders can be combined
 into a single spectrum using the ``combineOrders`` primitive.
@@ -288,3 +317,11 @@ into a single spectrum using the ``combineOrders`` primitive.
     reduce -r combineOrders N20260130S0179_H_1D.fits
     reduce -r combineOrders N20260130S0179_K_1D.fits
 
+
+::
+
+    dgsplot N20260130S0179_H_ordersCombined.fits 1 --thin
+
+.. .. image:: _graphics/gnirsxd_SXD32mm_ordersCombined.png
+..   :width: 600q
+..   :alt: Combined orders. Full range 1D spectrum.
