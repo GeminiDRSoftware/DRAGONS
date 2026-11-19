@@ -17,23 +17,6 @@ def adinputs(path_to_inputs, request):
                            for f in request.param]
 
 
-@pytest.mark.skip("Test not needed any more as development is well past this")
-@pytest.mark.igrins2
-@pytest.mark.preprocessed_data
-@pytest.mark.parametrize("adinputs, caldict", INPUT_FILES, indirect=['adinputs'])
-def test_make_ab(path_to_inputs, path_to_refs, adinputs, caldict):
-    """A simple test for the IGRINS2 makeAB primitive."""
-    p = IGRINS2Spect(adinputs)
-    # Add the processed arc to the caldb
-    p.caldb.user_cals = {k: os.path.join(path_to_inputs, v)
-                         for k, v in caldict.items()}
-    adout = p.makeABOld().pop()
-    adref = astrodata.open(os.path.join(path_to_refs, adout.filename))
-    # EXTEND is one of those keywords that is put there by the FITS writer
-    # so may not be present
-    ad_compare(adref, adout, ignore_kw=['EXTEND'])
-
-
 @pytest.mark.skip("Doesn't work now that cleanReadout is a separate primitive")
 @pytest.mark.igrins2
 @pytest.mark.preprocessed_data
