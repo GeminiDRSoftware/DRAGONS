@@ -7,7 +7,6 @@ from functools import cmp_to_key
 import numpy as np
 
 from bokeh.core.property.instance import Instance
-from bokeh.events import DocumentReady
 from bokeh.layouts import column, row
 from bokeh import models as bm
 from bokeh.models import (
@@ -89,55 +88,6 @@ class FitQuality(Enum):
     GOOD = auto()
     POOR = auto()
     BAD = auto()
-
-
-# Safari sizes the header row of a bokeh Tabs without the horizontal scrollbar
-# that appears when there are too many tabs for the available width.  The
-# scrollbar then takes its space from the tabs, which end up squished until the
-# window is resized.  After the document is ready, look for headers in that
-# state and make them taller by the thickness of their scrollbar.  Safari gets
-# the sizing wrong some time after the document is ready, so check on every
-# animation frame for a few seconds in order to fix it as soon as it happens.
-# Tabs are in the shadow DOM and are only reachable from JavaScript.  This is
-# idempotent and does nothing on a browser that gets the sizing right.
-_TABS_HEADER_FIX_JS = """
-function find_tabs_shadow_roots(root, found) {
-    root.querySelectorAll("*").forEach(function(elem) {
-        const sr = elem.shadowRoot;
-        if (!sr)
-            return;
-        if (sr.querySelector(".bk-header") && sr.querySelector(".bk-tab"))
-            found.push(sr);
-        find_tabs_shadow_roots(sr, found);
-    });
-    return found;
-}
-
-function fix_tabs_header(sr) {
-    const header = sr.querySelector(".bk-header");
-    const wrapper = sr.querySelector(".bk-headers-wrapper");
-    const tab = sr.querySelector(".bk-tab");
-    if (header && wrapper && tab) {
-        const scrollbar = wrapper.offsetHeight - wrapper.clientHeight;
-        if (scrollbar > 0 && tab.offsetHeight < tab.scrollHeight) {
-            header.style.minHeight = (header.offsetHeight + scrollbar) + "px";
-        }
-    }
-}
-
-const start = performance.now();
-let shadow_roots = [];
-let frame = 0;
-function check() {
-    // The tabs may not exist yet, and the DOM can be rebuilt
-    if (frame++ % 10 == 0)
-        shadow_roots = find_tabs_shadow_roots(document, []);
-    shadow_roots.forEach(fix_tabs_header);
-    if (performance.now() - start < 5000)
-        requestAnimationFrame(check);
-}
-requestAnimationFrame(check);
-"""
 
 
 class PrimitiveVisualizer(ABC):
@@ -626,7 +576,6 @@ class PrimitiveVisualizer(ABC):
         )
 
         self.visualize(doc)
-        doc.js_on_event(DocumentReady, CustomJS(args={}, code=_TABS_HEADER_FIX_JS))
 
         if server.test_mode:
             # Simulate a click of the accept button
