@@ -17,6 +17,10 @@ priority ordered list of servers if the primary server appears to be down.
 question in a different format to the primary.
 
 """
+from warnings import warn, catch_warnings, simplefilter
+
+import requests
+
 import numpy as np
 
 from astropy.coordinates import SkyCoord
@@ -107,6 +111,16 @@ SERVER_COLMAP = {
 }
 
 
+class CatalogWarning(UserWarning):
+    """Base warning for catalog query failures."""
+
+class CatalogLookupWarning(CatalogWarning):
+    """Catalog query failure (connection or bad return value error)."""
+
+class EmptyCatalogWarning(CatalogWarning):
+    """Catalog query apparently succeeded but returned no sources."""
+
+
 def get_fits_table(catalog, ra, dec, sr, server=None, verbose=False):
     """
     This function returns a QAP style REFCAT in the form of an astropy Table.
@@ -145,11 +159,24 @@ def get_fits_table(catalog, ra, dec, sr, server=None, verbose=False):
 
     servers = [server] if server else CAT_SERVERS[catalog]
 
+    caught_warnings = []
     for server in servers:
-        tbl = get_fits_table_from_server(catalog, server, ra, dec, sr,
-                                         verbose=verbose)
+
+        log.stdinfo(f'Try catalog server {server}')
+
+        with catch_warnings(record=True) as caught_warnings:
+            simplefilter('always', category=CatalogWarning)
+
+            tbl = get_fits_table_from_server(catalog, server, ra, dec, sr,
+                                             verbose=verbose)
         if tbl is not None:
             return tbl
+
+    for w in caught_warnings:
+        if issubclass(w.category, EmptyCatalogWarning):
+            log.stdinfo(str(w.message))
+        if issubclass(w.category, CatalogLookupWarning):
+            log.warning(str(w.message))
 
 
 def get_fits_table_from_server(catalog, server, ra, dec, sr, verbose=False):
@@ -201,20 +228,26 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr, verbose=False):
         table = scs_srv.search(pos=SkyCoord(ra, dec, unit="deg"),
                                radius=sr, verb=3).to_table()
     except pyvo.DALFormatError as e:
-        log.warning(f"No catalog returned due to malformed return query:\n{e}")
+        # Failure to contact the server at all gets miscategorized by pyvo:
+        if isinstance(e.cause, requests.RequestException):
+            warn(f"No catalog returned due to failure to contact server "
+                 f"{server}:\n{e}", CatalogLookupWarning)
+        else:
+            warn(f"No catalog returned due to malformed return query:\n{e}",
+                 CatalogLookupWarning)
         return
     except pyvo.DALQueryError as e:
-        log.warning(f"No catalog returned as server {server} returned an "
-                    f"error:\n{e}")
+        warn(f"No catalog returned as server {server} returned an error:\n{e}",
+             CatalogLookupWarning)
         return
     except pyvo.DALServiceError as e:
-        log.warning(f"No catalog returned due to failure to communicate "
-                    f"with server {server}:\n{e}")
+        warn(f"No catalog returned due to failure to communicate with server "
+             f"{server}:\n{e}", CatalogLookupWarning)
         return
     else:
         if not table:
-            log.stdinfo(f"No results returned from {server} but no warning "
-                        "issued")
+            warn(f"No results returned from {server} but no warning issued",
+                 EmptyCatalogWarning)
             return
 
     if server == 'sdss9_vizier':
