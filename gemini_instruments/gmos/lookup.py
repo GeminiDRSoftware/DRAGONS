@@ -1798,8 +1798,11 @@ nominal_zeropoints = {
     ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'z'): 26.718,
 
     # GMOS-S Hamamatsu CCDs
-    #   LAST UPDATED: Feb 2024, following CCD replacement in FYQ1 2023.
-    #       All values provided by German Gimeno on Feb 1, 2024
+    #   LAST UPDATED: Nov 2026 (for CCDs installed in FYQ1 2023).
+    #       All values provided by German Gimeno on Nov 24, 2026.
+    #       The g/r/i values are consistent with some contemporaneous plots
+    #       produced by Paul Hirst from archival data, within <0.1 mag. The
+    #       unchanged u-band value may be less reliable.
     #
     # Values on the website should match this table.
     # https://www.gemini.edu/instrumentation/gmos/calibrations#PhotStand
@@ -1810,6 +1813,11 @@ nominal_zeropoints = {
     # apply to post-flatfielded data, and the flatfield normalization is
     # based solely on the CCD2 level.
     #
+    # On this occasion (2026), since I've only been provided with a single
+    # number per band, I've added the difference between the 2026 and 2024
+    # values for CCD2 to those for the other chips (leaving the colour terms
+    # in the trailing comments unchanged).
+    #
     # CCD1 = BI11-41-4k-2
     # CCD2 = BI13-19-4k-3
     # CCD3 = BI12-34-4k-1
@@ -1817,22 +1825,22 @@ nominal_zeropoints = {
     ('BI13-19-4k-3', 'u'): 24.09,  # +/- 0.09  ct[u-g] = 0.09 +/- 0.06,
     ('BI12-34-4k-1', 'u'): 24.01,  # +/- 0.11  ct[u-g] = 0.14 +/- 0.07,
     ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'u'): 24.09,
-    ('BI11-41-4k-2', 'g'): 27.87,  # +/- 0.01  ct[g-r] = 0.15 +/- 0.02  ct[g-i] = 0.10 +/- 0.02,
-    ('BI13-19-4k-3', 'g'): 27.84,  # +/- 0.05  ct[g-r] = 0.15 +/- 0.02  ct[g-i] = 0.03 +/- 0.06,
-    ('BI12-34-4k-1', 'g'): 27.88,  # +/- 0.09  ct[g-r] = -0.02 +/- 0.12  ct[g-i] = 0.00 +/- 0.06,
-    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'g'): 27.84,
-    ('BI11-41-4k-2', 'r'): 28.12,  # +/- 0.01  ct[g-r] = 0.07  +/-  0.02,
-    ('BI13-19-4k-3', 'r'): 28.05,  # +/- 0.03  ct[g-r] = 0.14  +/-  0.05,
-    ('BI12-34-4k-1', 'r'): 28.09,  # +/- 0.03  ct[g-r] = 0.09  +/-  0.04,
-    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'r'): 28.05,
-    ('BI11-41-4k-2', 'i'): 28.23,  # +/- 0.01  ct[r-i] = 0.18  +/-  0.05,
-    ('BI13-19-4k-3', 'i'): 28.18,  # +/- 0.02  ct[r-i] = 0.25  +/-  0.11,
-    ('BI12-34-4k-1', 'i'): 28.25,  # -+/- 0.02 ct[r-i] = 0.01  +/-  0.05,
-    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'i'): 28.18,
-    ('BI11-41-4k-2', 'z'): 28.10,  # +/- 0.01  ct[i-z] = 0.30  +/-  0.14,
-    ('BI13-19-4k-3', 'z'): 28.08,  # +/- 0.01  ct[i-z] = 0.31  +/-  0.13,
-    ('BI12-34-4k-1', 'z'): 28.19,  # +/- 0.02  ct[i-z] = -0.34  +/-  0.10,
-    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'z'): 28.08,
+    ('BI11-41-4k-2', 'g'): 27.80,  # +/- 0.12  ct[g-r] = 0.15 +/- 0.02  ct[g-i] = 0.10 +/- 0.02,
+    ('BI13-19-4k-3', 'g'): 27.77,  # +/- 0.12  ct[g-r] = 0.15 +/- 0.02  ct[g-i] = 0.03 +/- 0.06,
+    ('BI12-34-4k-1', 'g'): 27.81,  # +/- 0.15  ct[g-r] = -0.02 +/- 0.12  ct[g-i] = 0.00 +/- 0.06,
+    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'g'): 27.77,
+    ('BI11-41-4k-2', 'r'): 28.10,  # +/- 0.10  ct[g-r] = 0.07  +/-  0.02,
+    ('BI13-19-4k-3', 'r'): 28.03,  # +/- 0.10  ct[g-r] = 0.14  +/-  0.05,
+    ('BI12-34-4k-1', 'r'): 28.07,  # +/- 0.10  ct[g-r] = 0.09  +/-  0.04,
+    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'r'): 28.03,
+    ('BI11-41-4k-2', 'i'): 28.21,  # +/- 0.09  ct[r-i] = 0.18  +/-  0.05,
+    ('BI13-19-4k-3', 'i'): 28.16,  # +/- 0.09  ct[r-i] = 0.25  +/-  0.11,
+    ('BI12-34-4k-1', 'i'): 28.23,  # +/- 0.09  ct[r-i] = 0.01  +/-  0.05,
+    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'i'): 28.16,
+    ('BI11-41-4k-2', 'z'): 27.99,  # +/- 0.10  ct[i-z] = 0.30  +/-  0.14,
+    ('BI13-19-4k-3', 'z'): 27.97,  # +/- 0.10  ct[i-z] = 0.31  +/-  0.13,
+    ('BI12-34-4k-1', 'z'): 28.08,  # +/- 0.10  ct[i-z] = -0.34  +/-  0.10,
+    ('BI11-41-4k-2,BI13-19-4k-3,BI12-34-4k-1', 'z'): 27.97,
     # ('BI5-36-4k-2', 'OVI'): 23.1,
     # ('BI11-33-4k-1', 'OVI'): 23.1,
     # ('BI12-34-4k-1', 'OVI'): 23.1,
